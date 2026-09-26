@@ -1,5 +1,6 @@
 package com.openipc.pixelpilot;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 import android.util.Log;
 
 import com.openipc.wfbngrtl8812.WfbNgLink;
@@ -47,8 +49,26 @@ public class WfbLinkManager extends BroadcastReceiver {
         this.wfbLink = wfbNgLink;
     }
 
-    /** The broadcasts this receiver handles; register it with exactly this filter. */
-    public static IntentFilter usbIntentFilter() {
+    /** Registers this receiver for its USB broadcasts, app-private where the platform allows it. */
+    @SuppressLint("UnspecifiedRegisterReceiverFlag") // the flag only exists from API 33
+    public void register() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            context.registerReceiver(this, usbIntentFilter(), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            context.registerReceiver(this, usbIntentFilter());
+        }
+    }
+
+    public void unregister() {
+        try {
+            context.unregisterReceiver(this);
+        } catch (IllegalArgumentException ignored) {
+            // was not registered
+        }
+    }
+
+    /** The broadcasts this receiver handles. */
+    private static IntentFilter usbIntentFilter() {
         IntentFilter filter = new IntentFilter();
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);

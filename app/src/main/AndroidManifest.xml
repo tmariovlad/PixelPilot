@@ -76,5 +76,23 @@
                 <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
             </intent-filter>
         </activity>
+
+        <meta-data android:name="com.oculus.supportedDevices" android:value="quest2|questpro|quest3|quest3s" />
+
+        <!-- Immersive OpenXR viewer (Quest). Launched from the 2D menu, own task. -->
+        <activity
+            android:name=".XrVideoActivity"
+            android:exported="true"
+            android:launchMode="singleInstance"
+            android:taskAffinity="com.openipc.pixelpilot.xr"
+            android:configChanges="density|keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|uiMode"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="org.khronos.openxr.intent.category.IMMERSIVE_HMD" />
+                <category android:name="com.oculus.intent.category.VR" />
+            </intent-filter>
+            <meta-data android:name="com.oculus.vr.application.type" android:value="openxr" />
+        </activity>
     </application>
 </manifest>

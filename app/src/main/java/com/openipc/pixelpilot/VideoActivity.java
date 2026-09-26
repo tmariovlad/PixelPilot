@@ -771,6 +771,15 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             return false;
         });
 
+        MenuItem launchXr = videoMenu.add("Launch XR (Quest)");
+        launchXr.setOnMenuItemClickListener(item -> {
+            Intent xr = new Intent(this, XrVideoActivity.class);
+            xr.setAction(Intent.ACTION_MAIN);
+            xr.addCategory("org.khronos.openxr.intent.category.IMMERSIVE_HMD");
+            startActivity(xr);
+            return true;
+        });
+
         SubMenu experiments = videoMenu.addSubMenu("Latency experiments");
         LatencyExperiments ex = LatencyExperiments.load(this);
         addRestartingToggle(experiments, "Decoder: decode order (qti)",
@@ -781,6 +790,51 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                 LatencyExperiments.KEY_DEC_PREFER_LOW_LATENCY_COMPONENT, ex.decPreferLowLatencyComponent);
         addRestartingToggle(experiments, "Decoder: whole access units",
                 LatencyExperiments.KEY_AU_AGGREGATION, ex.auAggregation);
+
+        // XR levers are read when the XR activity starts, so they need no restart.
+        SubMenu refresh = experiments.addSubMenu("XR refresh: " + ex.xrRefreshHz + " Hz");
+        for (int hz : LatencyExperiments.SUPPORTED_REFRESH_HZ) {
+            refresh.add(hz + " Hz").setOnMenuItemClickListener(i -> {
+                putXrPref(e -> e.putInt(LatencyExperiments.KEY_XR_REFRESH_HZ, hz));
+                return true;
+            });
+        }
+        SubMenu fov = experiments.addSubMenu("XR size: " + Math.round(ex.xrFovDeg) + " deg");
+        for (int deg : new int[]{40, 50, 60, 70, 80, 90}) {
+            fov.add(deg + " deg").setOnMenuItemClickListener(i -> {
+                putXrPref(e -> e.putFloat(LatencyExperiments.KEY_XR_FOV_DEG, deg));
+                return true;
+            });
+        }
+        addXrToggle(experiments, "XR: curved layer", ex.xrLayerShape == LatencyExperiments.LayerShape.CYLINDER,
+                on -> e -> e.putString(LatencyExperiments.KEY_XR_LAYER_SHAPE,
+                        (on ? LatencyExperiments.LayerShape.CYLINDER : LatencyExperiments.LayerShape.QUAD).prefValue()));
+        addXrToggle(experiments, "XR: present by timestamp", ex.xrUseTimestamps,
+                on -> e -> e.putBoolean(LatencyExperiments.KEY_XR_USE_TIMESTAMPS, on));
+        addXrToggle(experiments, "XR: CPU/GPU sustained high", ex.xrPerfSustainedHigh,
+                on -> e -> e.putBoolean(LatencyExperiments.KEY_XR_PERF_SUSTAINED_HIGH, on));
+        addXrToggle(experiments, "XR: flip image vertically", ex.xrFlipVertical,
+                on -> e -> e.putBoolean(LatencyExperiments.KEY_XR_FLIP_VERTICAL, on));
+    }
+
+    private void putXrPref(java.util.function.Consumer<SharedPreferences.Editor> write) {
+        SharedPreferences.Editor e = getSharedPreferences(LatencyExperiments.PREFS_NAME, MODE_PRIVATE).edit();
+        write.accept(e);
+        e.apply();
+    }
+
+    private void addXrToggle(SubMenu menu, String title, boolean current,
+                             java.util.function.Function<Boolean,
+                                     java.util.function.Consumer<SharedPreferences.Editor>> writer) {
+        MenuItem item = menu.add(title);
+        item.setCheckable(true);
+        item.setChecked(current);
+        item.setOnMenuItemClickListener(i -> {
+            boolean on = !i.isChecked();
+            i.setChecked(on);
+            putXrPref(writer.apply(on));
+            return true;
+        });
     }
 
     /**
@@ -1544,23 +1598,18 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     public void registerReceivers() {
-        IntentFilter usbFilter = WfbLinkManager.usbIntentFilter();
+        wfbLinkManager.register();
         IntentFilter batFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 
         if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(wfbLinkManager, usbFilter, Context.RECEIVER_NOT_EXPORTED);
             registerReceiver(batteryReceiver, batFilter, Context.RECEIVER_NOT_EXPORTED);
         } else {
-            registerReceiver(wfbLinkManager, usbFilter);
             registerReceiver(batteryReceiver, batFilter);
         }
     }
 
     public void unregisterReceivers() {
-        try {
-            unregisterReceiver(wfbLinkManager);
-        } catch (IllegalArgumentException ignored) {
-        }
+        wfbLinkManager.unregister();
         try {
             unregisterReceiver(batteryReceiver);
         } catch (IllegalArgumentException ignored) {

@@ -1,0 +1,224 @@
+package com.openipc.pixelpilot;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.view.WindowManager;
+import android.widget.Toast;
+
+import com.openipc.videonative.DecodingInfo;
+import com.openipc.videonative.IVideoParamsChanged;
+import com.openipc.videonative.LatencyExperiments;
+import com.openipc.videonative.VideoPlayer;
+import com.openipc.wfbngrtl8812.WfbNGStats;
+import com.openipc.wfbngrtl8812.WfbNGStatsChanged;
+import com.openipc.wfbngrtl8812.WfbNgLink;
+import com.openipc.xr.LayerLayout;
+import com.openipc.xr.XrBridge;
+
+import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Immersive viewer: MediaCodec renders straight into a compositor-owned surface shown as a
+ * head-locked layer. The OpenXR session state is the only owner of video start/stop, so the
+ * decoder never writes while the session is not VISIBLE/FOCUSED.
+ */
+public class XrVideoActivity extends Activity implements IVideoParamsChanged, WfbNGStatsChanged,
+        XrBridge.Listener, LinkStatusListener {
+    private static final String TAG = "pixelpilot-xr";
+    private static final long STATS_PERIOD_MS = 250;
+    private static final long INACTIVE_TIMEOUT_MS = 2000;
+
+    private final Handler ui = new Handler(Looper.getMainLooper());
+    private LatencyExperiments experiments;
+    private XrBridge xr;
+    private XrStatsRenderer stats;
+    private VideoPlayer videoPlayer;
+    private WfbNgLink wfbLink;
+    private WfbLinkManager wfbLinkManager;
+    private boolean videoAttached;
+    private volatile boolean destroying;
+    private volatile DecodingInfo lastDecoding;
+    private volatile WfbNGStats lastLink;
+    private volatile String linkStatus = "";
+    private volatile int videoW, videoH;
+
+    private final Runnable statsTick = new Runnable() {
+        @Override
+        public void run() {
+            if (stats != null) stats.draw(statsLines());
+            ui.postDelayed(this, STATS_PERIOD_MS);
+        }
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        experiments = LatencyExperiments.load(this);
+
+        xr = new XrBridge(this);
+        String error = xr.start(this, experiments.xrRefreshHz, experiments.xrUseTimestamps,
+                experiments.xrPerfSustainedHigh);
+        if (error != null) {
+            // No silent fallback to a slower path: a measurement would not know it changed.
+            Log.e(TAG, "XR unavailable: " + error);
+            Toast.makeText(this, "XR mode unavailable: " + error, Toast.LENGTH_LONG).show();
+            xr.stop();
+            xr = null;
+            finish();
+            return;
+        }
+        applyLayout();
+        stats = new XrStatsRenderer(xr.statsSurface());
+
+        videoPlayer = new VideoPlayer(this);
+        videoPlayer.setIVideoParamsChanged(this);
+        videoPlayer.setDecoderLevers(experiments);
+
+        wfbLink = new WfbNgLink(this);
+        wfbLink.SetWfbNGStatsChanged(this);
+        wfbLinkManager = new WfbLinkManager(this, this, wfbLink);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (xr == null) return;
+        wfbLinkManager.register();
+        wfbLinkManager.setChannel(VideoActivity.getChannel(this));
+        wfbLinkManager.setBandwidth(VideoActivity.getBandwidth(this));
+        wfbLinkManager.refreshAdapters();
+        wfbLinkManager.startAdapters();
+        if (!WfbServiceControl.startVpn(this, false)) {
+            onLinkStatus("VPN not granted - start PixelPilot in 2D once to allow it");
+        }
+        ui.post(statsTick);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (xr == null) return;
+        ui.removeCallbacks(statsTick);
+        wfbLinkManager.unregister();
+        wfbLinkManager.stopAdapters();
+        WfbServiceControl.stopVpn(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        destroying = true;
+        detachVideo();          // stop writing before the session ends (no callback round-trip)
+        if (xr != null) xr.stop();
+        super.onDestroy();
+    }
+
+    // ---- XR session (called on the XR thread) ------------------------------------------------
+
+    @Override
+    public void onSessionEvent(XrBridge.SessionEvent event) {
+        switch (event) {
+            case ACTIVE:
+                ui.post(this::attachVideo);
+                break;
+            case INACTIVE:
+                if (destroying) return; // onDestroy already detached; the UI thread is joining us
+                CountDownLatch done = new CountDownLatch(1);
+                ui.post(() -> {
+                    detachVideo();
+                    done.countDown();
+                });
+                try {
+                    if (!done.await(INACTIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                        Log.w(TAG, "video detach timed out before xrEndSession");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                break;
+            case EXITING:
+                ui.post(this::finish);
+                break;
+        }
+    }
+
+    private void attachVideo() {
+        if (videoAttached || destroying || xr == null) return;
+        videoPlayer.addAndStartDecoderReceiver(xr.videoSurface(), 0);
+        videoPlayer.start();
+        videoAttached = true;
+        Log.i(TAG, "video attached to the compositor surface");
+    }
+
+    private void detachVideo() {
+        if (!videoAttached) return;
+        videoPlayer.stopAndRemoveReceiverDecoder(0);
+        videoAttached = false;
+        Log.i(TAG, "video detached");
+    }
+
+    private void applyLayout() {
+        xr.setLayout(LayerLayout.compute(videoW, videoH, experiments.xrFovDeg, LayerLayout.DEFAULT_DISTANCE_M,
+                experiments.xrLayerShape == LatencyExperiments.LayerShape.CYLINDER, experiments.xrFlipVertical));
+    }
+
+    // ---- callbacks from the player / link (background threads) ------------------------------
+
+    @Override
+    public void onVideoRatioChanged(int w, int h) {
+        videoW = w;
+        videoH = h;
+        ui.post(() -> {
+            if (xr != null) applyLayout();
+        });
+    }
+
+    @Override
+    public void onDecodingInfoChanged(DecodingInfo decodingInfo) {
+        lastDecoding = decodingInfo;
+    }
+
+    @Override
+    public void onWfbNgStatsChanged(WfbNGStats data) {
+        lastLink = data;
+    }
+
+    @Override
+    public void onLinkStatus(String message) {
+        linkStatus = message;
+    }
+
+    @Override
+    public void onUdpFallbackAddress(String udpUrl) {
+        linkStatus = "No adapter - push RTP to " + udpUrl;
+    }
+
+    private String[] statsLines() {
+        XrBridge.Info info = xr.info();
+        DecodingInfo d = lastDecoding;
+        WfbNGStats l = lastLink;
+        return new String[]{
+                String.format(Locale.US, "XR %s Hz (req %.0f)  comp GPU %s ms  drop %s",
+                        num(info.refreshHz), info.requestedHz, num(info.compositorGpuMs), num(info.droppedFrames)),
+                d == null ? "video: waiting for stream"
+                        : String.format(Locale.US, "%dx%d  %.0f fps  %.1f Mbit/s", videoW, videoH, d.currentFPS,
+                        d.currentKiloBitsPerSecond / 1000f),
+                d == null ? "" : String.format(Locale.US, "decode %.2f ms  parse %.2f ms  wait %.2f ms",
+                        d.avgTotalDecodingTime_ms, d.avgParsingTime_ms, d.avgWaitForInputBTime_ms),
+                "dec: " + videoPlayer.getDecoderSummary(),
+                "exp: " + experiments.summary(),
+                l == null ? "link: no stats" : String.format(Locale.US, "link: rssi %d  lost %d  fec %d  bad %d",
+                        l.avg_rssi, l.count_p_lost, l.count_p_fec_recovered, l.count_p_bad),
+                linkStatus,
+        };
+    }
+
+    private static String num(float v) {
+        return v < 0 ? "n/a" : String.format(Locale.US, "%.1f", v);
+    }
+}
