@@ -2,6 +2,7 @@ package com.openipc.videonative;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 
 /**
  * Single source of truth for every latency lever: pref keys, defaults and validation.
@@ -64,10 +65,12 @@ public final class LatencyExperiments {
     public final boolean xrFlipVertical;
     public final boolean xrThreadHints;
 
-    private LatencyExperiments(PrefSource p) {
+    private LatencyExperiments(PrefSource p, boolean metaHeadset) {
         lowLatencyDecoder = p.getBoolean(KEY_LOW_LATENCY_DECODER, true);
         decPictureOrder = p.getBoolean(KEY_DEC_PICTURE_ORDER, false);
-        decOperatingRate = p.getBoolean(KEY_DEC_OPERATING_RATE, false);
+        // Quest 2 measurement (docs/xr-quest.md): decode 10.15 -> 4.99 ms, N=3. Phones keep it off:
+        // some Qualcomm decoders fail with it (moonlight-android MediaCodecHelper).
+        decOperatingRate = p.getBoolean(KEY_DEC_OPERATING_RATE, metaHeadset);
         decPreferLowLatencyComponent = p.getBoolean(KEY_DEC_PREFER_LOW_LATENCY_COMPONENT, false);
         auAggregation = p.getBoolean(KEY_AU_AGGREGATION, false);
         xrRefreshHz = validRefresh(p.getInt(KEY_XR_REFRESH_HZ, DEFAULT_REFRESH_HZ));
@@ -80,7 +83,17 @@ public final class LatencyExperiments {
     }
 
     public static LatencyExperiments from(PrefSource source) {
-        return new LatencyExperiments(new DefaultOnWrongType(source));
+        return from(source, false);
+    }
+
+    /** @param metaHeadset device-dependent defaults for Meta Quest headsets (see isMetaHeadset). */
+    public static LatencyExperiments from(PrefSource source, boolean metaHeadset) {
+        return new LatencyExperiments(new DefaultOnWrongType(source), metaHeadset);
+    }
+
+    /** Quest headsets report "Oculus" (older OS) or "Meta" as Build.MANUFACTURER. */
+    public static boolean isMetaHeadset(String manufacturer) {
+        return "Oculus".equalsIgnoreCase(manufacturer) || "Meta".equalsIgnoreCase(manufacturer);
     }
 
     /**
@@ -118,7 +131,7 @@ public final class LatencyExperiments {
             public int getInt(String k, int d) { return sp.getInt(k, d); }
             public float getFloat(String k, float d) { return sp.getFloat(k, d); }
             public String getString(String k, String d) { return sp.getString(k, d); }
-        });
+        }, isMetaHeadset(Build.MANUFACTURER));
     }
 
     static int validRefresh(int hz) {

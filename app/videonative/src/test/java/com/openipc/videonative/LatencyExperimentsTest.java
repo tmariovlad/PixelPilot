@@ -81,6 +81,26 @@ public class LatencyExperimentsTest {
         public String getString(String k, String d) { throw new ClassCastException("Float cannot be cast to String"); }
     }
 
+    // Measured on Quest 2 (docs/xr-quest.md): max operating rate halves the decode time, so it is the
+    // default there; phones keep it off (moonlight saw Qualcomm decoders fail with it).
+    @Test public void operatingRateDefaultsOnOnlyForMetaHeadsets() {
+        assertTrue(LatencyExperiments.from(new MapPrefs(), true).decOperatingRate);
+        assertFalse(LatencyExperiments.from(new MapPrefs(), false).decOperatingRate);
+        assertFalse(LatencyExperiments.from(new MapPrefs()).decOperatingRate);
+    }
+
+    @Test public void storedOperatingRateOverridesTheDeviceDefault() {
+        MapPrefs off = new MapPrefs().put(LatencyExperiments.KEY_DEC_OPERATING_RATE, false);
+        assertFalse(LatencyExperiments.from(off, true).decOperatingRate);
+    }
+
+    @Test public void metaHeadsetDetection() {
+        assertTrue(LatencyExperiments.isMetaHeadset("Oculus"));
+        assertTrue(LatencyExperiments.isMetaHeadset("Meta"));
+        assertFalse(LatencyExperiments.isMetaHeadset("samsung"));
+        assertFalse(LatencyExperiments.isMetaHeadset(null));
+    }
+
     // Final review Minor 3: a wrong-typed stored pref must fall back to the default, not crash.
     @Test public void wrongTypedPrefsFallBackToDefaults() {
         LatencyExperiments e = LatencyExperiments.from(new WrongTypePrefs());
