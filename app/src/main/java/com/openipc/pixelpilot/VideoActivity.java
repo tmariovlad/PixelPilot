@@ -13,9 +13,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.hardware.usb.UsbManager;
 import android.net.Uri;
-import android.net.VpnService;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
@@ -126,6 +124,21 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     protected DecodingInfo mDecodingInfo;
     int lastVideoW = 0, lastVideoH = 0, lastCodec = 1;
     WfbLinkManager wfbLinkManager;
+
+    /** Shows WfbLinkManager's status on the 2D overlay (binding is assigned before any use). */
+    private final LinkStatusListener linkStatusToUi = new LinkStatusListener() {
+        @Override
+        public void onLinkStatus(String message) {
+            binding.tvMessage.setVisibility(View.VISIBLE);
+            binding.tvMessage.setText(message);
+        }
+
+        @Override
+        public void onUdpFallbackAddress(String udpUrl) {
+            binding.wifiMessage.setText(udpUrl);
+            binding.wifiMessage.setVisibility(View.VISIBLE);
+        }
+    };
     BroadcastReceiver batteryReceiver;
     VideoPlayer videoPlayer;
     private ActivityVideoBinding binding;
@@ -369,7 +382,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         copyGSKey();
         wfbLink = new WfbNgLink(this);
         wfbLink.SetWfbNGStatsChanged(this);
-        wfbLinkManager = new WfbLinkManager(this, binding, wfbLink);
+        wfbLinkManager = new WfbLinkManager(this, linkStatusToUi, wfbLink);
     }
 
     // ----------------------------------------------------------------------------
@@ -1318,15 +1331,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     // VPN SERVICE
     // ----------------------------------------------------------------------------
     private void startVpnService() {
-        int VPN_REQUEST_CODE = 100;
-
-        Intent intent = VpnService.prepare(this);
-        if (intent != null) {
-            startActivityForResult(intent, VPN_REQUEST_CODE);
-        } else {
-            Intent serviceIntent = new Intent(this, WfbNgVpnService.class);
-            startService(serviceIntent);
-        }
+        WfbServiceControl.startVpn(this, true);
 
     }
 
@@ -1479,7 +1484,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             if (data != null && data.getData() != null) {
                 handleSelectedModelUri(data);
             }
-        } else if (requestCode == 100) {  // VPN_REQUEST_CODE is 100
+        } else if (requestCode == WfbServiceControl.VPN_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 // VPN permission granted, start the VPN service
                 Intent serviceIntent = new Intent(this, WfbNgVpnService.class);
@@ -1539,10 +1544,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     public void registerReceivers() {
-        IntentFilter usbFilter = new IntentFilter();
-        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-        usbFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
-        usbFilter.addAction(WfbLinkManager.ACTION_USB_PERMISSION);
+        IntentFilter usbFilter = WfbLinkManager.usbIntentFilter();
         IntentFilter batFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 
         if (Build.VERSION.SDK_INT >= 33) {
@@ -1579,9 +1581,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
         // Stop VPN service
         Log.w(TAG, "onPause: stopping service");
-        Intent intent = new Intent(this, WfbNgVpnService.class);
-        intent.setAction("STOP_SERVICE");
-        startService(intent);
+        WfbServiceControl.stopVpn(this);
     }
 
     @Override

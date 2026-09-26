@@ -4,12 +4,11 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.util.Log;
-import android.view.View;
 
-import com.openipc.pixelpilot.databinding.ActivityVideoBinding;
 import com.openipc.wfbngrtl8812.WfbNgLink;
 
 import java.util.HashMap;
@@ -22,7 +21,7 @@ public class WfbLinkManager extends BroadcastReceiver {
     private static final String TAG = "pixelpilot";
     static Map<String, UsbDevice> activeWifiAdapters = new HashMap<>();
     private final WfbNgLink wfbLink;
-    private final ActivityVideoBinding binding;
+    private final LinkStatusListener status;
     private final Context context;
     private int wifiChannel;
     private Bandwidth bandWidth;
@@ -42,10 +41,19 @@ public class WfbLinkManager extends BroadcastReceiver {
         }
     }
 
-    public WfbLinkManager(Context context, ActivityVideoBinding binding, WfbNgLink wfbNgLink) {
-        this.binding = binding;
+    public WfbLinkManager(Context context, LinkStatusListener status, WfbNgLink wfbNgLink) {
+        this.status = status;
         this.context = context;
         this.wfbLink = wfbNgLink;
+    }
+
+    /** The broadcasts this receiver handles; register it with exactly this filter. */
+    public static IntentFilter usbIntentFilter() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
+        filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
+        filter.addAction(ACTION_USB_PERMISSION);
+        return filter;
     }
 
     public void refreshKey() {
@@ -143,8 +151,7 @@ public class WfbLinkManager extends BroadcastReceiver {
                 (android.hardware.usb.UsbManager) context.getSystemService(Context.USB_SERVICE);
         for (Map.Entry<String, UsbDevice> entry : attachedAdapters.entrySet()) {
             if (!usbManager.hasPermission(entry.getValue())) {
-                binding.tvMessage.setVisibility(View.VISIBLE);
-                binding.tvMessage.setText("No permission for wifi adapter(s) " + entry.getValue().getDeviceName());
+                status.onLinkStatus("No permission for wifi adapter(s) " + entry.getValue().getDeviceName());
                 // Android 14 refuses to deliver a PendingIntent built from an implicit
                 // intent to a runtime registered receiver, so the permission result never
                 // arrives unless the package is set explicitly.
@@ -194,14 +201,11 @@ public class WfbLinkManager extends BroadcastReceiver {
             String text = startFailed
                     ? "Wifi adapter found but could not be started - see the log."
                     : "No compatible wifi adapter found.";
-            binding.tvMessage.setText(text);
-            binding.tvMessage.setVisibility(View.VISIBLE);
+            status.onLinkStatus(text);
 
             String wifi = VideoActivity.wirelessInfo(context);
             if (wifi != null) {
-                String local = "udp://" + wifi + ":5600";
-                binding.wifiMessage.setText(local);
-                binding.wifiMessage.setVisibility(View.VISIBLE);
+                status.onUdpFallbackAddress("udp://" + wifi + ":5600");
             }
         }
     }
@@ -233,12 +237,11 @@ public class WfbLinkManager extends BroadcastReceiver {
     }
 
     public synchronized boolean startAdapter(UsbDevice dev) {
-        binding.tvMessage.setVisibility(View.VISIBLE);
         String text = "Starting wfb-ng channel " + wifiChannel + " with " + String.format(
                 "[%04X", dev.getVendorId()) + ":" + String.format("%04X]", dev.getProductId());
-        binding.tvMessage.setText(text);
+        status.onLinkStatus(text);
         if (!wfbLink.start(wifiChannel, bandWidth.getValue(), dev)) {
-            binding.tvMessage.setText("Could not open wifi adapter " + dev.getDeviceName());
+            status.onLinkStatus("Could not open wifi adapter " + dev.getDeviceName());
             return false;
         }
         return true;
