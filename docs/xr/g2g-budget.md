@@ -71,3 +71,30 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 **Updated budget at 640×480 @ 167 fps:** 30.7 ms − 4.5 ms (2000 kbit/s) ≈ 26 ms; with the phase lock (−2.4 ms measured on the Wi-Fi rig, [compositor-phase.md](compositor-phase.md)) ≈ 24 ms [INFERRED: the inferred total above minus measured deltas; the bitrate and FEC gains are not additive, both shrink the same airtime].
 
 **Seen during the slot, not explained:** once, after the air unit restarted from 1080p90 to 640×480 while the app ran, the decoder took 78 ms per frame, the app lost ~65 RTP packets/s and arrivals lagged up to 0.9 s, until the app was restarted [PROVEN: logcat `Decoding:78.7`, trace `ab_check640`]. Five further switches in both directions, on the old build and on a build that rebuilds the decoder on every SPS change, all decoded normally (1.4–2.0 ms), so that cause is **not proven** and the build was not kept; the patch is in [patches/decoder-reconfigure-on-sps-change.patch](patches/decoder-reconfigure-on-sps-change.patch). See [troubleshooting.md](troubleshooting.md#more-traps-hit-on-2026-09-2627).
+
+## MCS × bitrate at 1080p90, measured in one trace (2026-09-27, slot 3)
+
+**Question:** can the 1080p90 stream carry more bitrate for picture quality, and what does that cost in latency?
+
+**Setup.** Air unit at **1920×1080 @ 90 fps** (sensor mode 2, 2×2 binning, full field of view), H.264 CBR, wfb-ng 20 MHz, long GI, STBC + LDPC, FEC 4/6, in the same room as the headset. Same method as slot 2 above: one 240 s Perfetto trace ([ab_long.sh](../../scripts/quest/ab_long.sh)), a timed loop on the air unit with 12 s steps. The loop ran `m2b8 m3b12 m2b8 m4b16 m2b8 m4b12 m2b8 m3b12 m2b8 m4b16 m2b8`, where mN = MCS N and bK = K Mbit/s; N = 2 for m3b12 and m4b16, N = 1 for m4b12.
+- The MCS was changed live with `wfb_tx_cmd 9000 set_radio` (all radio fields resent). `get_radio` before and after was identical, and `wfb_tx` kept the same PID. The bitrate was changed live through waybeam's API.
+- On the way up the loop set MCS first, then bitrate; on the way down, bitrate first. Each step label was written after the second command. This ran on the OpenIPC side (session openipc-…-3a).
+- Drift fitted on m2b8: +70 ppm. The step offset was fitted from packets/frame (+0.57 s against the +1.01 s measured with the clocks, which were only accurate to ±36 ms, adb RTT 72 ms).
+
+[PROVEN: [data](data/measurements-2026-09-27-quest2-mcs-ab.csv), [air step log](data/steps-2026-09-27-mcs.txt), [loss per step](data/loss-2026-09-27-mcs.txt) from [ab_loss.py](../../scripts/quest-latch/ab_loss.py)]
+
+| state | packets/frame | frame spread | Δ capture → frame complete | Δ capture → decoded | per repeat | lost after FEC | frames not decoded |
+|---|---|---|---|---|---|---|---|
+| MCS2, 8 Mbit/s (baseline) | 8.58 | 7.83 ms | 0 | 0 | | 0.10 % | 5 / 4582 |
+| MCS3, 12 Mbit/s | 12.66 | 9.49 ms | +2.41 | **+2.64 ms** | +2.53 / +2.74 | 0.24 % | 1 / 1542 |
+| MCS4, 16 Mbit/s | 16.83 | 9.29 ms | +1.55 | **+1.76 ms** | +1.75 / +1.75 | 0.16 % | 0 / 1545 |
+| MCS4, 12 Mbit/s | 12.72 | 6.91 ms | −1.40 | **−1.23 ms** | (N = 1) | 0.16 % | 0 / 771 |
+
+- **The latency follows airtime per frame, not bitrate alone** [INFERRED: the spread column tracks the Δ columns].
+  - MCS4 at 12 Mbit/s carries 1.5× the baseline bitrate and is still 1.2 ms faster, because each frame spends less time on the radio.
+  - MCS3 at 12 Mbit/s is the worst point: 50 % more bytes at only 33 % more PHY rate.
+  - This agrees with slot 2, where a lower bitrate at a fixed MCS saved time for the same reason.
+- **Loss:** every state lost ≤ 0.24 % of packets after FEC, and the higher rates left no frame undecoded. So on the bench MCS4 carries 16 Mbit/s cleanly [PROVEN: loss file].
+- **Range was not tested.** MCS4 needs more SNR than MCS2, so its range is shorter [INFERRED: 802.11n MCS SNR requirements, not measured here]. Check it at flying distance before using MCS4 in the air.
+- **Picture quality:** the visual comparison in the headset is recorded below once done.
+- **Frame rate** stayed 90.5 fps at every step.

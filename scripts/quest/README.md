@@ -127,6 +127,7 @@ run while a timed loop on the air unit switches the lever (A B A C A …) and lo
 ```bash
 bash ab_long.sh bitrate 120            # lean trace (quest-latch/transport_long.pbtx) + Quest-minus-PC clock offset
 python3 ../quest-latch/ab_segments.py out/ab_bitrate.pftrace steps.txt --air-offset-s <(quest-pc) - (air-pc)>
+python3 ../quest-latch/ab_loss.py out/ab_bitrate.pftrace steps.txt <offset ab_segments used>   # loss + undecoded frames per step
 ```
 
 `ab_segments.py` fits the drift on the baseline steps only and prints, per step and per state, fps, packets/frame,

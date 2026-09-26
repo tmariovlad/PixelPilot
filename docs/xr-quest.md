@@ -118,6 +118,8 @@ The dated result sections that used to follow here were moved verbatim into topi
   (≈ 23–40 range) at 166.6 fps with 0 packets lost. B2 (2.91 ms mean) is MCS2 airtime of ~1357 B packets plus FEC parity
   landing inside the next frame (corrected 2026-09-27); realistic floor on Quest 2 with the open levers ≈ 25–27 ms (slice sending closed), 20 ms not reachable.
   **Measured 2026-09-27** ([in-trace A/B](xr/g2g-budget.md#air-unit-levers-measured-in-one-trace-2026-09-27-slot-2)): bitrate 8000 → 4000 / 2000 kbit/s = −2.7 / −4.5 ms capture → decoded, FEC 4/6 → 4/5 = −1.5 ms, 8/12 no effect.
+  **At 1080p90** ([slot 3](xr/g2g-budget.md#mcs--bitrate-at-1080p90-measured-in-one-trace-2026-09-27-slot-3)): relative to MCS2 at 8 Mbit/s,
+  MCS4 at 12 Mbit/s is −1.2 ms, MCS4 at 16 Mbit/s +1.8 ms and MCS3 at 12 Mbit/s +2.6 ms capture → decoded; ≤ 0.24 % loss after FEC on the bench (range untested).
 - **[Transport choice](xr/transport-choice.md)** ([measured](xr/transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)): at 1080p90 in one room,
   **withdrawn:** the APFPV runs of 2026-09-27 were at ~1000 kbit/s vs 8000 on wfb (a stale `.orig_bitrate` in
   `linkmode-air.sh`), so the comparison is not fair; APFPV must be re-run at 8000. Boot default still wfb; APFPV through the RTL needs devourer station mode
