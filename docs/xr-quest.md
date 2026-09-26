@@ -164,10 +164,55 @@ Setup: OR-only defaults at the time, 12 s single-slice streams, N = 3 shuffled r
 - **Multi-slice H.264** (x264 `--tune zerolatency` uses sliced threads) makes PixelPilot send each slice as its own "frame". Such a stream needs **whole access units** (`au_aggregation`) or a single-slice encoder setting. The OpenIPC air unit's majestic encoder is single-slice by default [SPECULATION: not checked on the air unit].
 - Decode is now ~1.5–2.5 ms. On Quest 2 the fixed display and compositor terms dominate G2G (up to 8.3 ms of refresh wait at 120 Hz plus the panel scan-out and backlight strobe). The next real gain can only be measured with the photodiode and the RTL8812AU.
 
+### Compositor phase, measured (2026-09-26)
+
+Question: when does Horizon take the video frame relative to vsync, and how long does a decoded frame wait?
+
+Method: a system-wide Perfetto trace (9 s) while the XR app shows H.264 720p60 over Wi-Fi. Config and analysis: [scripts/quest-latch/](../scripts/quest-latch/) (`compositor.pbtx`, `latch_analyze.py`).
+- Anchors:
+  - the display HAL's DRM vsync callback (`SDM_EventThread` `HWEventsDRM::VSyncHandlerCallback`);
+  - the latch, i.e. `acquireBuffer` of our video `SurfaceTexture` on `OVR::TimeWarp` in `com.oculus.vrruntimeservice`;
+  - the compositor passes (`dequeueBuffer - TotallyFake`);
+  - frame ready (`queueBuffer` on the decoder's `CodecLooper`).
+- Kernel `drm`/`sde` ftrace events are not recorded on this user build. The SurfaceFlinger `HW_VSYNC` counter jitters by ±0.5 ms, so it is not used.
+
+| Quantity | 120 Hz | 120 Hz + timestamps | 90 Hz |
+|---|---|---|---|
+| Latch → next vsync (mean, p5–p95) | **2.14** (1.93–2.39) | 2.15 (1.98–2.32) | 2.22 (2.13–2.34) |
+| Latch → compositor pass start | 0.40 | 0.40 | 0.42 |
+| Compositor pass interval | 4.18 (2 per frame) | 4.18 | 5.57 |
+| Frame ready → latch (mean, p5–p95, max) | **4.03** (0.13–7.64, 8.20) | 4.12 | 5.19 (max 10.82) |
+| Decoded frames never latched | 99 / 513 | 5 / 522 | 16 / 522 |
+
+- **The latch comes a fixed ~2.1–2.2 ms before vsync**, whatever the refresh rate and timestamp mode. It is not a full frame, nor half a frame [PROVEN: trace]. The earlier half-frame estimate (research report 04) is corrected there.
+- The compositor runs two passes per frame, one per display half. **The video buffer is taken only before the first pass**, and the second pass (~2.2 ms after vsync) reuses it [PROVEN].
+- **Latch → light.** The kernel places each backlight half's flash at ~8.0 ms and ~11.35 ms after vsync at 120 Hz (0.5–0.8 ms long depending on brightness) [PROVEN: `dsi_panel.c:780-860` in Meta's Quest 2 kernel + `hollywood-dsi-panel-boe-dsc-4k-120Hz-video.dtsi`]. So latch → mid-flash is **10.2 / 13.5 ms, ~11.9 ms averaged** [INFERRED: measured latch + kernel offsets; not yet photodiode-checked].
+- **The wait is the only term the app side can still shrink.** It is uniform between 0 and the smaller of the air frame period and the display period. That gives a mean of ~4.2 ms with a 120 fps air unit, ~3.0 ms at 167 fps and ~2.1 ms at 240 fps [INFERRED]. With a 120 fps air unit and an unsynchronised clock, the phase drifts slowly, so latency wanders across the whole 0–8.3 ms range over minutes [INFERRED: crystal ppm offsets].
+- Buffer selection:
+  - Without timestamps, 99 frames that arrived in pairs over Wi-Fi were replaced before any latch. That fits replace-latest, i.e. mailbox, behaviour [INFERRED].
+  - With timestamps, almost every frame was shown, which fits queue (FIFO) behaviour that would add latency. This is a single run [SPECULATION], so keep `xr_use_timestamps` off.
+- **Levers that do not move the latch:** refresh rate, timestamp mode [PROVEN]. Research report 04 found no property or extension that moves it either. At 120 Hz a 60 fps stream is latched at the next opportunity, and 120 Hz beats 90 Hz by ~1.2 ms of wait plus the shorter panel path.
+- Side note: the OpenXR runtime client calls `eglGetDisplay` and `open` once per frame on our XR thread, ~30 µs each time. This is not on the video path.
+
+**Resulting G2G estimate, with the air unit at 480p/167 fps:**
+
+| Segment | ms | Tag |
+|---|---|---|
+| LED → RTP arrival (air + link) | ~11.2 | from the measured 20.3 ms monitor chain |
+| Decode | ~1.5 | measured |
+| Wait for latch | ~3.0 (0–6) | inferred |
+| Latch → light | ~11.9 (10.2–13.5) | inferred |
+| **Total** | **~27.5 (≈23–33)** | inferred |
+
+**Next lever: phase-lock the air unit to the Quest.**
+- The app can see the vsync grid (Choreographer or `xrWaitFrame`'s `predictedDisplayTime`) and each frame's arrival time.
+- It would send the air unit a small frame-period correction, a few sensor lines of VMAX, so frames arrive ~1 ms before the latch. That gives a mean wait of ~1 ms and stable latency, −2…3 ms [INFERRED].
+- It needs an uplink and air-side support, so it is a separate project.
+
 ## Open questions (to settle on the device)
 
-- Does the Horizon compositor treat the surface swapchain as replace-latest (mailbox) when
-  `USE_TIMESTAMPS` is off, as the spec implies?
+- ~~Does the Horizon compositor treat the surface swapchain as replace-latest (mailbox) when
+  `USE_TIMESTAMPS` is off, as the spec implies?~~ Likely yes (see "Compositor phase, measured"); a frame-number check would confirm it.
 - Is the Android surface image upside-down without the vertical flip on current Horizon OS (CitraVR says yes)?
 - Does the XR2 expose `c2.qti.{avc,hevc}.decoder.low_latency`, and does its Codec2 HAL honour
   `vendor.qti-ext-dec-picture-order.enable`? (The `dec:` line shows which component was created.)

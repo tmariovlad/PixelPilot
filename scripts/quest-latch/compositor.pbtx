@@ -1,0 +1,26 @@
+buffers { size_kb: 131072 fill_policy: RING_BUFFER }
+data_sources { config { name: "linux.process_stats" process_stats_config { scan_all_processes_on_start: true } } }
+data_sources {
+  config {
+    name: "linux.ftrace"
+    ftrace_config {
+      ftrace_events: "sched/sched_switch"
+      ftrace_events: "sched/sched_waking"
+      ftrace_events: "drm/drm_vblank_event"
+      ftrace_events: "drm/drm_vblank_event_queued"
+      ftrace_events: "sde/tracing_mark_write"
+      ftrace_events: "msm_vidc_events/*"
+      ftrace_events: "dma_fence/*"
+      ftrace_events: "power/suspend_resume"
+      atrace_categories: "gfx"
+      atrace_categories: "view"
+      atrace_categories: "video"
+      atrace_categories: "hal"
+      atrace_categories: "input"
+      atrace_apps: "*"
+      buffer_size_kb: 65536
+      drain_period_ms: 250
+    }
+  }
+}
+duration_ms: 9000
