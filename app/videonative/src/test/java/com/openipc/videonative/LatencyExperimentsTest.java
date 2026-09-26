@@ -81,7 +81,7 @@ public class LatencyExperimentsTest {
         public String getString(String k, String d) { throw new ClassCastException("Float cannot be cast to String"); }
     }
 
-    // Measured on Quest 2 (docs/xr-quest.md): max operating rate halves the decode time, so it is the
+    // Measured on Quest 2 (docs/xr/decoder-levers.md): max operating rate halves the decode time, so it is the
     // default there; phones keep it off (moonlight saw Qualcomm decoders fail with it).
     @Test public void operatingRateDefaultsOnOnlyForMetaHeadsets() {
         assertTrue(LatencyExperiments.from(new MapPrefs(), true).decOperatingRate);
@@ -89,7 +89,7 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(new MapPrefs()).decOperatingRate);
     }
 
-    // Re-measured on clean streams (docs/xr-quest.md): low-latency keys + operating rate beat operating
+    // Re-measured on clean streams (docs/xr/decoder-levers.md): low-latency keys + operating rate beat operating
     // rate alone on H.264 720p, H.265 720p and H.265 1080p, so Meta headsets keep the keys on too.
     @Test public void lowLatencyKeysDefaultOnForMetaHeadsets() {
         assertTrue(LatencyExperiments.from(new MapPrefs(), true).lowLatencyDecoder);
@@ -98,7 +98,7 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(off, true).lowLatencyDecoder);
     }
 
-    // Real OpenIPC stream on Quest 2 (docs/xr-quest.md, "First real link"): without decode-order output the
+    // Real OpenIPC stream on Quest 2 (docs/xr/real-link.md, "First real link"): without decode-order output the
     // OMX decoder holds ~16 frames (96 ms at 166 fps) because the SPS does not rule out reordering.
     @Test public void pictureOrderDefaultsOnOnlyForMetaHeadsets() {
         assertTrue(LatencyExperiments.from(new MapPrefs(), true).decPictureOrder);

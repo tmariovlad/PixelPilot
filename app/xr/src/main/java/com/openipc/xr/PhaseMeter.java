@@ -4,7 +4,7 @@ package com.openipc.xr;
  * Where decoded frames land relative to the compositor's latch grid.
  *
  * The Horizon compositor takes the newest video buffer once per display period, a fixed time before
- * vsync (docs/xr-quest.md, "Compositor phase, measured"). A frame queued at t waits until the next
+ * vsync (docs/xr/compositor-phase.md, "Compositor phase, measured"). A frame queued at t waits until the next
  * latch: wait = (latch - t) mod period. Averaged on the circle, because waits just below a period and
  * just above zero are the same phase. Pure function, no Android.
  */

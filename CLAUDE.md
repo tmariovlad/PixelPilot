@@ -1,0 +1,66 @@
+# pixelpilot-xr: PixelPilot fork with a native OpenXR mode for Meta Quest 2
+
+This repo is a fork of [OpenIPC PixelPilot](https://github.com/OpenIPC/PixelPilot) (the Android ground-station
+app for OpenIPC FPV: RTL8812AU over USB via devourer + wfb-ng, MediaCodec decode). Branch `xr-native` adds
+`XrVideoActivity`, which shows the stream inside an OpenXR session: MediaCodec decodes straight into a
+compositor-owned surface (`XR_KHR_android_surface_swapchain`) shown as a head-locked layer, with no app render
+pass. It also adds the decoder/XR latency levers under **Video → Latency experiments** and the tools to measure
+them on a Quest 2. The debug build installs as its own app, **PixelPilotXr** (`com.openipc.pixelpilot.xr`).
+Remotes: `origin` = fork `tmariovlad/PixelPilot`, `upstream` = `OpenIPC/PixelPilot`. This repo is the single
+home of all Quest work.
+
+## Documentation tree
+
+- [README.md](README.md): upstream PixelPilot readme, with a short "Quest native XR mode" section.
+- [docs/xr-quest.md](docs/xr-quest.md): **entry guide** (build/install, use, lever table, smoke checklist,
+  measuring, open questions, and the index of results below). Code comments and other projects link to this path.
+  - [docs/xr/decoder-levers.md](docs/xr/decoder-levers.md): decoder levers measured on Quest 2 (first on-device
+    results, key isolation, clean-stream recheck, codec/component/resolution).
+  - [docs/xr/compositor-phase.md](docs/xr/compositor-phase.md): compositor latch timing measured + phase-lock proof of concept.
+  - [docs/xr/real-link.md](docs/xr/real-link.md): first real link (Quest 2 + RTL8812AU + OpenIPC air unit): setup, keys, link id, picture order.
+  - [docs/xr/g2g-budget.md](docs/xr/g2g-budget.md): G2G budget per branch on the real link.
+  - [docs/xr/troubleshooting.md](docs/xr/troubleshooting.md): build traps, Horizon OS quirks, adapter/link problems.
+  - [docs/xr/data/](docs/xr/data/): raw measurement CSVs (linked from the topic files).
+- Design: [spec](docs/superpowers/specs/2026-09-26-quest-openxr-viewer-design.md) ·
+  [implementation plan](docs/superpowers/plans/2026-09-26-quest-openxr-viewer.md).
+- Research (moved in from the ev300d project): [Quest 2 research synthesis](docs/xr/research/2026-09-26-quest2/00-INDEX-SYNTHESIS.md) ·
+  [WSL start failure incident](docs/xr/research/wsl-start-failure-2026-09-26.md) ·
+  [research move report](docs/xr/research/MOVE-REPORT-2026-09-26.md).
+- Scripts: [scripts/quest/README.md](scripts/quest/README.md) (Quest test scripts) ·
+  [scripts/quest-latch/](scripts/quest-latch/) (Perfetto latch/transport analysis and the phase-lock stand-in:
+  [compositor.pbtx](scripts/quest-latch/compositor.pbtx), [latch_analyze.py](scripts/quest-latch/latch_analyze.py),
+  [transport_analyze.py](scripts/quest-latch/transport_analyze.py), [calibrate_latch.py](scripts/quest-latch/calibrate_latch.py),
+  [rtp_pace.py](scripts/quest-latch/rtp_pace.py), [test_rtp_pace.py](scripts/quest-latch/test_rtp_pace.py)).
+- Doc restructure log: [docs/xr/RESTRUCTURE-REPORT-2026-09-26.md](docs/xr/RESTRUCTURE-REPORT-2026-09-26.md).
+
+New results go into the matching `docs/xr/` topic file (raw data into `docs/xr/data/`), with a one-line summary
+in the "Results and deep dives" index of [docs/xr-quest.md](docs/xr-quest.md). Tag claims [PROVEN] / [INFERRED] /
+[SPECULATION] with a reference, as the existing sections do.
+
+## Rules for working here
+
+**Build (Windows, Git Bash)**
+- JDK 17 only: `export JAVA_HOME='C:\Program Files\Java\jdk-17'` (the default `java` is 25 and breaks Gradle 8.7 / AGP 8.5).
+- `local.properties`: `sdk.dir=C:/Users/<you>/AppData/Local/Android/Sdk` with **forward slashes**.
+- Submodules non-recursive, like CI: `git submodule update --init`.
+- `./gradlew assembleDebug`, then `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
+- More traps: [docs/xr/troubleshooting.md](docs/xr/troubleshooting.md).
+
+**Tests**
+- Host gtests (`AccessUnitAssembler`, `DecoderLevers`, `BufferedPacketQueue`) run in **WSL Ubuntu-22.04**
+  (Ubuntu-20.04 has no suitable CMake), from the repo root:
+  `cmake -S app/videonative/src/main/cpp/tests -B /tmp/ppxr-tests && cmake --build /tmp/ppxr-tests -j8 && (cd /tmp/ppxr-tests && ctest --output-on-failure)`.
+- JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTest`.
+
+**The headset**
+- The debug build (`com.openipc.pixelpilot.xr`, "PixelPilotXr") installs **next to** the user's release
+  PixelPilot 0.21.0 (`com.openipc.pixelpilot`). Never uninstall, replace or downgrade the release app.
+- Quest test hygiene: during tests pause the Guardian and keep the display awake
+  (`adb shell setprop debug.oculus.guardian_pause 1` + `adb shell am broadcast -a com.oculus.vrpowermanager.prox_close`);
+  **restore afterwards** (`adb shell setprop debug.oculus.guardian_pause 0` +
+  `adb shell am broadcast -a com.oculus.vrpowermanager.automation_disable`). Details in
+  [troubleshooting](docs/xr/troubleshooting.md#horizon-os-quirks-quest-2).
+
+**Git**
+- Commit only the files you touched (`git add <files>`, never `git add -A`).
+- Never push to, or open a PR against, upstream OpenIPC. `origin` (the fork) only, and only when asked.

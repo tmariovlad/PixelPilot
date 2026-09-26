@@ -2,7 +2,7 @@
 
 - **Date:** 2026-09-26 · **Branch:** `xr-native` (fork `tmariovlad/PixelPilot` of `OpenIPC/PixelPilot@3d6ca17`)
 - **Status:** approved in brainstorming (sections 1–2 approved by the owner, then "continue autonomously")
-- **Research basis:** `c:/xampp/htdocs/ev300d/tasks/quest2-research-2026-09-26/00-INDEX-SYNTHESIS.md`
+- **Research basis:** [docs/xr/research/2026-09-26-quest2/00-INDEX-SYNTHESIS.md](../../xr/research/2026-09-26-quest2/00-INDEX-SYNTHESIS.md) (moved from ev300d)
   (esp. `02-apk-low-latency-options.md` §2–§4 and `01-latency-numbers-and-measurement.md` §protocol)
 
 ## 1. Goal and success criteria

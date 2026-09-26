@@ -25,3 +25,11 @@ video.sdp
 ISSUE.md
 /detect_model
 scripts/quest-latch/__pycache__/
+/repos/
+# scripts/quest: generated test streams, run outputs, wfb keys, bytecode
+scripts/quest/streams/
+scripts/quest/out/
+scripts/quest/keys/
+scripts/quest/**/*.rtp
+scripts/quest/**/*.key
+__pycache__/

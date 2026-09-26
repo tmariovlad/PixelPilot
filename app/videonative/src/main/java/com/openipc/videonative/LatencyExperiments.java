@@ -39,7 +39,7 @@ public final class LatencyExperiments {
     public static final float DEFAULT_FOV_DEG = 60f;
     public static final float MIN_FOV_DEG = 20f;
     public static final float MAX_FOV_DEG = 110f;
-    /** Quest 2 @120 Hz, calibrated with a Perfetto trace (docs/xr-quest.md, "Phase lock"). */
+    /** Quest 2 @120 Hz, calibrated with a Perfetto trace (docs/xr/compositor-phase.md, "Phase lock"). */
     public static final int DEFAULT_LATCH_TO_DISPLAY_US = 3407;
 
     public enum LayerShape {
@@ -80,14 +80,14 @@ public final class LatencyExperiments {
     public final int xrLatchToDisplayUs;
 
     private LatencyExperiments(PrefSource p, boolean metaHeadset) {
-        // Quest 2, clean streams (docs/xr-quest.md): low-latency keys + operating rate is the fastest
+        // Quest 2, clean streams (docs/xr/decoder-levers.md): low-latency keys + operating rate is the fastest
         // combination on every stream measured, so the upstream default holds on headsets too.
         lowLatencyDecoder = p.getBoolean(KEY_LOW_LATENCY_DECODER, true);
-        // Real OpenIPC (waybeam) stream on Quest 2 (docs/xr-quest.md, "First real link"): without decode-order
+        // Real OpenIPC (waybeam) stream on Quest 2 (docs/xr/real-link.md, "First real link"): without decode-order
         // output OMX.qcom holds ~16 frames, 96 ms at 166 fps -> 1.4 ms with it, N=3. FPV encoders send no
         // B-frames, so decode order is display order. Phones keep the upstream default (not measured).
         decPictureOrder = p.getBoolean(KEY_DEC_PICTURE_ORDER, metaHeadset);
-        // Quest 2 measurement (docs/xr-quest.md): decode 10.15 -> 4.99 ms, N=3. Phones keep it off:
+        // Quest 2 measurement (docs/xr/decoder-levers.md): decode 10.15 -> 4.99 ms, N=3. Phones keep it off:
         // some Qualcomm decoders fail with it (moonlight-android MediaCodecHelper).
         decOperatingRate = p.getBoolean(KEY_DEC_OPERATING_RATE, metaHeadset);
         decPreferLowLatencyComponent = p.getBoolean(KEY_DEC_PREFER_LOW_LATENCY_COMPONENT, false);
