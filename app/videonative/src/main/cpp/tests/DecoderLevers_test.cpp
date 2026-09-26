@@ -94,3 +94,27 @@ TEST(DecoderLevers, AppliedLeversDropComponentWhenNotCreated)
     EXPECT_EQ("LL LLC", leversSummary(appliedLevers(l, true)));
     EXPECT_EQ("LL", leversSummary(appliedLevers(l, false)));
 }
+
+// Debug key mask: isolates individual keys for measurement (which key makes decoding slower?).
+TEST(DecoderLevers, KeyMaskDropsIndividualKeys)
+{
+    DecoderLevers l;
+    l.keyMask = ~static_cast<uint32_t>(DecoderKey::Priority);
+    for (const auto& kv : flat(l)) EXPECT_NE("priority", kv.first);
+    EXPECT_EQ(5u, flat(l).size());
+
+    l.keyMask = static_cast<uint32_t>(DecoderKey::Priority);
+    EXPECT_EQ((std::vector<std::pair<std::string, int32_t>>{{"priority", 0}}), flat(l));
+
+    l.keyMask = 0;
+    EXPECT_TRUE(decoderFormatKeys(l).empty());
+}
+
+TEST(DecoderLevers, DefaultMaskKeepsEverything)
+{
+    DecoderLevers l;
+    l.pictureOrder = l.operatingRate = l.auAggregation = true;
+    DecoderLevers all = l;
+    all.keyMask = 0xFFFFFFFFu;
+    EXPECT_EQ(flat(all), flat(l));
+}

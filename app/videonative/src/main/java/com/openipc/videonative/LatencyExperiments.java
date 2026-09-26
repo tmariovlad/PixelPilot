@@ -17,6 +17,8 @@ public final class LatencyExperiments {
     public static final String KEY_DEC_OPERATING_RATE = "dec_operating_rate";
     public static final String KEY_DEC_PREFER_LOW_LATENCY_COMPONENT = "dec_prefer_low_latency_component";
     public static final String KEY_AU_AGGREGATION = "au_aggregation";
+    /** Debug: bitmask over the individual decoder keys (DecoderLevers.h DecoderKey); -1 = all. */
+    public static final String KEY_DEC_DEBUG_KEY_MASK = "dec_debug_key_mask";
     public static final String KEY_XR_REFRESH_HZ = "xr_refresh_hz";
     public static final String KEY_XR_USE_TIMESTAMPS = "xr_use_timestamps";
     public static final String KEY_XR_LAYER_SHAPE = "xr_layer_shape";
@@ -57,6 +59,7 @@ public final class LatencyExperiments {
     public final boolean decOperatingRate;
     public final boolean decPreferLowLatencyComponent;
     public final boolean auAggregation;
+    public final int decDebugKeyMask;
     public final int xrRefreshHz;
     public final boolean xrUseTimestamps;
     public final LayerShape xrLayerShape;
@@ -73,6 +76,7 @@ public final class LatencyExperiments {
         decOperatingRate = p.getBoolean(KEY_DEC_OPERATING_RATE, metaHeadset);
         decPreferLowLatencyComponent = p.getBoolean(KEY_DEC_PREFER_LOW_LATENCY_COMPONENT, false);
         auAggregation = p.getBoolean(KEY_AU_AGGREGATION, false);
+        decDebugKeyMask = p.getInt(KEY_DEC_DEBUG_KEY_MASK, -1);
         xrRefreshHz = validRefresh(p.getInt(KEY_XR_REFRESH_HZ, DEFAULT_REFRESH_HZ));
         xrUseTimestamps = p.getBoolean(KEY_XR_USE_TIMESTAMPS, false);
         xrLayerShape = LayerShape.parse(p.getString(KEY_XR_LAYER_SHAPE, LayerShape.QUAD.prefValue()));

@@ -94,6 +94,11 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(off, true).decOperatingRate);
     }
 
+    @Test public void debugKeyMaskDefaultsToAllKeys() {
+        assertEquals(-1, LatencyExperiments.from(new MapPrefs()).decDebugKeyMask);
+        assertEquals(0x20, LatencyExperiments.from(new MapPrefs().put(LatencyExperiments.KEY_DEC_DEBUG_KEY_MASK, 0x20)).decDebugKeyMask);
+    }
+
     @Test public void metaHeadsetDetection() {
         assertTrue(LatencyExperiments.isMetaHeadset("Oculus"));
         assertTrue(LatencyExperiments.isMetaHeadset("Meta"));
