@@ -77,7 +77,35 @@ public final class LatencyExperiments {
     }
 
     public static LatencyExperiments from(PrefSource source) {
-        return new LatencyExperiments(source);
+        return new LatencyExperiments(new DefaultOnWrongType(source));
+    }
+
+    /**
+     * SharedPreferences throws ClassCastException when a key was stored with another type; a stale
+     * or hand-edited pref must fall back to its default instead of killing the activity at start.
+     */
+    private static final class DefaultOnWrongType implements PrefSource {
+        private final PrefSource source;
+
+        DefaultOnWrongType(PrefSource source) {
+            this.source = source;
+        }
+
+        public boolean getBoolean(String k, boolean d) {
+            try { return source.getBoolean(k, d); } catch (ClassCastException e) { return d; }
+        }
+
+        public int getInt(String k, int d) {
+            try { return source.getInt(k, d); } catch (ClassCastException e) { return d; }
+        }
+
+        public float getFloat(String k, float d) {
+            try { return source.getFloat(k, d); } catch (ClassCastException e) { return d; }
+        }
+
+        public String getString(String k, String d) {
+            try { return source.getString(k, d); } catch (ClassCastException e) { return d; }
+        }
     }
 
     public static LatencyExperiments load(Context context) {
