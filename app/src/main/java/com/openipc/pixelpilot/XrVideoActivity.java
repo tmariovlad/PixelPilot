@@ -55,6 +55,11 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         public void run() {
             XrStatsRenderer renderer = stats;
             if (renderer != null) renderer.draw(statsLines());
+            XrBridge bridge = xr;
+            if (bridge != null && experiments.xrThreadHints && videoPlayer != null) {
+                // Receiver/decoder threads are recreated with the decoder, so keep refreshing.
+                bridge.hintWorkerThreads(videoPlayer.getLatencyCriticalThreadIds());
+            }
             ui.postDelayed(this, STATS_PERIOD_MS);
         }
     };

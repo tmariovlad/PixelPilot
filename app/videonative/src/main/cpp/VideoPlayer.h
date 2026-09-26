@@ -60,6 +60,9 @@ class VideoPlayer
 
     std::string getDecoderSummary() { return videoDecoder.getDecoderSummary(); }
 
+    // Threads on the video latency path (receive/parse/feed and output release), for scheduling hints.
+    std::vector<int> latencyCriticalThreadIds();
+
   private:
     void onNewNALU(const NALU& nalu);
 

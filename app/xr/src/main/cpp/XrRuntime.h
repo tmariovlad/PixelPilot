@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <vector>
 #include "EglContext.h"
 #include "XrIncludes.h"
 #include "XrLayers.h"
@@ -55,6 +56,9 @@ class XrRuntime
     jobject       videoSurface();
     jobject       statsSurface();
     void          setLayerConfig(const LayerConfig& c);
+    // Threads outside this runtime that sit on the video path; hinted as renderer workers on the
+    // XR thread once the session runs (xrSetAndroidApplicationThreadKHR).
+    void          setWorkerThreads(const std::vector<int>& tids);
     XrRuntimeInfo info();
     std::string   error();
 
@@ -74,6 +78,7 @@ class XrRuntime
     void    requestExitAndDrain();
     void    applyRefreshRate();
     void    applyPerformanceHints();
+    void    applyWorkerThreadHints();
     void    enableMetrics();
     void    readMetrics();
     float   queryMetric(XrPath path);
@@ -90,6 +95,8 @@ class XrRuntime
     std::string   mError;
     LayerConfig   mLayerConfig;
     bool          mResizePending = false;
+    std::vector<int> mWorkerThreads;    // requested (guarded by mMutex)
+    std::set<int>    mHintedThreads;    // already hinted (XR thread only)
     XrRuntimeInfo mInfo;
 
     std::set<std::string> mEnabled;

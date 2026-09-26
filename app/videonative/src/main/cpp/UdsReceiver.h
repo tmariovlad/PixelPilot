@@ -46,6 +46,9 @@ class UDSReceiver
     void startReceiving();
     void stopReceiving();
 
+    // Kernel thread id of the receive/parse/feed thread (0 if not running).
+    int threadId() const { return mTid.load(); }
+
     // callbacks
     void registerOnSourceFound(SOURCE_CALLBACK cb) { onSource = std::move(cb); }
 
@@ -67,6 +70,7 @@ class UDSReceiver
     // runtime
     int                          mSocket = -1;
     std::unique_ptr<std::thread> mThread;
+    std::atomic<int>             mTid{0};  // kernel tid of the receive thread, 0 until it runs
     std::atomic<bool>            receiving{false};
     std::atomic<long>            nReceivedBytes{0};
     std::string                  senderPath;

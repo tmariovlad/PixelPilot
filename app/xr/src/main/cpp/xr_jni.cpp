@@ -79,6 +79,14 @@ XR_JNI(void, nativeSetLayout)
     handle(h)->runtime.setLayerConfig(c);
 }
 
+XR_JNI(void, nativeSetWorkerThreads)(JNIEnv* env, jobject, jlong h, jintArray tids)
+{
+    const jsize      n = env->GetArrayLength(tids);
+    std::vector<int> v(static_cast<size_t>(n));
+    if (n > 0) env->GetIntArrayRegion(tids, 0, n, v.data());
+    handle(h)->runtime.setWorkerThreads(v);
+}
+
 XR_JNI(jfloatArray, nativeInfo)(JNIEnv* env, jobject, jlong h)
 {
     const XrRuntimeInfo i   = handle(h)->runtime.info();

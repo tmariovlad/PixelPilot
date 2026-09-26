@@ -68,6 +68,7 @@ void UDPReceiver::stopReceiving()
 
 void UDPReceiver::receiveFromUDPLoop()
 {
+    mTid = gettid();
     mSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (mSocket == -1)
     {

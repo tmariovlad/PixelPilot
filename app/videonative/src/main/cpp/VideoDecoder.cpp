@@ -290,6 +290,7 @@ void VideoDecoder::feedDecoder(
 
 void VideoDecoder::checkOutputLoop(int idx)
 {
+    if (idx == 0) mOutputTid = gettid();
     NDKThreadHelper::setProcessThreadPriorityAttachDetach(javaVm, -16, "DecoderCheckOutput");
     AMediaCodecBufferInfo info;
     bool                  decoderSawEOS          = false;

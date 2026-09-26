@@ -157,6 +157,15 @@ void VideoPlayer::setVideoSurface(JNIEnv* env, jobject surface, jint i)
     videoDecoder.setOutputSurface(env, surface, i);
 }
 
+std::vector<int> VideoPlayer::latencyCriticalThreadIds()
+{
+    std::vector<int> ids;
+    if (mUDPReceiver && mUDPReceiver->threadId()) ids.push_back(mUDPReceiver->threadId());
+    if (mUDSReceiver && mUDSReceiver->threadId()) ids.push_back(mUDSReceiver->threadId());
+    if (videoDecoder.outputThreadId()) ids.push_back(videoDecoder.outputThreadId());
+    return ids;
+}
+
 void VideoPlayer::start(JNIEnv* env, jobject androidContext)
 {
     AAssetManager* assetManager = NDKHelper::getAssetManagerFromContext2(env, androidContext);
@@ -337,6 +346,16 @@ extern "C"
             l.auAggregation             = auAggregation;
             p->setDecoderLevers(l);
         }
+    }
+
+    JNI_METHOD(jintArray, nativeGetLatencyCriticalThreadIds)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance)
+    {
+        VideoPlayer*           p   = native(nativeInstance);
+        const std::vector<int> ids = p ? p->latencyCriticalThreadIds() : std::vector<int>{};
+        jintArray              out = env->NewIntArray(static_cast<jsize>(ids.size()));
+        if (!ids.empty()) env->SetIntArrayRegion(out, 0, static_cast<jsize>(ids.size()), ids.data());
+        return out;
     }
 
     JNI_METHOD(jstring, nativeGetDecoderSummary)

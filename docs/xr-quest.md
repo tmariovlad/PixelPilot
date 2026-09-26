@@ -53,6 +53,7 @@ Everything tunable lives in **Video → Latency experiments** (single source:
 | XR: present by timestamp | `xr_use_timestamps` | off | next XR start — **currently expected to be inert**: buffer timestamps are the decoder-input time, always ≤ the compositor's display time, so "latest buffer with timestamp ≤ display time" picks the same buffer as mailbox. Kept as a control; making it meaningful needs PTS = target display time (separate experiment). |
 | XR: CPU/GPU sustained high | `xr_perf_sustained_high` | on | next XR start |
 | XR: flip image vertically | `xr_flip_vertical` | on | next XR start |
+| XR: schedule video threads as XR workers | `xr_thread_hints` | on | next XR start — registers the UDP/UDS receive-and-feed threads and the decoder output thread with `xrSetAndroidApplicationThreadKHR` (renderer worker). wfb-ng's own RX/FEC threads are not covered yet. |
 
 The existing **Low latency** item (`low_latency_decoder`, default on) is unchanged.
 A decoder that rejects the extra decoder keys is reconfigured with the base set; the stats panel line

@@ -72,6 +72,15 @@ public final class XrBridge {
         nativeSetLayout(handle, l.cylinder, l.flip, v, l.imageW, l.imageH);
     }
 
+    /**
+     * Threads outside the runtime that sit on the video path (receive/feed, decoder output); the
+     * runtime schedules them as renderer workers. Safe to call repeatedly; no-op after stop().
+     */
+    public void hintWorkerThreads(int[] threadIds) {
+        if (handle == 0 || threadIds == null) return;
+        nativeSetWorkerThreads(handle, threadIds);
+    }
+
     /** All values "not available" after stop(). */
     public Info info() {
         return new Info(handle == 0 ? new float[]{-1f, -1f, -1f, -1f, -1f} : nativeInfo(handle));
@@ -96,5 +105,6 @@ public final class XrBridge {
     private native Object nativeStatsSurface(long h);
     private native void nativeSetLayout(long h, boolean cylinder, boolean flip, float[] values, int imageW, int imageH);
     private native float[] nativeInfo(long h);
+    private native void nativeSetWorkerThreads(long h, int[] threadIds);
     private native void nativeDestroy(long h);
 }

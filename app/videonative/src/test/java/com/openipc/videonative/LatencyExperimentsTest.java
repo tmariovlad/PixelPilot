@@ -29,6 +29,7 @@ public class LatencyExperimentsTest {
         assertTrue(e.xrPerfSustainedHigh);
         assertEquals(60f, e.xrFovDeg, 0f);
         assertTrue(e.xrFlipVertical);
+        assertTrue(e.xrThreadHints);
     }
 
     @Test public void storedValuesAreRead() {
@@ -64,9 +65,10 @@ public class LatencyExperimentsTest {
     }
 
     @Test public void summaryListsOnlyEnabledLevers() {
-        assertEquals("LL | 120Hz quad perf flip", LatencyExperiments.from(new MapPrefs()).summary());
+        assertEquals("LL | 120Hz quad perf hints flip", LatencyExperiments.from(new MapPrefs()).summary());
         MapPrefs p = new MapPrefs().put(LatencyExperiments.KEY_LOW_LATENCY_DECODER, false)
                 .put(LatencyExperiments.KEY_XR_PERF_SUSTAINED_HIGH, false)
+                .put(LatencyExperiments.KEY_XR_THREAD_HINTS, false)
                 .put(LatencyExperiments.KEY_XR_FLIP_VERTICAL, false);
         assertEquals("stock | 120Hz quad", LatencyExperiments.from(p).summary());
     }

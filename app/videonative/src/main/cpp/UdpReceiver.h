@@ -58,6 +58,9 @@ class UDPReceiver
      */
     void stopReceiving();
 
+    // Kernel thread id of the receive/parse/feed thread (0 if not running).
+    int threadId() const { return mTid.load(); }
+
     // Get function(s) for private member variables
     long getNReceivedBytes() const;
 
@@ -83,6 +86,7 @@ class UDPReceiver
     std::atomic<bool>            receiving      = false;
     std::atomic<long>            nReceivedBytes = 0;
     std::unique_ptr<std::thread> mUDPReceiverThread;
+    std::atomic<int>             mTid{0};  // kernel tid of the receive thread, 0 until it runs
     // https://en.wikipedia.org/wiki/User_Datagram_Protocol
     // 65,507 bytes (65,535 − 8 byte UDP header − 20 byte IP header).
     static constexpr const size_t UDP_PACKET_MAX_SIZE = 65507;

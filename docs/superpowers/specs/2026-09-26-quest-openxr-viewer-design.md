@@ -99,6 +99,7 @@ drop to `SYNCHRONIZED` or `STOPPING` → `VideoPlayer.stop()` and release the de
 | `xr_layer_shape` | quad/cylinder (**quad**) | layer type | `02` §2.2 |
 | `xr_perf_sustained_high` | bool (**true**) | `XR_EXT_performance_settings` CPU+GPU | `02` §2.2 |
 | `xr_fov_deg` | float (**60°**, clamped 20–110) | `LayerLayout` | comfort (distance fixed at 2 m; `xr_distance_m` dropped as unused) |
+| `xr_thread_hints` | bool (**true**) | `xrSetAndroidApplicationThreadKHR` RENDERER_WORKER for UDP/UDS receive+feed and decoder output threads | reviewer recommendation (2026-09-26); wfb-ng RX/FEC threads not yet covered |
 | `xr_flip_vertical` | bool (**true**) | `XR_FB_composition_layer_image_layout` | image orientation (CitraVR: surfaces arrive flipped) |
 
 New decoder levers default **off** so the 2D app behaves exactly as upstream; they are switched on for A/B,

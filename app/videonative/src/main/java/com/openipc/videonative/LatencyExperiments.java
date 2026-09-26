@@ -22,6 +22,7 @@ public final class LatencyExperiments {
     public static final String KEY_XR_PERF_SUSTAINED_HIGH = "xr_perf_sustained_high";
     public static final String KEY_XR_FOV_DEG = "xr_fov_deg";
     public static final String KEY_XR_FLIP_VERTICAL = "xr_flip_vertical";
+    public static final String KEY_XR_THREAD_HINTS = "xr_thread_hints";
 
     /** Refresh rates Quest 2 offers to OpenXR apps (60 Hz is media-only). */
     public static final int[] SUPPORTED_REFRESH_HZ = {72, 80, 90, 120};
@@ -61,6 +62,7 @@ public final class LatencyExperiments {
     public final boolean xrPerfSustainedHigh;
     public final float xrFovDeg;
     public final boolean xrFlipVertical;
+    public final boolean xrThreadHints;
 
     private LatencyExperiments(PrefSource p) {
         lowLatencyDecoder = p.getBoolean(KEY_LOW_LATENCY_DECODER, true);
@@ -74,6 +76,7 @@ public final class LatencyExperiments {
         xrPerfSustainedHigh = p.getBoolean(KEY_XR_PERF_SUSTAINED_HIGH, true);
         xrFovDeg = clamp(p.getFloat(KEY_XR_FOV_DEG, DEFAULT_FOV_DEG), MIN_FOV_DEG, MAX_FOV_DEG, DEFAULT_FOV_DEG);
         xrFlipVertical = p.getBoolean(KEY_XR_FLIP_VERTICAL, true);
+        xrThreadHints = p.getBoolean(KEY_XR_THREAD_HINTS, true);
     }
 
     public static LatencyExperiments from(PrefSource source) {
@@ -143,6 +146,7 @@ public final class LatencyExperiments {
         xr.append(xrRefreshHz).append("Hz ").append(xrLayerShape.prefValue());
         if (xrUseTimestamps) xr.append(" TS");
         if (xrPerfSustainedHigh) xr.append(" perf");
+        if (xrThreadHints) xr.append(" hints");
         if (xrFlipVertical) xr.append(" flip");
         return decoder + " | " + xr;
     }

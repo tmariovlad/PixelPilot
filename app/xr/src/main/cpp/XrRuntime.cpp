@@ -80,6 +80,29 @@ jobject XrRuntime::statsSurface()
     return mStatsSurface;
 }
 
+void XrRuntime::setWorkerThreads(const std::vector<int>& tids)
+{
+    std::lock_guard<std::mutex> lock(mMutex);
+    mWorkerThreads = tids;
+}
+
+void XrRuntime::applyWorkerThreadHints()
+{
+    if (!pfnSetThread) return;
+    std::vector<int> tids;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        tids = mWorkerThreads;
+    }
+    for (int tid : tids)
+    {
+        if (tid <= 0 || mHintedThreads.count(tid)) continue;
+        const XrResult r = pfnSetThread(mSession, XR_ANDROID_THREAD_TYPE_RENDERER_WORKER_KHR, tid);
+        XLOGI("hinted thread %d as renderer worker (result %d)", tid, r);
+        mHintedThreads.insert(tid);
+    }
+}
+
 XrRuntimeInfo XrRuntime::info()
 {
     std::lock_guard<std::mutex> lock(mMutex);
@@ -410,7 +433,11 @@ void XrRuntime::renderFrame()
     }
     const XrResult ended = xrEndFrame(mSession, &endInfo);
     if (XR_FAILED(ended) && (mFrames % 120) == 0) XLOGE("xrEndFrame failed: %d", ended);
-    if (++mFrames % 30 == 0) readMetrics();
+    if (++mFrames % 30 == 0)
+    {
+        readMetrics();
+        applyWorkerThreadHints();
+    }
 }
 
 void XrRuntime::applyRefreshRate()
@@ -502,5 +529,6 @@ void XrRuntime::teardown(JNIEnv* env)
     mSession                  = XR_NULL_HANDLE;
     mInstance                 = XR_NULL_HANDLE;
     mActivity = nullptr;
+    mHintedThreads.clear();
     mRunning = mVideoAllowed = false;
 }

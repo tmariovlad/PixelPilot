@@ -97,6 +97,9 @@ class VideoDecoder
         mLevers = levers;
     }
 
+    // Kernel thread id of the thread that releases decoded frames to the surface (0 if none).
+    int outputThreadId() const { return mOutputTid.load(); }
+
     // Codec name + the levers the running decoder actually accepted, plus how whole access units
     // were closed and how many inputs did not fit, so a measurement can be interpreted.
     std::string getDecoderSummary()
@@ -151,6 +154,7 @@ class VideoDecoder
     std::atomic<bool>     mAuAggregationActive{false};
     AccessUnitAssembler   mAssembler;
     std::atomic<uint64_t> mInputTooBig{0};
+    std::atomic<int>      mOutputTid{0};  // kernel tid of the output-release thread (decoder 0)
     // Holds the AMediaCodec instance, as well as the state (configured or not configured)
     Decoder      decoder{};
     DecodingInfo decodingInfo;

@@ -40,6 +40,7 @@ void UDSReceiver::stopReceiving()
 
 void UDSReceiver::receiveLoop()
 {
+    mTid = gettid();
     mSocket = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (mSocket == -1)
     {

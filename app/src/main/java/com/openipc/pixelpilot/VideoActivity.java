@@ -813,6 +813,8 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                 on -> e -> e.putBoolean(LatencyExperiments.KEY_XR_USE_TIMESTAMPS, on));
         addXrToggle(experiments, "XR: CPU/GPU sustained high", ex.xrPerfSustainedHigh,
                 on -> e -> e.putBoolean(LatencyExperiments.KEY_XR_PERF_SUSTAINED_HIGH, on));
+        addXrToggle(experiments, "XR: schedule video threads as XR workers", ex.xrThreadHints,
+                on -> e -> e.putBoolean(LatencyExperiments.KEY_XR_THREAD_HINTS, on));
         addXrToggle(experiments, "XR: flip image vertically", ex.xrFlipVertical,
                 on -> e -> e.putBoolean(LatencyExperiments.KEY_XR_FLIP_VERTICAL, on));
     }
