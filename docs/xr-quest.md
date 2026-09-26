@@ -116,7 +116,7 @@ The dated result sections that used to follow here were moved verbatim into topi
   decode on the real stream drops from ~96 ms (the decoder held ~16 frames) to ~1.4 ms.
 - **[G2G budget per branch](xr/g2g-budget.md)** ([section](xr/g2g-budget.md#g2g-budget-on-the-real-link-branch-by-branch-2026-09-26)): total ≈ 30.7 ms
   (≈ 23–40 range) at 166.6 fps with 0 packets lost. B2 (2.91 ms mean) is MCS2 airtime of ~1357 B packets plus FEC parity
-  landing inside the next frame (corrected 2026-09-27); realistic floor on Quest 2 with all levers ≈ 23–27 ms, 20 ms not reachable.
+  landing inside the next frame (corrected 2026-09-27); realistic floor on Quest 2 with the open levers ≈ 25–27 ms (slice sending closed), 20 ms not reachable.
 - **[Troubleshooting](xr/troubleshooting.md)**: build traps, Horizon OS quirks, adapter and link problems.
 - **Raw data** ([xr/data/](xr/data/)): [decoder levers](xr/data/measurements-2026-09-26-quest2-decoder-levers.csv) ·
   [key isolation](xr/data/measurements-2026-09-26-quest2-key-isolation.csv) ·
