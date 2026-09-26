@@ -98,6 +98,15 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(off, true).lowLatencyDecoder);
     }
 
+    // Real OpenIPC stream on Quest 2 (docs/xr-quest.md, "First real link"): without decode-order output the
+    // OMX decoder holds ~16 frames (96 ms at 166 fps) because the SPS does not rule out reordering.
+    @Test public void pictureOrderDefaultsOnOnlyForMetaHeadsets() {
+        assertTrue(LatencyExperiments.from(new MapPrefs(), true).decPictureOrder);
+        assertFalse(LatencyExperiments.from(new MapPrefs(), false).decPictureOrder);
+        MapPrefs off = new MapPrefs().put(LatencyExperiments.KEY_DEC_PICTURE_ORDER, false);
+        assertFalse(LatencyExperiments.from(off, true).decPictureOrder);
+    }
+
     @Test public void phaseReportIsOffAndLatchOffsetCalibratedByDefault() {
         LatencyExperiments e = LatencyExperiments.from(new MapPrefs(), true);
         assertEquals("", e.xrPhaseReport);

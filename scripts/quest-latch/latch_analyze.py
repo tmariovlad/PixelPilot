@@ -22,15 +22,22 @@ q = lambda s: list(tp.query(s))
 vs = [r.ts for r in q("""select s.ts from slice s join thread_track tt on s.track_id=tt.id join thread t using(utid)
   where t.name='SDM_EventThread' and s.name like 'HWEventsDRM::VSyncHandlerCallback%' order by s.ts""")]
 d = [b - a for a, b in zip(vs, vs[1:])]
-P = st.median([x for x in d if 5e6 < x < 15e6])
-jit = [x - P for x in d if 5e6 < x < 15e6]
-print(f"vsync callbacks={len(vs)} period={P/1e6:.4f} ms  interval jitter p95={sorted(abs(j) for j in jit)[int(.95*len(jit))]/1e3:.1f} us")
+iv = [x for x in d if 5e6 < x < 15e6]
+P = st.median(iv) if iv else None  # vsync callbacks only appear while SurfaceFlinger wants vsync
+if P:
+    jit = [x - P for x in iv]
+    print(f"vsync callbacks={len(vs)} period={P/1e6:.4f} ms  interval jitter p95={sorted(abs(j) for j in jit)[int(.95*len(jit))]/1e3:.1f} us")
+else:
+    print("no vsync callbacks in this trace: vsync-phase lines skipped")
 
 def phase(t):  # time since the last vsync (nearest callback within 50 ms; None if too far)
+    if not P:
+        return None
     i = bisect_right(vs, t)
     cands = [vs[k] for k in (i - 1, i) if 0 <= k < len(vs)]
     cb = min(cands, key=lambda c: abs(c - t))
     return (t - cb) % P if abs(t - cb) < 50e6 else None
+
 
 vid = q("""select distinct s.name from slice s join thread_track tt on s.track_id=tt.id join thread t using(utid)
   where t.name='CodecLooper' and s.name like 'dequeueBuffer - SurfaceTexture%'""")[0].name.split(" - ")[1]
@@ -65,9 +72,10 @@ for L in latch:
         used.add(i); waits.append(L - qb[i])
 summ("frame ready (queueBuffer) -> latch", waits)
 if waits:
-    print(f"frames that missed a latch (wait > half a period): {100 * sum(w > P / 2 for w in waits) / len(waits):.1f} %")
+    print(f"frames that missed a latch (wait > half a period): {100 * sum(w > (P or 8.35e6) / 2 for w in waits) / len(waits):.1f} %")
 print(f"decoded frames queued={len(qb)} latched={len(used)} (never shown={len(qb)-len(used)})")
 # latch -> next pass start (compose) and -> next vsync
 nxt = lambda arr, t: arr[bisect_right(arr, t)] if bisect_right(arr, t) < len(arr) else None
 summ("latch -> next TW pass start", [nxt(passes, L) - L for L in latch if nxt(passes, L)])
-summ("latch -> next vsync", [P - p for p in ph(latch)])
+if P:
+    summ("latch -> next vsync", [P - p for p in ph(latch)])

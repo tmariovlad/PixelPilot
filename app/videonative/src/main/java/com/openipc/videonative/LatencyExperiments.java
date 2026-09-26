@@ -83,7 +83,10 @@ public final class LatencyExperiments {
         // Quest 2, clean streams (docs/xr-quest.md): low-latency keys + operating rate is the fastest
         // combination on every stream measured, so the upstream default holds on headsets too.
         lowLatencyDecoder = p.getBoolean(KEY_LOW_LATENCY_DECODER, true);
-        decPictureOrder = p.getBoolean(KEY_DEC_PICTURE_ORDER, false);
+        // Real OpenIPC (waybeam) stream on Quest 2 (docs/xr-quest.md, "First real link"): without decode-order
+        // output OMX.qcom holds ~16 frames, 96 ms at 166 fps -> 1.4 ms with it, N=3. FPV encoders send no
+        // B-frames, so decode order is display order. Phones keep the upstream default (not measured).
+        decPictureOrder = p.getBoolean(KEY_DEC_PICTURE_ORDER, metaHeadset);
         // Quest 2 measurement (docs/xr-quest.md): decode 10.15 -> 4.99 ms, N=3. Phones keep it off:
         // some Qualcomm decoders fail with it (moonlight-android MediaCodecHelper).
         decOperatingRate = p.getBoolean(KEY_DEC_OPERATING_RATE, metaHeadset);
