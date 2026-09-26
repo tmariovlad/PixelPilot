@@ -10,7 +10,7 @@ Setup (APFPV vs wfb, keys, link id) and the picture-order finding on the real Op
 
 The user asked for one optimal default on the air unit and on the ground, so that video appears after a reboot without manual steps.
 
-**Why wfb-ng is the default transport:**
+**Why wfb-ng is the default transport:** (full discussion and the APFPV options: [transport-choice.md](transport-choice.md))
 - It is broadcast with FEC and has no association or ACK retransmissions, so a weak link degrades instead of dropping out. APFPV loses its association on a bad link and hides its retransmissions [INFERRED: OpenIPC `repos/tasks/research/g2g-chain-detail/09-transport-apfpv-wfb.md` §1, §4].
 - It is the only transport the Quest's RTL8812AU path can receive.
 - Latency head-to-head (wfb tuned vs APFPV) is **not measured yet**. The 20.3 ms HIL record was on APFPV, and the early wfb numbers are flagged as suspect in that project. APFPV stays available on demand through `linkmode-air.sh apfpv`.
