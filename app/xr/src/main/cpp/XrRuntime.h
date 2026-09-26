@@ -52,8 +52,8 @@ class XrRuntime
     // Ends the session (Inactive is delivered first if needed) and joins the loop thread.
     void stop();
 
-    jobject       videoSurface() const { return mVideoSurface; }
-    jobject       statsSurface() const { return mStatsSurface; }
+    jobject       videoSurface();
+    jobject       statsSurface();
     void          setLayerConfig(const LayerConfig& c);
     XrRuntimeInfo info();
     std::string   error();

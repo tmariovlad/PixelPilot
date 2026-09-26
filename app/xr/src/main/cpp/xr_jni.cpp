@@ -57,8 +57,8 @@ XR_JNI(jobject, nativeStatsSurface)(JNIEnv*, jobject, jlong h) { return handle(h
 XR_JNI(void, nativeSetLayout)
 (JNIEnv* env, jobject, jlong h, jboolean cylinder, jboolean flip, jfloatArray values, jint imageW, jint imageH)
 {
-    jfloat v[11];
-    env->GetFloatArrayRegion(values, 0, 11, v);
+    jfloat v[12];
+    env->GetFloatArrayRegion(values, 0, 12, v);
     LayerConfig c;
     c.cylinder     = cylinder;
     c.flip         = flip;
@@ -73,7 +73,7 @@ XR_JNI(void, nativeSetLayout)
     c.statsY       = v[8];
     c.statsZ       = v[9];
     c.statsImageW  = static_cast<int>(v[10]);
-    c.statsImageH  = c.statsImageW / 2;
+    c.statsImageH  = static_cast<int>(v[11]);
     c.imageW       = imageW;
     c.imageH       = imageH;
     handle(h)->runtime.setLayerConfig(c);

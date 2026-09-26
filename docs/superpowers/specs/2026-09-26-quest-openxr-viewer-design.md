@@ -56,7 +56,7 @@ PixelPilot 2D (VideoActivity, unchanged flow): channel/key/codec settings ──
 - `VideoDecoder`: when `au_aggregation` is on, feed whole access units (from `AccessUnitAssembler`) instead of single NALUs; new keys; optional `createCodecByName` for a `*.low_latency` component.
 - `WfbLinkManager`: constructor takes `LinkStatusListener` instead of `ActivityVideoBinding`.
 - `VideoActivity`: menu item **"Launch XR"** + submenu **"Latency experiments"** (checkable items bound to `LatencyExperiments`).
-- `AndroidManifest.xml`: `XrVideoActivity` with `com.oculus.intent.category.VR`, `screenOrientation=landscape`, same USB intent filter; `com.oculus.supportedDevices` meta-data; OpenXR runtime query/permission (`org.khronos.openxr.permission.OPENXR`, `<queries>` for the runtime broker).
+- `AndroidManifest.xml`: `XrVideoActivity` (`MAIN` + `org.khronos.openxr.intent.category.IMMERSIVE_HMD` + `com.oculus.intent.category.VR`, own task, no fixed orientation; USB broadcasts via the runtime receiver `WfbLinkManager.register()`, no manifest USB filter); `com.oculus.supportedDevices` meta-data; OpenXR runtime query/permission (`org.khronos.openxr.permission.OPENXR`, `<queries>` for the runtime broker).
 
 ## 3. Data flow, lifecycle, errors
 
@@ -90,7 +90,7 @@ drop to `SYNCHRONIZED` or `STOPPING` → `VideoPlayer.stop()` and release the de
 | Pref key | Values (default) | Where applied | Why (research ref) |
 |---|---|---|---|
 | `low_latency_decoder` (existing) | bool (**true**) | decoder keys | #113 |
-| `xr_refresh_hz` | 72/90/120 (**120**) | `xrRequestDisplayRefreshRateFB` | `02` §2.2 |
+| `xr_refresh_hz` | 72/80/90/120 (**120**; highest supported ≤ requested; Quest 2 needs 120 Hz enabled in Settings) | `xrRequestDisplayRefreshRateFB` | `02` §2.2 |
 | `dec_picture_order` | bool (**false**) | `vendor.qti-ext-dec-picture-order.enable=1` | `02` §2.4 |
 | `dec_operating_rate` | bool (**false**) | `operating-rate` = `Short.MAX_VALUE` (value choice to verify against Moonlight source during implementation; ALVR uses INT32_MAX) | `02` §2.4 |
 | `dec_prefer_low_latency_component` | bool (**false**) | pick `c2.qti.{avc,hevc}.decoder.low_latency` if listed | `02` §2.4 |

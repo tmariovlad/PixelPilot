@@ -67,7 +67,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
 
         xr = new XrBridge(this);
         String error = xr.start(this, experiments.xrRefreshHz, experiments.xrUseTimestamps,
-                experiments.xrPerfSustainedHigh);
+                experiments.xrPerfSustainedHigh, currentLayout());
         if (error != null) {
             // No silent fallback to a slower path: a measurement would not know it changed.
             Log.e(TAG, "XR unavailable: " + error);
@@ -77,7 +77,6 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             finish();
             return;
         }
-        applyLayout();
         stats = new XrStatsRenderer(xr.statsSurface());
 
         videoPlayer = new VideoPlayer(this);
@@ -172,9 +171,13 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         Log.i(TAG, "video detached");
     }
 
+    private LayerLayout currentLayout() {
+        return LayerLayout.compute(videoW, videoH, experiments.xrFovDeg, LayerLayout.DEFAULT_DISTANCE_M,
+                experiments.xrLayerShape == LatencyExperiments.LayerShape.CYLINDER, experiments.xrFlipVertical);
+    }
+
     private void applyLayout() {
-        xr.setLayout(LayerLayout.compute(videoW, videoH, experiments.xrFovDeg, LayerLayout.DEFAULT_DISTANCE_M,
-                experiments.xrLayerShape == LatencyExperiments.LayerShape.CYLINDER, experiments.xrFlipVertical));
+        xr.setLayout(currentLayout());
     }
 
     // ---- callbacks from the player / link (background threads) ------------------------------

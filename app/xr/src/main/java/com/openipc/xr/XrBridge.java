@@ -43,8 +43,13 @@ public final class XrBridge {
         handle = nativeCreate();
     }
 
-    /** Returns null on success, otherwise a human-readable reason. */
-    public String start(Activity activity, int refreshHz, boolean useTimestamps, boolean perfSustainedHigh) {
+    /**
+     * Returns null on success, otherwise a human-readable reason. The initial layout sizes the
+     * surfaces, so the swapchains are created with the same numbers the layers later use.
+     */
+    public String start(Activity activity, int refreshHz, boolean useTimestamps, boolean perfSustainedHigh,
+                        LayerLayout initialLayout) {
+        setLayout(initialLayout);
         if (nativeStart(handle, activity, refreshHz, useTimestamps, perfSustainedHigh)) return null;
         String error = nativeError(handle);
         return error.isEmpty() ? "OpenXR start failed" : error;
@@ -62,7 +67,8 @@ public final class XrBridge {
     public void setLayout(LayerLayout l) {
         if (handle == 0) return;
         float[] v = {l.videoWidthM, l.videoHeightM, l.videoZ, l.cylRadius, l.cylAngleRad, l.cylAspect,
-                l.statsWidthM, l.statsHeightM, l.statsY, l.statsZ, LayerLayout.STATS_IMAGE_W};
+                l.statsWidthM, l.statsHeightM, l.statsY, l.statsZ, LayerLayout.STATS_IMAGE_W,
+                LayerLayout.STATS_IMAGE_H};
         nativeSetLayout(handle, l.cylinder, l.flip, v, l.imageW, l.imageH);
     }
 

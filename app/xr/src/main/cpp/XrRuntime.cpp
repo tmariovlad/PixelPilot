@@ -34,6 +34,8 @@ bool XrRuntime::start(JavaVM* vm, jobject activityGlobalRef, const XrStartConfig
 {
     if (mThread.joinable())
     {
+        JNIEnv* env = nullptr;
+        if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) == JNI_OK) env->DeleteGlobalRef(activityGlobalRef);
         return fail("already started");
     }
     mActivity = activityGlobalRef;
@@ -42,7 +44,7 @@ bool XrRuntime::start(JavaVM* vm, jobject activityGlobalRef, const XrStartConfig
     std::promise<bool> ready;
     auto               result = ready.get_future();
     mThread                   = std::thread(&XrRuntime::threadMain, this, vm, cfg, std::move(ready));
-    if (result.wait_for(std::chrono::seconds(10)) != std::future_status::ready)
+    if (result.wait_for(std::chrono::seconds(4)) != std::future_status::ready)
     {
         fail("OpenXR setup timed out");
         stop();
@@ -64,6 +66,18 @@ void XrRuntime::setLayerConfig(const LayerConfig& c)
     std::lock_guard<std::mutex> lock(mMutex);
     mResizePending = mResizePending || c.imageW != mLayerConfig.imageW || c.imageH != mLayerConfig.imageH;
     mLayerConfig   = c;
+}
+
+jobject XrRuntime::videoSurface()
+{
+    std::lock_guard<std::mutex> lock(mMutex);
+    return mVideoSurface;
+}
+
+jobject XrRuntime::statsSurface()
+{
+    std::lock_guard<std::mutex> lock(mMutex);
+    return mStatsSurface;
 }
 
 XrRuntimeInfo XrRuntime::info()
@@ -187,10 +201,15 @@ bool XrRuntime::setup(JNIEnv* env)
         std::lock_guard<std::mutex> lock(mMutex);
         initial = mLayerConfig;
     }
-    mVideoSurface = createSurface(env, initial.imageW, initial.imageH, mCfg.useTimestamps, mVideoChain);
-    if (!mVideoSurface) return fail("video surface swapchain creation failed");
-    mStatsSurface = createSurface(env, initial.statsImageW, initial.statsImageH, false, mStatsChain);
-    if (!mStatsSurface) return fail("stats surface swapchain creation failed");
+    jobject video = createSurface(env, initial.imageW, initial.imageH, mCfg.useTimestamps, mVideoChain);
+    jobject stats = video ? createSurface(env, initial.statsImageW, initial.statsImageH, false, mStatsChain) : nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        mVideoSurface = video;
+        mStatsSurface = stats;
+    }
+    if (!video) return fail("video surface swapchain creation failed");
+    if (!stats) return fail("stats surface swapchain creation failed");
     enableMetrics();
     XLOGI("OpenXR ready: %zu extensions enabled", mEnabled.size());
     return true;
@@ -467,13 +486,20 @@ void XrRuntime::teardown(JNIEnv* env)
     if (mSession != XR_NULL_HANDLE) xrDestroySession(mSession);
     mEgl.destroy();
     if (mInstance != XR_NULL_HANDLE) xrDestroyInstance(mInstance);
-    if (mVideoSurface) env->DeleteGlobalRef(mVideoSurface);
-    if (mStatsSurface) env->DeleteGlobalRef(mStatsSurface);
+    jobject video, stats;
+    {
+        std::lock_guard<std::mutex> lock(mMutex);
+        video         = mVideoSurface;
+        stats         = mStatsSurface;
+        mVideoSurface = mStatsSurface = nullptr;
+    }
+    if (video) env->DeleteGlobalRef(video);
+    if (stats) env->DeleteGlobalRef(stats);
     if (mActivity) env->DeleteGlobalRef(mActivity);
     mVideoChain = mStatsChain = XR_NULL_HANDLE;
     mViewSpace                = XR_NULL_HANDLE;
     mSession                  = XR_NULL_HANDLE;
     mInstance                 = XR_NULL_HANDLE;
-    mVideoSurface = mStatsSurface = mActivity = nullptr;
+    mActivity = nullptr;
     mRunning = mVideoAllowed = false;
 }

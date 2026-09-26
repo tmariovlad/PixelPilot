@@ -243,7 +243,7 @@ void VideoDecoder::feedDecoder(
             // But better be safe than crashing with a memory exception
             if (size > inputBufferSize)
             {
-                MLOGD << "Nalu too big" << size;
+                MLOGE << "Input buffer too small for " << size << " bytes, dropped";
                 return;
             }
 
