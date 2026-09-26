@@ -39,6 +39,8 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
 
 ## Use
 
+> **Watching a real OpenIPC air unit through the RTL8812AU:** follow [xr/real-link.md § Watch the air unit's video on the Quest](xr/real-link.md#watch-the-air-units-video-on-the-quest-step-by-step).
+
 1. Start PixelPilot normally once (2D) so the VPN permission and `gs.key` are in place.
 2. Plug the RTL8812AU into the Quest's USB-C.
 3. Menu → **Video → Launch XR (Quest)**. The 2D activity pauses (it releases the adapter), the XR

@@ -67,3 +67,17 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   photodiode or 480 fps slow motion; see [Measuring](../xr-quest.md#measuring-the-point-of-this-mode).
 
 - **The air unit sends no video after a test, even after a power cycle.** waybeam's destination stays `127.0.0.1` from the wfb switch. Run `linkmode-air.sh apfpv`: see [real-link.md § Restoring the air unit after a test](real-link.md#restoring-the-air-unit-after-a-test-2026-09-27).
+
+## More traps hit on 2026-09-26/27
+
+- **Scripted edits change line endings.** Some files in this repo are CRLF and some LF. A Python rewrite with default newline handling converts a file and turns the whole diff noisy. Read and write with `newline=""` and keep whichever ending the file had.
+- **NDK APIs newer than minSdk 26** (e.g. `ATrace_setCounter`, API 29) fail to compile with "is unavailable: introduced in Android 29". Fix used in `app/xr` and `app/videonative` CMake:
+  - `target_compile_definitions(... __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__)`
+  - `-Werror=unguarded-availability`
+  - wrap every call in `if (__builtin_available(android 29, *))`.
+  - Inside that guard, never `return` early past code that must still run.
+- **`adb install` from Git Bash needs a Windows path:** `adb install -r "$(cygpath -w app/build/outputs/apk/debug/app-debug.apk)"`. With an MSYS path, adb fails to stat the file.
+- **Upstream crash, fixed in this fork:** `WfbngLink` read the key from a hardcoded path and crashed when it was absent. It now uses `Context.getFilesDir()/gs.key`, filled by `GsKeyStore.copyToFiles`.
+- **Copying files to the air unit:** it has no sftp-server, so use `pscp -scp`. In batch mode pscp also needs `-hostkey "SHA256:…"`. Read the fingerprint on the air unit with `dropbearkey -y -f /etc/dropbear/dropbear_*_host_key`. Plain HTTP from the PC does not work while the PC's Wi-Fi is on the air unit's AP, because Windows treats that network as public and blocks inbound connections.
+- **`linkmode-air.sh wfb` reverts itself to APFPV** when `wfb_tx` injects nothing for 12 s (`AIR_STATE=ERROR:wfb_tx-not-injecting-after-poll-reverted-apfpv`). That usually means waybeam is producing 0 fps; check `/var/lib/misc/waybeam-boot.log` and `/tmp/waybeam-switch.log`.
+- **The PC can hold `192.168.0.10` on the air unit's AP.** That address is the air unit's fixed video destination. While the PC's Wi-Fi card is connected there, the HIL GS `.208` cannot take `.10`. Disconnect first: `netsh wlan disconnect interface="Wi-Fi 2"`.

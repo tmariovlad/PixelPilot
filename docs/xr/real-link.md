@@ -6,6 +6,46 @@ Quest XR docs: [guide](../xr-quest.md) · [decoder levers](decoder-levers.md) ·
 
 Setup (APFPV vs wfb, keys, link id) and the picture-order finding on the real OpenIPC stream. The branch-by-branch G2G budget measured on this link is in [g2g-budget.md](g2g-budget.md).
 
+## Watch the air unit's video on the Quest (step by step)
+
+This is for the HIL air unit (SSC338Q, `.132`), which boots into APFPV with a key paired to the HIL GS. Why each step is needed: see "First real link" below.
+
+**1. Reach the air unit's shell** (SSH, `root` / `12345`). Use eth0 `192.168.100.132` if the cable is plugged in. Otherwise use the air unit's AP through the PC's Wi-Fi card:
+
+```bash
+netsh wlan add profile filename="C:\xampp\htdocs\pixelpilot-xr\scripts\quest\openipc-wlan.xml"   # once; SSID OpenIPC, PSK 12345678
+bash scripts/quest/wait_air.sh                    # air unit = 192.168.0.1
+```
+
+**2. On the air unit: put the OpenIPC default key in RAM and start wfb-ng with PixelPilot's link id.** Nothing persistent changes, except waybeam's destination, which step 7 restores:
+
+```sh
+echo u7ftboOkaoqbihKg+Y7OK9yXhwW4IEcBsghfooyse0YOBcSKYZX7cJIcdHpm6DwC5kC9a761slFTepiidBaiYw== | base64 -d > /tmp/drone-openipc.key
+chmod 600 /tmp/drone-openipc.key && mount --bind /tmp/drone-openipc.key /opt/linkmode/drone.key
+sed 's#-p 0 -u 5600 -K "$LM/drone.key"#-i 7669206 -p 0 -u 5600 -K "$LM/drone.key"#' /opt/linkmode/linkmode-air.sh > /tmp/linkmode-air-pp.sh
+chmod +x /tmp/linkmode-air-pp.sh && (nohup /tmp/linkmode-air-pp.sh wfb > /tmp/linkmode.log 2>&1 &)
+```
+
+- The key is the public OpenIPC default `drone.key` (`OpenIPC/firmware: general/package/legacy/wifibroadcast/files/drone.key`, md5 `24767056…`).
+- The AP disappears after ~10 s, which is expected. The air unit then transmits wfb-ng on its AP channel (157).
+- If the AP comes back after ~30 s, the switch failed and the script reverted automatically. Check that waybeam streams (`grep fps= /var/lib/misc/waybeam-boot.log`, `wlan0 tx_packets`).
+
+**3. Plug the RTL8812AU into the Quest's USB-C.** If Horizon asks which app should use it, choose PixelPilotXr.
+
+**4. Give PixelPilotXr the matching key and the channel.**
+- **From the PC:** `python3 scripts/quest/set_link_prefs.py scripts/quest/keys/raw-legacy-gs.key 157`. The key is the OpenIPC default `gs.key` from the same firmware folder; `scripts/quest/keys/` is gitignored. Fetch it with `curl -sL https://raw.githubusercontent.com/OpenIPC/firmware/master/general/package/legacy/wifibroadcast/files/gs.key -o scripts/quest/keys/raw-legacy-gs.key`.
+- **Or in the app:** in the 2D screen, open the menu and select that `gs.key`, then set channel 157.
+
+**5. Put the headset on, open PixelPilotXr from the Library.** The 2D screen appears. Open its menu → **Video → Launch XR (Quest)**. From the PC, this does the same:
+
+```bash
+adb shell am start -a android.intent.action.MAIN -c org.khronos.openxr.intent.category.IMMERSIVE_HMD -n com.openipc.pixelpilot.xr/com.openipc.pixelpilot.XrVideoActivity
+```
+
+**6. Check.** The video appears on the head-locked panel. The stats panel shows a `link:` line with an RSSI. `bash scripts/quest/link_check.sh 15` should report `quality` values other than `-1024` and `Decoded Frames` counting up.
+
+**7. Afterwards, restore the air unit:** `linkmode-air.sh apfpv`. See "Restoring the air unit after a test" below; a power cycle alone is not enough.
+
 ## First real link: Quest 2 + RTL8812AU + OpenIPC air unit (2026-09-26)
 
 **Setup:** the HIL air unit (SSC338Q + IMX415, waybeam, H.264 640×480 @ 166 fps, 1 Mbit/s) sends over wfb-ng on channel 157, 20 MHz, FEC 8/12. The RTL8812AU sits on the Quest's USB-C, running PixelPilotXr (devourer).
