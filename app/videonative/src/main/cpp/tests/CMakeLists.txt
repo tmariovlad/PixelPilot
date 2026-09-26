@@ -44,3 +44,8 @@ add_executable(au_test AccessUnitAssembler_test.cpp)
 target_include_directories(au_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(au_test GTest::gtest_main)
 gtest_discover_tests(au_test)
+
+add_executable(levers_test DecoderLevers_test.cpp)
+target_include_directories(levers_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(levers_test GTest::gtest_main)
+gtest_discover_tests(levers_test)

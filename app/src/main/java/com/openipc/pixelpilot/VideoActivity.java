@@ -382,7 +382,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     private void initializeVideoPlayers() {
         videoPlayer = new VideoPlayer(this);
         videoPlayer.setIVideoParamsChanged(this);
-        videoPlayer.setLowLatency(getLowLatencySetting(this));
+        videoPlayer.setDecoderLevers(LatencyExperiments.load(this));
 
         isVRMode = getVRSetting();
 
@@ -754,6 +754,36 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                     .putBoolean(LatencyExperiments.KEY_LOW_LATENCY_DECODER, enabled).commit();
             item.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
             item.setActionView(new View(this));
+            resetApp();
+            return false;
+        });
+
+        SubMenu experiments = videoMenu.addSubMenu("Latency experiments");
+        LatencyExperiments ex = LatencyExperiments.load(this);
+        addRestartingToggle(experiments, "Decoder: decode order (qti)",
+                LatencyExperiments.KEY_DEC_PICTURE_ORDER, ex.decPictureOrder);
+        addRestartingToggle(experiments, "Decoder: max operating rate",
+                LatencyExperiments.KEY_DEC_OPERATING_RATE, ex.decOperatingRate);
+        addRestartingToggle(experiments, "Decoder: low-latency component",
+                LatencyExperiments.KEY_DEC_PREFER_LOW_LATENCY_COMPONENT, ex.decPreferLowLatencyComponent);
+        addRestartingToggle(experiments, "Decoder: whole access units",
+                LatencyExperiments.KEY_AU_AGGREGATION, ex.auAggregation);
+    }
+
+    /**
+     * A checkable item bound to a boolean decoder lever. Decoder levers are applied when the
+     * codec is configured, so like "Low latency" the toggle restarts the app.
+     */
+    private void addRestartingToggle(SubMenu menu, String title, String key, boolean current) {
+        MenuItem item = menu.add(title);
+        item.setCheckable(true);
+        item.setChecked(current);
+        item.setOnMenuItemClickListener(i -> {
+            boolean enabled = !i.isChecked();
+            i.setChecked(enabled);
+            // commit(), not apply(): resetApp() exits the process before an async write lands.
+            getSharedPreferences(LatencyExperiments.PREFS_NAME, MODE_PRIVATE).edit()
+                    .putBoolean(key, enabled).commit();
             resetApp();
             return false;
         });

@@ -51,7 +51,11 @@ public class VideoPlayer implements IVideoParamsChanged {
 
     public static native void nativeSetUdpForwarding(long nativeInstance, String ip, int port, boolean enabled);
 
-    public static native void nativeSetLowLatency(long nativeInstance, boolean enabled);
+    public static native void nativeSetDecoderLevers(long nativeInstance, boolean lowLatency, boolean pictureOrder,
+                                                     boolean operatingRate, boolean preferLowLatencyComponent,
+                                                     boolean auAggregation);
+
+    public static native String nativeGetDecoderSummary(long nativeInstance);
 
     public static native void nativeStartDvr(long nativeInstance, int fd, int fmp4_enabled);
 
@@ -128,12 +132,17 @@ public class VideoPlayer implements IVideoParamsChanged {
     }
 
     /**
-     * Enable/disable the low latency + realtime priority MediaCodec keys.
+     * Decoder latency levers from the single source of truth.
      * Takes effect the next time the decoder is configured.
      */
-    public void setLowLatency(boolean enabled) {
-        verifyApplicationThread();
-        nativeSetLowLatency(nativeVideoPlayer, enabled);
+    public void setDecoderLevers(LatencyExperiments e) {
+        nativeSetDecoderLevers(nativeVideoPlayer, e.lowLatencyDecoder, e.decPictureOrder, e.decOperatingRate,
+                e.decPreferLowLatencyComponent, e.auAggregation);
+    }
+
+    /** Codec name and the levers it accepted, e.g. "default video/hevc | LL PO". */
+    public String getDecoderSummary() {
+        return nativeGetDecoderSummary(nativeVideoPlayer);
     }
 
     public void setUdpForwarding(String ip, int port, boolean enabled) {

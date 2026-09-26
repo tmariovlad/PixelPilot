@@ -3,24 +3,17 @@
 #define FPVUE_ANDROIDMEDIAFORMATHELPER_H
 
 #include <media/NdkMediaFormat.h>
+#include "../DecoderLevers.h"
 #include "../NALU/KeyFrameFinder.hpp"
 
-// Decoder tuning that trades pipeline depth for latency. Unknown keys are ignored by
-// MediaCodec, so writing all of them is safe on every device / Android version.
-static void writeAndroidPerformanceParams(AMediaFormat* format)
+// Writes the keys a set of levers stands for (DecoderLevers.h owns the mapping).
+// Unknown keys are ignored by MediaCodec, so this is safe on every device / Android version.
+static void applyDecoderLevers(AMediaFormat* format, const DecoderLevers& levers)
 {
-    // AMEDIAFORMAT_KEY_LOW_LATENCY (API 30+). Tells the decoder to output a frame as soon
-    // as it is decoded instead of keeping a reorder/output queue. For a live stream that
-    // never uses B-frames the queue only adds latency.
-    AMediaFormat_setInt32(format, "low-latency", 1);
-    // Vendor equivalents for SoCs whose codec does not pick up the AOSP key. Qualcomm is
-    // the relevant one for most phones and for the Snapdragon XR2 headsets.
-    AMediaFormat_setInt32(format, "vendor.low-latency.enable", 1);
-    AMediaFormat_setInt32(format, "vendor.qti-ext-dec-low-latency.enable", 1);
-    AMediaFormat_setInt32(format, "vendor.hisi-ext-low-latency-video-dec.video-scene-for-low-latency-req", 1);
-    AMediaFormat_setInt32(format, "vendor.rtc-ext-dec-low-latency.enable", 1);
-    // MediaCodec knows two priorities: 0 - realtime, 1 - best effort. Lower is higher.
-    AMediaFormat_setInt32(format, "priority", 0);
+    for (const auto& k : decoderFormatKeys(levers))
+    {
+        AMediaFormat_setInt32(format, k.key, k.value);
+    }
 }
 
 static void h264_configureAMediaFormat(KeyFrameFinder& kff, AMediaFormat* format)

@@ -42,6 +42,7 @@ void VideoDecoder::setOutputSurface(JNIEnv* env, jobject surface, jint idx)
             decoder.codec[idx] = nullptr;
             MLOGD << "Set decoder.codec null idx: " << idx;
             mKeyFrameFinder.reset();
+            mAssembler.reset();
             decoder.configured[idx] = false;
             if (mCheckOutputThread[idx]->joinable())
             {
@@ -102,8 +103,20 @@ void VideoDecoder::interpretNALU(const NALU& nalu)
     }
     if (decoder.configured[0] || decoder.configured[1])
     {
-        feedDecoder(nalu, 0);
-        feedDecoder(nalu, 1);
+        if (mAuAggregationActive)
+        {
+            mAssembler.push(
+                au::classify(nalu.getData(), nalu.getSize(), IS_H265, nalu.endOfAccessUnit, nalu.creationTime),
+                [this](const uint8_t* d, size_t n, std::chrono::steady_clock::time_point t, bool cfg)
+                { feedBoth(d, n, t, IS_H265 && cfg); });
+        }
+        else
+        {
+            feedBoth(nalu.getData(),
+                     nalu.getSize(),
+                     nalu.creationTime,
+                     IS_H265 && (nalu.isSPS() || nalu.isPPS() || nalu.isVPS()));
+        }
         decodingInfo.nNALUSFeeded++;
         // manually feeding AUDs doesn't seem to change anything for high latency streams
         // Only for the x264 sw encoded example stream it might improve latency slightly
@@ -129,12 +142,49 @@ void VideoDecoder::interpretNALU(const NALU& nalu)
 void VideoDecoder::configureStartDecoder(int idx)
 {
     if (decoder.window[idx] == nullptr) return;
+    DecoderLevers wanted;
+    {
+        std::lock_guard<std::mutex> lock(mLeversMutex);
+        wanted = mLevers;
+    }
+    // A decoder may reject vendor keys it does not know how to honour; fall back to the base set
+    // instead of leaving the stream undecoded.
+    if (!tryConfigure(idx, wanted) && wanted.hasExtras())
+    {
+        MLOGE << "Decoder rejected levers [" << leversSummary(wanted) << "], retrying without the extras";
+        tryConfigure(idx, wanted.onlyBase());
+    }
+    if (decoder.codec[idx] == nullptr)
+    {
+        MLOGD << "Cannot configure decoder";
+        return;
+    }
+    mAuAggregationActive = wanted.auAggregation;
+    mAssembler.reset();
+    AMediaCodec_start(decoder.codec[idx]);
+    mCheckOutputThread[idx] = std::make_unique<std::thread>(&VideoDecoder::checkOutputLoop, this, idx);
+    NDKThreadHelper::setName(mCheckOutputThread[idx]->native_handle(), "LLDCheckOutput");
+    decoder.configured[idx] = true;
+}
+
+bool VideoDecoder::tryConfigure(int idx, const DecoderLevers& levers)
+{
     const std::string MIME = IS_H265 ? "video/hevc" : "video/avc";
-    decoder.codec[idx]     = AMediaCodec_createDecoderByType(MIME.c_str());
+    std::string       name = "default " + MIME;
+    decoder.codec[idx]     = nullptr;
+    if (levers.preferLowLatencyComponent)
+    {
+        decoder.codec[idx] = AMediaCodec_createCodecByName(lowLatencyComponentName(IS_H265));
+        if (decoder.codec[idx] != nullptr) name = lowLatencyComponentName(IS_H265);
+    }
+    if (decoder.codec[idx] == nullptr)
+    {
+        decoder.codec[idx] = AMediaCodec_createDecoderByType(MIME.c_str());
+    }
+    if (decoder.codec[idx] == nullptr) return false;
 
     AMediaFormat* format = AMediaFormat_new();
     AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, MIME.c_str());
-
     if (IS_H265)
     {
         h265_configureAMediaFormat(mKeyFrameFinder, format);
@@ -143,73 +193,35 @@ void VideoDecoder::configureStartDecoder(int idx)
     {
         h264_configureAMediaFormat(mKeyFrameFinder, format);
     }
-
-    if (mLowLatency)
-    {
-        writeAndroidPerformanceParams(format);
-    }
-
-    MLOGD << "Configuring decoder:" << AMediaFormat_toString(format);
-
-    auto status = AMediaCodec_configure(decoder.codec[idx], format, decoder.window[idx], nullptr, 0);
+    applyDecoderLevers(format, levers);
+    MLOGD << "Configuring decoder " << name << ": " << AMediaFormat_toString(format);
+    const auto status = AMediaCodec_configure(decoder.codec[idx], format, decoder.window[idx], nullptr, 0);
     AMediaFormat_delete(format);
-
-    switch (status)
+    if (status != AMEDIA_OK)
     {
-        case AMEDIA_OK:
-        {
-            MLOGD << "AMediaCodec_configure: OK";
-            break;
-        }
-        case AMEDIA_ERROR_UNKNOWN:
-        {
-            MLOGD << "AMediaCodec_configure: AMEDIA_ERROR_UNKNOWN";
-            break;
-        }
-        case AMEDIA_ERROR_MALFORMED:
-        {
-            MLOGD << "AMediaCodec_configure: AMEDIA_ERROR_MALFORMED";
-            break;
-        }
-        case AMEDIA_ERROR_UNSUPPORTED:
-        {
-            MLOGD << "AMediaCodec_configure: AMEDIA_ERROR_UNSUPPORTED";
-            break;
-        }
-        case AMEDIA_ERROR_INVALID_OBJECT:
-        {
-            MLOGD << "AMediaCodec_configure: AMEDIA_ERROR_INVALID_OBJECT";
-            break;
-        }
-        case AMEDIA_ERROR_INVALID_PARAMETER:
-        {
-            MLOGD << "AMediaCodec_configure: AMEDIA_ERROR_INVALID_PARAMETER";
-            break;
-        }
-        default:
-        {
-            break;
-        }
+        MLOGE << "AMediaCodec_configure failed: " << (int) status;
+        AMediaCodec_delete(decoder.codec[idx]);
+        decoder.codec[idx] = nullptr;
+        return false;
     }
-
-    if (decoder.codec[idx] == nullptr)
-    {
-        MLOGD << "Cannot configure decoder";
-        // set csd-0 and csd-1 back to 0, maybe they were just faulty but we have better luck with the next ones
-        // mKeyFrameFinder.reset();
-        return;
-    }
-    AMediaCodec_start(decoder.codec[idx]);
-    mCheckOutputThread[idx] = std::make_unique<std::thread>(&VideoDecoder::checkOutputLoop, this, idx);
-    NDKThreadHelper::setName(mCheckOutputThread[idx]->native_handle(), "LLDCheckOutput");
-    decoder.configured[idx] = true;
+    std::lock_guard<std::mutex> lock(mLeversMutex);
+    mAppliedSummary = name + " | " + leversSummary(levers);
+    return true;
 }
 
-void VideoDecoder::feedDecoder(const NALU& nalu, int idx)
+void VideoDecoder::feedBoth(
+    const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime, bool codecConfig)
+{
+    feedDecoder(data, size, creationTime, codecConfig, 0);
+    feedDecoder(data, size, creationTime, codecConfig, 1);
+}
+
+void VideoDecoder::feedDecoder(
+    const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime, bool codecConfig, int idx)
 {
     if (!decoder.codec[idx]) return;
     const auto now          = std::chrono::steady_clock::now();
-    const auto deltaParsing = now - nalu.creationTime;
+    const auto deltaParsing = now - creationTime;
     while (true)
     {
         const auto index = AMediaCodec_dequeueInputBuffer(decoder.codec[idx], BUFFER_TIMEOUT_US);
@@ -219,19 +231,18 @@ void VideoDecoder::feedDecoder(const NALU& nalu, int idx)
             uint8_t* buf = AMediaCodec_getInputBuffer(decoder.codec[idx], (size_t) index, &inputBufferSize);
             // I have not seen any case where the input buffer returned by MediaCodec is too small to hold the NALU
             // But better be safe than crashing with a memory exception
-            if (nalu.getSize() > inputBufferSize)
+            if (size > inputBufferSize)
             {
-                MLOGD << "Nalu too big" << nalu.getSize();
+                MLOGD << "Nalu too big" << size;
                 return;
             }
 
-            int flag =
-                (IS_H265 && (nalu.isSPS() || nalu.isPPS() || nalu.isVPS())) ? AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG : 0;
-            std::memcpy(buf, nalu.getData(), (size_t) nalu.getSize());
+            const int flag = codecConfig ? AMEDIACODEC_BUFFER_FLAG_CODEC_CONFIG : 0;
+            std::memcpy(buf, data, size);
             const uint64_t presentationTimeUS =
                 (uint64_t) duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
             AMediaCodec_queueInputBuffer(
-                decoder.codec[idx], (size_t) index, 0, (size_t) nalu.getSize(), presentationTimeUS, flag);
+                decoder.codec[idx], (size_t) index, 0, size, presentationTimeUS, flag);
             waitForInputB.add(steady_clock::now() - now);
             parsingTime.add(deltaParsing);
             return;

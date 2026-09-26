@@ -11,7 +11,11 @@
 #include <media/NdkMediaCodec.h>
 #include <atomic>
 #include <iostream>
+#include <mutex>
+#include <string>
 #include <thread>
+#include "AccessUnitAssembler.h"
+#include "DecoderLevers.h"
 #include "NALU/KeyFrameFinder.hpp"
 #include "NALU/NALU.hpp"
 #include "helper/TimeHelper.hpp"
@@ -86,9 +90,19 @@ class VideoDecoder
 
     void registerOnDecodingInfoChangedCallback(DECODING_INFO_CHANGED_CALLBACK decodingInfoChangedCallback);
 
-    // Enable / disable the low-latency and realtime-priority AMediaFormat keys.
-    // Applied the next time the decoder is configured, not to a running decoder.
-    void setLowLatency(bool enabled) { mLowLatency = enabled; }
+    // Latency levers. Applied the next time the decoder is configured, not to a running decoder.
+    void setDecoderLevers(const DecoderLevers& levers)
+    {
+        std::lock_guard<std::mutex> lock(mLeversMutex);
+        mLevers = levers;
+    }
+
+    // Codec name + the levers the running decoder actually accepted.
+    std::string getDecoderSummary()
+    {
+        std::lock_guard<std::mutex> lock(mLeversMutex);
+        return mAppliedSummary;
+    }
 
     // If the decoder has been configured, feed NALU. Else search for configuration data and
     // configure as soon as possible
@@ -100,8 +114,15 @@ class VideoDecoder
     // Set Decoder.configured to true on success
     void configureStartDecoder(int idx);
 
-    // Wait for input buffer to become available before feeding NALU
-    void feedDecoder(const NALU& nalu, int idx);
+    // Creates and configures (does not start) the codec for idx with the given levers. False on failure.
+    bool tryConfigure(int idx, const DecoderLevers& levers);
+
+    // Wait for an input buffer and queue one buffer: a single NALU or a whole access unit
+    void feedDecoder(const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime,
+                     bool codecConfig, int idx);
+
+    void feedBoth(const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime,
+                  bool codecConfig);
 
     // Runs until EOS arrives at output buffer or decoder is stopped
     void checkOutputLoop(int idx);
@@ -113,8 +134,13 @@ class VideoDecoder
 
     std::unique_ptr<std::thread> mCheckOutputThread[2]  = {nullptr, nullptr};
     bool                         USE_SW_DECODER_INSTEAD = false;
-    // Some decoders misbehave with the low-latency keys, so it stays user switchable.
-    std::atomic<bool>            mLowLatency            = true;
+    // Levers requested by the app (LatencyExperiments) and what the codec accepted.
+    std::mutex    mLeversMutex;
+    DecoderLevers mLevers{};
+    std::string   mAppliedSummary = "not configured";
+    // Snapshot taken at configure time; only the NALU-feeding thread reads it afterwards.
+    bool                mAuAggregationActive = false;
+    AccessUnitAssembler mAssembler;
     // Holds the AMediaCodec instance, as well as the state (configured or not configured)
     Decoder      decoder{};
     DecodingInfo decodingInfo;

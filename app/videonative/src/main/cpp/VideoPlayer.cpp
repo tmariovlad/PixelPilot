@@ -316,14 +316,34 @@ extern "C"
         }
     }
 
-    JNI_METHOD(void, nativeSetLowLatency)
-    (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean enabled)
+    JNI_METHOD(void, nativeSetDecoderLevers)
+    (JNIEnv* env,
+     jclass jclass1,
+     jlong nativeInstance,
+     jboolean lowLatency,
+     jboolean pictureOrder,
+     jboolean operatingRate,
+     jboolean preferLowLatencyComponent,
+     jboolean auAggregation)
     {
         VideoPlayer* p = native(nativeInstance);
         if (p)
         {
-            p->setLowLatency(enabled);
+            DecoderLevers l;
+            l.lowLatency                = lowLatency;
+            l.pictureOrder              = pictureOrder;
+            l.operatingRate             = operatingRate;
+            l.preferLowLatencyComponent = preferLowLatencyComponent;
+            l.auAggregation             = auAggregation;
+            p->setDecoderLevers(l);
         }
+    }
+
+    JNI_METHOD(jstring, nativeGetDecoderSummary)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance)
+    {
+        VideoPlayer* p = native(nativeInstance);
+        return env->NewStringUTF(p ? p->getDecoderSummary().c_str() : "");
     }
 
     JNI_METHOD(void, nativeSetVideoSurface)
