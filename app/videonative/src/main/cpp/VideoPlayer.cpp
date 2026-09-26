@@ -374,6 +374,18 @@ extern "C"
         return env->NewStringUTF(p ? p->getDecoderSummary().c_str() : "");
     }
 
+    JNI_METHOD(jlongArray, nativeDrainFrameReadyTimes)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance)
+    {
+        VideoPlayer*               p     = native(nativeInstance);
+        const std::vector<int64_t> times = p ? p->drainFrameReadyTimes() : std::vector<int64_t>{};
+        jlongArray                 out   = env->NewLongArray(static_cast<jsize>(times.size()));
+        if (!times.empty())
+            env->SetLongArrayRegion(out, 0, static_cast<jsize>(times.size()),
+                                    reinterpret_cast<const jlong*>(times.data()));
+        return out;
+    }
+
     JNI_METHOD(void, nativeSetVideoSurface)
     (JNIEnv* env, jclass jclass1, jlong videoPlayerN, jobject surface, jint index)
     {

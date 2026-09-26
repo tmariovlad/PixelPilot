@@ -1,4 +1,5 @@
 #include "XrRuntime.h"
+#include <android/trace.h>
 #include <android/log.h>
 #include <sys/prctl.h>
 #include <unistd.h>
@@ -109,6 +110,38 @@ XrRuntimeInfo XrRuntime::info()
     return mInfo;
 }
 
+XrDisplayGrid XrRuntime::displayGrid()
+{
+    std::lock_guard<std::mutex> lock(mMutex);
+    return mGrid;
+}
+
+void XrRuntime::recordDisplayGrid(const XrFrameState& frameState)
+{
+    XrDisplayGrid g;
+    g.displayTimeNs = frameState.predictedDisplayTime;
+    g.periodNs      = frameState.predictedDisplayPeriod;
+    timespec ts{};
+    if (pfnTimeToTimespec && XR_SUCCEEDED(pfnTimeToTimespec(mInstance, frameState.predictedDisplayTime, &ts)))
+    {
+        g.displayTimeNs = static_cast<int64_t>(ts.tv_sec) * 1000000000LL + ts.tv_nsec;
+        g.monotonic     = true;
+        // Puts the grid on a system trace's timeline, for calibrating the latch offset.
+        if (__builtin_available(android 29, *))
+        {
+            if (ATrace_isEnabled())
+            {
+                timespec now{};
+                clock_gettime(CLOCK_MONOTONIC, &now);
+                const int64_t nowNs = static_cast<int64_t>(now.tv_sec) * 1000000000LL + now.tv_nsec;
+                ATrace_setCounter("ppxr_display_minus_now_us", (g.displayTimeNs - nowNs) / 1000);
+            }
+        }
+    }
+    std::lock_guard<std::mutex> lock(mMutex);
+    mGrid = g;
+}
+
 std::string XrRuntime::error()
 {
     std::lock_guard<std::mutex> lock(mMutex);
@@ -165,7 +198,8 @@ bool XrRuntime::setup(JNIEnv* env)
                               XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME,
                               XR_META_PERFORMANCE_METRICS_EXTENSION_NAME,
                               XR_FB_SWAPCHAIN_UPDATE_STATE_EXTENSION_NAME,
-                              XR_FB_SWAPCHAIN_UPDATE_STATE_ANDROID_SURFACE_EXTENSION_NAME};
+                              XR_FB_SWAPCHAIN_UPDATE_STATE_ANDROID_SURFACE_EXTENSION_NAME,
+                              XR_KHR_CONVERT_TIMESPEC_TIME_EXTENSION_NAME};
     std::vector<const char*> exts;
     for (const char* e : required)
     {
@@ -259,6 +293,8 @@ void XrRuntime::loadFunctions()
         loadFn(mInstance, "xrSetPerformanceMetricsStateMETA", pfnSetMetricsState);
         loadFn(mInstance, "xrQueryPerformanceMetricsCounterMETA", pfnQueryMetric);
     }
+    if (enabled(XR_KHR_CONVERT_TIMESPEC_TIME_EXTENSION_NAME))
+        loadFn(mInstance, "xrConvertTimeToTimespecTimeKHR", pfnTimeToTimespec);
 }
 
 jobject XrRuntime::createSurface(JNIEnv* env, int w, int h, bool useTimestamps, XrSwapchain& out)
@@ -398,6 +434,7 @@ void XrRuntime::renderFrame()
     XrFrameWaitInfo waitInfo{XR_TYPE_FRAME_WAIT_INFO};
     XrFrameState    frameState{XR_TYPE_FRAME_STATE};
     if (XR_FAILED(xrWaitFrame(mSession, &waitInfo, &frameState))) return;
+    recordDisplayGrid(frameState);
     XrFrameBeginInfo beginInfo{XR_TYPE_FRAME_BEGIN_INFO};
     if (XR_FAILED(xrBeginFrame(mSession, &beginInfo))) return;
 

@@ -54,3 +54,8 @@ add_executable(parse_rtp_test ParseRTP_test.cpp ../parser/ParseRTP.cpp)
 target_include_directories(parse_rtp_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(parse_rtp_test GTest::gtest_main)
 gtest_discover_tests(parse_rtp_test)
+
+add_executable(frame_time_log_test FrameTimeLog_test.cpp)
+target_include_directories(frame_time_log_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(frame_time_log_test GTest::gtest_main)
+gtest_discover_tests(frame_time_log_test)

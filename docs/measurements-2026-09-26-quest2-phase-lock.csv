@@ -1,0 +1,5 @@
+run,arm,frames_latched,trace_wait_mean_ms,trace_wait_p5_ms,trace_wait_p50_ms,trace_wait_p95_ms,share_wait_over_half_period_pct,controller_dperiod_us_at_end
+lock1,phase lock (target 1200 us),487,1.60,0.15,0.91,7.56,11.1,42.53
+open1,open loop,500,4.10,0.49,4.50,7.45,53.0,0
+lock2,phase lock (target 1200 us),496,1.53,0.16,0.87,7.47,10.5,46.80
+open2,open loop,499,3.88,0.52,4.05,7.42,48.7,0

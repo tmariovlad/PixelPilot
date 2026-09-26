@@ -64,6 +64,8 @@ for L in latch:
     if i >= 0 and i not in used:
         used.add(i); waits.append(L - qb[i])
 summ("frame ready (queueBuffer) -> latch", waits)
+if waits:
+    print(f"frames that missed a latch (wait > half a period): {100 * sum(w > P / 2 for w in waits) / len(waits):.1f} %")
 print(f"decoded frames queued={len(qb)} latched={len(used)} (never shown={len(qb)-len(used)})")
 # latch -> next pass start (compose) and -> next vsync
 nxt = lambda arr, t: arr[bisect_right(arr, t)] if bisect_right(arr, t) < len(arr) else None

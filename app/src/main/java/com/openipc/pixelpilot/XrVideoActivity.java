@@ -34,6 +34,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private LatencyExperiments experiments;
     private XrBridge xr;
     private XrStatsRenderer stats;
+    private CompositorPhase phase;
     private VideoPlayer videoPlayer;
     private WfbNgLink wfbLink;
     private WfbLinkManager wfbLinkManager;
@@ -56,6 +57,9 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             XrStatsRenderer renderer = stats;
             if (renderer != null) renderer.draw(statsLines());
             XrBridge bridge = xr;
+            if (bridge != null && phase != null && videoPlayer != null) {
+                phase.tick(videoPlayer.drainFrameReadyTimes(), bridge.displayGrid());
+            }
             if (bridge != null && experiments.xrThreadHints && videoPlayer != null) {
                 // Receiver/decoder threads are recreated with the decoder, so keep refreshing.
                 bridge.hintWorkerThreads(videoPlayer.getLatencyCriticalThreadIds());
@@ -83,6 +87,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             return;
         }
         stats = new XrStatsRenderer(xr.statsSurface());
+        phase = new CompositorPhase(experiments.xrLatchToDisplayUs, experiments.xrPhaseReport);
 
         videoPlayer = new VideoPlayer(this);
         videoPlayer.setIVideoParamsChanged(this);
@@ -131,6 +136,10 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             xr = null;          // late posts (ratio change, stats) see null and do nothing
         }
         stats = null;
+        if (phase != null) {
+            phase.close();
+            phase = null;
+        }
         super.onDestroy();
     }
 
@@ -234,6 +243,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
                 d == null ? "" : String.format(Locale.US, "decode %.2f ms  parse %.2f ms  wait %.2f ms",
                         d.avgTotalDecodingTime_ms, d.avgParsingTime_ms, d.avgWaitForInputBTime_ms),
                 "dec: " + videoPlayer.getDecoderSummary(),
+                phase == null ? "" : phase.summaryLine(),
                 "exp: " + experiments.summary(),
                 l == null ? "link: no stats" : String.format(Locale.US, "link: rssi %d  lost %d  fec %d  bad %d",
                         l.avg_rssi, l.count_p_lost, l.count_p_fec_recovered, l.count_p_bad),

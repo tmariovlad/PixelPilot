@@ -59,6 +59,7 @@ class VideoPlayer
     void setDecoderLevers(const DecoderLevers& levers) { videoDecoder.setDecoderLevers(levers); }
 
     std::string getDecoderSummary() { return videoDecoder.getDecoderSummary(); }
+    std::vector<int64_t> drainFrameReadyTimes() { return videoDecoder.drainFrameReadyTimes(); }
 
     // Threads on the video latency path (receive/parse/feed and output release), for scheduling hints.
     std::vector<int> latencyCriticalThreadIds();

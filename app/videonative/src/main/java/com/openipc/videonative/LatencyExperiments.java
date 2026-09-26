@@ -28,6 +28,10 @@ public final class LatencyExperiments {
     public static final String KEY_XR_FOV_DEG = "xr_fov_deg";
     public static final String KEY_XR_FLIP_VERTICAL = "xr_flip_vertical";
     public static final String KEY_XR_THREAD_HINTS = "xr_thread_hints";
+    /** "host:port" that receives compositor-phase reports (XR); "" = off. */
+    public static final String KEY_XR_PHASE_REPORT = "xr_phase_report";
+    /** predictedDisplayTime minus the compositor latch, in us (device constant, calibrated). */
+    public static final String KEY_XR_LATCH_TO_DISPLAY_US = "xr_latch_to_display_us";
 
     /** Refresh rates Quest 2 offers to OpenXR apps (60 Hz is media-only). */
     public static final int[] SUPPORTED_REFRESH_HZ = {72, 80, 90, 120};
@@ -35,6 +39,8 @@ public final class LatencyExperiments {
     public static final float DEFAULT_FOV_DEG = 60f;
     public static final float MIN_FOV_DEG = 20f;
     public static final float MAX_FOV_DEG = 110f;
+    /** Quest 2 @120 Hz, calibrated with a Perfetto trace (docs/xr-quest.md, "Phase lock"). */
+    public static final int DEFAULT_LATCH_TO_DISPLAY_US = 3407;
 
     public enum LayerShape {
         QUAD, CYLINDER;
@@ -70,6 +76,8 @@ public final class LatencyExperiments {
     public final float xrFovDeg;
     public final boolean xrFlipVertical;
     public final boolean xrThreadHints;
+    public final String xrPhaseReport;
+    public final int xrLatchToDisplayUs;
 
     private LatencyExperiments(PrefSource p, boolean metaHeadset) {
         // Quest 2, clean streams (docs/xr-quest.md): low-latency keys + operating rate is the fastest
@@ -90,6 +98,8 @@ public final class LatencyExperiments {
         xrFovDeg = clamp(p.getFloat(KEY_XR_FOV_DEG, DEFAULT_FOV_DEG), MIN_FOV_DEG, MAX_FOV_DEG, DEFAULT_FOV_DEG);
         xrFlipVertical = p.getBoolean(KEY_XR_FLIP_VERTICAL, true);
         xrThreadHints = p.getBoolean(KEY_XR_THREAD_HINTS, true);
+        xrPhaseReport = p.getString(KEY_XR_PHASE_REPORT, "");
+        xrLatchToDisplayUs = p.getInt(KEY_XR_LATCH_TO_DISPLAY_US, DEFAULT_LATCH_TO_DISPLAY_US);
     }
 
     public static LatencyExperiments from(PrefSource source) {

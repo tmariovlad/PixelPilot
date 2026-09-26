@@ -35,6 +35,20 @@ public final class XrBridge {
         }
     }
 
+    /** Display timing of the latest frame the runtime predicted; periodNs == 0 means none yet. */
+    public static final class DisplayGrid {
+        /** predictedDisplayTime, in CLOCK_MONOTONIC ns when {@link #monotonic}. */
+        public final long displayTimeNs;
+        public final long periodNs;
+        public final boolean monotonic;
+
+        DisplayGrid(long[] v) {
+            displayTimeNs = v[0];
+            periodNs = v[1];
+            monotonic = v[2] != 0;
+        }
+    }
+
     private final Listener listener;
     private long handle;
 
@@ -86,6 +100,11 @@ public final class XrBridge {
         return new Info(handle == 0 ? new float[]{-1f, -1f, -1f, -1f, -1f} : nativeInfo(handle));
     }
 
+    /** No grid (periodNs == 0) after stop(). */
+    public DisplayGrid displayGrid() {
+        return new DisplayGrid(handle == 0 ? new long[]{0, 0, 0} : nativeDisplayGrid(handle));
+    }
+
     /** Ends the session and frees everything. Stop feeding the video surface before calling. */
     public void stop() {
         if (handle == 0) return;
@@ -105,6 +124,7 @@ public final class XrBridge {
     private native Object nativeStatsSurface(long h);
     private native void nativeSetLayout(long h, boolean cylinder, boolean flip, float[] values, int imageW, int imageH);
     private native float[] nativeInfo(long h);
+    private native long[] nativeDisplayGrid(long h);
     private native void nativeSetWorkerThreads(long h, int[] threadIds);
     private native void nativeDestroy(long h);
 }

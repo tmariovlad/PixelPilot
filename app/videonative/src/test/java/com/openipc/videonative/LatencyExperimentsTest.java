@@ -98,6 +98,17 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(off, true).lowLatencyDecoder);
     }
 
+    @Test public void phaseReportIsOffAndLatchOffsetCalibratedByDefault() {
+        LatencyExperiments e = LatencyExperiments.from(new MapPrefs(), true);
+        assertEquals("", e.xrPhaseReport);
+        assertEquals(LatencyExperiments.DEFAULT_LATCH_TO_DISPLAY_US, e.xrLatchToDisplayUs);
+        MapPrefs p = new MapPrefs().put(LatencyExperiments.KEY_XR_PHASE_REPORT, "10.0.0.2:5610")
+                .put(LatencyExperiments.KEY_XR_LATCH_TO_DISPLAY_US, 1234);
+        e = LatencyExperiments.from(p, true);
+        assertEquals("10.0.0.2:5610", e.xrPhaseReport);
+        assertEquals(1234, e.xrLatchToDisplayUs);
+    }
+
     @Test public void storedOperatingRateOverridesTheDeviceDefault() {
         MapPrefs off = new MapPrefs().put(LatencyExperiments.KEY_DEC_OPERATING_RATE, false);
         assertFalse(LatencyExperiments.from(off, true).decOperatingRate);

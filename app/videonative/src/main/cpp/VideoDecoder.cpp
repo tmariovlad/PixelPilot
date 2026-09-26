@@ -4,6 +4,8 @@
 
 #include "VideoDecoder.h"
 #include <unistd.h>
+#include <android/trace.h>
+#include <ctime>
 #include <sstream>
 #include "AndroidThreadPrioValues.hpp"
 #include "helper/AndroidMediaFormatHelper.h"
@@ -316,6 +318,14 @@ void VideoDecoder::checkOutputLoop(int idx)
             // but the presentationTime is in US
             if (idx == 0)
             {
+                timespec ready{};
+                clock_gettime(CLOCK_MONOTONIC, &ready);
+                mFrameReady.add(static_cast<int64_t>(ready.tv_sec) * 1000000000LL + ready.tv_nsec);
+                if (ATrace_isEnabled())  // marks the phase meter's frame-ready time in a system trace
+                {
+                    ATrace_beginSection("ppxr_frame_ready");
+                    ATrace_endSection();
+                }
                 decodingTime.add(std::chrono::microseconds(nowUS - info.presentationTimeUs));
                 nDecodedFrames.add(1);
             }

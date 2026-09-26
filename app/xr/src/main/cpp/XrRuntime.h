@@ -38,6 +38,14 @@ struct XrRuntimeInfo
     float motionToPhotonMs = -1.f;
 };
 
+// The display timing of the latest xrWaitFrame, for the compositor-phase meter.
+struct XrDisplayGrid
+{
+    int64_t displayTimeNs = 0;      // predictedDisplayTime; CLOCK_MONOTONIC if `monotonic`
+    int64_t periodNs      = 0;      // predictedDisplayPeriod; 0 = no frame yet
+    bool    monotonic     = false;  // converted with XR_KHR_convert_timespec_time
+};
+
 // Owns the OpenXR instance, session and frame loop on its own thread (the EGL context lives there).
 // Video and stats are Android surface swapchains: the compositor consumes whatever their producers
 // queue, independently of this loop, which only re-submits the two layers every frame.
@@ -60,6 +68,7 @@ class XrRuntime
     // XR thread once the session runs (xrSetAndroidApplicationThreadKHR).
     void          setWorkerThreads(const std::vector<int>& tids);
     XrRuntimeInfo info();
+    XrDisplayGrid displayGrid();
     std::string   error();
 
   private:
@@ -81,6 +90,7 @@ class XrRuntime
     void    applyWorkerThreadHints();
     void    enableMetrics();
     void    readMetrics();
+    void    recordDisplayGrid(const XrFrameState& frameState);
     float   queryMetric(XrPath path);
     void    teardown(JNIEnv* env);
 
@@ -91,13 +101,14 @@ class XrRuntime
     JavaVM*           mVm       = nullptr;
     jobject           mActivity = nullptr;
 
-    std::mutex    mMutex;  // guards mError, mLayerConfig, mResizePending, mInfo
+    std::mutex    mMutex;  // guards mError, mLayerConfig, mResizePending, mInfo, mGrid
     std::string   mError;
     LayerConfig   mLayerConfig;
     bool          mResizePending = false;
     std::vector<int> mWorkerThreads;    // requested (guarded by mMutex)
     std::set<int>    mHintedThreads;    // already hinted (XR thread only)
     XrRuntimeInfo mInfo;
+    XrDisplayGrid mGrid;
 
     std::set<std::string> mEnabled;
     EglContext            mEgl;
@@ -125,6 +136,7 @@ class XrRuntime
     PFN_xrUpdateSwapchainFB                  pfnUpdateSwapchain = nullptr;
     PFN_xrSetPerformanceMetricsStateMETA     pfnSetMetricsState = nullptr;
     PFN_xrQueryPerformanceMetricsCounterMETA pfnQueryMetric     = nullptr;
+    PFN_xrConvertTimeToTimespecTimeKHR       pfnTimeToTimespec  = nullptr;
     XrPath                                   mPathCompositorGpu  = XR_NULL_PATH;
     XrPath                                   mPathDroppedFrames  = XR_NULL_PATH;
     XrPath                                   mPathMotionToPhoton = XR_NULL_PATH;

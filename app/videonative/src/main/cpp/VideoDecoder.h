@@ -16,6 +16,7 @@
 #include <thread>
 #include "AccessUnitAssembler.h"
 #include "DecoderLevers.h"
+#include "FrameTimeLog.h"
 #include "NALU/KeyFrameFinder.hpp"
 #include "NALU/NALU.hpp"
 #include "helper/TimeHelper.hpp"
@@ -100,6 +101,9 @@ class VideoDecoder
     // Kernel thread id of the thread that releases decoded frames to the surface (0 if none).
     int outputThreadId() const { return mOutputTid.load(); }
 
+    // CLOCK_MONOTONIC ns at which decoder 0 handed frames to the surface since the last call.
+    std::vector<int64_t> drainFrameReadyTimes() { return mFrameReady.drain(); }
+
     // Codec name + the levers the running decoder actually accepted, plus how whole access units
     // were closed and how many inputs did not fit, so a measurement can be interpreted.
     std::string getDecoderSummary()
@@ -155,6 +159,7 @@ class VideoDecoder
     AccessUnitAssembler   mAssembler;
     std::atomic<uint64_t> mInputTooBig{0};
     std::atomic<int>      mOutputTid{0};  // kernel tid of the output-release thread (decoder 0)
+    FrameTimeLog          mFrameReady;    // decoder 0 output-release times, for the XR phase meter
     // Holds the AMediaCodec instance, as well as the state (configured or not configured)
     Decoder      decoder{};
     DecodingInfo decodingInfo;

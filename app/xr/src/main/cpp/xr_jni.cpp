@@ -96,6 +96,16 @@ XR_JNI(jfloatArray, nativeInfo)(JNIEnv* env, jobject, jlong h)
     return out;
 }
 
+// {displayTimeNs, periodNs, monotonic (1/0)} of the latest xrWaitFrame.
+XR_JNI(jlongArray, nativeDisplayGrid)(JNIEnv* env, jobject, jlong h)
+{
+    const XrDisplayGrid g   = handle(h)->runtime.displayGrid();
+    const jlong         v[] = {g.displayTimeNs, g.periodNs, g.monotonic ? 1 : 0};
+    jlongArray          out = env->NewLongArray(3);
+    env->SetLongArrayRegion(out, 0, 3, v);
+    return out;
+}
+
 XR_JNI(void, nativeDestroy)(JNIEnv* env, jobject, jlong h)
 {
     Handle* p = handle(h);

@@ -208,6 +208,43 @@ Method: a system-wide Perfetto trace (9 s) while the XR app shows H.264 720p60 o
 - The app can see the vsync grid (Choreographer or `xrWaitFrame`'s `predictedDisplayTime`) and each frame's arrival time.
 - It would send the air unit a small frame-period correction, a few sensor lines of VMAX, so frames arrive ~1 ms before the latch. That gives a mean wait of ~1 ms and stable latency, −2…3 ms [INFERRED].
 - It needs an uplink and air-side support, so it is a separate project.
+- **Update, same day:** the headset side is built and proven against a PC stand-in for the air unit: mean wait −2.4 ms. See "Phase lock" below.
+
+### Phase lock: steering the source onto the compositor latch (proof of concept, 2026-09-26)
+
+**Goal:** remove the 0–8 ms wait for the latch by having the video source time its frames so they land just before it. On Quest 2 this is the practical equivalent of "vsync off": the display timing cannot be changed, so the source is locked to it instead.
+
+**Headset side (the app only measures):**
+- The decoder records the time each frame is handed to the surface (`FrameTimeLog`, CLOCK_MONOTONIC).
+- `XrRuntime` records `predictedDisplayTime` and the period from every `xrWaitFrame`, converted to CLOCK_MONOTONIC via `XR_KHR_convert_timespec_time`.
+- Every 250 ms, `CompositorPhase` computes the circular mean of the wait until the next latch with `PhaseMeter` (latch = `predictedDisplayTime − xr_latch_to_display_us`).
+- It shows the result on the stats panel (`phase:` line). If `xr_phase_report` = `host:port` is set, it also sends one `PPXR1 …` UDP line (`PhaseReport`) to the source.
+
+**Source side:** [scripts/quest-latch/rtp_pace.py](../scripts/quest-latch/rtp_pace.py) is a stand-in for the air unit. It runs a PI controller that changes **only the frame period**, the way an air unit would nudge sensor VMAX, and never jumps the phase. Its offline check is [test_rtp_pace.py](../scripts/quest-latch/test_rtp_pace.py): simulated at 60 fps into 120 Hz with 80 ppm offset and 0.5 ms jitter, the wait falls from 4.16 ms to 1.03 ms.
+
+**Calibration** ([calibrate_latch.py](../scripts/quest-latch/calibrate_latch.py), using the app's `ppxr_*` trace markers) [PROVEN: Perfetto trace]:
+- latch → `predictedDisplayTime` = **3407 µs** (p5–p95 3270–3617). This is `LatencyExperiments.DEFAULT_LATCH_TO_DISPLAY_US`.
+- App frame-ready → compositor `queueBuffer` = 175 µs median, 622 µs p95. The margin has to cover this.
+- **The Quest 2 "120 Hz" display runs at 119.70 Hz** (period 8.3545 ms from `predictedDisplayPeriod`). Against a 60.000 fps source that is ~2500 ppm, or ~2.5 ms/s of phase drift.
+
+**A/B on the Quest** (Wi-Fi stream from the PC, 40 s runs, alternating lock/open, N = 2 each; judged by the Perfetto trace of the last 9 s, not by the app's own report). Raw: [measurements-2026-09-26-quest2-phase-lock.csv](measurements-2026-09-26-quest2-phase-lock.csv).
+
+| Wait, compositor `queueBuffer` → latch | open loop | **phase lock** (target 1.2 ms) |
+|---|---|---|
+| mean | 4.10 / 3.88 ms | **1.60 / 1.53 ms** |
+| median | 4.50 / 4.05 ms | **0.91 / 0.87 ms** |
+| frames waiting > half a period (missed latch when locked) | 53 / 49 % (uniform phase) | 11.1 / 10.5 % |
+
+- **Mean wait −2.4 ms (−61 %), median −3.4 ms** [PROVEN].
+- The controller settled at **+42…47 µs per frame**, matching the 119.70 Hz display [PROVEN: pace logs]. A real air unit and the Quest will also differ by hundreds to thousands of ppm, so a fixed "120 fps" never stays aligned without this loop [INFERRED].
+- **~11 % of frames still miss the latch** and wait a full period. The cause is Wi-Fi arrival jitter in this rig [INFERRED: missing frames cluster where the Wi-Fi stream bunches]. With the RTL8812AU the transport jitter is different and has to be re-measured. The margin (`--target-us`) trades mean wait against misses.
+- **Air-unit side, not built yet:** receive `PPXR1` over the uplink and nudge the frame period. PixelPilot's adaptive-link already sends messages up to the air unit, so that is the natural transport. On the air unit, a PI loop on sensor VMAX (1 line ≈ µs) is needed; see the `imx415`/`waybeam` work in the OpenIPC project.
+
+**Known issue seen during this work (upstream wfb path, not the phase lock):**
+- Hot-plugging the RTL8812AU while the app runs crashed it twice [PROVEN: tombstones 2026-09-26 20:51/20:52].
+  1. `devourer::UsbTransport::ctrl_read` threw `ios_base::failure` ("rtw_read") from the EEPROM read in `CreateRtlDevice`, and nothing catches it in `WfbngLink::run` → abort.
+  2. `libusb_submit_transfer` segfaulted in `~RtlJaguarDevice` → `rtw_hal_deinit` on a device that had already gone.
+- The third enumeration worked. This needs a fix (catch and retry in `WfbngLink::run`; skip hardware de-init on a dead handle).
 
 ## Open questions (to settle on the device)
 

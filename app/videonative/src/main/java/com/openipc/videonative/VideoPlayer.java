@@ -60,6 +60,8 @@ public class VideoPlayer implements IVideoParamsChanged {
 
     public static native int[] nativeGetLatencyCriticalThreadIds(long nativeInstance);
 
+    public static native long[] nativeDrainFrameReadyTimes(long nativeInstance);
+
     public static native void nativeStartDvr(long nativeInstance, int fd, int fmp4_enabled);
 
     public static native void nativeStopDvr(long nativeInstance);
@@ -146,6 +148,14 @@ public class VideoPlayer implements IVideoParamsChanged {
     /** Kernel thread ids on the video latency path (receive/feed, output release); may be empty. */
     public int[] getLatencyCriticalThreadIds() {
         return nativeGetLatencyCriticalThreadIds(nativeVideoPlayer);
+    }
+
+    /**
+     * CLOCK_MONOTONIC ns at which decoded frames were handed to the output surface since the previous
+     * call (oldest first, bounded). Input for the XR compositor-phase meter.
+     */
+    public long[] drainFrameReadyTimes() {
+        return nativeDrainFrameReadyTimes(nativeVideoPlayer);
     }
 
     /** Codec name and the levers it accepted, e.g. "default video/hevc | LL PO". */
