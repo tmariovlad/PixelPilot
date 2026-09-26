@@ -1,0 +1,91 @@
+package com.openipc.xr;
+
+import android.app.Activity;
+import android.view.Surface;
+
+/**
+ * Java face of the native OpenXR runtime. start() creates the session and two compositor-owned
+ * surfaces; the caller feeds videoSurface() with MediaCodec and draws the stats into statsSurface().
+ */
+public final class XrBridge {
+    static {
+        System.loadLibrary("PixelPilotXr");
+    }
+
+    public enum SessionEvent { ACTIVE, INACTIVE, EXITING }
+
+    /**
+     * Called on the XR thread. ACTIVE: the video surface may be fed. INACTIVE: stop feeding it
+     * before returning (the runtime ends the session right after). EXITING: finish the activity.
+     */
+    public interface Listener {
+        void onSessionEvent(SessionEvent event);
+    }
+
+    /** Negative values mean "not reported by the runtime". */
+    public static final class Info {
+        public final float refreshHz, requestedHz, compositorGpuMs, droppedFrames, motionToPhotonMs;
+
+        Info(float[] v) {
+            refreshHz = v[0];
+            requestedHz = v[1];
+            compositorGpuMs = v[2];
+            droppedFrames = v[3];
+            motionToPhotonMs = v[4];
+        }
+    }
+
+    private final Listener listener;
+    private long handle;
+
+    public XrBridge(Listener listener) {
+        this.listener = listener;
+        handle = nativeCreate();
+    }
+
+    /** Returns null on success, otherwise a human-readable reason. */
+    public String start(Activity activity, int refreshHz, boolean useTimestamps, boolean perfSustainedHigh) {
+        if (nativeStart(handle, activity, refreshHz, useTimestamps, perfSustainedHigh)) return null;
+        String error = nativeError(handle);
+        return error.isEmpty() ? "OpenXR start failed" : error;
+    }
+
+    public Surface videoSurface() {
+        return (Surface) nativeVideoSurface(handle);
+    }
+
+    public Surface statsSurface() {
+        return (Surface) nativeStatsSurface(handle);
+    }
+
+    public void setLayout(LayerLayout l) {
+        float[] v = {l.videoWidthM, l.videoHeightM, l.videoZ, l.cylRadius, l.cylAngleRad, l.cylAspect,
+                l.statsWidthM, l.statsHeightM, l.statsY, l.statsZ, LayerLayout.STATS_IMAGE_W};
+        nativeSetLayout(handle, l.cylinder, l.flip, v, l.imageW, l.imageH);
+    }
+
+    public Info info() {
+        return new Info(nativeInfo(handle));
+    }
+
+    /** Ends the session and frees everything. Stop feeding the video surface before calling. */
+    public void stop() {
+        if (handle == 0) return;
+        nativeDestroy(handle);
+        handle = 0;
+    }
+
+    @SuppressWarnings("unused") // called from xr_jni.cpp
+    private void onNativeSessionEvent(int event) {
+        listener.onSessionEvent(SessionEvent.values()[event]);
+    }
+
+    private native long nativeCreate();
+    private native boolean nativeStart(long h, Activity activity, float refreshHz, boolean useTimestamps, boolean perfHigh);
+    private native String nativeError(long h);
+    private native Object nativeVideoSurface(long h);
+    private native Object nativeStatsSurface(long h);
+    private native void nativeSetLayout(long h, boolean cylinder, boolean flip, float[] values, int imageW, int imageH);
+    private native float[] nativeInfo(long h);
+    private native void nativeDestroy(long h);
+}

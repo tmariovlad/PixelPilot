@@ -7,6 +7,7 @@ constraintlayout = "2.1.4"
 mpandroidchartVersion = "3.1.0"
 mediapipe = "0.10.29"
 junit = "4.13.2"
+openxrLoader = "1.1.63"
 
 [libraries]
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -16,6 +17,7 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 philjay-mpandroidchart = { module = "com.github.Philjay:mpandroidchart", version.ref = "mpandroidchartVersion" }
 mediapipe-tasks-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "mediapipe" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+openxr-loader = { group = "org.khronos.openxr", name = "openxr_loader_for_android", version.ref = "openxrLoader" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
