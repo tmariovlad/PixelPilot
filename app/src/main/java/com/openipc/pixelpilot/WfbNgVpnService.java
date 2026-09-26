@@ -3,8 +3,13 @@ package com.openipc.pixelpilot;
 import android.net.VpnService;
 import android.content.Intent;
 import android.os.ParcelFileDescriptor;
+import android.system.ErrnoException;
+import android.system.Os;
+import android.system.OsConstants;
+import android.system.StructPollfd;
 import android.util.Log;
 
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -165,35 +170,12 @@ public class WfbNgVpnService extends VpnService {
 
                 try (DatagramSocket socket = new DatagramSocket()) {
                     socket.setReuseAddress(true);
-
-                    while (isRunning) {
-                        // Read from VPN interface
-                        int length = vpnInput.read(buffer);
-                        if (length == -1) {
-                            // End of stream
-                            break;
-                        }
-
-                        if (length == 0)
-                            continue;
-//                        Log.i(TAG, "VPN → UDP:  length: " + length);
-
-                        // Prepend the packet size in network byte order
-                        byte[] sizeBytes = new byte[2];
-                        sizeBytes[0] = (byte) ((length >> 8) & 0xFF); // High byte
-                        sizeBytes[1] = (byte) (length & 0xFF);         // Low byte
-
-                        // Combine the size bytes and actual packet data
-                        byte[] outputData = new byte[2 + length];
-                        System.arraycopy(sizeBytes, 0, outputData, 0, 2);
-                        System.arraycopy(buffer, 0, outputData, 2, length);
-
-
-                        // Forward to UDP:8001 on localhost
-                        DatagramPacket packet = new DatagramPacket(outputData, outputData.length,
-                                new InetSocketAddress("127.0.0.1", 8001));
-                        socket.send(packet);
-                    }
+                    final InetSocketAddress wfbTx = new InetSocketAddress("127.0.0.1", 8001);
+                    TunToUdpPump.run(
+                            pollingTun(vpnInterfacePfd.getFileDescriptor(), vpnInput),
+                            frame -> socket.send(new DatagramPacket(frame, frame.length, wfbTx)),
+                            () -> isRunning,
+                            buffer);
                 } catch (IOException e) {
                     Log.e(TAG, "VPN→UDP thread error", e);
                 }
@@ -205,6 +187,29 @@ public class WfbNgVpnService extends VpnService {
         udpToVpnThread.start();
         vpnToUdpThread.start();
         Log.i(TAG, "VPN threads started");
+    }
+
+    /** TUN reads that wait for data with poll(2) instead of spinning on the non-blocking descriptor. */
+    private static TunToUdpPump.Tun pollingTun(final FileDescriptor fd, final FileInputStream in) {
+        final StructPollfd[] pollFds = {new StructPollfd()};
+        pollFds[0].fd = fd;
+        pollFds[0].events = (short) OsConstants.POLLIN;
+        return new TunToUdpPump.Tun() {
+            @Override
+            public boolean awaitReadable(int timeoutMs) throws IOException {
+                try {
+                    return Os.poll(pollFds, timeoutMs) > 0;
+                } catch (ErrnoException e) {
+                    if (e.errno == OsConstants.EINTR) return false;
+                    throw new IOException("poll on the VPN interface failed", e);
+                }
+            }
+
+            @Override
+            public int read(byte[] buffer) throws IOException {
+                return in.read(buffer);
+            }
+        };
     }
 
     @Override

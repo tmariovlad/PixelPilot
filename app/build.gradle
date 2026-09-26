@@ -70,4 +70,6 @@ dependencies {
     implementation(libs.material)
     implementation(libs.philjay.mpandroidchart)
     implementation(libs.mediapipe.tasks.vision)
+
+    testImplementation(libs.junit)
 }
