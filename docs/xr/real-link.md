@@ -83,6 +83,37 @@ Baseline on 2026-09-27 [PROVEN]:
 - **Controlled re-check (2026-09-27, later):** air unit moved back to the other room, **adaptive link off** (Quest TX = 0 packets in 5 s). The air unit sent 1292 pkt/s with 0 dropped, yet the Quest lost ~559 pkt/s (uplink line `…:0:559:…:35.19:…`, SNR 35 dB), quality −193, ~4 decoded fps [PROVEN]. The same air unit and headset in one room: ~167 fps. The loss follows the position, with no transmission from the Quest involved. Unused levers for range: air txpower is 12 dBm (`iw dev wlan0 info`), and the MCS is `-M 2` with FEC 8/12 [SPECULATION: a higher txpower or a lower MCS would extend range; not tested].
 - Repeat any on/off test alternately with **the setup physically unchanged**. A one-shot A/B of `adaptive_link_enabled` looked decisive until repeats showed no difference: 835/835/836/835 frames per 10 s. See [troubleshooting.md](troubleshooting.md).
 
+## TX power and radio settings through walls (2026-09-27)
+
+**Setup:** the air unit in another room, the headset fixed. For each setting the Quest was measured for 10 s with [link_measure.sh](../../scripts/quest/link_measure.sh), which reports decoded fps, quality, and lost/s + SNR from the uplink line. The air unit was measured over eth0.
+
+**Changing TX power at runtime works and is not persistent:**
+- Command: `iw dev wlan0 set txpower fixed <mBm>` on the RTL8822EU (driver `8812eu`, monitor mode).
+- The driver applies it to the rates wfb uses: `/proc/net/rtl88x2eu/wlan0/tx_power_idx`, rows `MCS2 1T`. Path A goes from idx 49 at 12 dBm to idx 93 at 23 dBm; path B from 40 to 84 [PROVEN].
+- A reboot restores 12 dBm. There is no `wlanpwr` in `fw_printenv`, so 12 dBm is the default.
+
+**Temperatures** (SoC: `/sys/devices/virtual/mstar/msys/TEMP_R`; Wi-Fi chip per RF path: `/proc/net/rtl88x2eu/wlan0/thermal_state`): 44–46 °C SoC and 37–42 °C chip across 12–23 dBm. That is far below the stop limits used (80 °C SoC, 70 °C chip) [PROVEN].
+
+| Air setting | Quest lost/s | decoded fps | quality | SNR |
+|---|---|---|---|---|
+| 12 dBm, MCS2 | 630 | 2 | −2 | 41.0 |
+| 16 dBm, MCS2 | 586 | 1 | −89 | 37.5 |
+| 20 dBm, MCS2 | 619 | 2 | 212 | 42.0 |
+| 23 dBm, MCS2 | 654 | 1 | −2 | 41.8 |
+| 12 dBm, MCS2 (restart) | 667 | 1 | −208 | 31.7 |
+| 12 dBm, MCS0 | 591 | 0 | −192 | 31.8 |
+| 12 dBm, MCS2 + STBC + LDPC | 657 | 6 | −90 | 36.3 |
+
+- **+11 dB of TX power does not change the loss** through walls (bracket 12/16/20/23 dBm) [PROVEN]. The packets that do arrive are strong (SNR 31–42 dB). So this is not a simple link-budget shortfall at the air unit's transmitter. Physical checks are still open: antennas on the air unit and on the RTL, and the RTL's orientation on the headset.
+- **MCS0 cannot carry this stream:** the air unit only got ~526 pkt/s out instead of ~1270.
+- **STBC + LDPC:** 6 vs 1 fps in a single run, not proven.
+
+**What the air unit really sends** (`/tmp/wfbtx.log` `PKT` counters) [PROVEN]:
+- **~844 pkt/s of ~1357 B from waybeam, ≈ 9.2 Mbit/s of video.** `waybeam.json` says `bitrate: 1000`, which does not match.
+- ~1270 pkt/s ≈ 14 Mbit/s injected with FEC 8/12. At MCS2, 20 MHz (19.5 Mbit/s PHY) the air unit's radio is **~73 % busy**. That is the starting point for any "more speed" test.
+
+**Incident:** the air unit rebooted at ~21:23 during this test. Just before, TX power had been set to 23 dBm and back to 12 dBm while `/proc/.../tx_power_idx` was being read, and that read took > 30 s under load 7–14. The cause is unknown [SPECULATION: a power draw at 23 dBm on the bench supply, a watchdog under load, or a manual power cycle]. After the reboot the air unit was in APFPV with `outgoing.server=127.0.0.1` again (see "Restoring the air unit after a test").
+
 ## First real link: Quest 2 + RTL8812AU + OpenIPC air unit (2026-09-26)
 
 **Setup:** the HIL air unit (SSC338Q + IMX415, waybeam, H.264 640×480 @ 166 fps, 1 Mbit/s) sends over wfb-ng on channel 157, 20 MHz, FEC 8/12. The RTL8812AU sits on the Quest's USB-C, running PixelPilotXr (devourer).
