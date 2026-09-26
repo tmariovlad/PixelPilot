@@ -28,6 +28,8 @@ public final class LatencyExperiments {
     public static final String KEY_XR_FOV_DEG = "xr_fov_deg";
     public static final String KEY_XR_FLIP_VERTICAL = "xr_flip_vertical";
     public static final String KEY_XR_THREAD_HINTS = "xr_thread_hints";
+    /** Start the immersive XR viewer directly when the app is launched (Meta headsets). */
+    public static final String KEY_XR_AUTOSTART = "xr_autostart";
     /** "host:port" that receives compositor-phase reports (XR); "" = off. */
     public static final String KEY_XR_PHASE_REPORT = "xr_phase_report";
     /** predictedDisplayTime minus the compositor latch, in us (device constant, calibrated). */
@@ -76,6 +78,7 @@ public final class LatencyExperiments {
     public final float xrFovDeg;
     public final boolean xrFlipVertical;
     public final boolean xrThreadHints;
+    public final boolean xrAutostart;
     public final String xrPhaseReport;
     public final int xrLatchToDisplayUs;
 
@@ -101,6 +104,8 @@ public final class LatencyExperiments {
         xrFovDeg = clamp(p.getFloat(KEY_XR_FOV_DEG, DEFAULT_FOV_DEG), MIN_FOV_DEG, MAX_FOV_DEG, DEFAULT_FOV_DEG);
         xrFlipVertical = p.getBoolean(KEY_XR_FLIP_VERTICAL, true);
         xrThreadHints = p.getBoolean(KEY_XR_THREAD_HINTS, true);
+        // A headset has no use for the 2D screen when flying; leaving XR returns to it for settings.
+        xrAutostart = p.getBoolean(KEY_XR_AUTOSTART, metaHeadset);
         xrPhaseReport = p.getString(KEY_XR_PHASE_REPORT, "");
         xrLatchToDisplayUs = p.getInt(KEY_XR_LATCH_TO_DISPLAY_US, DEFAULT_LATCH_TO_DISPLAY_US);
     }

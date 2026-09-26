@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PixelPilotXr + the HIL air unit: its linkmode wfb default runs on the AP channel 157
+         (docs/xr/real-link.md). -->
+    <integer name="default_wifi_channel">157</integer>
+</resources>

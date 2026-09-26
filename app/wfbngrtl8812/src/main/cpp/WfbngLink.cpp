@@ -9,6 +9,7 @@
 #include "SignalQualityCalculator.h"
 #include "TxFrame.h"
 #include "devourer/src/RxPacket.h"
+#include "devourer/src/UsbDeviceLock.h"
 #include "libusb.h"
 #include "wfb-ng/src/wifibroadcast.hpp"
 
@@ -120,6 +121,34 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
         return r;
     }
 
+    // The adapter may still be held by the activity we are replacing (2D -> XR handoff): its link
+    // thread releases the per-adapter lock only once its stop has completed. Wait for it (bounded)
+    // instead of failing, and only then claim the interface. The lock is handed to
+    // CreateRtlDevice, which then does not re-acquire it (devourer WiFiDriver.cpp).
+    auto usb_lock = std::make_shared<devourer::UsbDeviceLock>();
+    std::string lock_why;
+    auto lock_res = usb_lock->try_acquire(libusb_get_device(dev_handle), &lock_why, filesDir);
+    int lock_waits = 0;
+    constexpr int kLockWaitSteps = 40;  // x 250 ms = 10 s
+    while (lock_res == devourer::UsbDeviceLock::Result::Busy && lock_waits < kLockWaitSteps) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        ++lock_waits;
+        lock_res = usb_lock->try_acquire(libusb_get_device(dev_handle), &lock_why, filesDir);
+    }
+    if (lock_res == devourer::UsbDeviceLock::Result::Busy) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "adapter still in use after %d ms (%s)",
+                            lock_waits * 250, lock_why.c_str());
+        libusb_close(dev_handle);
+        libusb_exit(ctx);
+        return -1;
+    }
+    if (lock_waits > 0) {
+        __android_log_print(ANDROID_LOG_INFO, TAG, "adapter free after waiting %d ms", lock_waits * 250);
+    }
+    if (lock_res == devourer::UsbDeviceLock::Result::Error) {
+        usb_lock.reset();  // lock infrastructure unavailable: let CreateRtlDevice degrade as before
+    }
+
     if (libusb_kernel_driver_active(dev_handle, 0)) {
         r = libusb_detach_kernel_driver(dev_handle, 0);
         __android_log_print(ANDROID_LOG_DEBUG, TAG, "libusb_detach_kernel_driver: %d", r);
@@ -142,7 +171,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
     // Android build has shipped.
     cfg.usb.rx_zerocopy = false;
 
-    rtl_devices[fd] = wifi_driver->CreateRtlDevice(dev_handle, ctx, nullptr, cfg);
+    rtl_devices[fd] = wifi_driver->CreateRtlDevice(dev_handle, ctx, usb_lock, cfg);
     if (!rtl_devices.at(fd)) {
         libusb_exit(ctx);
         __android_log_print(ANDROID_LOG_ERROR, TAG, "CreateRtlDevice error");
@@ -281,6 +310,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
         if (dev) {
             dev->Stop();
         }
+        rtl_devices.erase(fd);  // destroy the device: releases the adapter lock (see below)
         libusb_release_interface(dev_handle, 0);
         libusb_exit(ctx);
         return -1;
@@ -298,6 +328,10 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
     if (dev) {
         dev->Stop();
     }
+    // Destroy the device while the handle is still valid: its destructor de-inits the chip and
+    // releases the per-adapter lock. Kept in the map, it held the lock for the lifetime of this
+    // WfbngLink, so the next activity (2D -> XR) found the adapter "in use" (2026-09-27).
+    rtl_devices.erase(fd);
 
     r = libusb_release_interface(dev_handle, 0);
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "libusb_release_interface: %d", r);

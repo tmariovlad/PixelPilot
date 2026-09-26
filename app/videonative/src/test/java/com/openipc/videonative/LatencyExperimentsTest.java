@@ -107,6 +107,14 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(off, true).decPictureOrder);
     }
 
+    // Headsets start straight in XR (user request 2026-09-27); phones keep the 2D screen.
+    @Test public void xrAutostartDefaultsOnOnlyForMetaHeadsets() {
+        assertTrue(LatencyExperiments.from(new MapPrefs(), true).xrAutostart);
+        assertFalse(LatencyExperiments.from(new MapPrefs(), false).xrAutostart);
+        MapPrefs off = new MapPrefs().put(LatencyExperiments.KEY_XR_AUTOSTART, false);
+        assertFalse(LatencyExperiments.from(off, true).xrAutostart);
+    }
+
     @Test public void phaseReportIsOffAndLatchOffsetCalibratedByDefault() {
         LatencyExperiments e = LatencyExperiments.from(new MapPrefs(), true);
         assertEquals("", e.xrPhaseReport);

@@ -87,3 +87,4 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   - A first on/off test of `adaptive_link_enabled` seemed to fix it. It was a confound: the headset was moved back near the air unit at the same time.
   - Repeated alternately (on/off/on/off, same position): 835/835/836/835 frames per 10 s, quality 472/576/522/509, Quest TX 0 in every run [PROVEN]. Adaptive link is **not** the cause.
   - Check the physical link first. Compare the air unit's `wlan0 tx_packets` with what the Quest receives (`transport_analyze.py` sequence gaps).
+- **XR mode gets no video after starting from the 2D screen** ("USB adapter in use — refusing to open", then `CreateRtlDevice error`). This was the adapter handoff race, fixed in `WfbngLink.cpp` on 2026-09-27; see [real-link.md § Boot defaults](real-link.md#boot-defaults-works-on-the-first-try-after-a-reboot-2026-09-27).

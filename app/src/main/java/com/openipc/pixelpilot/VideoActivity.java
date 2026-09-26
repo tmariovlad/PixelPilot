@@ -179,7 +179,15 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
     public static int getChannel(Context context) {
         return context.getSharedPreferences("general",
-                Context.MODE_PRIVATE).getInt("wifi-channel", 161);
+                Context.MODE_PRIVATE).getInt("wifi-channel", context.getResources().getInteger(R.integer.default_wifi_channel));
+    }
+
+    /** Opens the immersive viewer (Quest); the 2D activity pauses and releases the adapter. */
+    private void launchXr() {
+        Intent xr = new Intent(this, XrVideoActivity.class);
+        xr.setAction(Intent.ACTION_MAIN);
+        xr.addCategory("org.khronos.openxr.intent.category.IMMERSIVE_HMD");
+        startActivity(xr);
     }
 
     public static boolean getLowLatencySetting(Context context) {
@@ -351,6 +359,12 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
         // wfbNg VPN Service
         startVpnService();
+
+        // Headsets go straight to the immersive viewer on a fresh launch (Library or adapter attach);
+        // leaving XR comes back here, to the settings.
+        if (savedInstanceState == null && LatencyExperiments.load(this).xrAutostart) {
+            launchXr();
+        }
     }
 
     // ----------------------------------------------------------------------------
@@ -773,10 +787,17 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
         MenuItem launchXr = videoMenu.add("Launch XR (Quest)");
         launchXr.setOnMenuItemClickListener(item -> {
-            Intent xr = new Intent(this, XrVideoActivity.class);
-            xr.setAction(Intent.ACTION_MAIN);
-            xr.addCategory("org.khronos.openxr.intent.category.IMMERSIVE_HMD");
-            startActivity(xr);
+            launchXr();
+            return true;
+        });
+        MenuItem autostartXr = videoMenu.add("Start in XR");
+        autostartXr.setCheckable(true);
+        autostartXr.setChecked(LatencyExperiments.load(this).xrAutostart);
+        autostartXr.setOnMenuItemClickListener(item -> {
+            boolean on = !item.isChecked();
+            item.setChecked(on);
+            getSharedPreferences(LatencyExperiments.PREFS_NAME, MODE_PRIVATE).edit()
+                    .putBoolean(LatencyExperiments.KEY_XR_AUTOSTART, on).apply();
             return true;
         });
 

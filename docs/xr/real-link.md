@@ -6,6 +6,41 @@ Quest XR docs: [guide](../xr-quest.md) · [decoder levers](decoder-levers.md) ·
 
 Setup (APFPV vs wfb, keys, link id) and the picture-order finding on the real OpenIPC stream. The branch-by-branch G2G budget measured on this link is in [g2g-budget.md](g2g-budget.md).
 
+## Boot defaults: works on the first try after a reboot (2026-09-27)
+
+The user asked for one optimal default on the air unit and on the ground, so that video appears after a reboot without manual steps.
+
+**Why wfb-ng is the default transport:**
+- It is broadcast with FEC and has no association or ACK retransmissions, so a weak link degrades instead of dropping out. APFPV loses its association on a bad link and hides its retransmissions [INFERRED: OpenIPC `repos/tasks/research/g2g-chain-detail/09-transport-apfpv-wfb.md` §1, §4].
+- It is the only transport the Quest's RTL8812AU path can receive.
+- Latency head-to-head (wfb tuned vs APFPV) is **not measured yet**. The 20.3 ms HIL record was on APFPV, and the early wfb numbers are flagged as suspect in that project. APFPV stays available on demand through `linkmode-air.sh apfpv`.
+
+**Air unit (HIL `.132`), persistent** [PROVEN 2026-09-27: reboot came up on its own as `AIR_STATE=wfb`, `wfb_tx -i 7669206 -p 0 -u 5600 -K … -B 20 -M 2 -S 1 -L 1 -k 4 -n 6`, ~1354 pkt/s]:
+- `/etc/linkmode.boot` contains `wfb`. An `/etc/rc.local` hook runs `sleep 30; /opt/linkmode/linkmode-air.sh $(cat /etc/linkmode.boot)` after `waybeam_launch`.
+- `linkmode-air.sh` defaults, all overridable by `LINKMODE_*` env:
+  - link id **7669206**;
+  - FEC **4/6** (the OpenIPC project's jitter lever: inter-frame max ~59 ms at K8 vs ~11 ms at K4);
+  - MCS 2;
+  - **STBC 1, LDPC 1** (wfb-ng `master.cfg` defaults; the Quest RTL decodes them).
+- `/opt/linkmode/drone.key` holds the OpenIPC firmware default key (md5 `24767056…`). The previous HIL key is in `drone.key.hil`.
+- Revert: `cp /opt/linkmode/linkmode-air.sh.bak-pre-bootdefault /opt/linkmode/linkmode-air.sh; cp /opt/linkmode/drone.key.hil /opt/linkmode/drone.key; rm /etc/linkmode.boot`.
+- The deploy copy lives in the `/linkmode` skill (`~/.claude/skills/linkmode/scripts/`) and is synced with the air unit (md5 `8ebc9c56`).
+
+**Quest (PixelPilotXr), build defaults** [PROVEN 2026-09-27: after the prefs were wiped, a Library launch went straight to XR, imported the OpenIPC key, used channel 157 and decoded the air unit's stream]:
+- `xr_autostart` defaults on for Meta headsets (`LatencyExperiments`). A fresh launch from the Library or on adapter attach opens XR directly. Leaving XR returns to the 2D screen for settings. The 2D menu toggle is "Start in XR".
+- The XR build's default channel is **157** (`app/src/debug/res/values/link_defaults.xml`; main build 161) and its default `gs.key` is the **OpenIPC firmware default** (`app/src/debug/assets/gs.key`).
+
+**HIL ground station `.208`, not done yet (it was offline):**
+- It needs the OpenIPC default `gs.key` in `~/linkmode/gs.key`; back up the HIL one first.
+- It needs `wfb_rx -i 7669206`. The skill's `linkmode-gs.sh` already has `LINK_ID`; deploy it when `.208` is reachable.
+
+**Adapter handoff race, fixed** (`WfbngLink.cpp`):
+- With autostart, the 2D activity starts the RTL, and XR asks for it ~1.5 s later. devourer refused with "USB adapter in use — refusing to open". Its per-adapter lock lived inside the device object, which stayed in `rtl_devices` after the RX loop ended, so it was never released. XR gave up with no retry [PROVEN: logcat 2026-09-27 00:42].
+- Fix:
+  1. `run()` now erases the device after `Stop()`, while the handle is still valid, which releases the lock.
+  2. Before claiming the interface, the new owner waits for the lock (250 ms steps, max 10 s) and hands it to `CreateRtlDevice`, as devourer's contract allows (`WiFiDriver.cpp:92-100`).
+- Verified: "adapter free after waiting 2500 ms", then the decoder configured on the live stream. The manual "Launch XR" path goes through the same code.
+
 ## Watch the air unit's video on the Quest (step by step)
 
 This is for the HIL air unit (SSC338Q, `.132`), which boots into APFPV with a key paired to the HIL GS. Why each step is needed: see "First real link" below.
