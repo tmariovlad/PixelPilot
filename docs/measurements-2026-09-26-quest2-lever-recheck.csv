@@ -1,0 +1,25 @@
+stream,config,keys,decode_ms,frames
+h264_720,OR only (Quest default),OR,1.80,672
+h264_720,LL (upstream),LL+vLL+qti+hisi+rtc+prio,1.98,668
+h264_720,no keys,none,1.99,672
+h264_720,LL + OR,LL+vLL+qti+hisi+rtc+OR,1.61,670
+h264_720,OR only (Quest default),OR,1.85,672
+h264_720,LL + OR,LL+vLL+qti+hisi+rtc+OR,1.51,668
+h264_720,no keys,none,1.93,670
+h264_720,LL (upstream),LL+vLL+qti+hisi+rtc+prio,1.95,668
+h264_720,OR only (Quest default),OR,1.99,674
+h264_720,LL + OR,LL+vLL+qti+hisi+rtc+OR,1.56,670
+h264_720,no keys,none,1.97,670
+h264_720,LL (upstream),LL+vLL+qti+hisi+rtc+prio,2.11,672
+h265_1080,LL (upstream),LL+vLL+qti+hisi+rtc+prio,3.47,677
+h265_1080,OR only (Quest default),OR,2.49,669
+h265_1080,no keys,none,3.92,668
+h265_1080,LL + OR,LL+vLL+qti+hisi+rtc+OR,2.10,672
+h265_1080,no keys,none,3.37,674
+h265_1080,LL + OR,LL+vLL+qti+hisi+rtc+OR,2.43,677
+h265_1080,OR only (Quest default),OR,2.54,670
+h265_1080,LL (upstream),LL+vLL+qti+hisi+rtc+prio,3.24,674
+h265_1080,OR only (Quest default),OR,2.74,673
+h265_1080,LL (upstream),LL+vLL+qti+hisi+rtc+prio,3.21,673
+h265_1080,LL + OR,LL+vLL+qti+hisi+rtc+OR,2.43,676
+h265_1080,no keys,none,3.42,675

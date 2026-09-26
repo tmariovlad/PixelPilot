@@ -72,10 +72,9 @@ public final class LatencyExperiments {
     public final boolean xrThreadHints;
 
     private LatencyExperiments(PrefSource p, boolean metaHeadset) {
-        // Quest 2 key isolation (docs/xr-quest.md): the AOSP and qti low-latency keys each add ~1.2 ms
-        // of decode time on OMX.qcom.video.decoder.hevc and hold no frames without them, so Meta
-        // headsets default to off; phones keep the upstream default.
-        lowLatencyDecoder = p.getBoolean(KEY_LOW_LATENCY_DECODER, !metaHeadset);
+        // Quest 2, clean streams (docs/xr-quest.md): low-latency keys + operating rate is the fastest
+        // combination on every stream measured, so the upstream default holds on headsets too.
+        lowLatencyDecoder = p.getBoolean(KEY_LOW_LATENCY_DECODER, true);
         decPictureOrder = p.getBoolean(KEY_DEC_PICTURE_ORDER, false);
         // Quest 2 measurement (docs/xr-quest.md): decode 10.15 -> 4.99 ms, N=3. Phones keep it off:
         // some Qualcomm decoders fail with it (moonlight-android MediaCodecHelper).

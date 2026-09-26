@@ -44,7 +44,7 @@ Everything tunable lives in **Video → Latency experiments** (single source:
 | Item | Pref key | Default | Applies |
 |---|---|---|---|
 | Decoder: decode order (qti) | `dec_picture_order` | off | app restart (2D and XR) |
-| Decoder: max operating rate | `dec_operating_rate` | off | app restart |
+| Decoder: max operating rate | `dec_operating_rate` | **on for Meta headsets**, off elsewhere | app restart |
 | Decoder: low-latency component | `dec_prefer_low_latency_component` | off | app restart |
 | Decoder: whole access units | `au_aggregation` | off | app restart |
 | XR refresh | `xr_refresh_hz` | 120 | next XR start |
@@ -128,7 +128,41 @@ decoder was really configured with (read back from the `Configuring decoder` log
 
 - The slowdown comes from the Qualcomm "low-latency mode", which both the AOSP `low-latency` key and the qti key switch on (+1.2 ms each, not additive) [PROVEN]. `priority=0` and `vendor.low-latency.enable` do nothing here [PROVEN]. The earlier guess that `priority=0` was the cause was **wrong**.
 - Without low-latency mode the decoder does not hold frames back (a held frame would cost ~16.7 ms at 60 fps; decode stays ~9 ms) [INFERRED from the numbers], so on this I/P-only stream the mode buys nothing and costs 1.2 ms. Why it is slower (e.g. less internal pipelining) is [SPECULATION].
-- **Meta-headset defaults since this run: low-latency keys off, max operating rate on → 4.59 ms vs 10.15 ms upstream (−5.6 ms decode).** Phones keep the upstream defaults (not measured there).
+- ~~Meta-headset defaults since this run: low-latency keys off, max operating rate on → 4.59 ms vs 10.15 ms upstream (−5.6 ms decode).~~ **Corrected 2026-09-26 by the clean-stream recheck below:** that stream lost ~70 % of its packets, and the "+1.2 ms from the LL keys" does not reproduce on complete streams. Low-latency keys are back **on** for every device, and operating rate stays on for Meta headsets.
+
+### Clean-stream recheck: LL keys + operating rate is fastest (2026-09-26)
+
+These streams arrive almost whole (~670 of 720 frames decoded per 12 s run), unlike the 1-slice stream above. The 720p/1080p test streams are single-slice x264/x265 at 60 fps. N = 3 shuffled rounds per stream, and every run's applied keys were checked. Raw data: [measurements-2026-09-26-quest2-lever-recheck.csv](measurements-2026-09-26-quest2-lever-recheck.csv). The CSV has no per-run rows for H.265 720p; only its summary was kept.
+
+| Config | H.264 720p | H.265 720p | H.265 1080p |
+|---|---|---|---|
+| no keys | 1.96 (1.93–1.99) | 2.34 (2.18–2.63) | 3.57 (3.37–3.92) |
+| LL (upstream) | 2.01 (1.95–2.11) | 2.31 (2.28–2.35) | 3.31 (3.21–3.47) |
+| OR only (previous Quest default) | 1.88 (1.80–1.99) | 1.95 (1.92–1.97) | 2.59 (2.49–2.74) |
+| **LL + OR (new default)** | **1.56 (1.51–1.61)** | **1.79 (1.78–1.79)** | **2.32 (2.10–2.43)** |
+
+- LL + OR is the fastest configuration on all three streams, and its frame counts match the other configs, so no frames are held back [PROVEN: the CSV plus the per-run `Configuring decoder` log lines]. The gain over OR-only is 0.16–0.32 ms. That is small, but the ranges barely overlap on any stream.
+- The earlier "LL adds 1.2 ms" result came from a stream that was missing most of its packets. The decoder behaves differently on such a stream (concealment and many incomplete frames) [INFERRED]. That result does not describe a real link.
+- Verified on the device after the change, with empty prefs: keys `LL+vLL+qti+hisi+rtc+OR` → 1.57 / 1.72 / 2.24 ms (H.264 720p / H.265 720p / H.265 1080p), with 0 errors [PROVEN: logcat, 2026-09-26].
+
+### Codec, component and resolution (2026-09-26)
+
+Setup: OR-only defaults at the time, 12 s single-slice streams, N = 3 shuffled rounds. Every run's component and keys were checked. Raw data: [measurements-2026-09-26-quest2-codecs.csv](measurements-2026-09-26-quest2-codecs.csv).
+
+| Stream | default (OMX.qcom) ms | c2.qti ms |
+|---|---|---|
+| H.264 540p | **1.52** | 2.56 (only ~480 frames) |
+| H.264 720p | **1.78** | 2.82 (only ~480 frames) |
+| H.264 1080p | **2.36** | 3.32 (only ~480 frames) |
+| H.265 540p | **1.59** | 2.58 |
+| H.265 720p | **2.00** | 3.05 |
+| H.265 1080p | **2.65** | 3.61 |
+
+- The default OMX component beats `c2.qti.*` on every stream by about 1 ms. `c2.qti.avc.decoder` also delivers ~30 % fewer frames [PROVEN]. Keep `dec_component` empty.
+- `c2.android.*` software decoders are not available to apps on Horizon OS, so they are not in the matrix.
+- H.264 is 0.1–0.3 ms faster than H.265 at the same resolution. Going from 540p to 1080p adds 0.8–1.1 ms of decode [PROVEN].
+- **Multi-slice H.264** (x264 `--tune zerolatency` uses sliced threads) makes PixelPilot send each slice as its own "frame". Such a stream needs **whole access units** (`au_aggregation`) or a single-slice encoder setting. The OpenIPC air unit's majestic encoder is single-slice by default [SPECULATION: not checked on the air unit].
+- Decode is now ~1.5–2.5 ms. On Quest 2 the fixed display and compositor terms dominate G2G (up to 8.3 ms of refresh wait at 120 Hz plus the panel scan-out and backlight strobe). The next real gain can only be measured with the photodiode and the RTL8812AU.
 
 ## Open questions (to settle on the device)
 
