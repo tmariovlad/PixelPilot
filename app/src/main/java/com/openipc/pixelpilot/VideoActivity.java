@@ -62,6 +62,7 @@ import com.openipc.pixelpilot.osd.OSDElement;
 import com.openipc.pixelpilot.osd.OSDManager;
 import com.openipc.videonative.DecodingInfo;
 import com.openipc.videonative.IVideoParamsChanged;
+import com.openipc.videonative.LatencyExperiments;
 import com.openipc.videonative.VideoPlayer;
 import com.openipc.wfbngrtl8812.WfbNGStats;
 import com.openipc.wfbngrtl8812.WfbNGStatsChanged;
@@ -169,8 +170,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     }
 
     public static boolean getLowLatencySetting(Context context) {
-        return context.getSharedPreferences("general",
-                Context.MODE_PRIVATE).getBoolean("low_latency_decoder", true);
+        return LatencyExperiments.load(context).lowLatencyDecoder;
     }
 
     public static int getBandwidth(Context context) {
@@ -750,8 +750,8 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             item.setChecked(enabled);
             // commit(), not apply(): resetApp() ends the process with System.exit()
             // before an asynchronous write would be flushed.
-            getSharedPreferences("general", MODE_PRIVATE).edit()
-                    .putBoolean("low_latency_decoder", enabled).commit();
+            getSharedPreferences(LatencyExperiments.PREFS_NAME, MODE_PRIVATE).edit()
+                    .putBoolean(LatencyExperiments.KEY_LOW_LATENCY_DECODER, enabled).commit();
             item.setShowAsAction(MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
             item.setActionView(new View(this));
             resetApp();

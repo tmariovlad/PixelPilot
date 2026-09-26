@@ -1,0 +1,121 @@
+package com.openipc.videonative;
+
+import android.content.Context;
+import android.content.SharedPreferences;
+
+/**
+ * Single source of truth for every latency lever: pref keys, defaults and validation.
+ * The 2D activity, the XR activity and the decoder all read it; nothing else names these keys.
+ * An instance is an immutable snapshot of the prefs at load time.
+ */
+public final class LatencyExperiments {
+    public static final String PREFS_NAME = "general";
+
+    public static final String KEY_LOW_LATENCY_DECODER = "low_latency_decoder";
+    public static final String KEY_DEC_PICTURE_ORDER = "dec_picture_order";
+    public static final String KEY_DEC_OPERATING_RATE = "dec_operating_rate";
+    public static final String KEY_DEC_PREFER_LOW_LATENCY_COMPONENT = "dec_prefer_low_latency_component";
+    public static final String KEY_AU_AGGREGATION = "au_aggregation";
+    public static final String KEY_XR_REFRESH_HZ = "xr_refresh_hz";
+    public static final String KEY_XR_USE_TIMESTAMPS = "xr_use_timestamps";
+    public static final String KEY_XR_LAYER_SHAPE = "xr_layer_shape";
+    public static final String KEY_XR_PERF_SUSTAINED_HIGH = "xr_perf_sustained_high";
+    public static final String KEY_XR_FOV_DEG = "xr_fov_deg";
+    public static final String KEY_XR_FLIP_VERTICAL = "xr_flip_vertical";
+
+    /** Refresh rates Quest 2 offers to OpenXR apps (60 Hz is media-only). */
+    public static final int[] SUPPORTED_REFRESH_HZ = {72, 80, 90, 120};
+    public static final int DEFAULT_REFRESH_HZ = 120;
+    public static final float DEFAULT_FOV_DEG = 60f;
+    public static final float MIN_FOV_DEG = 20f;
+    public static final float MAX_FOV_DEG = 110f;
+
+    public enum LayerShape {
+        QUAD, CYLINDER;
+
+        static LayerShape parse(String value) {
+            return "cylinder".equalsIgnoreCase(value) ? CYLINDER : QUAD;
+        }
+
+        public String prefValue() {
+            return this == CYLINDER ? "cylinder" : "quad";
+        }
+    }
+
+    /** Read-only key/value source, so the parsing is testable without Android. */
+    public interface PrefSource {
+        boolean getBoolean(String key, boolean def);
+        int getInt(String key, int def);
+        float getFloat(String key, float def);
+        String getString(String key, String def);
+    }
+
+    public final boolean lowLatencyDecoder;
+    public final boolean decPictureOrder;
+    public final boolean decOperatingRate;
+    public final boolean decPreferLowLatencyComponent;
+    public final boolean auAggregation;
+    public final int xrRefreshHz;
+    public final boolean xrUseTimestamps;
+    public final LayerShape xrLayerShape;
+    public final boolean xrPerfSustainedHigh;
+    public final float xrFovDeg;
+    public final boolean xrFlipVertical;
+
+    private LatencyExperiments(PrefSource p) {
+        lowLatencyDecoder = p.getBoolean(KEY_LOW_LATENCY_DECODER, true);
+        decPictureOrder = p.getBoolean(KEY_DEC_PICTURE_ORDER, false);
+        decOperatingRate = p.getBoolean(KEY_DEC_OPERATING_RATE, false);
+        decPreferLowLatencyComponent = p.getBoolean(KEY_DEC_PREFER_LOW_LATENCY_COMPONENT, false);
+        auAggregation = p.getBoolean(KEY_AU_AGGREGATION, false);
+        xrRefreshHz = validRefresh(p.getInt(KEY_XR_REFRESH_HZ, DEFAULT_REFRESH_HZ));
+        xrUseTimestamps = p.getBoolean(KEY_XR_USE_TIMESTAMPS, false);
+        xrLayerShape = LayerShape.parse(p.getString(KEY_XR_LAYER_SHAPE, LayerShape.QUAD.prefValue()));
+        xrPerfSustainedHigh = p.getBoolean(KEY_XR_PERF_SUSTAINED_HIGH, true);
+        xrFovDeg = clamp(p.getFloat(KEY_XR_FOV_DEG, DEFAULT_FOV_DEG), MIN_FOV_DEG, MAX_FOV_DEG, DEFAULT_FOV_DEG);
+        xrFlipVertical = p.getBoolean(KEY_XR_FLIP_VERTICAL, true);
+    }
+
+    public static LatencyExperiments from(PrefSource source) {
+        return new LatencyExperiments(source);
+    }
+
+    public static LatencyExperiments load(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return from(new PrefSource() {
+            public boolean getBoolean(String k, boolean d) { return sp.getBoolean(k, d); }
+            public int getInt(String k, int d) { return sp.getInt(k, d); }
+            public float getFloat(String k, float d) { return sp.getFloat(k, d); }
+            public String getString(String k, String d) { return sp.getString(k, d); }
+        });
+    }
+
+    static int validRefresh(int hz) {
+        for (int supported : SUPPORTED_REFRESH_HZ) {
+            if (supported == hz) return hz;
+        }
+        return DEFAULT_REFRESH_HZ;
+    }
+
+    static float clamp(float value, float lo, float hi, float def) {
+        if (Float.isNaN(value)) return def;
+        return Math.max(lo, Math.min(hi, value));
+    }
+
+    /** Compact description of the active levers, for the stats panel and measurement logs. */
+    public String summary() {
+        StringBuilder dec = new StringBuilder();
+        if (lowLatencyDecoder) dec.append("LL ");
+        if (decPictureOrder) dec.append("PO ");
+        if (decOperatingRate) dec.append("OR ");
+        if (decPreferLowLatencyComponent) dec.append("LLC ");
+        if (auAggregation) dec.append("AU ");
+        String decoder = dec.length() == 0 ? "stock" : dec.toString().trim();
+        StringBuilder xr = new StringBuilder();
+        xr.append(xrRefreshHz).append("Hz ").append(xrLayerShape.prefValue());
+        if (xrUseTimestamps) xr.append(" TS");
+        if (xrPerfSustainedHigh) xr.append(" perf");
+        if (xrFlipVertical) xr.append(" flip");
+        return decoder + " | " + xr;
+    }
+}
