@@ -1,0 +1,19 @@
+round,config,decode_ms,frames
+0,LL + low-latency component,10.093499999999999,426
+0,LL (upstream default),10.135,425
+0,LL + picture order,10.08475,426
+0,LL + operating rate,5.0017499999999995,425
+0,LL + whole access units,10.137,426
+0,stock (LL off),8.9545,426
+1,stock (LL off),8.93425,425
+1,LL + picture order,10.2095,424
+1,LL + low-latency component,10.337,426
+1,LL + whole access units,10.123750000000001,426
+1,LL + operating rate,4.9807500000000005,424
+1,LL (upstream default),10.17125,425
+2,LL + low-latency component,10.152249999999999,426
+2,LL + operating rate,4.97425,425
+2,LL + picture order,10.16675,426
+2,stock (LL off),8.913499999999999,426
+2,LL + whole access units,10.128,424
+2,LL (upstream default),10.156749999999999,425

@@ -1555,36 +1555,15 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     }
 
     public void setDefaultGsKey() {
-        if (getGsKey().length > 0) {
-            Log.d(TAG, "gs.key already saved in preferences.");
-            return;
-        }
-        try {
-            Log.d(TAG, "Importing default gs.key...");
-            InputStream inputStream = getAssets().open("gs.key");
-            setGsKey(inputStream);
-            inputStream.close();
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to import default gs.key");
-        }
+        GsKeyStore.ensureDefault(this);
     }
 
     public byte[] getGsKey() {
-        String pref = getSharedPreferences("general", Context.MODE_PRIVATE).getString("gs.key", "");
-        return Base64.decode(pref, Base64.DEFAULT);
+        return GsKeyStore.get(this);
     }
 
     public void setGsKey(InputStream inputStream) throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = inputStream.read(buffer)) != -1) {
-            result.write(buffer, 0, length);
-        }
-        SharedPreferences prefs = getSharedPreferences("general", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("gs.key", Base64.encodeToString(result.toByteArray(), Base64.DEFAULT));
-        editor.apply();
+        GsKeyStore.set(this, inputStream);
     }
 
     public boolean getDvrMP4() {
@@ -1825,24 +1804,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     }
 
     private void copyGSKey() {
-        File file = new File(getApplicationContext().getFilesDir(), "gs.key");
-        OutputStream out = null;
-        try {
-            byte[] keyBytes = getGsKey();
-            Log.d(TAG, "Using gs.key:" + bytesToHex(keyBytes) + "; Copying to" + file.getAbsolutePath());
-            out = new FileOutputStream(file);
-            out.write(keyBytes, 0, keyBytes.length);
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to copy asset", e);
-        } finally {
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (IOException e) {
-                    // NOOP
-                }
-            }
-        }
+        GsKeyStore.copyToFiles(this);
     }
 
     private void showLoginCredentialsDialog() {

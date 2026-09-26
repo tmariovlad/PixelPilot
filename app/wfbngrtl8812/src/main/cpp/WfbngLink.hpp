@@ -122,7 +122,10 @@ class WfbngLink {
         }
     }
 
-    const char *keyPath = "/data/user/0/com.openipc.pixelpilot/files/gs.key";
+    // The app's files dir (Context.getFilesDir()), resolved in the constructor so the paths follow the
+    // real package name (e.g. a ".xr" debug build) instead of a hard-coded one.
+    std::string filesDir;
+    std::string keyPath;
     std::recursive_mutex thread_mutex;
     std::unique_ptr<WiFiDriver> wifi_driver;
     std::shared_ptr<TxFrame> txFrame;

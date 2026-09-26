@@ -87,6 +87,27 @@ Matrix, same air unit and stream, N ≥ 25 per point, order shuffled:
 
 Keep a lever's default on only after a measurement shows it helps; record results next to this file.
 
+## First on-device results (Quest 2, 2026-09-26, Horizon OS build UP1A.231005.007.A1)
+
+Stream: recorded x265 RTP (720p) replayed over **Wi-Fi** from a PC to `udp://<quest>:5600` (no RTL8812AU), debug build `com.openipc.pixelpilot.xr` installed next to the user's release PixelPilot 0.21.0.
+
+- XR path works: `OpenXR ready: 12 extensions`, session reaches FOCUSED, `requested 120 Hz -> 120 Hz (result 0)`, video attached to the compositor surface, frames decoded [PROVEN: logcat].
+- Decoder on Quest 2 = `OMX.qcom.video.decoder.hevc`; no `c2.qti.*.low_latency` component exists (the LLC lever falls back to the default).
+- **Decoder levers, steady-state decode time (queue → output release), N = 3 shuffled rounds, ~425 decoded frames each** (raw: [measurements-2026-09-26-quest2-decoder-levers.csv](measurements-2026-09-26-quest2-decoder-levers.csv)):
+
+  | Config | mean ms | min | max |
+  |---|---|---|---|
+  | stock (all keys off) | 8.93 | 8.91 | 8.95 |
+  | LL (upstream default) | 10.15 | 10.13 | 10.17 |
+  | LL + decode order | 10.15 | 10.08 | 10.21 |
+  | **LL + max operating rate** (drops `priority=0`) | **4.99** | 4.97 | 5.00 |
+  | LL + low-latency component (absent → default) | 10.19 | 10.09 | 10.34 |
+  | LL + whole access units | 10.13 | 10.12 | 10.14 |
+
+  Operating rate halves the decode term (−5.2 ms vs LL). The upstream LL key set is 1.2 ms *slower* than no keys on this decoder; whether that comes from `priority=0` (which the OR config drops) is the next bracket: {stock+OR, LL−priority}. [PROVEN for this stream/decoder; untested at other resolutions/bitrates]
+- `xr_thread_hints`: the runtime rejects every hint with `-1000003001` (`XR_ERROR_ANDROID_THREAD_SETTINGS_FAILURE_KHR`) → lever currently **inert on Quest 2**.
+- Picture corruption seen in the headset with the P-frame test stream: ~70 % of its packets never arrived (425 of ~1440 frames decoded, reassembly 32–42 ms). An all-intra stream at ~3× the packet rate arrived complete (1080/1080 frames, reassembly 1.8 ms, decode 2.5 ms) → consistent with **Quest Wi-Fi power save** dropping/bunching a light UDP stream [INFERRED], not a decoder fault. Irrelevant with the RTL8812AU on USB-C; for Wi-Fi tests keep the radio busy.
+
 ## Open questions (to settle on the device)
 
 - Does the Horizon compositor treat the surface swapchain as replace-latest (mailbox) when

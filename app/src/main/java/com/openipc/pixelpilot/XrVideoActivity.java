@@ -88,6 +88,9 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         videoPlayer.setIVideoParamsChanged(this);
         videoPlayer.setDecoderLevers(experiments);
 
+        // Launched directly (Quest library) the 2D activity never ran: provide the key ourselves.
+        GsKeyStore.ensureDefault(this);
+        GsKeyStore.copyToFiles(this);
         wfbLink = new WfbNgLink(this);
         wfbLink.SetWfbNGStatsChanged(this);
         wfbLinkManager = new WfbLinkManager(this, this, wfbLink);
