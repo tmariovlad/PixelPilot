@@ -80,6 +80,7 @@ Baseline on 2026-09-27 [PROVEN]:
 **How to read it:**
 - The air unit transmits everything and the Quest misses most of it, while the packets that do arrive have a strong SNR. That is a **path** problem (distance, walls, antenna orientation, a body in the way), not a software problem. On 2026-09-27 the air unit was in another room: 1295 packets received vs 6550 missing in 8.6 s.
 - Under heavy loss the Quest RTL also transmitted ~100 pkt/s, most likely keyframe requests [INFERRED]. That is a symptom, not the cause.
+- **Controlled re-check (2026-09-27, later):** air unit moved back to the other room, **adaptive link off** (Quest TX = 0 packets in 5 s). The air unit sent 1292 pkt/s with 0 dropped, yet the Quest lost ~559 pkt/s (uplink line `…:0:559:…:35.19:…`, SNR 35 dB), quality −193, ~4 decoded fps [PROVEN]. The same air unit and headset in one room: ~167 fps. The loss follows the position, with no transmission from the Quest involved. Unused levers for range: air txpower is 12 dBm (`iw dev wlan0 info`), and the MCS is `-M 2` with FEC 8/12 [SPECULATION: a higher txpower or a lower MCS would extend range; not tested].
 - Repeat any on/off test alternately with **the setup physically unchanged**. A one-shot A/B of `adaptive_link_enabled` looked decisive until repeats showed no difference: 835/835/836/835 frames per 10 s. See [troubleshooting.md](troubleshooting.md).
 
 ## First real link: Quest 2 + RTL8812AU + OpenIPC air unit (2026-09-26)
