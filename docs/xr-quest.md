@@ -20,7 +20,7 @@ export JAVA_HOME='C:\Program Files\Java\jdk-17'      # JDK 17; newer JDKs break 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The debug build installs as its own app, **PixelPilotVR** (`com.openipc.pixelpilot.xr`; label from `app/src/debug/res/values/strings.xml`), next to an unmodified release PixelPilot. The two apps keep separate settings and separate USB permissions for the adapter.
+The debug build installs as its own app, **PixelPilotXr** (`com.openipc.pixelpilot.xr`; label from `app/src/debug/res/values/strings.xml`), next to an unmodified release PixelPilot. The two apps keep separate settings and separate USB permissions for the adapter.
 
 - The release PixelPilot 0.21.0 crashes if it is launched while the headset sleeps: `BackgroundServiceStartNotAllowedException` when its VPN service starts in `VideoActivity.onCreate`.
 - It starts normally with the headset awake [PROVEN: logcat 2026-09-26 21:40/21:41].
@@ -253,7 +253,7 @@ Method: a system-wide Perfetto trace (9 s) while the XR app shows H.264 720p60 o
 
 ### First real link: Quest 2 + RTL8812AU + OpenIPC air unit (2026-09-26)
 
-**Setup:** the HIL air unit (SSC338Q + IMX415, waybeam, H.264 640×480 @ 166 fps, 1 Mbit/s) sends over wfb-ng on channel 157, 20 MHz, FEC 8/12. The RTL8812AU sits on the Quest's USB-C, running PixelPilotVR (devourer).
+**Setup:** the HIL air unit (SSC338Q + IMX415, waybeam, H.264 640×480 @ 166 fps, 1 Mbit/s) sends over wfb-ng on channel 157, 20 MHz, FEC 8/12. The RTL8812AU sits on the Quest's USB-C, running PixelPilotXr (devourer).
 
 **What it took to get video** [PROVEN: logcat `quality 217`, H.264 decoder configured, ~165 frames/s decoded]:
 1. **The air unit boots into APFPV** (a Wi-Fi AP, not wfb). It was switched with its own `linkmode-air.sh wfb`.
