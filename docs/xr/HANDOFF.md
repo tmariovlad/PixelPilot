@@ -2,6 +2,14 @@
 
 Read this together with the repo [CLAUDE.md](../../CLAUDE.md). Everything below is documented in detail in the linked files.
 
+## Mandate for the receiving session (user, 2026-09-27)
+
+**Test APFPV on the Quest by both methods and compare with wfb-ng through the RTL:**
+1. **Internal Wi-Fi.** The Quest joins the air unit's AP (option 1 in [transport-choice.md](transport-choice.md)); no new code.
+2. **Through the RTL8812AU.** This needs **station/client mode in devourer** (option 2): client probe/auth/assoc, supplicant side of the WPA2 4-way handshake, software CCMP decrypt, DHCP client, then hand the UDP video to PixelPilot. Building blocks exist on the AP side: `devourer/tests/ap_wpa2.cpp`, software CCMP, hardware ACK.
+
+Measure every method at the same position with the same tools (loss, decode fps, transport excess / jitter, latency where possible), with the air unit's side measured over eth0. Use the result to decide the boot default (currently wfb-ng).
+
 ## State right now
 
 | Where | State | Details |

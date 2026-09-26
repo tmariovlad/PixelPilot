@@ -39,4 +39,4 @@ This records the discussion with the user on 2026-09-27: which transport should 
    - Caveats: the internal antenna is inside the headset; Wi-Fi power save dropped light UDP streams before (see [troubleshooting.md](troubleshooting.md)); the Quest leaves the home network.
 2. **Station mode in devourer**, which gives APFPV through the RTL. Feasible: the WPA2 crypto, software CCMP and hardware ACK exist on the AP side. Still to write: client probe/auth/assoc, the supplicant side of the 4-way handshake, and a DHCP client. That is days of work, with risk. Only worth it if option 1 shows APFPV clearly better.
 
-Recommendation given: option 1 first. **Status: not started.** The user moved the work to another session (see [HANDOFF.md](HANDOFF.md)).
+Recommendation given: option 1 first. **Status: not started.** The user handed this to another session with the mandate to test **both** APFPV methods, internal Wi-Fi **and** RTL via devourer station mode, and compare them with wfb-ng (see [HANDOFF.md](HANDOFF.md)).
