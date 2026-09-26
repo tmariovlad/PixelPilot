@@ -20,6 +20,11 @@ export JAVA_HOME='C:\Program Files\Java\jdk-17'      # JDK 17; newer JDKs break 
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+The debug build installs as its own app, **PixelPilotVR** (`com.openipc.pixelpilot.xr`; label from `app/src/debug/res/values/strings.xml`), next to an unmodified release PixelPilot. The two apps keep separate settings and separate USB permissions for the adapter.
+
+- The release PixelPilot 0.21.0 crashes if it is launched while the headset sleeps: `BackgroundServiceStartNotAllowedException` when its VPN service starts in `VideoActivity.onCreate`.
+- It starts normally with the headset awake [PROVEN: logcat 2026-09-26 21:40/21:41].
+
 Host unit tests for the decoder helpers (`AccessUnitAssembler`, `DecoderLevers`, `BufferedPacketQueue`)
 need a Linux toolchain with CMake ≥ 3.14, e.g. WSL:
 

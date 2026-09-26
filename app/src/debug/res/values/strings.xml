@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The debug build installs next to PixelPilot as com.openipc.pixelpilot.xr (native XR mode). -->
+    <string name="app_name">PixelPilotVR</string>
+</resources>
