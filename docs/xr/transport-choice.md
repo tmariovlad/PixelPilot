@@ -43,6 +43,20 @@ Recommendation given: option 1 first. **Status (2026-09-27):** option 1 measured
 
 ## Measured: APFPV (Quest internal Wi-Fi) vs wfb-ng (RTL8812AU), 2026-09-27
 
+> **CORRECTION (2026-09-27, the same night): this comparison is confounded and its conclusion is withdrawn.** The APFPV runs
+> were at **~1000 kbit/s**, the wfb runs at **8000 kbit/s**.
+> - **The mechanism** [PROVEN: `/opt/linkmode/linkmode-air.sh:117-126` and `:214-217` on `.132`]. On a switch to wfb the script saves
+>   the current bitrate to `/opt/linkmode/.orig_bitrate`, if that file is absent and the rate differs from 8000, then caps waybeam at
+>   `WFB_BITRATE=8000`. On a switch to APFPV it restores the saved value and deletes the file. A stale `1000` from the old
+>   640x480 config was in the file before the slot, so every APFPV step set 1000, and the next wfb step saved 1000 again. After the
+>   slot the file still held `1000`, written at 22:31 air time, i.e. at step 6 [PROVEN: `ls -la`, `cat` on `.132`]. The OpenIPC session
+>   reset it to 8000 afterwards.
+> - **The data agree** [INFERRED: 1.30–1.34 datagrams per frame on APFPV vs 8.5 on wfb (CSV); the air unit sent ~118 packets/s on
+>   APFPV, i.e. ≤ ~1.3 Mbit/s at ≤ 1500 B per packet].
+> - What survives: the method (alternating, same position, [ab_run.sh](../../scripts/quest/ab_run.sh)), the wfb numbers at 8000
+>   kbit/s, and the ADB and `connect-network` findings. The APFPV loss, jitter and frame-spread numbers below are for 1 Mbit/s
+>   and say nothing about APFPV at 8 Mbit/s. **Redo the APFPV runs at 8000 kbit/s** (check waybeam's bitrate on every step).
+
 **Setup** (slot 1 on the air unit, coordinated with the OpenIPC session, which ran every switch on `.132`):
 - Air unit and headset **in the same room, fixed for the whole slot**. The headset lay on a desk, Guardian paused, `prox_close`. The RTL stayed on the Quest's USB-C in every run.
 - Air unit video: **1920x1080 @ 90 fps, H.264 CBR 8000 kbit/s** (sensor mode 2), waybeam `13b85893`, 12 dBm.
@@ -75,7 +89,7 @@ Recommendation given: option 1 first. **Status (2026-09-27):** option 1 measured
 - **Decode** is the same on both paths, ~2.5–3.0 ms; the ~0.4 ms gap is within run-to-run noise.
 - **Hidden retransmissions** on APFPV cannot be counted from the air unit. The 8812eu driver reports no tx retries in `iw station dump`. Its `/proc/.../tx_stat` exists but was not read, to avoid the `/proc` reads suspected in the earlier reboot. Whatever retries there were fit inside the jitter numbers above.
 
-**What this means for the boot default** [INFERRED]:
+**What this means for the boot default** [WITHDRAWN 2026-09-27: APFPV was at 1000 kbit/s, see the correction above; kept as written]:
 - At this range (same room), APFPV through the Quest's own Wi-Fi is better on every measured axis.
 - It has no FEC and no MCS2 serialization. Its weak-link behaviour (association loss, hidden retries) was **not** tested here; through walls, see [real-link.md](real-link.md#tx-power-and-radio-settings-through-walls-2026-09-27).
 - wfb-ng at MCS2 pays ~7.8 ms of airtime per 1080p frame. A higher MCS on wfb is the obvious next lever: HANDOFF item 3, hot MCS via `set_radio`.
