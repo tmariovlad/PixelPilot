@@ -1,3 +1,4 @@
+#include <android/trace.h>
 #include "VideoPlayer.h"
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
@@ -106,12 +107,25 @@ void VideoPlayer::processQueue()
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "dvr thread done");
 }
 
+// Per-packet arrival marks for a system trace (transport analysis: arrival time vs the RTP capture
+// clock, packet spread within a frame). No cost unless a trace is recording.
+static void traceRtpArrival(uint16_t sequence, uint32_t timestamp)
+{
+    if (__builtin_available(android 29, *))
+    {
+        if (!ATrace_isEnabled()) return;
+        ATrace_setCounter("ppxr_rtp_seq", sequence);
+        ATrace_setCounter("ppxr_rtp_ts", timestamp);
+    }
+}
+
 // Not yet parsed bit stream (e.g. raw h264 or rtp data)
 void VideoPlayer::onNewRTPData(const uint8_t* data, const std::size_t data_length)
 {
     // Parse the RTP packet
     const RTP::RTPPacket rtpPacket(data, data_length);
     uint16_t             idx = rtpPacket.header.getSequence();
+    traceRtpArrival(rtpPacket.header.getSequence(), rtpPacket.header.getTimestamp());
 
     // Define the callback based on payload type
     auto callback = [&](const uint8_t* packet_data, std::size_t packet_length)

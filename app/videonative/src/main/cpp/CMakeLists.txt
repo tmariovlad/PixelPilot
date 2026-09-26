@@ -25,3 +25,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -fno-omit-frame-pointer)
+# Newer-than-minSdk NDK APIs (ATrace_setCounter) are weak and must sit behind __builtin_available.
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__)
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Werror=unguarded-availability)
