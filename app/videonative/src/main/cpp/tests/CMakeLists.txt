@@ -49,3 +49,8 @@ add_executable(levers_test DecoderLevers_test.cpp)
 target_include_directories(levers_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(levers_test GTest::gtest_main)
 gtest_discover_tests(levers_test)
+
+add_executable(parse_rtp_test ParseRTP_test.cpp ../parser/ParseRTP.cpp)
+target_include_directories(parse_rtp_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(parse_rtp_test GTest::gtest_main)
+gtest_discover_tests(parse_rtp_test)
