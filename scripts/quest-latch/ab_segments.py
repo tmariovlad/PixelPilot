@@ -9,7 +9,7 @@ state's delta vs A is an absolute capture -> arrival (and capture -> decoded) di
 Needs the app's 'ppxr_rtp_seq' / 'ppxr_rtp_ts' counters and 'ppxr_frame_ready' slices (capture with
 transport_long.pbtx), plus the air loop's step log: one line per step, "<air epoch seconds> <label>".
 
-Usage: python3 ab_segments.py trace.pftrace steps.txt [--air-offset-s S] [--guard-s 2] [--baseline LABEL]
+Usage: python3 ab_segments.py trace.pftrace steps.txt [--air-offset-s S] [--fit-offset] [--guard-s 2] [--baseline LABEL]
   --air-offset-s  Quest REALTIME minus air REALTIME, in seconds (measure both clocks against the PC before the run).
 """
 import argparse
@@ -118,13 +118,47 @@ def load_trace(path):
 
 
 def read_steps(path, air_offset_s, realtime_minus_trace):
-    """Air step log -> [(trace_ns, label)]. air epoch + offset = Quest REALTIME; minus the snapshot = trace clock."""
-    steps = []
+    """Air step log -> ([(trace_ns, label)], end_ns or None). air epoch + offset = Quest REALTIME; minus the
+    snapshot = trace clock. A '<epoch> END' line closes the last step; 'ERR ...' lines are reported and skipped."""
+    steps, end = [], None
     for line in open(path, encoding="utf-8"):
         parts = line.split()
-        if len(parts) >= 2 and not line.startswith("#"):
-            steps.append(((float(parts[0]) + air_offset_s) * 1e9 - realtime_minus_trace, parts[1]))
-    return sorted(steps)
+        if not parts or line.startswith("#"):
+            continue
+        if "ERR" in parts:
+            print("air loop reported:", line.strip())
+            continue
+        try:
+            t = (float(parts[0]) + air_offset_s) * 1e9 - realtime_minus_trace
+        except ValueError:
+            continue
+        if parts[1:2] == ["END"]:
+            end = t
+        elif len(parts) >= 2:
+            steps.append((t, parts[1]))
+    return sorted(steps), end
+
+
+def fit_offset(frames, steps, end, span_s=3.0, res_s=0.01):
+    """Shift (s) to add to the steps so that packets/frame is most constant within each step: minimises the
+    within-step variance of npkts (coarse 0.1 s scan, then res_s around the best). Only meaningful when the lever
+    changes packets/frame (e.g. bitrate)."""
+    firsts = [f.first for f in frames]
+    npk = [f.npkts for f in frames]
+
+    def cost(sh):
+        starts = [s + sh for s, _ in steps] + [end + sh]
+        total = 0.0
+        for a, b in zip(starts, starts[1:]):
+            g = npk[bisect_left(firsts, a):bisect_left(firsts, b)]
+            if g:
+                m = sum(g) / len(g)
+                total += sum((x - m) ** 2 for x in g)
+        return total
+
+    scan = lambda lo, hi, step: min((cost(k * step * 1e9), k * step) for k in range(int(round(lo / step)), int(round(hi / step)) + 1))
+    _, coarse = scan(-span_s, span_s, 0.1)
+    return scan(coarse - 0.1, coarse + 0.1, res_s)[1]
 
 
 def main():
@@ -134,11 +168,18 @@ def main():
     ap.add_argument("--air-offset-s", type=float, default=0.0)
     ap.add_argument("--guard-s", type=float, default=2.0)
     ap.add_argument("--baseline", help="label of the reference state (default: the first step's label)")
+    ap.add_argument("--fit-offset", action="store_true",
+                    help="refine --air-offset-s (±3 s) from the packets/frame steps (levers that change the packet count)")
     a = ap.parse_args()
     pkts, ready, rt_off = load_trace(a.trace)
     frames, lost = frames_from_packets(pkts, ready)
-    steps = read_steps(a.steps, a.air_offset_s, rt_off)
-    end = pkts[-1][0]
+    steps, loop_end = read_steps(a.steps, a.air_offset_s, rt_off)
+    end = min(pkts[-1][0], loop_end) if loop_end else pkts[-1][0]
+    if a.fit_offset:
+        shift = fit_offset(frames, steps, end)
+        print(f"offset fitted from packets/frame: {a.air_offset_s + shift:+.2f} s (given {a.air_offset_s:+.2f}, shift {shift:+.2f})")
+        steps = [(t + shift * 1e9, lab) for t, lab in steps]
+        end = min(pkts[-1][0], loop_end + shift * 1e9) if loop_end else end
     baseline = a.baseline or steps[0][1]
     inside = sum(1 for f in frames if steps[0][0] <= f.first < end)
     print(f"{len(pkts)} packets, {len(frames)} frames, {lost} lost before the app; {inside} frames inside the steps")

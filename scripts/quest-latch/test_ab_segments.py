@@ -2,7 +2,7 @@
 jitter must come back as the injected deltas. Run: python3 test_ab_segments.py"""
 import random
 
-from ab_segments import Frame, analyze, frames_from_packets
+from ab_segments import Frame, analyze, fit_offset, frames_from_packets
 
 FPS, STEP_S, DRIFT_PPM = 167.0, 12.0, 96.0
 PLAN = ["A", "B", "A", "C", "A", "B", "A", "C", "A"]
@@ -57,6 +57,12 @@ def test_frames_from_packets_groups_and_counts_loss():
     frames, lost = frames_from_packets(pkts, [15, 30])
     assert lost == 1
     assert [(f.first, f.last, f.npkts, f.ready) for f in frames] == [(10, 11, 2, 15), (20, 21, 2, 30)]
+
+
+def test_fit_offset_finds_step_misalignment():
+    frames, steps, end = synth()
+    skewed = [(t - 0.73e9, lab) for t, lab in steps]  # the air step log is 0.73 s early vs the trace
+    assert abs(fit_offset(frames, skewed, end - 0.73e9) - 0.73) <= 0.02
 
 
 if __name__ == "__main__":
