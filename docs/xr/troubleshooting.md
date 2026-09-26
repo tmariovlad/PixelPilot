@@ -81,3 +81,9 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
 - **Copying files to the air unit:** it has no sftp-server, so use `pscp -scp`. In batch mode pscp also needs `-hostkey "SHA256:…"`. Read the fingerprint on the air unit with `dropbearkey -y -f /etc/dropbear/dropbear_*_host_key`. Plain HTTP from the PC does not work while the PC's Wi-Fi is on the air unit's AP, because Windows treats that network as public and blocks inbound connections.
 - **`linkmode-air.sh wfb` reverts itself to APFPV** when `wfb_tx` injects nothing for 12 s (`AIR_STATE=ERROR:wfb_tx-not-injecting-after-poll-reverted-apfpv`). That usually means waybeam is producing 0 fps; check `/var/lib/misc/waybeam-boot.log` and `/tmp/waybeam-switch.log`.
 - **The PC can hold `192.168.0.10` on the air unit's AP.** That address is the air unit's fixed video destination. While the PC's Wi-Fi card is connected there, the HIL GS `.208` cannot take `.10`. Disconnect first: `netsh wlan disconnect interface="Wi-Fi 2"`.
+- **Heavy packet loss with a strong SNR = distance or walls, not the app** (2026-09-27).
+  - With the air unit in another room: ~83–89 % of wfb packets were lost (1295 received, 6550 missing in 8.6 s), although the received packets showed SNR 31.6 dB. The air unit injected all ~1313 pkt/s with 0 drops.
+  - The Quest RTL was also transmitting ~100 pkt/s, most likely keyframe/IDR requests caused by the loss [INFERRED].
+  - A first on/off test of `adaptive_link_enabled` seemed to fix it. It was a confound: the headset was moved back near the air unit at the same time.
+  - Repeated alternately (on/off/on/off, same position): 835/835/836/835 frames per 10 s, quality 472/576/522/509, Quest TX 0 in every run [PROVEN]. Adaptive link is **not** the cause.
+  - Check the physical link first. Compare the air unit's `wlan0 tx_packets` with what the Quest receives (`transport_analyze.py` sequence gaps).
