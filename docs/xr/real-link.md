@@ -46,6 +46,42 @@ adb shell am start -a android.intent.action.MAIN -c org.khronos.openxr.intent.ca
 
 **7. Afterwards, restore the air unit:** `linkmode-air.sh apfpv`. See "Restoring the air unit after a test" below; a power cycle alone is not enough.
 
+**Verified end to end on 2026-09-27** with the steps above [PROVEN]:
+- the XR activity was in front;
+- ~167 decoded frames/s, 835 per 10 s, in 4 runs;
+- link quality 470–580;
+- 0 decrypt errors after the session key arrived.
+
+## Diagnosing a bad link (2026-09-27)
+
+Measure both ends before changing anything. The air unit's side needs eth0 (`192.168.100.132`), because in wfb mode it has no AP.
+
+**Air unit: is everything being transmitted?**
+
+```sh
+tr '\0' ' ' < /proc/$(pidof wfb_tx)/cmdline   # expect -i 7669206 -p 0 -B 20 -M 2 -k 8 -n 12
+iw dev wlan0 info                              # type monitor, channel 157, 20 MHz, txpower
+A=$(cat /sys/class/net/wlan0/statistics/tx_packets); sleep 2; B=$(cat /sys/class/net/wlan0/statistics/tx_packets); echo $((B-A))
+cat /sys/class/net/wlan0/statistics/tx_dropped
+grep fps= /tmp/waybeam-switch.log | tail -1   # waybeam alive
+```
+
+Baseline on 2026-09-27 [PROVEN]:
+- ~2627 packets per 2 s, i.e. **~1313 pkt/s** (5 data packets/frame × 166 fps plus FEC 8/12 parity);
+- `tx_dropped` delta 0;
+- txpower 12 dBm;
+- waybeam 166.47 fps.
+
+**Quest: what arrives?**
+- Link quality: `quality N` in the log every 100 ms, from −1024 (nothing) to +1024. Healthy: +470…+580.
+- The adaptive-link uplink line `message <epoch>:<q>:<q>:<recovered/s>:<lost/s>:<q>:<snr>:0:-1:<fec>:<idr>`. These are the fields as `WfbngLink.cpp:518-529` actually formats them; the comment above that code calls field 6 `rssi`, but the value written there is the quality. Example of a bad link: `…:7:790:1455:31.59:…`, i.e. 7 packets recovered and **790 lost per second** at **SNR 31.6 dB**.
+- Per packet: a Perfetto trace plus [transport_analyze.py](../../scripts/quest-latch/transport_analyze.py), which reports "sequence gaps" (packets lost after FEC).
+
+**How to read it:**
+- The air unit transmits everything and the Quest misses most of it, while the packets that do arrive have a strong SNR. That is a **path** problem (distance, walls, antenna orientation, a body in the way), not a software problem. On 2026-09-27 the air unit was in another room: 1295 packets received vs 6550 missing in 8.6 s.
+- Under heavy loss the Quest RTL also transmitted ~100 pkt/s, most likely keyframe requests [INFERRED]. That is a symptom, not the cause.
+- Repeat any on/off test alternately with **the setup physically unchanged**. A one-shot A/B of `adaptive_link_enabled` looked decisive until repeats showed no difference: 835/835/836/835 frames per 10 s. See [troubleshooting.md](troubleshooting.md).
+
 ## First real link: Quest 2 + RTL8812AU + OpenIPC air unit (2026-09-26)
 
 **Setup:** the HIL air unit (SSC338Q + IMX415, waybeam, H.264 640×480 @ 166 fps, 1 Mbit/s) sends over wfb-ng on channel 157, 20 MHz, FEC 8/12. The RTL8812AU sits on the Quest's USB-C, running PixelPilotXr (devourer).

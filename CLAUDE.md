@@ -39,6 +39,8 @@ in the "Results and deep dives" index of [docs/xr-quest.md](docs/xr-quest.md). T
 
 ## Rules for working here
 
+- **Measure, then conclude, with the physical setup fixed.** Repeat an on/off test alternately (N >= 2 per state) and never draw a conclusion from one run: a one-shot adaptive-link A/B on 2026-09-27 was confounded by the headset being moved ([docs/xr/real-link.md](docs/xr/real-link.md#diagnosing-a-bad-link-2026-09-27)). On a real link, check both ends (air unit `tx_packets` vs Quest sequence gaps) before blaming the app.
+
 **Build (Windows, Git Bash)**
 - JDK 17 only: `export JAVA_HOME='C:\Program Files\Java\jdk-17'` (the default `java` is 25 and breaks Gradle 8.7 / AGP 8.5).
 - `local.properties`: `sdk.dir=C:/Users/<you>/AppData/Local/Android/Sdk` with **forward slashes**.
