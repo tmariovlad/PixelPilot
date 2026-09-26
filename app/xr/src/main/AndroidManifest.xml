@@ -13,4 +13,12 @@
         </intent>
     </queries>
     <uses-feature android:name="android.hardware.vr.headtracking" android:required="false" android:version="1" />
+    <!-- The viewer needs no controllers. Declaring hand-tracking support stops Horizon OS from
+         blocking the launch with its "Controller required" dialog when the controllers are off
+         (seen on Quest 2, 2026-09-26); the Meta hand gesture still exits the app. -->
+    <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+    <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
+    <application>
+        <meta-data android:name="com.oculus.handtracking.version" android:value="V2.0" />
+    </application>
 </manifest>
