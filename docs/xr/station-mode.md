@@ -40,7 +40,7 @@ The station code lives outside the devourer submodule (which is upstream OpenIPC
 
 ## W0 gate: procedure for the slot (slot 4 with the coordinator)
 
-1. **Air unit on APFPV** (OpenIPC session: `linkmode-air.sh apfpv`). The AP takes **one client** (`max_num_sta=1`), so the Quest must not be on `OpenIPC`: `adb shell cmd wifi connect-network Zeul36 …`, or any saved home network.
+1. **Air unit on APFPV** (OpenIPC session: `linkmode-air.sh apfpv`). Check waybeam's bitrate after the switch (`wget -qO- http://127.0.0.1/api/v1/config.json | grep -o '"bitrate":[0-9]*'`): the switch restores `/opt/linkmode/.orig_bitrate`, which once held a stale 1000 ([correction](transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)). The AP takes **one client** (`max_num_sta=1`), so the Quest must not be on `OpenIPC`: `adb shell cmd wifi connect-network Zeul36 …`, or any saved home network.
 2. **RTL8812AU from the Quest to the PC**, then attach it to WSL (usbipd runs as a service; see the global `wsl-usb` rule):
 
 ```bash
