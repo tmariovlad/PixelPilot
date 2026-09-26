@@ -1,10 +1,12 @@
 #ifndef PIXELPILOT_ACCESSUNITASSEMBLER_H
 #define PIXELPILOT_ACCESSUNITASSEMBLER_H
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <string>
 #include <vector>
 
 // What the assembler needs to know about one Annex-B NALU (start code included).
@@ -88,26 +90,36 @@ class AccessUnitAssembler
     // (max-input-size, DecoderLevers.h) so an assembled picture is never dropped as too big.
     static constexpr size_t kDefaultMaxBytes = 1024 * 1024;
 
+    // How access units were closed. Written by the feeding thread, read by the stats thread.
+    struct Stats
+    {
+        uint64_t closedByMarker        = 0;  // intended path: complete as soon as the last packet arrives
+        uint64_t closedByNextPicture   = 0;  // marker missing: the picture waited for the next one
+        uint64_t closedBySizeCap       = 0;
+        uint64_t passedThroughOversize = 0;
+    };
+
     explicit AccessUnitAssembler(size_t maxBytes = kDefaultMaxBytes) : mMaxBytes(maxBytes) { mBuf.reserve(256 * 1024); }
 
     void push(const NaluInfo& n, const Emit& emit)
     {
         if (n.isConfig)
         {
-            flush(emit);
+            close(emit, mClosedByNextPicture);
             emit(n.data, n.size, n.creationTime, true);
             return;
         }
         if (n.isAud || (n.isVcl && n.isFirstSlice && mHasVcl))
         {
-            flush(emit);
+            close(emit, mClosedByNextPicture);
         }
         if (mBuf.size() + n.size > mMaxBytes)
         {
-            flush(emit);
+            close(emit, mClosedBySizeCap);
         }
         if (n.size > mMaxBytes)
         {
+            ++mPassedThroughOversize;
             emit(n.data, n.size, n.creationTime, false);
             return;
         }
@@ -121,8 +133,18 @@ class AccessUnitAssembler
         // AU holds a slice, otherwise the picture would wait for the next one.
         if (n.endOfAu && mHasVcl)
         {
-            flush(emit);
+            close(emit, mClosedByMarker);
         }
+    }
+
+    Stats stats() const
+    {
+        Stats s;
+        s.closedByMarker        = mClosedByMarker.load(std::memory_order_relaxed);
+        s.closedByNextPicture   = mClosedByNextPicture.load(std::memory_order_relaxed);
+        s.closedBySizeCap       = mClosedBySizeCap.load(std::memory_order_relaxed);
+        s.passedThroughOversize = mPassedThroughOversize.load(std::memory_order_relaxed);
+        return s;
     }
 
     void flush(const Emit& emit)
@@ -143,10 +165,30 @@ class AccessUnitAssembler
     size_t pendingBytes() const { return mBuf.size(); }
 
   private:
+    // Emits the pending AU (if any) and counts why it was closed.
+    void close(const Emit& emit, std::atomic<uint64_t>& reason)
+    {
+        if (mBuf.empty()) return;
+        ++reason;
+        flush(emit);
+    }
+
+    std::atomic<uint64_t> mClosedByMarker{0};
+    std::atomic<uint64_t> mClosedByNextPicture{0};
+    std::atomic<uint64_t> mClosedBySizeCap{0};
+    std::atomic<uint64_t> mPassedThroughOversize{0};
+
     const size_t                          mMaxBytes;
     std::vector<uint8_t>                  mBuf;
     bool                                  mHasVcl = false;
     std::chrono::steady_clock::time_point mFirstTime{};
 };
+
+// One line for the stats panel / logs.
+inline std::string auStatsSummary(const AccessUnitAssembler::Stats& s)
+{
+    return "AU marker " + std::to_string(s.closedByMarker) + " next " + std::to_string(s.closedByNextPicture) +
+           " cap " + std::to_string(s.closedBySizeCap) + " big " + std::to_string(s.passedThroughOversize);
+}
 
 #endif  // PIXELPILOT_ACCESSUNITASSEMBLER_H

@@ -251,6 +251,7 @@ void VideoDecoder::feedDecoder(
             if (size > inputBufferSize)
             {
                 MLOGE << "Input buffer too small for " << size << " bytes, dropped";
+                ++mInputTooBig;
                 return;
             }
 

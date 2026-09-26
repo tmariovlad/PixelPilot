@@ -97,11 +97,19 @@ class VideoDecoder
         mLevers = levers;
     }
 
-    // Codec name + the levers the running decoder actually accepted.
+    // Codec name + the levers the running decoder actually accepted, plus how whole access units
+    // were closed and how many inputs did not fit, so a measurement can be interpreted.
     std::string getDecoderSummary()
     {
-        std::lock_guard<std::mutex> lock(mLeversMutex);
-        return mAppliedSummary;
+        std::string s;
+        {
+            std::lock_guard<std::mutex> lock(mLeversMutex);
+            s = mAppliedSummary;
+        }
+        if (mAuAggregationActive) s += " | " + auStatsSummary(mAssembler.stats());
+        const auto tooBig = mInputTooBig.load(std::memory_order_relaxed);
+        if (tooBig) s += " | too big " + std::to_string(tooBig);
+        return s;
     }
 
     // If the decoder has been configured, feed NALU. Else search for configuration data and
@@ -140,8 +148,9 @@ class VideoDecoder
     DecoderLevers mLevers{};
     std::string   mAppliedSummary = "not configured";
     // Snapshot taken at configure time; only the NALU-feeding thread reads it afterwards.
-    bool                mAuAggregationActive = false;
-    AccessUnitAssembler mAssembler;
+    std::atomic<bool>     mAuAggregationActive{false};
+    AccessUnitAssembler   mAssembler;
+    std::atomic<uint64_t> mInputTooBig{0};
     // Holds the AMediaCodec instance, as well as the state (configured or not configured)
     Decoder      decoder{};
     DecodingInfo decodingInfo;

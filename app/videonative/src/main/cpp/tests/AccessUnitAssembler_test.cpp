@@ -189,3 +189,34 @@ TEST_F(Fixture, MarkerWithoutAnySliceDoesNotEmit)
     push(h264(6, false), false, true);  // lone SEI with a marker: nothing decodable yet
     EXPECT_TRUE(out.empty());
 }
+
+// How each access unit was closed, so a measurement can tell whether the AU lever ran on the
+// marker (intended) or had to wait for the next picture (+1 frame).
+TEST_F(Fixture, StatsCountMarkerAndNextPictureCloses)
+{
+    push(h264(1, true), false, true);   // closed by marker
+    push(h264(1, true), false, false);  // marker lost ...
+    push(h264(1, true), false, true);   // ... closed by the next first slice, then this one by marker
+    push(h264(9, false), false, false); // AUD with nothing pending: no close
+    EXPECT_EQ(2u, asmb.stats().closedByMarker);
+    EXPECT_EQ(1u, asmb.stats().closedByNextPicture);
+    EXPECT_EQ(0u, asmb.stats().passedThroughOversize);
+}
+
+TEST_F(Fixture, StatsCountOversizePassThrough)
+{
+    AccessUnitAssembler small(8);
+    AccessUnitAssembler::Emit ignore = [](const uint8_t*, size_t, Clock::time_point, bool) {};
+    Bytes huge = h265(1, true);
+    huge.push_back(0x33);
+    small.push(au::classify(huge.data(), huge.size(), true, false, {}), ignore);
+    EXPECT_EQ(1u, small.stats().passedThroughOversize);
+}
+
+TEST(AuHelpers, StatsSummaryIsCompact)
+{
+    AccessUnitAssembler::Stats s;
+    s.closedByMarker      = 120;
+    s.closedByNextPicture = 3;
+    EXPECT_EQ("AU marker 120 next 3 cap 0 big 0", auStatsSummary(s));
+}
