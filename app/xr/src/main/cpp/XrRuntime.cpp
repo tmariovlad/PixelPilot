@@ -125,7 +125,8 @@ bool XrRuntime::setup(JNIEnv* env)
         return fail("OpenXR loader init failed");
 
     uint32_t count = 0;
-    xrEnumerateInstanceExtensionProperties(nullptr, 0, &count, nullptr);
+    if (XR_FAILED(xrEnumerateInstanceExtensionProperties(nullptr, 0, &count, nullptr)))
+        return fail("no OpenXR runtime found on this device");
     std::vector<XrExtensionProperties> props(count, {XR_TYPE_EXTENSION_PROPERTIES});
     xrEnumerateInstanceExtensionProperties(nullptr, count, &count, props.data());
     std::set<std::string> available;

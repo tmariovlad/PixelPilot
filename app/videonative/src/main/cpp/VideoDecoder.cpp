@@ -237,8 +237,15 @@ void VideoDecoder::feedDecoder(
         const auto index = AMediaCodec_dequeueInputBuffer(decoder.codec[idx], BUFFER_TIMEOUT_US);
         if (index >= 0)
         {
-            size_t   inputBufferSize;
-            uint8_t* buf = AMediaCodec_getInputBuffer(decoder.codec[idx], (size_t) index, &inputBufferSize);
+            // getInputBuffer returns NULL without touching the size when the codec is in an error
+            // state; an uninitialised size then passes the check below and memcpy writes to NULL.
+            size_t   inputBufferSize = 0;
+            uint8_t* buf             = AMediaCodec_getInputBuffer(decoder.codec[idx], (size_t) index, &inputBufferSize);
+            if (buf == nullptr)
+            {
+                MLOGE << "No input buffer for index " << (int) index << " (codec error)";
+                return;
+            }
             // I have not seen any case where the input buffer returned by MediaCodec is too small to hold the NALU
             // But better be safe than crashing with a memory exception
             if (size > inputBufferSize)
