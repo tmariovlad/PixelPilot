@@ -120,6 +120,19 @@ For a trace on the real link, capture while the app runs:
 (after `. quest_env.sh; export MSYS_NO_PATHCONV=1`), pull it, then `python3 ../quest-latch/transport_analyze.py`,
 `python3 gaps.py` and `python3 bq_stats.py` on it.
 
+**In-trace A/B of an air-unit lever (no photodiode).** Two separate traces cannot be compared: capture → arrival is
+only known up to a constant that drifts with the air/headset clocks (~+96 ppm). So one long trace covers the whole
+run while a timed loop on the air unit switches the lever (A B A C A …) and logs `<epoch> <label>` per step:
+
+```bash
+bash ab_long.sh bitrate 120            # lean trace (quest-latch/transport_long.pbtx) + Quest-minus-PC clock offset
+python3 ../quest-latch/ab_segments.py out/ab_bitrate.pftrace steps.txt --air-offset-s <(quest-pc) - (air-pc)>
+```
+
+`ab_segments.py` fits the drift on the baseline steps only and prints, per step and per state, fps, packets/frame,
+spread and capture → frame complete / → decoded in ms against that line, with the delta vs the baseline. Offline
+check: `python3 ../quest-latch/test_ab_segments.py`. Only for levers applied live (no RTP restart).
+
 ## Script index
 
 | Script | Purpose |
@@ -143,6 +156,7 @@ For a trace on the real link, capture while the app runs:
 | `wait_air.sh`, `openipc-wlan.xml` | PC Wi-Fi to the air unit's AP |
 | `keycheck.py`, `keyscan.py`, `pwkey.py` | wfb-ng key pairing: check, search, derive from a keygen password |
 | `bq_stats.py`, `gaps.py`, `trace_query.py` | Perfetto analysis: buffer queue, packet gaps, ad-hoc SQL |
+| `ab_long.sh` | capture for an in-trace A/B: long lean trace + Quest-minus-PC clock offset (analysis: `../quest-latch/ab_segments.py`) |
 | `blu.py` | Quest 2 backlight flash timing from the kernel panel dtsi numbers (`python3 blu.py 3664 14 7 1 120`) |
 | `build_wb_f8742fe.sh` | **OpenIPC project, not this repo:** rebuild waybeam f8742fe for the air unit (WSL) |
 | `test_quest_env.py` | offline checks of `quest_env.py` |
