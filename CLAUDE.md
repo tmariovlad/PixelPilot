@@ -55,7 +55,7 @@ in the "Results and deep dives" index of [docs/xr-quest.md](docs/xr-quest.md). T
 - Host gtests (`AccessUnitAssembler`, `DecoderLevers`, `BufferedPacketQueue`) run in **WSL Ubuntu-22.04**
   (Ubuntu-20.04 has no suitable CMake), from the repo root:
   `cmake -S app/videonative/src/main/cpp/tests -B /tmp/ppxr-tests && cmake --build /tmp/ppxr-tests -j8 && (cd /tmp/ppxr-tests && ctest --output-on-failure)`.
-- JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTest`.
+- JVM tests: `./gradlew :app:testDebugUnitTest :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTest`.
 
 **The headset**
 - The debug build (`com.openipc.pixelpilot.xr`, "PixelPilotXr") installs **next to** the user's release
