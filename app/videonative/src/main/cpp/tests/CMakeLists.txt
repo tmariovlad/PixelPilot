@@ -39,3 +39,8 @@ target_link_libraries(queue_test
 # Discover and register the test with CTest
 include(GoogleTest)
 gtest_discover_tests(queue_test)
+
+add_executable(au_test AccessUnitAssembler_test.cpp)
+target_include_directories(au_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(au_test GTest::gtest_main)
+gtest_discover_tests(au_test)

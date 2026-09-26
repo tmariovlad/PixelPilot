@@ -40,6 +40,7 @@ void RTPDecoder::reset()
     lastSequenceNumber       = -1;
     flagPacketHasGoneMissing = false;
     m_n_gaps                 = 0;
+    m_current_packet_marker  = false;
     // nalu_data.reserve(NALU::NALU_MAXLEN);
 }
 
@@ -135,6 +136,7 @@ void RTPDecoder::parseRTPH264toNALU(const uint8_t* rtp_data, const size_t data_l
     {
         return;
     }
+    m_current_packet_marker = rtpPacket.header.marker;
     const auto& nalu_header = rtpPacket.getNALUHeaderH264();
     if (nalu_header.type == 28)
     { /* FU-A */
@@ -264,6 +266,7 @@ void RTPDecoder::parseRTPH265toNALU(const uint8_t* rtp_data, const size_t data_l
         MLOGD << "Invalid rtp packet";
         return;
     }
+    m_current_packet_marker = rtpPacket.header.marker;
     const auto& nal_unit_header_h265 = rtpPacket.getNALUHeaderH265();
     if (nal_unit_header_h265.type > 50)
     {
@@ -374,7 +377,7 @@ void RTPDecoder::forwardNALU(const bool isH265)
             return;
         }
         uint8_t* p = &m_curr_nalu.at(0);
-        m_cb(timePointStartOfReceivingNALU, p, m_nalu_data_length);
+        m_cb(timePointStartOfReceivingNALU, p, m_nalu_data_length, m_current_packet_marker);
     }
     m_nalu_data_length = 0;
 }

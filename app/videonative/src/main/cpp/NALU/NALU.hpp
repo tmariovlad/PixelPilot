@@ -42,9 +42,14 @@ class NALU
     NALU(
         const uint8_t*                              data1,
         size_t                                      data_len1,
-        const bool                                  IS_H265_PACKET1 = false,
-        const std::chrono::steady_clock::time_point creationTime    = std::chrono::steady_clock::now())
-        : m_data(data1), m_data_len(data_len1), IS_H265_PACKET(IS_H265_PACKET1), creationTime{creationTime}
+        const bool                                  IS_H265_PACKET1  = false,
+        const std::chrono::steady_clock::time_point creationTime     = std::chrono::steady_clock::now(),
+        const bool                                  endOfAccessUnit1 = false)
+        : m_data(data1),
+          m_data_len(data_len1),
+          IS_H265_PACKET(IS_H265_PACKET1),
+          creationTime{creationTime},
+          endOfAccessUnit(endOfAccessUnit1)
     {
         assert(hasValidPrefix());
         assert(getSize() >= getMinimumNaluSize(IS_H265_PACKET1));
@@ -68,6 +73,8 @@ class NALU
     const bool IS_H265_PACKET;
     // creation time is used to measure latency
     const std::chrono::steady_clock::time_point creationTime;
+    // RTP marker bit of the packet that completed this NALU: set on the last NALU of an access unit.
+    const bool endOfAccessUnit;
 
   public:
     // returns true if starts with 0001, false otherwise
@@ -320,7 +327,8 @@ class NALUBuffer
     NALUBuffer(const NALU& nalu)
     {
         m_data = std::make_shared<std::vector<uint8_t>>(nalu.getData(), nalu.getData() + nalu.getSize());
-        m_nalu = std::make_unique<NALU>(m_data->data(), m_data->size(), nalu.IS_H265_PACKET, nalu.creationTime);
+        m_nalu = std::make_unique<NALU>(
+            m_data->data(), m_data->size(), nalu.IS_H265_PACKET, nalu.creationTime, nalu.endOfAccessUnit);
     }
 
     NALUBuffer(const NALUBuffer&) = delete;
