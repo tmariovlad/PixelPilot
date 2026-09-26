@@ -104,9 +104,31 @@ Stream: recorded x265 RTP (720p) replayed over **Wi-Fi** from a PC to `udp://<qu
   | LL + low-latency component (absent → default) | 10.19 | 10.09 | 10.34 |
   | LL + whole access units | 10.13 | 10.12 | 10.14 |
 
-  Operating rate halves the decode term (−5.2 ms vs LL). The upstream LL key set is 1.2 ms *slower* than no keys on this decoder; whether that comes from `priority=0` (which the OR config drops) is the next bracket: {stock+OR, LL−priority}. [PROVEN for this stream/decoder; untested at other resolutions/bitrates]
+  Operating rate halves the decode term (−5.2 ms vs LL). The upstream LL key set is 1.2 ms *slower* than no keys on this decoder; whether that comes from `priority=0` (which the OR config drops) is the next bracket: {stock+OR, LL−priority}. → **Answered below: not `priority`, but the low-latency mode itself.** [PROVEN for this stream/decoder; untested at other resolutions/bitrates]
 - `xr_thread_hints`: the runtime rejects every hint with `-1000003001` (`XR_ERROR_ANDROID_THREAD_SETTINGS_FAILURE_KHR`) → lever currently **inert on Quest 2**.
 - Picture corruption seen in the headset with the P-frame test stream: ~70 % of its packets never arrived (425 of ~1440 frames decoded, reassembly 32–42 ms). An all-intra stream at ~3× the packet rate arrived complete (1080/1080 frames, reassembly 1.8 ms, decode 2.5 ms) → consistent with **Quest Wi-Fi power save** dropping/bunching a light UDP stream [INFERRED], not a decoder fault. Irrelevant with the RTL8812AU on USB-C; for Wi-Fi tests keep the radio busy.
+
+### Which low-latency key slows the Quest 2 decoder? (key isolation, 2026-09-26)
+
+Same stream and method as above, one key at a time via `dec_debug_key_mask`; every run printed the keys the
+decoder was really configured with (read back from the `Configuring decoder` log line). N = 3 shuffled rounds
+(raw: [measurements-2026-09-26-quest2-key-isolation.csv](measurements-2026-09-26-quest2-key-isolation.csv)):
+
+| Config (keys applied) | mean ms | min–max |
+|---|---|---|
+| none | 8.95 | 8.90–8.98 |
+| `low-latency` only | **10.18** | 10.12–10.22 |
+| `vendor.qti-ext-dec-low-latency.enable` only | **10.19** | 10.15–10.22 |
+| `vendor.low-latency.enable` only | 8.92 | 8.91–8.94 |
+| `priority`=0 only | 8.97 | 8.94–8.99 |
+| upstream set (all 6) | 10.13 | 10.07–10.19 |
+| upstream set without `priority` | 10.15 | 10.09–10.24 |
+| **`operating-rate` only** | **4.59** | 4.56–4.62 |
+| upstream set without `priority` + `operating-rate` | 5.00 | 4.98–5.03 |
+
+- The slowdown comes from the Qualcomm "low-latency mode", which both the AOSP `low-latency` key and the qti key switch on (+1.2 ms each, not additive) [PROVEN]. `priority=0` and `vendor.low-latency.enable` do nothing here [PROVEN]. The earlier guess that `priority=0` was the cause was **wrong**.
+- Without low-latency mode the decoder does not hold frames back (a held frame would cost ~16.7 ms at 60 fps; decode stays ~9 ms) [INFERRED from the numbers], so on this I/P-only stream the mode buys nothing and costs 1.2 ms. Why it is slower (e.g. less internal pipelining) is [SPECULATION].
+- **Meta-headset defaults since this run: low-latency keys off, max operating rate on → 4.59 ms vs 10.15 ms upstream (−5.6 ms decode).** Phones keep the upstream defaults (not measured there).
 
 ## Open questions (to settle on the device)
 

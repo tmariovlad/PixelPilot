@@ -89,6 +89,15 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(new MapPrefs()).decOperatingRate);
     }
 
+    // Key isolation on Quest 2 (docs/xr-quest.md): "low-latency" and the qti low-latency key each add
+    // ~1.2 ms of decode time on OMX.qcom.video.decoder.hevc; operating rate alone is fastest (4.59 ms).
+    @Test public void lowLatencyKeysDefaultOffOnlyForMetaHeadsets() {
+        assertFalse(LatencyExperiments.from(new MapPrefs(), true).lowLatencyDecoder);
+        assertTrue(LatencyExperiments.from(new MapPrefs(), false).lowLatencyDecoder);
+        MapPrefs on = new MapPrefs().put(LatencyExperiments.KEY_LOW_LATENCY_DECODER, true);
+        assertTrue(LatencyExperiments.from(on, true).lowLatencyDecoder);
+    }
+
     @Test public void storedOperatingRateOverridesTheDeviceDefault() {
         MapPrefs off = new MapPrefs().put(LatencyExperiments.KEY_DEC_OPERATING_RATE, false);
         assertFalse(LatencyExperiments.from(off, true).decOperatingRate);
