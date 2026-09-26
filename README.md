@@ -103,6 +103,13 @@ Higher values → leaner bandwidth, less resilience.
 
 ---
 
+## Quest native XR mode (experimental)
+
+On Meta Quest the stream can also be shown inside an OpenXR session: the decoder renders straight into a
+compositor-owned surface shown as a head-locked screen, instead of going through a 2D panel. Launch it from
+**Video → Launch XR (Quest)**; latency levers live under **Video → Latency experiments**.
+Details, smoke checklist and measurement protocol: [docs/xr-quest.md](docs/xr-quest.md).
+
 ## Object Detection (Optional)
 PixelPilot features an optional, real-time object detection overlay using Google's MediaPipe Object Detection library.
 
