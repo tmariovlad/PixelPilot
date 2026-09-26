@@ -95,6 +95,8 @@ def analyze(frames, steps, end, guard, baseline):
                 if any(j == i for _, j in tagged)]
     labels = list(OrderedDict.fromkeys(lab for _, lab in steps))
     per_state = [(lab, stats([f for f, i in tagged if steps[i][1] == lab])) for lab in labels]
+    for lab, s in per_state:  # a state's steps are not contiguous: its fps is the mean of its steps' fps
+        s["fps"] = st.mean(ps["fps"] for _, l, ps in per_step if l == lab)
     return per_step, per_state, slope
 
 
@@ -168,6 +170,7 @@ def main():
     ap.add_argument("--air-offset-s", type=float, default=0.0)
     ap.add_argument("--guard-s", type=float, default=2.0)
     ap.add_argument("--baseline", help="label of the reference state (default: the first step's label)")
+    ap.add_argument("--csv", help="also write the per-step rows to this CSV file")
     ap.add_argument("--fit-offset", action="store_true",
                     help="refine --air-offset-s (±3 s) from the packets/frame steps (levers that change the packet count)")
     a = ap.parse_args()
@@ -192,6 +195,15 @@ def main():
     print(hdr)
     for i, lab, s in per_step:
         print(row(f"{i:2d} {lab}", s))
+    if a.csv:
+        import csv
+        keys = ["frames", "fps", "pkt_per_frame", "spread_ms", "first_ms", "last_ms", "last_p95_ms", "decoded_ms"]
+        with open(a.csv, "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh)
+            w.writerow(["step", "label"] + keys)
+            for i, lab, row_ in per_step:
+                w.writerow([i, lab] + [round(row_[k], 3) for k in keys])
+        print(f"per-step rows written to {a.csv}")
     print("\nper state")
     print(hdr + f"{'Δlast':>8s}{'Δdecoded':>10s}")
     ref = dict(per_state)[baseline]

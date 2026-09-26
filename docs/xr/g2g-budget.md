@@ -35,8 +35,39 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 - **Levers (air side, OpenIPC project):** fewer bytes per frame (bitrate 8000 → 4000 halves the packets), a higher MCS in the same room, and FEC k/n (block length and parity ratio). How to A/B them without the photodiode: change them live on the air unit (bitrate through waybeam's API, FEC through `wfb_setfec`; no RTP restart, so the capture-clock constant stays fixed) inside **one** long trace and compare capture → arrival directly. Tools: [ab_long.sh](../../scripts/quest/ab_long.sh) (capture) and [ab_segments.py](../../scripts/quest-latch/ab_segments.py) (analysis; offline check [test_ab_segments.py](../../scripts/quest-latch/test_ab_segments.py)); procedure in [scripts/quest/README.md](../../scripts/quest/README.md). Live-applicability is from the waybeam code (f8742fe, read by the OpenIPC session, not tested live): `video0.bitrate` is live, FEC k/n is live through `wfb_setfec`.
 - **Closed: sub-frame (slice) sending.** `sliceSend: true` raised encode capture → NAL from 4 ms to 27–30 ms and dropped 119 fps to 45–60, whatever the slice size (sliceRows 40/23/1); `sliceRows` alone with `sliceSend: false` is inert (5–6 ms @ 119 fps) [PROVEN: OpenIPC `repos/tasks/hil-build/40-latency-measured-softonly.md:289-315`, HB-50, live on `.132`, 2026-06-27]. It could not be A/B'd from the Quest anyway: each waybeam start draws a new random RTP timestamp base, SSRC and sequence (`rtp_session.c:15,26-28`). Only a waybeam build that changes the per-slice output would reopen it. `lowDelay` on Star6E stops VENC (0 fps), so it is not a lever either.
 
-**Other levers still open:** the phase lock (branch D, −2…3 ms, air side not built); the photodiode measurement for branch E and the total.
+**Other levers still open:** the phase lock (branch D, −2…3 ms, air side not built); the photodiode measurement for branch E and the total. Bitrate and FEC ratio are now measured: see [the in-trace A/B below](#air-unit-levers-measured-in-one-trace-2026-09-27-slot-2).
 
 **How far this can go on Quest 2 (2026-09-27):** C (~1.5 ms) and E (~11.9 ms, panel backlight strobe) are fixed, ~13.4 ms together. With every lever above (B2 → ~1 ms, D → ~1 ms with the phase lock; A stays ~9.3 ms now that slice sending is closed) the total lands around **25–27 ms** [INFERRED: sum of the rows above with the lever estimates]. **20 ms is not reachable on Quest 2**: the sensor readout alone at ~167 fps takes several ms on top of the fixed 13.4 ms.
 
 > **Baseline change, 2026-09-27 (later):** the air unit was switched persistently to **1080p90** (sensor mode 2, bitrate 8000; backup `/etc/waybeam.json.bak-640x480-20260927` on the air unit). Every number on this page is for **640×480 @ 167 fps**. At 1080p90 and 8 Mbit/s, expect ~8 packets per frame (~5.5 ms transport spread at MCS2), a compositor wait of ~4.2 ms instead of ~3.0 (a 90 fps source is slower than the 120 Hz display), and +0.8–1 ms of decode (see [decoder-levers.md](decoder-levers.md#codec-component-and-resolution-2026-09-26)), i.e. several ms more G2G [INFERRED: same arithmetic as above]. Tag any new measurement with the air mode.
+
+## Air-unit levers measured in one trace (2026-09-27, slot 2)
+
+**Setup.** Air unit at **640×480 @ 166.6 fps**, H.264 CBR, wfb-ng MCS2 / 20 MHz, STBC + LDPC, FEC 4/6 unless stated; air unit and headset in the same room, fixed. The lever was switched by a timed loop on the air unit (12 s per step, A B A C A B A C A, so N = 2 per non-baseline state), and one 140 s Perfetto trace covered the whole loop. [ab_segments.py](../../scripts/quest-latch/ab_segments.py) fits the air/headset clock drift on the baseline steps only (+73 / +75 ppm), drops 2 s around every switch, and reads each step against that line. So the Δ columns are absolute changes in capture → frame complete ("last") and capture → decoder output ("decoded") [PROVEN: method checked offline by [test_ab_segments.py](../../scripts/quest-latch/test_ab_segments.py)]. Step alignment: bitrate from the packets/frame steps (`--fit-offset`, +0.98 s), FEC from the app's own `wfb-ng SESSION` log lines (+0.98…0.99 s); both agree.
+
+**Bitrate** (`video0.bitrate`, live through waybeam's API) [PROVEN: [data](data/measurements-2026-09-27-quest2-bitrate-ab.csv), [air step log](data/steps-2026-09-27-bitrate.txt)]:
+
+| kbit/s | packets/frame | frame spread on air | Δ capture → decoded, mean | Δ per repeat | frame complete p95 |
+|---|---|---|---|---|---|
+| 8000 (baseline) | 5.11 | 4.21 ms | 0 | | 5.70 |
+| 4000 | 3.13 | 1.83 ms | **−2.74 ms** | −2.3 / −3.0 | 0.46 (−5.2) |
+| 2000 | 2.02 | 0.54 ms | **−4.46 ms** | −4.1 / −4.8 | −1.03 (−6.7) |
+
+- The first packet of a frame moves by only −0.3…−0.7 ms; the rest of the gain is the frame's spread on the radio shrinking with its size. This confirms that B2 is airtime (see above) [INFERRED: "first" vs "last" columns in the data].
+- Frame rate stayed 166.6 fps at every step; 67 of 98 855 packets were lost in the whole run.
+- Cost: picture quality at 2–4 Mbit/s was not assessed.
+
+**FEC** (`wfb_setfec` over wfb_tx's control port, no restart) [PROVEN: [data](data/measurements-2026-09-27-quest2-fec-ab.csv), [air step log](data/steps-2026-09-27-fec.txt)]:
+
+| k/n | Δ capture → decoded, mean | Δ per repeat |
+|---|---|---|
+| 4/6 (baseline) | 0 | |
+| 4/5 | **−1.53 ms** | −1.2 / −1.7 |
+| 8/12 | −0.35 ms | −0.7 / −0.0 |
+
+- 4/5 sends a third less parity, so the radio is free sooner for the next frame. It can repair 1 lost packet per 5 instead of 2 per 6; loss per state was not measured (112 of 116 107 packets lost in the whole run, same room).
+- 8/12 vs 4/6 is inside the step-to-step spread of the baseline itself (0.2–1.6 ms), so block length is not a lever here [PROVEN: data].
+
+**Updated budget at 640×480 @ 167 fps:** 30.7 ms − 4.5 ms (2000 kbit/s) ≈ 26 ms; with the phase lock (−2.4 ms measured on the Wi-Fi rig, [compositor-phase.md](compositor-phase.md)) ≈ 24 ms [INFERRED: the inferred total above minus measured deltas; the bitrate and FEC gains are not additive, both shrink the same airtime].
+
+**Seen during the slot, not explained:** once, after the air unit restarted from 1080p90 to 640×480 while the app ran, the decoder took 78 ms per frame, the app lost ~65 RTP packets/s and arrivals lagged up to 0.9 s, until the app was restarted [PROVEN: logcat `Decoding:78.7`, trace `ab_check640`]. Five further switches in both directions, on the old build and on a build that rebuilds the decoder on every SPS change, all decoded normally (1.4–2.0 ms), so that cause is **not proven** and the build was not kept; the patch is in [patches/decoder-reconfigure-on-sps-change.patch](patches/decoder-reconfigure-on-sps-change.patch). See [troubleshooting.md](troubleshooting.md#more-traps-hit-on-2026-09-2627).

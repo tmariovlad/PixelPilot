@@ -1,0 +1,195 @@
+diff --git a/app/videonative/src/main/cpp/NALU/KeyFrameFinder.hpp b/app/videonative/src/main/cpp/NALU/KeyFrameFinder.hpp
+index 8f8d1e0..1180820 100644
+--- a/app/videonative/src/main/cpp/NALU/KeyFrameFinder.hpp
++++ b/app/videonative/src/main/cpp/NALU/KeyFrameFinder.hpp
+@@ -5,6 +5,7 @@
+ #ifndef FPVUE_KEYFRAMEFINDER_HPP
+ #define FPVUE_KEYFRAMEFINDER_HPP
+ 
++#include <cstring>
+ #include <memory>
+ #include <vector>
+ #include "../helper/AndroidLogger.hpp"
+@@ -77,6 +78,17 @@ class KeyFrameFinder
+         return VPS->get_nal();
+     }
+ 
++    // True for an SPS whose bytes differ from the saved one, e.g. after the encoder restarted with another
++    // resolution. A decoder configured with the saved SPS must then be rebuilt: left running, the Quest 2
++    // decoder kept ~16 frames (78 ms) after a 1080p -> 480p switch (2026-09-27, docs/xr/g2g-budget.md).
++    bool isChangedSPS(const NALU& nalu) const
++    {
++        if (SPS == nullptr || !nalu.isSPS()) return false;
++        const NALU& saved = SPS->get_nal();
++        return saved.getSize() != nalu.getSize() ||
++               std::memcmp(saved.getData(), nalu.getData(), static_cast<size_t>(nalu.getSize())) != 0;
++    }
++
+     static void appendNaluData(std::vector<uint8_t>& buff, const NALU& nalu)
+     {
+         buff.insert(buff.begin(), nalu.getData(), nalu.getData() + nalu.getSize());
+diff --git a/app/videonative/src/main/cpp/VideoDecoder.cpp b/app/videonative/src/main/cpp/VideoDecoder.cpp
+index f3e66be..787d5b6 100644
+--- a/app/videonative/src/main/cpp/VideoDecoder.cpp
++++ b/app/videonative/src/main/cpp/VideoDecoder.cpp
+@@ -37,21 +37,7 @@ void VideoDecoder::setOutputSurface(JNIEnv* env, jobject surface, jint idx)
+         }
+         std::lock_guard<std::mutex> lock(mMutexInputPipe);
+         inputPipeClosed = true;
+-        if (decoder.configured[idx])
+-        {
+-            AMediaCodec_stop(decoder.codec[idx]);
+-            AMediaCodec_delete(decoder.codec[idx]);
+-            decoder.codec[idx] = nullptr;
+-            MLOGD << "Set decoder.codec null idx: " << idx;
+-            mKeyFrameFinder.reset();
+-            mAssembler.reset();
+-            decoder.configured[idx] = false;
+-            if (mCheckOutputThread[idx]->joinable())
+-            {
+-                mCheckOutputThread[idx]->join();
+-                mCheckOutputThread[idx].reset();
+-            }
+-        }
++        releaseDecoder(idx);
+         if (decoder.window[idx])
+         {
+             ANativeWindow_release(decoder.window[idx]);
+@@ -71,6 +57,23 @@ void VideoDecoder::setOutputSurface(JNIEnv* env, jobject surface, jint idx)
+     }
+ }
+ 
++void VideoDecoder::releaseDecoder(int idx)
++{
++    if (!decoder.configured[idx]) return;
++    AMediaCodec_stop(decoder.codec[idx]);
++    AMediaCodec_delete(decoder.codec[idx]);
++    decoder.codec[idx] = nullptr;
++    MLOGD << "Set decoder.codec null idx: " << idx;
++    mKeyFrameFinder.reset();
++    mAssembler.reset();
++    decoder.configured[idx] = false;
++    if (mCheckOutputThread[idx]->joinable())
++    {
++        mCheckOutputThread[idx]->join();
++        mCheckOutputThread[idx].reset();
++    }
++}
++
+ void VideoDecoder::registerOnDecoderRatioChangedCallback(DECODER_RATIO_CHANGED decoderRatioChangedC)
+ {
+     onDecoderRatioChangedCallback = std::move(decoderRatioChangedC);
+@@ -103,6 +106,14 @@ void VideoDecoder::interpretNALU(const NALU& nalu)
+         mKeyFrameFinder.saveIfKeyFrame(nalu);
+         return;
+     }
++    if ((decoder.configured[0] || decoder.configured[1]) && mKeyFrameFinder.isChangedSPS(nalu))
++    {
++        // The encoder restarted with other parameters (e.g. resolution). Rebuild the decoder from the new
++        // SPS/PPS below instead of letting it adapt in place (which kept ~16 frames on Quest 2).
++        MLOGD << "SPS changed: reconfiguring the decoder";
++        releaseDecoder(0);
++        releaseDecoder(1);
++    }
+     if (decoder.configured[0] || decoder.configured[1])
+     {
+         if (mAuAggregationActive)
+diff --git a/app/videonative/src/main/cpp/VideoDecoder.h b/app/videonative/src/main/cpp/VideoDecoder.h
+index 2d06e07..a0d1ee1 100644
+--- a/app/videonative/src/main/cpp/VideoDecoder.h
++++ b/app/videonative/src/main/cpp/VideoDecoder.h
+@@ -128,6 +128,8 @@ class VideoDecoder
+     // Initialize decoder with SPS / PPS data from KeyFrameFinder
+     // Set Decoder.configured to true on success
+     void configureStartDecoder(int idx);
++    // Stops and deletes decoder idx (if configured) and forgets the saved SPS/PPS; the window stays.
++    void releaseDecoder(int idx);
+ 
+     // Creates, configures and starts the codec for idx with the given levers. On failure the codec is
+     // deleted and false is returned, so the caller can retry with fewer levers.
+diff --git a/app/videonative/src/main/cpp/tests/CMakeLists.txt b/app/videonative/src/main/cpp/tests/CMakeLists.txt
+index 0965756..94f896c 100644
+--- a/app/videonative/src/main/cpp/tests/CMakeLists.txt
++++ b/app/videonative/src/main/cpp/tests/CMakeLists.txt
+@@ -59,3 +59,8 @@ add_executable(frame_time_log_test FrameTimeLog_test.cpp)
+ target_include_directories(frame_time_log_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+ target_link_libraries(frame_time_log_test GTest::gtest_main)
+ gtest_discover_tests(frame_time_log_test)
++
++add_executable(key_frame_finder_test KeyFrameFinder_test.cpp)
++target_include_directories(key_frame_finder_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
++target_link_libraries(key_frame_finder_test GTest::gtest_main)
++gtest_discover_tests(key_frame_finder_test)
+diff --git a/app/videonative/src/main/cpp/tests/KeyFrameFinder_test.cpp b/app/videonative/src/main/cpp/tests/KeyFrameFinder_test.cpp
+new file mode 100644
+index 0000000..b02eb9b
+--- /dev/null
++++ b/app/videonative/src/main/cpp/tests/KeyFrameFinder_test.cpp
+@@ -0,0 +1,55 @@
++#include "NALU/KeyFrameFinder.hpp"
++#include <gtest/gtest.h>
++#include <vector>
++
++// isChangedSPS decides when VideoDecoder rebuilds a running decoder: only an SPS whose bytes differ from the
++// one the decoder was configured with (an encoder restart with new parameters), never a repeated SPS.
++namespace {
++using Bytes = std::vector<uint8_t>;
++
++// H.264 NAL units with a 4-byte start code; 0x67 = SPS, 0x68 = PPS, 0x65 = IDR slice.
++const Bytes kSps480  = {0, 0, 0, 1, 0x67, 0x42, 0xC0, 0x1E, 0xDA, 0x02, 0x80, 0xF6};
++const Bytes kSps1080 = {0, 0, 0, 1, 0x67, 0x42, 0xC0, 0x28, 0xDA, 0x01, 0xE0, 0x08, 0x9F};
++const Bytes kPps     = {0, 0, 0, 1, 0x68, 0xCE, 0x3C, 0x80, 0x00};
++const Bytes kIdr     = {0, 0, 0, 1, 0x65, 0x88, 0x84, 0x00, 0x33};
++
++NALU nalu(const Bytes& b) { return NALU(b.data(), b.size()); }
++}  // namespace
++
++TEST(KeyFrameFinder, NoSavedSpsIsNotAChange)
++{
++    KeyFrameFinder k;
++    EXPECT_FALSE(k.isChangedSPS(nalu(kSps480)));
++}
++
++TEST(KeyFrameFinder, RepeatedIdenticalSpsIsNotAChange)
++{
++    KeyFrameFinder k;
++    k.saveIfKeyFrame(nalu(kSps480));
++    k.saveIfKeyFrame(nalu(kPps));
++    EXPECT_FALSE(k.isChangedSPS(nalu(kSps480)));
++}
++
++TEST(KeyFrameFinder, DifferentSpsIsAChange)
++{
++    KeyFrameFinder k;
++    k.saveIfKeyFrame(nalu(kSps1080));
++    k.saveIfKeyFrame(nalu(kPps));
++    EXPECT_TRUE(k.isChangedSPS(nalu(kSps480)));
++}
++
++TEST(KeyFrameFinder, NonSpsUnitsAreNeverAChange)
++{
++    KeyFrameFinder k;
++    k.saveIfKeyFrame(nalu(kSps1080));
++    EXPECT_FALSE(k.isChangedSPS(nalu(kPps)));
++    EXPECT_FALSE(k.isChangedSPS(nalu(kIdr)));
++}
++
++TEST(KeyFrameFinder, ResetForgetsTheSavedSps)
++{
++    KeyFrameFinder k;
++    k.saveIfKeyFrame(nalu(kSps1080));
++    k.reset();
++    EXPECT_FALSE(k.isChangedSPS(nalu(kSps480)));
++}
+diff --git a/app/videonative/src/main/cpp/NALU/NALU.hpp b/app/videonative/src/main/cpp/NALU/NALU.hpp
+index fa30153..af70fb9 100644
+--- a/app/videonative/src/main/cpp/NALU/NALU.hpp
++++ b/app/videonative/src/main/cpp/NALU/NALU.hpp
+@@ -12,6 +12,7 @@
+ #include <chrono>
+ #include <cstdint>  // for uint8_t
+ #include <cstring>
++#include <functional>
+ #include <iomanip>
+ #include <iostream>
+ #include <memory>

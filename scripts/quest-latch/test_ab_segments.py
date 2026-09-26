@@ -42,6 +42,7 @@ def test_recovers_injected_deltas():
         assert abs(got - EXTRA_MS[lab]) < 0.1, (lab, got)
         assert abs((s[lab]["decoded_ms"] - s["A"]["decoded_ms"]) - EXTRA_MS[lab]) < 0.1
         assert abs(s[lab]["pkt_per_frame"] - PKTS[lab]) < 1e-9
+        assert abs(s[lab]["fps"] - FPS) < 1.0, s[lab]["fps"]
 
 
 def test_guard_drops_switch_frames():

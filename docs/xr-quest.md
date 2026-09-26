@@ -117,6 +117,7 @@ The dated result sections that used to follow here were moved verbatim into topi
 - **[G2G budget per branch](xr/g2g-budget.md)** ([section](xr/g2g-budget.md#g2g-budget-on-the-real-link-branch-by-branch-2026-09-26)): total ≈ 30.7 ms
   (≈ 23–40 range) at 166.6 fps with 0 packets lost. B2 (2.91 ms mean) is MCS2 airtime of ~1357 B packets plus FEC parity
   landing inside the next frame (corrected 2026-09-27); realistic floor on Quest 2 with the open levers ≈ 25–27 ms (slice sending closed), 20 ms not reachable.
+  **Measured 2026-09-27** ([in-trace A/B](xr/g2g-budget.md#air-unit-levers-measured-in-one-trace-2026-09-27-slot-2)): bitrate 8000 → 4000 / 2000 kbit/s = −2.7 / −4.5 ms capture → decoded, FEC 4/6 → 4/5 = −1.5 ms, 8/12 no effect.
 - **[Transport choice](xr/transport-choice.md)** ([measured](xr/transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)): at 1080p90 in one room,
   APFPV through the Quest's own Wi-Fi beats wfb-ng through the RTL (MCS2): 0 vs 0–7 RTP losses per run, jitter p95 2.3–3.0 vs
   8.1–13.5 ms, a frame on the air in ~0.1 vs ~7.8 ms. Boot default still wfb; APFPV through the RTL needs devourer station mode
