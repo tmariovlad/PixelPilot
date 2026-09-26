@@ -31,8 +31,11 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
 - **"Launch is blocked because: a Reprojected OS dialog is currently showing"**: a pending USB-permission dialog
   (`com.oculus.os.vrusb/UsbPermissionActivity`) blocks launching immersive apps. Answer or close the dialog in the
   headset, or `adb shell am force-stop com.oculus.os.vrusb` [PROVEN: seen on the device, 2026-09-26].
-- **`adb shell cmd wifi connect-network …` is silently ignored on Horizon OS**: it returns without joining the
-  network. Join Wi-Fi from the headset's own settings [PROVEN: seen on the device, 2026-09-26].
+- **`adb shell cmd wifi connect-network …` on Horizon OS joins a network only if it is already saved.**
+  - For a new network it returns without joining [PROVEN: seen on the device, 2026-09-26]: join it once from the headset's own settings.
+  - Once saved, `cmd wifi connect-network OpenIPC wpa2 12345678` moved the Quest onto the air unit's AP 3 times out of 3, with no one touching the headset [PROVEN: 2026-09-27, `mWifiInfo SSID: "OpenIPC" … IP: /192.168.0.10`].
+  - When the AP goes away the Quest falls back to a saved home network by itself (Zeul36 on 2026-09-27, not the Zeul37 it had before). `cmd wifi list-networks` shows what is saved.
+  - Correction 2026-09-27: this line used to say the command is always ignored.
 - **Display stuck at 90 Hz**: 120 Hz has to be enabled on Quest 2 under Settings → System → Display; see the
   [smoke checklist](../xr-quest.md#smoke-checklist-first-run-on-a-headset).
 - **Picture corruption on a light Wi-Fi test stream**: Quest Wi-Fi power save drops or bunches a light UDP stream;
@@ -88,3 +91,6 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   - Repeated alternately (on/off/on/off, same position): 835/835/836/835 frames per 10 s, quality 472/576/522/509, Quest TX 0 in every run [PROVEN]. Adaptive link is **not** the cause.
   - Check the physical link first. Compare the air unit's `wlan0 tx_packets` with what the Quest receives (`transport_analyze.py` sequence gaps).
 - **XR mode gets no video after starting from the 2D screen** ("USB adapter in use — refusing to open", then `CreateRtlDevice error`). This was the adapter handoff race, fixed in `WfbngLink.cpp` on 2026-09-27; see [real-link.md § Boot defaults](real-link.md#boot-defaults-works-on-the-first-try-after-a-reboot-2026-09-27).
+
+- **ADB to the Quest while it is on the air unit's APFPV AP.** hostapd there has `max_num_sta=1`, so the PC's Wi-Fi cannot join as a second client, and the air unit has no `iptables` for NAT. Use an SSH forward over the air unit's eth0 (dropbear allows local forwards): `python3 scripts/quest/air_tunnel.py`, then `adb connect 127.0.0.1:5595` [PROVEN: 2026-09-27]. A `plink -L` tunnel is blocked by the nested-SSH hook on this PC. Local port 5556 is already taken by the P10 car-modem ADB tunnel.
+- **`transport_analyze.py` reported 65541 lost packets for one reordered RTP packet** (7575, 7577, 7576) [PROVEN: `ab_wfb4.pftrace`, 2026-09-27]. It counted the step back as a 16-bit wrap. Fixed: the loss count now unwraps with a signed step and reports reorders separately ([rtp_seq.py](../../scripts/quest-latch/rtp_seq.py), test [test_rtp_seq.py](../../scripts/quest-latch/test_rtp_seq.py)). `ab_segments.py` had the same code and now uses the same function.

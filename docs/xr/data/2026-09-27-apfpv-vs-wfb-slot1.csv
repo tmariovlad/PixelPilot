@@ -1,0 +1,8 @@
+run,transport,time,trace_s,packets,frames,trace_fps,pkt_per_frame,rtp_lost,rtp_reordered,decoded_fps_logcat,spread_mean_ms,spread_p95_ms,excess_p50_ms,excess_p95_ms,excess_max_ms,decode_p50_ms,decode_p95_ms
+wfb1,wfb-ng via RTL8812AU,2026-09-27 01:20:39,8.5,6526,769,90.6,8.49,7,0,92,7.76,11.09,4.07,13.49,31.41,2.45,3.19
+apfpv1,APFPV via Quest internal Wi-Fi,2026-09-27 01:24:41,8.5,1000,767,90.5,1.30,0,0,91,0.07,0.22,0.58,2.77,11.72,3.02,4.21
+wfb2,wfb-ng via RTL8812AU,2026-09-27 01:26:22,8.5,6572,772,90.5,8.51,3,0,90,7.77,11.65,3.54,8.21,29.19,2.81,3.87
+apfpv2,APFPV via Quest internal Wi-Fi,2026-09-27 01:28:05,8.6,1034,774,90.5,1.34,0,0,91,0.10,0.21,0.34,2.34,11.94,2.99,4.00
+wfb3,wfb-ng via RTL8812AU,2026-09-27 01:29:26,8.6,6702,776,90.5,8.64,0,0,91,7.77,11.29,3.59,8.14,27.94,2.77,3.80
+apfpv3,APFPV via Quest internal Wi-Fi,2026-09-27 01:30:55,8.6,1010,779,90.5,1.30,0,0,91,0.09,0.19,0.64,3.01,22.46,2.94,3.96
+wfb4,wfb-ng via RTL8812AU,2026-09-27 01:32:08,8.6,6646,776,90.6,8.56,5,1,91,7.76,11.65,6.17,10.74,26.79,2.75,3.79

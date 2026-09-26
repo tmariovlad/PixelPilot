@@ -8,6 +8,8 @@ Override any machine-specific value with an environment variable:
     WFB_CHANNEL   wfb-ng channel of the air unit (default 157)
     GS_KEY        gs.key for the real link  (default scripts/quest/keys/gs.key, gitignored)
     AIR_IP / AIR_SSID / WLAN_IF   the OpenIPC air unit's AP as seen from the PC's Wi-Fi adapter
+    AIR_ETH_IP    the air unit on the home LAN over eth0 (default 192.168.100.132)
+    QUEST_APFPV_IP  the Quest's address on the air unit's AP = its fixed video destination (192.168.0.10)
     QUEST_STREAMS / QUEST_OUT     stream and output directories
 
 Bash scripts source quest_env.sh, which runs `python3 quest_env.py --sh` and so reads the same values.
@@ -59,6 +61,8 @@ WFB_CHANNEL = int(_env("WFB_CHANNEL", "157"))
 AIR_IP = _env("AIR_IP", "192.168.0.1")
 AIR_SSID = _env("AIR_SSID", "OpenIPC")
 WLAN_IF = _env("WLAN_IF", "Wi-Fi 2")
+AIR_ETH_IP = _env("AIR_ETH_IP", "192.168.100.132")   # the air unit on the home LAN (eth0)
+QUEST_APFPV_IP = _env("QUEST_APFPV_IP", "192.168.0.10")  # the air unit's fixed APFPV video destination
 
 # --- directories ---
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -87,6 +91,7 @@ def shell_exports():
         "PKG": PKG, "XR_ACTIVITY": XR_ACTIVITY, "ACTIVITY_2D": ACTIVITY_2D, "XR_CATEGORY": XR_CATEGORY,
         "VIDEO_PORT": VIDEO_PORT, "PHASE_REPORT_PORT": PHASE_REPORT_PORT, "WFB_CHANNEL": WFB_CHANNEL,
         "AIR_IP": AIR_IP, "AIR_SSID": AIR_SSID, "WLAN_IF": WLAN_IF,
+        "AIR_ETH_IP": AIR_ETH_IP, "QUEST_APFPV_IP": QUEST_APFPV_IP,
         "QUEST_DIR": mixed(HERE), "QUEST_STREAMS": mixed(STREAMS_DIR), "QUEST_OUT": mixed(OUT_DIR),
         "QUEST_LATCH": mixed(LATCH_DIR), "GS_KEY": mixed(GS_KEY),
     }

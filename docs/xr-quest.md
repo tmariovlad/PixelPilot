@@ -117,12 +117,17 @@ The dated result sections that used to follow here were moved verbatim into topi
 - **[G2G budget per branch](xr/g2g-budget.md)** ([section](xr/g2g-budget.md#g2g-budget-on-the-real-link-branch-by-branch-2026-09-26)): total ≈ 30.7 ms
   (≈ 23–40 range) at 166.6 fps with 0 packets lost. B2 (2.91 ms mean) is MCS2 airtime of ~1357 B packets plus FEC parity
   landing inside the next frame (corrected 2026-09-27); realistic floor on Quest 2 with the open levers ≈ 25–27 ms (slice sending closed), 20 ms not reachable.
+- **[Transport choice](xr/transport-choice.md)** ([measured](xr/transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)): at 1080p90 in one room,
+  APFPV through the Quest's own Wi-Fi beats wfb-ng through the RTL (MCS2): 0 vs 0–7 RTP losses per run, jitter p95 2.3–3.0 vs
+  8.1–13.5 ms, a frame on the air in ~0.1 vs ~7.8 ms. Boot default still wfb; APFPV through the RTL needs devourer station mode
+  ([scope](xr/research/2026-09-27-devourer-station-scope.md)).
 - **[Troubleshooting](xr/troubleshooting.md)**: build traps, Horizon OS quirks, adapter and link problems.
 - **Raw data** ([xr/data/](xr/data/)): [decoder levers](xr/data/measurements-2026-09-26-quest2-decoder-levers.csv) ·
   [key isolation](xr/data/measurements-2026-09-26-quest2-key-isolation.csv) ·
   [lever recheck](xr/data/measurements-2026-09-26-quest2-lever-recheck.csv) ·
   [codecs](xr/data/measurements-2026-09-26-quest2-codecs.csv) ·
-  [phase lock](xr/data/measurements-2026-09-26-quest2-phase-lock.csv).
+  [phase lock](xr/data/measurements-2026-09-26-quest2-phase-lock.csv) ·
+  [APFPV vs wfb-ng](xr/data/2026-09-27-apfpv-vs-wfb-slot1.csv).
 - **Research behind this mode**: [Quest 2 research synthesis](xr/research/2026-09-26-quest2/00-INDEX-SYNTHESIS.md)
   (latency numbers and measurement protocol, APK options, system tweaks, compositor latch timing).
 

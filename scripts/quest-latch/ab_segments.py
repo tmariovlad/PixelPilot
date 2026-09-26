@@ -17,6 +17,8 @@ import statistics as st
 from bisect import bisect_left
 from collections import OrderedDict, namedtuple
 
+from rtp_seq import seq_loss
+
 Frame = namedtuple("Frame", "capture first last npkts ready")  # ns; capture = RTP ts on the air clock; ready or None
 
 RTP_HZ = 90000
@@ -31,7 +33,7 @@ def pct(v, p):
 def frames_from_packets(pkts, ready):
     """pkts: [(arrival_ns, seq, rtp_ts)] in arrival order; ready: sorted decoded-frame mark times.
     Returns (frames, lost) with frames grouped by (unwrapped) RTP timestamp."""
-    lost = sum(((b[1] - a[1]) & 0xFFFF) - 1 for a, b in zip(pkts, pkts[1:]) if ((b[1] - a[1]) & 0xFFFF) not in (0, 1))
+    lost = seq_loss([p[1] for p in pkts])[0]
     groups, base, prev = OrderedDict(), 0, None
     for t, _, ts in pkts:
         if prev is not None and ts < prev and prev - ts > 1 << 31:

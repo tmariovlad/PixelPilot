@@ -156,6 +156,8 @@ check: `python3 ../quest-latch/test_ab_segments.py`. Only for levers applied liv
 | `wait_air.sh`, `openipc-wlan.xml` | PC Wi-Fi to the air unit's AP |
 | `keycheck.py`, `keyscan.py`, `pwkey.py` | wfb-ng key pairing: check, search, derive from a keygen password |
 | `bq_stats.py`, `gaps.py`, `trace_query.py` | Perfetto analysis: buffer queue, packet gaps, ad-hoc SQL |
+| `ab_run.sh` | one transport A/B sample on the running app (link_measure + 9 s trace + transport_analyze + gaps), same for wfb-ng and APFPV; `out/ab_<label>.{log,pftrace}` |
+| `air_tunnel.py` | ADB to the Quest while it is a client of the air unit's APFPV AP: SSH forward over the air unit's eth0 (`adb connect 127.0.0.1:5595`) |
 | `ab_long.sh` | capture for an in-trace A/B: long lean trace + Quest-minus-PC clock offset (analysis: `../quest-latch/ab_segments.py`) |
 | `blu.py` | Quest 2 backlight flash timing from the kernel panel dtsi numbers (`python3 blu.py 3664 14 7 1 120`) |
 | `build_wb_f8742fe.sh` | **OpenIPC project, not this repo:** rebuild waybeam f8742fe for the air unit (WSL) |
