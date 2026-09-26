@@ -53,7 +53,8 @@ public class VideoPlayer implements IVideoParamsChanged {
 
     public static native void nativeSetDecoderLevers(long nativeInstance, boolean lowLatency, boolean pictureOrder,
                                                      boolean operatingRate, boolean preferLowLatencyComponent,
-                                                     boolean auAggregation, int debugKeyMask);
+                                                     boolean auAggregation, int debugKeyMask,
+                                                     String componentName);
 
     public static native String nativeGetDecoderSummary(long nativeInstance);
 
@@ -139,7 +140,7 @@ public class VideoPlayer implements IVideoParamsChanged {
      */
     public void setDecoderLevers(LatencyExperiments e) {
         nativeSetDecoderLevers(nativeVideoPlayer, e.lowLatencyDecoder, e.decPictureOrder, e.decOperatingRate,
-                e.decPreferLowLatencyComponent, e.auAggregation, e.decDebugKeyMask);
+                e.decPreferLowLatencyComponent, e.auAggregation, e.decDebugKeyMask, e.decComponent);
     }
 
     /** Kernel thread ids on the video latency path (receive/feed, output release); may be empty. */

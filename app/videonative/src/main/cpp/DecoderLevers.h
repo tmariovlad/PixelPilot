@@ -31,9 +31,14 @@ struct DecoderLevers
     bool auAggregation             = false;
     // Debug only: keys whose bit is clear are not written even if a lever asks for them.
     uint32_t keyMask = 0xFFFFFFFFu;
+    // Debug only: force a codec component by name (e.g. "c2.qti.hevc.decoder"); empty = default.
+    std::string componentName;
 
     // Codec-facing extras are the ones a decoder can reject in configure().
-    bool hasExtras() const { return pictureOrder || operatingRate || preferLowLatencyComponent; }
+    bool hasExtras() const
+    {
+        return pictureOrder || operatingRate || preferLowLatencyComponent || !componentName.empty();
+    }
 
     DecoderLevers onlyBase() const
     {
@@ -81,6 +86,15 @@ inline std::vector<FormatKey> decoderFormatKeys(const DecoderLevers& l)
     if (l.auAggregation)
         add(DecoderKey::MaxInputSize, "max-input-size", static_cast<int32_t>(AccessUnitAssembler::kDefaultMaxBytes));
     return k;
+}
+
+// Components to try by name, in order, before the default decoder for the MIME type.
+inline std::vector<std::string> componentCandidates(const DecoderLevers& l, bool h265)
+{
+    std::vector<std::string> names;
+    if (!l.componentName.empty()) names.push_back(l.componentName);
+    if (l.preferLowLatencyComponent) names.push_back(h265 ? "c2.qti.hevc.decoder.low_latency" : "c2.qti.avc.decoder.low_latency");
+    return names;
 }
 
 // The levers as they actually took effect: a preferred low-latency component that does not exist

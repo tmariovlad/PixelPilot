@@ -173,11 +173,13 @@ bool VideoDecoder::configureAndStart(int idx, const DecoderLevers& levers)
     std::string       name             = "default " + MIME;
     bool              componentCreated = false;
     decoder.codec[idx]                 = nullptr;
-    if (levers.preferLowLatencyComponent)
+    for (const auto& candidate : componentCandidates(levers, IS_H265))
     {
-        decoder.codec[idx] = AMediaCodec_createCodecByName(lowLatencyComponentName(IS_H265));
-        componentCreated   = decoder.codec[idx] != nullptr;
-        if (componentCreated) name = lowLatencyComponentName(IS_H265);
+        decoder.codec[idx] = AMediaCodec_createCodecByName(candidate.c_str());
+        if (decoder.codec[idx] == nullptr) continue;
+        name             = candidate;
+        componentCreated = candidate == lowLatencyComponentName(IS_H265);
+        break;
     }
     if (decoder.codec[idx] == nullptr)
     {

@@ -118,3 +118,21 @@ TEST(DecoderLevers, DefaultMaskKeepsEverything)
     all.keyMask = 0xFFFFFFFFu;
     EXPECT_EQ(flat(all), flat(l));
 }
+
+// Which components to try, in order, before falling back to the default for the MIME type.
+TEST(DecoderLevers, ComponentCandidatesOrder)
+{
+    DecoderLevers l;
+    EXPECT_TRUE(componentCandidates(l, true).empty());  // default decoder
+
+    l.preferLowLatencyComponent = true;
+    EXPECT_EQ((std::vector<std::string>{"c2.qti.hevc.decoder.low_latency"}), componentCandidates(l, true));
+
+    l.componentName = "c2.qti.hevc.decoder";  // an explicit name wins, then the low-latency one
+    EXPECT_EQ((std::vector<std::string>{"c2.qti.hevc.decoder", "c2.qti.hevc.decoder.low_latency"}),
+              componentCandidates(l, true));
+
+    l.preferLowLatencyComponent = false;
+    l.componentName             = "c2.qti.avc.decoder";
+    EXPECT_EQ((std::vector<std::string>{"c2.qti.avc.decoder"}), componentCandidates(l, false));
+}

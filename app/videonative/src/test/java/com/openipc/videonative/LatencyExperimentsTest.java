@@ -108,6 +108,12 @@ public class LatencyExperimentsTest {
         assertEquals(0x20, LatencyExperiments.from(new MapPrefs().put(LatencyExperiments.KEY_DEC_DEBUG_KEY_MASK, 0x20)).decDebugKeyMask);
     }
 
+    @Test public void decoderComponentDefaultsToEmpty() {
+        assertEquals("", LatencyExperiments.from(new MapPrefs()).decComponent);
+        assertEquals("c2.qti.hevc.decoder",
+                LatencyExperiments.from(new MapPrefs().put(LatencyExperiments.KEY_DEC_COMPONENT, "c2.qti.hevc.decoder")).decComponent);
+    }
+
     @Test public void metaHeadsetDetection() {
         assertTrue(LatencyExperiments.isMetaHeadset("Oculus"));
         assertTrue(LatencyExperiments.isMetaHeadset("Meta"));

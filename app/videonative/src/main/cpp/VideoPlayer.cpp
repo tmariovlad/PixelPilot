@@ -334,7 +334,8 @@ extern "C"
      jboolean operatingRate,
      jboolean preferLowLatencyComponent,
      jboolean auAggregation,
-     jint     debugKeyMask)
+     jint     debugKeyMask,
+     jstring  componentName)
     {
         VideoPlayer* p = native(nativeInstance);
         if (p)
@@ -346,6 +347,12 @@ extern "C"
             l.preferLowLatencyComponent = preferLowLatencyComponent;
             l.auAggregation             = auAggregation;
             l.keyMask                   = static_cast<uint32_t>(debugKeyMask);
+            if (componentName != nullptr)
+            {
+                const char* chars = env->GetStringUTFChars(componentName, nullptr);
+                l.componentName   = chars;
+                env->ReleaseStringUTFChars(componentName, chars);
+            }
             p->setDecoderLevers(l);
         }
     }
