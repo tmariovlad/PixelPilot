@@ -75,7 +75,7 @@ inline NaluInfo classify(
 
 // Joins the NALUs of one access unit so the decoder receives a whole picture per input buffer
 // and never has to wait for the next picture to learn that this one is complete.
-// The AU is closed by the RTP marker on its last VCL NALU. If that packet was lost, the AU is
+// The AU is closed by the RTP marker on its last NALU. If that packet was lost, the AU is
 // closed when the next picture visibly starts (AUD, parameter set, or a first slice while a slice
 // is already pending), so a lost marker costs one late frame instead of merging two pictures.
 class AccessUnitAssembler
@@ -84,7 +84,11 @@ class AccessUnitAssembler
     using Emit = std::function<void(
         const uint8_t* data, size_t size, std::chrono::steady_clock::time_point firstNaluTime, bool isConfig)>;
 
-    explicit AccessUnitAssembler(size_t maxBytes = 1024 * 1024) : mMaxBytes(maxBytes) { mBuf.reserve(256 * 1024); }
+    // Largest access unit handed to the decoder; the decoder's input buffers are sized to it
+    // (max-input-size, DecoderLevers.h) so an assembled picture is never dropped as too big.
+    static constexpr size_t kDefaultMaxBytes = 1024 * 1024;
+
+    explicit AccessUnitAssembler(size_t maxBytes = kDefaultMaxBytes) : mMaxBytes(maxBytes) { mBuf.reserve(256 * 1024); }
 
     void push(const NaluInfo& n, const Emit& emit)
     {
@@ -113,7 +117,9 @@ class AccessUnitAssembler
         }
         mBuf.insert(mBuf.end(), n.data, n.data + n.size);
         mHasVcl = mHasVcl || n.isVcl;
-        if (n.isVcl && n.endOfAu)
+        // The marker may sit on a trailing non-VCL NALU (suffix SEI, filler): close as soon as the
+        // AU holds a slice, otherwise the picture would wait for the next one.
+        if (n.endOfAu && mHasVcl)
         {
             flush(emit);
         }

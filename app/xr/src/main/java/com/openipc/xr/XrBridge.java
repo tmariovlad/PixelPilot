@@ -51,21 +51,24 @@ public final class XrBridge {
     }
 
     public Surface videoSurface() {
-        return (Surface) nativeVideoSurface(handle);
+        return handle == 0 ? null : (Surface) nativeVideoSurface(handle);
     }
 
     public Surface statsSurface() {
-        return (Surface) nativeStatsSurface(handle);
+        return handle == 0 ? null : (Surface) nativeStatsSurface(handle);
     }
 
+    /** No-op after stop(): late callbacks from other threads may still arrive then. */
     public void setLayout(LayerLayout l) {
+        if (handle == 0) return;
         float[] v = {l.videoWidthM, l.videoHeightM, l.videoZ, l.cylRadius, l.cylAngleRad, l.cylAspect,
                 l.statsWidthM, l.statsHeightM, l.statsY, l.statsZ, LayerLayout.STATS_IMAGE_W};
         nativeSetLayout(handle, l.cylinder, l.flip, v, l.imageW, l.imageH);
     }
 
+    /** All values "not available" after stop(). */
     public Info info() {
-        return new Info(nativeInfo(handle));
+        return new Info(handle == 0 ? new float[]{-1f, -1f, -1f, -1f, -1f} : nativeInfo(handle));
     }
 
     /** Ends the session and frees everything. Stop feeding the video surface before calling. */

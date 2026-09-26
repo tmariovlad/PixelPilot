@@ -253,7 +253,26 @@ void XrRuntime::loop()
         }
         renderFrame();
     }
-    if (mRunning) endSession();
+    if (mRunning) requestExitAndDrain();
+}
+
+void XrRuntime::requestExitAndDrain()
+{
+    // Orderly end: ask the runtime to stop, then keep the loop turning until it has sent STOPPING
+    // (handled by onStateChanged -> endSession). xrEndSession is only valid in STOPPING.
+    const XrResult r = xrRequestExitSession(mSession);
+    if (XR_FAILED(r)) XLOGE("xrRequestExitSession failed: %d", r);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
+    while (mRunning && XR_SUCCEEDED(r) && std::chrono::steady_clock::now() < deadline)
+    {
+        pollEvents();
+        if (mRunning) renderFrame();
+    }
+    if (mRunning)
+    {
+        XLOGE("runtime did not reach STOPPING in time, ending the session directly");
+        endSession();
+    }
 }
 
 void XrRuntime::pollEvents()
@@ -285,9 +304,10 @@ void XrRuntime::onStateChanged(XrSessionState state)
         {
             XrSessionBeginInfo begin{XR_TYPE_SESSION_BEGIN_INFO};
             begin.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-            if (XR_FAILED(xrBeginSession(mSession, &begin)))
+            const XrResult r = xrBeginSession(mSession, &begin);
+            if (XR_FAILED(r))
             {
-                fail("xrBeginSession failed");
+                fail("xrBeginSession failed: " + std::to_string(r));
                 break;
             }
             mRunning = true;
@@ -325,7 +345,8 @@ void XrRuntime::setVideoAllowed(bool allowed)
 void XrRuntime::endSession()
 {
     setVideoAllowed(false);  // the producer has stopped when this returns (spec: before xrEndSession)
-    xrEndSession(mSession);
+    const XrResult r = xrEndSession(mSession);
+    if (XR_FAILED(r)) XLOGE("xrEndSession failed: %d", r);
     mRunning = false;
 }
 
@@ -367,7 +388,8 @@ void XrRuntime::renderFrame()
         endInfo.layerCount = mLayers.count();
         endInfo.layers     = mLayers.layers();
     }
-    xrEndFrame(mSession, &endInfo);
+    const XrResult ended = xrEndFrame(mSession, &endInfo);
+    if (XR_FAILED(ended) && (mFrames % 120) == 0) XLOGE("xrEndFrame failed: %d", ended);
     if (++mFrames % 30 == 0) readMetrics();
 }
 

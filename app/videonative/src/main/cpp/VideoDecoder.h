@@ -114,8 +114,9 @@ class VideoDecoder
     // Set Decoder.configured to true on success
     void configureStartDecoder(int idx);
 
-    // Creates and configures (does not start) the codec for idx with the given levers. False on failure.
-    bool tryConfigure(int idx, const DecoderLevers& levers);
+    // Creates, configures and starts the codec for idx with the given levers. On failure the codec is
+    // deleted and false is returned, so the caller can retry with fewer levers.
+    bool configureAndStart(int idx, const DecoderLevers& levers);
 
     // Wait for an input buffer and queue one buffer: a single NALU or a whole access unit
     void feedDecoder(const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime,

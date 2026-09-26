@@ -50,7 +50,7 @@ Everything tunable lives in **Video → Latency experiments** (single source:
 | XR refresh | `xr_refresh_hz` | 120 | next XR start |
 | XR size | `xr_fov_deg` | 60° | next XR start |
 | XR: curved layer | `xr_layer_shape` | quad | next XR start |
-| XR: present by timestamp | `xr_use_timestamps` | off | next XR start |
+| XR: present by timestamp | `xr_use_timestamps` | off | next XR start — **currently expected to be inert**: buffer timestamps are the decoder-input time, always ≤ the compositor's display time, so "latest buffer with timestamp ≤ display time" picks the same buffer as mailbox. Kept as a control; making it meaningful needs PTS = target display time (separate experiment). |
 | XR: CPU/GPU sustained high | `xr_perf_sustained_high` | on | next XR start |
 | XR: flip image vertically | `xr_flip_vertical` | on | next XR start |
 
@@ -63,7 +63,7 @@ A decoder that rejects the extra decoder keys is reconfigured with the base set;
 `adb logcat -s PixelPilotXr pixelpilot-xr pixelpilot`:
 
 - [ ] `OpenXR ready: N extensions enabled` — if instead `OpenXR runtime lacks XR_KHR_android_surface_swapchain`, the XR mode cannot work on this runtime.
-- [ ] `requested 120 Hz -> 120 Hz` and the panel's first line shows `XR 120.0 Hz`.
+- [ ] `requested 120 Hz -> 120 Hz` and the panel's first line shows `XR 120.0 Hz`. On Quest 2, 120 Hz must be enabled under Settings → System → Display; otherwise the runtime offers at most 90 and the log shows `-> 90 Hz`.
 - [ ] `session state … -> 5` (FOCUSED) followed by `video attached to the compositor surface`.
 - [ ] Video visible, **right way up** (if upside-down or mirrored: toggle *XR: flip image vertically*).
 - [ ] Stats panel updates (~4 Hz), `dec:` line shows a codec name.

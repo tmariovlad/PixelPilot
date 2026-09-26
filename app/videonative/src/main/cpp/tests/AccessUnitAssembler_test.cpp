@@ -171,3 +171,21 @@ TEST_F(Fixture, FlushEmitsPendingAndResets)
     asmb.flush(emit);
     EXPECT_EQ(1u, out.size());
 }
+
+// Final review Important 5: a marker on a trailing non-VCL NALU (suffix SEI / filler) must close
+// the AU at once, not one picture later.
+TEST_F(Fixture, MarkerOnTrailingNonVclClosesAccessUnit)
+{
+    auto slice = h265(1, true), suffixSei = h265(40, false);
+    push(slice, true, false);
+    push(suffixSei, true, true);
+    ASSERT_EQ(1u, out.size());
+    EXPECT_EQ(cat({slice, suffixSei}), out[0].data);
+    EXPECT_EQ(0u, asmb.pendingBytes());
+}
+
+TEST_F(Fixture, MarkerWithoutAnySliceDoesNotEmit)
+{
+    push(h264(6, false), false, true);  // lone SEI with a marker: nothing decodable yet
+    EXPECT_TRUE(out.empty());
+}

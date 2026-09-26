@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include "AccessUnitAssembler.h"
 
 // Decoder-side latency levers. Mirrors LatencyExperiments (Java), which owns the pref keys/defaults.
 struct DecoderLevers
@@ -53,7 +54,19 @@ inline std::vector<FormatKey> decoderFormatKeys(const DecoderLevers& l)
     if (l.pictureOrder) k.push_back({"vendor.qti-ext-dec-picture-order.enable", 1});
     // Keep the codec clocked up; Short.MAX_VALUE as moonlight-android uses on Qualcomm.
     if (l.operatingRate) k.push_back({"operating-rate", 32767});
+    // Whole access units can be larger than the codec's default input buffer; size it to the
+    // assembler's cap so no picture is dropped as "too big".
+    if (l.auAggregation) k.push_back({"max-input-size", static_cast<int32_t>(AccessUnitAssembler::kDefaultMaxBytes)});
     return k;
+}
+
+// The levers as they actually took effect: a preferred low-latency component that does not exist
+// on this device was not used, so it must not be reported.
+inline DecoderLevers appliedLevers(const DecoderLevers& requested, bool lowLatencyComponentCreated)
+{
+    DecoderLevers applied = requested;
+    if (!lowLatencyComponentCreated) applied.preferLowLatencyComponent = false;
+    return applied;
 }
 
 // Qualcomm ships separate low-latency Codec2 components on some SoCs (moonlight-android MediaCodecHelper).

@@ -37,7 +37,11 @@ final class XrStatsRenderer {
                 y += LINE_PX;
             }
         } finally {
-            surface.unlockCanvasAndPost(canvas);
+            try {
+                surface.unlockCanvasAndPost(canvas);
+            } catch (RuntimeException e) {
+                // surface abandoned between lock and unlock while the session ends
+            }
         }
     }
 }

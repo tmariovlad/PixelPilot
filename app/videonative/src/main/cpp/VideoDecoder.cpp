@@ -147,35 +147,37 @@ void VideoDecoder::configureStartDecoder(int idx)
         std::lock_guard<std::mutex> lock(mLeversMutex);
         wanted = mLevers;
     }
-    // A decoder may reject vendor keys it does not know how to honour; fall back to the base set
-    // instead of leaving the stream undecoded.
-    if (!tryConfigure(idx, wanted) && wanted.hasExtras())
+    // A decoder may reject vendor keys or a component at configure() or only at start(); either way
+    // fall back to the base set instead of leaving the stream undecoded.
+    bool started = configureAndStart(idx, wanted);
+    if (!started && wanted.hasExtras())
     {
         MLOGE << "Decoder rejected levers [" << leversSummary(wanted) << "], retrying without the extras";
-        tryConfigure(idx, wanted.onlyBase());
+        started = configureAndStart(idx, wanted.onlyBase());
     }
-    if (decoder.codec[idx] == nullptr)
+    if (!started)
     {
-        MLOGD << "Cannot configure decoder";
+        MLOGE << "Cannot configure decoder";
         return;
     }
     mAuAggregationActive = wanted.auAggregation;
     mAssembler.reset();
-    AMediaCodec_start(decoder.codec[idx]);
     mCheckOutputThread[idx] = std::make_unique<std::thread>(&VideoDecoder::checkOutputLoop, this, idx);
     NDKThreadHelper::setName(mCheckOutputThread[idx]->native_handle(), "LLDCheckOutput");
     decoder.configured[idx] = true;
 }
 
-bool VideoDecoder::tryConfigure(int idx, const DecoderLevers& levers)
+bool VideoDecoder::configureAndStart(int idx, const DecoderLevers& levers)
 {
-    const std::string MIME = IS_H265 ? "video/hevc" : "video/avc";
-    std::string       name = "default " + MIME;
-    decoder.codec[idx]     = nullptr;
+    const std::string MIME             = IS_H265 ? "video/hevc" : "video/avc";
+    std::string       name             = "default " + MIME;
+    bool              componentCreated = false;
+    decoder.codec[idx]                 = nullptr;
     if (levers.preferLowLatencyComponent)
     {
         decoder.codec[idx] = AMediaCodec_createCodecByName(lowLatencyComponentName(IS_H265));
-        if (decoder.codec[idx] != nullptr) name = lowLatencyComponentName(IS_H265);
+        componentCreated   = decoder.codec[idx] != nullptr;
+        if (componentCreated) name = lowLatencyComponentName(IS_H265);
     }
     if (decoder.codec[idx] == nullptr)
     {
@@ -204,8 +206,16 @@ bool VideoDecoder::tryConfigure(int idx, const DecoderLevers& levers)
         decoder.codec[idx] = nullptr;
         return false;
     }
+    const auto startStatus = AMediaCodec_start(decoder.codec[idx]);
+    if (startStatus != AMEDIA_OK)
+    {
+        MLOGE << "AMediaCodec_start failed: " << (int) startStatus;
+        AMediaCodec_delete(decoder.codec[idx]);
+        decoder.codec[idx] = nullptr;
+        return false;
+    }
     std::lock_guard<std::mutex> lock(mLeversMutex);
-    mAppliedSummary = name + " | " + leversSummary(levers);
+    mAppliedSummary = name + " | " + leversSummary(appliedLevers(levers, componentCreated));
     return true;
 }
 

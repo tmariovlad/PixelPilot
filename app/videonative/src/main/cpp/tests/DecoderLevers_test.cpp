@@ -1,5 +1,6 @@
 #include "DecoderLevers.h"
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <string>
 
 namespace {
@@ -70,4 +71,26 @@ TEST(DecoderLevers, ComponentNamesAndSummary)
     EXPECT_EQ("LL PO AU", leversSummary(l));
     l.lowLatency = l.pictureOrder = l.auAggregation = false;
     EXPECT_EQ("stock", leversSummary(l));
+}
+
+// Final review Important 4: whole access units must fit the codec's input buffers.
+TEST(DecoderLevers, AuAggregationRaisesMaxInputSizeToAssemblerCap)
+{
+    DecoderLevers l;
+    l.auAggregation = true;
+    auto f = flat(l);
+    EXPECT_EQ((std::pair<std::string, int32_t>{"max-input-size", static_cast<int32_t>(AccessUnitAssembler::kDefaultMaxBytes)}),
+              f.back());
+    const auto defaults = flat(DecoderLevers{});
+    EXPECT_EQ(0, std::count_if(defaults.begin(), defaults.end(),
+                               [](const auto& kv) { return kv.first == "max-input-size"; }));
+}
+
+// Final review Important 7: the summary must describe what was actually applied.
+TEST(DecoderLevers, AppliedLeversDropComponentWhenNotCreated)
+{
+    DecoderLevers l;
+    l.preferLowLatencyComponent = true;
+    EXPECT_EQ("LL LLC", leversSummary(appliedLevers(l, true)));
+    EXPECT_EQ("LL", leversSummary(appliedLevers(l, false)));
 }

@@ -71,6 +71,7 @@ class XrRuntime
     void    setVideoAllowed(bool allowed);
     void    renderFrame();
     void    endSession();
+    void    requestExitAndDrain();
     void    applyRefreshRate();
     void    applyPerformanceHints();
     void    enableMetrics();

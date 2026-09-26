@@ -19,8 +19,6 @@ import com.openipc.xr.LayerLayout;
 import com.openipc.xr.XrBridge;
 
 import java.util.Locale;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Immersive viewer: MediaCodec renders straight into a compositor-owned surface shown as a
@@ -31,7 +29,6 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         XrBridge.Listener, LinkStatusListener {
     private static final String TAG = "pixelpilot-xr";
     private static final long STATS_PERIOD_MS = 250;
-    private static final long INACTIVE_TIMEOUT_MS = 2000;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private LatencyExperiments experiments;
@@ -40,7 +37,13 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private VideoPlayer videoPlayer;
     private WfbNgLink wfbLink;
     private WfbLinkManager wfbLinkManager;
+    // Guards videoAttached: attach runs on the UI thread, detach on the XR thread (INACTIVE) or the
+    // UI thread (onDestroy). VideoPlayer's surface/start/stop calls do not need the main looper.
+    private final Object videoLock = new Object();
     private boolean videoAttached;
+    // Set by the XR thread: true only while the session is VISIBLE/FOCUSED. A posted attach that
+    // runs after the session already went INACTIVE must not attach.
+    private boolean videoAllowed;
     private volatile boolean destroying;
     private volatile DecodingInfo lastDecoding;
     private volatile WfbNGStats lastLink;
@@ -50,7 +53,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private final Runnable statsTick = new Runnable() {
         @Override
         public void run() {
-            if (stats != null) stats.draw(statsLines());
+            XrStatsRenderer renderer = stats;
+            if (renderer != null) renderer.draw(statsLines());
             ui.postDelayed(this, STATS_PERIOD_MS);
         }
     };
@@ -113,8 +117,13 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     @Override
     protected void onDestroy() {
         destroying = true;
+        ui.removeCallbacks(statsTick);
         detachVideo();          // stop writing before the session ends (no callback round-trip)
-        if (xr != null) xr.stop();
+        if (xr != null) {
+            xr.stop();
+            xr = null;          // late posts (ratio change, stats) see null and do nothing
+        }
+        stats = null;
         super.onDestroy();
     }
 
@@ -124,22 +133,19 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     public void onSessionEvent(XrBridge.SessionEvent event) {
         switch (event) {
             case ACTIVE:
+                synchronized (videoLock) {
+                    videoAllowed = true;
+                }
                 ui.post(this::attachVideo);
                 break;
             case INACTIVE:
-                if (destroying) return; // onDestroy already detached; the UI thread is joining us
-                CountDownLatch done = new CountDownLatch(1);
-                ui.post(() -> {
-                    detachVideo();
-                    done.countDown();
-                });
-                try {
-                    if (!done.await(INACTIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                        Log.w(TAG, "video detach timed out before xrEndSession");
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
+                // Synchronously on the XR thread: the runtime calls xrEndSession right after this
+                // returns, so the decoder must have stopped writing by then. Not routed through the
+                // UI thread, which may be busy (e.g. onPause joining the wfb-ng threads).
+                synchronized (videoLock) {
+                    videoAllowed = false;
                 }
+                detachVideo();
                 break;
             case EXITING:
                 ui.post(this::finish);
@@ -148,17 +154,21 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     }
 
     private void attachVideo() {
-        if (videoAttached || destroying || xr == null) return;
-        videoPlayer.addAndStartDecoderReceiver(xr.videoSurface(), 0);
-        videoPlayer.start();
-        videoAttached = true;
+        synchronized (videoLock) {
+            if (videoAttached || !videoAllowed || destroying || xr == null) return;
+            videoPlayer.addAndStartDecoderReceiver(xr.videoSurface(), 0);
+            videoPlayer.start();
+            videoAttached = true;
+        }
         Log.i(TAG, "video attached to the compositor surface");
     }
 
     private void detachVideo() {
-        if (!videoAttached) return;
-        videoPlayer.stopAndRemoveReceiverDecoder(0);
-        videoAttached = false;
+        synchronized (videoLock) {
+            if (!videoAttached) return;
+            videoPlayer.stopAndRemoveReceiverDecoder(0);
+            videoAttached = false;
+        }
         Log.i(TAG, "video detached");
     }
 
@@ -199,7 +209,9 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     }
 
     private String[] statsLines() {
-        XrBridge.Info info = xr.info();
+        XrBridge bridge = xr;
+        if (bridge == null) return new String[0];
+        XrBridge.Info info = bridge.info();
         DecodingInfo d = lastDecoding;
         WfbNGStats l = lastLink;
         return new String[]{
