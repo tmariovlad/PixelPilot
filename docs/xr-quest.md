@@ -120,7 +120,7 @@ The dated result sections that used to follow here were moved verbatim into topi
 - **[Transport choice](xr/transport-choice.md)** ([measured](xr/transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)): at 1080p90 in one room,
   APFPV through the Quest's own Wi-Fi beats wfb-ng through the RTL (MCS2): 0 vs 0–7 RTP losses per run, jitter p95 2.3–3.0 vs
   8.1–13.5 ms, a frame on the air in ~0.1 vs ~7.8 ms. Boot default still wfb; APFPV through the RTL needs devourer station mode
-  ([scope](xr/research/2026-09-27-devourer-station-scope.md)).
+  ([station mode](xr/station-mode.md), [scope](xr/research/2026-09-27-devourer-station-scope.md)).
 - **[Troubleshooting](xr/troubleshooting.md)**: build traps, Horizon OS quirks, adapter and link problems.
 - **Raw data** ([xr/data/](xr/data/)): [decoder levers](xr/data/measurements-2026-09-26-quest2-decoder-levers.csv) ·
   [key isolation](xr/data/measurements-2026-09-26-quest2-key-isolation.csv) ·

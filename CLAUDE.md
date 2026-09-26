@@ -19,6 +19,7 @@ home of all Quest work.
   - [docs/xr/compositor-phase.md](docs/xr/compositor-phase.md): compositor latch timing measured + phase-lock proof of concept.
   - [docs/xr/real-link.md](docs/xr/real-link.md): first real link (Quest 2 + RTL8812AU + OpenIPC air unit): setup, keys, link id, picture order.
   - [docs/xr/g2g-budget.md](docs/xr/g2g-budget.md): G2G budget per branch on the real link.
+  - [docs/xr/station-mode.md](docs/xr/station-mode.md): APFPV through the RTL (devourer station mode): code, host build, go/no-go gate.
   - [docs/xr/troubleshooting.md](docs/xr/troubleshooting.md): build traps, Horizon OS quirks, adapter/link problems.
   - [docs/xr/transport-choice.md](docs/xr/transport-choice.md): why wfb-ng is the boot default, not APFPV; why APFPV through the RTL needs new code.
   - **[docs/xr/HANDOFF.md](docs/xr/HANDOFF.md): current state of air unit / Quest / GS and the open items — start here in a new session.**
