@@ -65,3 +65,5 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   encoder; see [codec, component and resolution](decoder-levers.md#codec-component-and-resolution-2026-09-26).
 - **The ESP32 + LDR G2G rig reads nothing through the lenses** (the backlight flashes ~1 ms per frame): use a
   photodiode or 480 fps slow motion; see [Measuring](../xr-quest.md#measuring-the-point-of-this-mode).
+
+- **The air unit sends no video after a test, even after a power cycle.** waybeam's destination stays `127.0.0.1` from the wfb switch. Run `linkmode-air.sh apfpv`: see [real-link.md § Restoring the air unit after a test](real-link.md#restoring-the-air-unit-after-a-test-2026-09-27).

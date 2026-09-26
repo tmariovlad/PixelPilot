@@ -33,3 +33,17 @@ Setup (APFPV vs wfb, keys, link id) and the picture-order finding on the real Op
 - Air-side alternative: write VUI `bitstream_restriction` with `max_num_reorder_frames = 0` into the SPS.
 
 **Compositor wait on the real stream** ([latch_analyze.py](../../scripts/quest-latch/latch_analyze.py) on a 9 s trace at 166 fps): frame ready → latch **mean 3.08 ms, p50 2.64, p95 6.89**; 1434 frames queued, 886 latched [PROVEN]. This matches the prediction for a 166 fps source (half of 6.0 ms). The phase lock is not in play here: the air-unit side is not built.
+
+## Restoring the air unit after a test (2026-09-27)
+
+A power cycle is **not** a full revert. It brings back APFPV (hostapd) and the HIL key, because the RAM bind mount and the `/tmp` script copy are gone. **waybeam's `outgoing.server` stays `udp://127.0.0.1:5600`**: `linkmode-air.sh wfb` sets it through waybeam's API, and that setting persists in `/etc/waybeam.json`.
+
+After the reboot the air unit is an AP that sends its video to itself. The symptom is `wlan0 tx_packets` growing by only ~6 per 2 s, while waybeam reports ~166 fps [PROVEN 2026-09-27: `grep '"server"' /etc/waybeam.json` = `127.0.0.1` after the power cycle].
+
+**Always finish with the documented revert:**
+1. Connect over eth0 `.132`, or over the AP `192.168.0.1` through the PC's Wi-Fi (`scripts/quest/wait_air.sh`).
+2. Run `/opt/linkmode/linkmode-air.sh apfpv` in the background, because the AP drops briefly.
+3. Check that `AIR_STATE=apfpv`, that `/etc/waybeam.json` has `"server": "udp://192.168.0.10:5600"`, and that `wlan0 tx_packets` grows by ~340 per 2 s.
+
+Verified on 2026-09-27: after the revert, 342 packets per 2 s went to `192.168.0.10:5600` [PROVEN].
+

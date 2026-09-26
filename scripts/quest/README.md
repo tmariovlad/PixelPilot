@@ -150,3 +150,5 @@ For a trace on the real link, capture while the app runs:
 ## Provenance
 
 These scripts were rescued from a session scratchpad on 2026-09-26; what was kept, changed or skipped and why: [RESCUE-REPORT-2026-09-26.md](RESCUE-REPORT-2026-09-26.md).
+
+> After a real-link test the air unit must be reverted with `linkmode-air.sh apfpv`. A power cycle alone leaves waybeam sending to `127.0.0.1`; see [docs/xr/real-link.md](../../docs/xr/real-link.md#restoring-the-air-unit-after-a-test-2026-09-27).
