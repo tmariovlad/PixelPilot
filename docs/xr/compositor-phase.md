@@ -80,7 +80,7 @@ Method: a system-wide Perfetto trace (9 s) while the XR app shows H.264 720p60 o
 - **Mean wait −2.4 ms (−61 %), median −3.4 ms** [PROVEN].
 - The controller settled at **+42…47 µs per frame**, matching the 119.70 Hz display [PROVEN: pace logs]. A real air unit and the Quest will also differ by hundreds to thousands of ppm, so a fixed "120 fps" never stays aligned without this loop [INFERRED].
 - **~11 % of frames still miss the latch** and wait a full period. The cause is Wi-Fi arrival jitter in this rig [INFERRED: missing frames cluster where the Wi-Fi stream bunches]. With the RTL8812AU the transport jitter is different and has to be re-measured. The margin (`--target-us`) trades mean wait against misses.
-- **Air-unit side, not built yet:** receive `PPXR1` over the uplink and nudge the frame period. PixelPilot's adaptive-link already sends messages up to the air unit, so that is the natural transport. On the air unit, a PI loop on sensor VMAX (1 line ≈ µs) is needed; see the `imx415`/`waybeam` work in the OpenIPC project.
+- **Air-unit side, not built yet:** receive `PPXR1` over the uplink and nudge the frame period. The report format and the reference controller are specified in [phase-lock-protocol.md](phase-lock-protocol.md). PixelPilot's adaptive-link already sends messages up to the air unit, so that is the natural transport. On the air unit, a PI loop on sensor VMAX (1 line ≈ µs) is needed; see the `imx415`/`waybeam` work in the OpenIPC project.
 
 **Known issue seen during this work (upstream wfb path, not the phase lock):**
 - Hot-plugging the RTL8812AU while the app runs crashed it twice [PROVEN: tombstones 2026-09-26 20:51/20:52].

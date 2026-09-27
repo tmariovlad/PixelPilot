@@ -156,6 +156,7 @@ The dated result sections that used to follow here were moved verbatim into topi
 - **[Real link](xr/real-link.md)** ([section](xr/real-link.md#first-real-link-quest-2--rtl8812au--openipc-air-unit-2026-09-26)): Quest 2 + RTL8812AU + OpenIPC air unit
   over wfb-ng (the air unit boots into APFPV; keys and link id 7669206 had to match). With `dec_picture_order` on,
   decode on the real stream drops from ~96 ms (the decoder held ~16 frames) to ~1.4 ms.
+- **[Phase-lock protocol](xr/phase-lock-protocol.md)**: the PPXR1 report (format, rate, reference points, destination over the wfb tunnel) and the reference PI controller, for an air-side implementation (AU-04); the source must run at the display rate (119.70 fps) for a lock.
 - **[G2G budget per branch](xr/g2g-budget.md)** ([section](xr/g2g-budget.md#g2g-budget-on-the-real-link-branch-by-branch-2026-09-26)): total ≈ 30.7 ms
   (≈ 23–40 range) at 166.6 fps with 0 packets lost. B2 (2.91 ms mean) is MCS2 airtime of ~1357 B packets plus FEC parity
   landing inside the next frame (corrected 2026-09-27); realistic floor on Quest 2 with the open levers ≈ 25–27 ms (slice sending closed), 20 ms not reachable.
