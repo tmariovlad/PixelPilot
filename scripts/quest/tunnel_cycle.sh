@@ -17,19 +17,23 @@ SINCE=$(qadb shell date +%s | tr -d '\r')
 LOG="$QUEST_OUT/tunnel_cycle_$LABEL.logcat"
 (timeout 900 "$ADB_SH" -s "$QUEST" logcat -v epoch WfbNgVpnService:V '*:S' > "$LOG" 2>&1 &)
 udp8000() { qadb shell "cat /proc/net/udp /proc/net/udp6" | awk -v u="$UID_APP" '$8 == u && toupper($2) ~ /:1F40$/' | wc -l; }
+udp8001() { qadb shell "cat /proc/net/udp /proc/net/udp6" | awk -v u="$UID_APP" '$8 == u && toupper($2) ~ /:1F41$/' | wc -l; }
+# uplink alive = devourer injects frames (one "TX DESC" line per frame) during the 10 s after the call
+txrate() { local t0; t0=$(qadb shell date +%s | tr -d '\r'); sleep 10
+  qadb logcat -d -v epoch -s devourer:D | awk -v t="$t0" '$1+0 >= t' | grep -c "TX DESC" | awk '{printf "%.1f", $1/10}'; }
 tun0() { qadb shell "grep -c tun0 /proc/net/dev" | tr -d '\r'; }
 fps() { qadb logcat -d -t 300 --pid="$(qadb shell pidof "$PKG")" 2>/dev/null | grep -oE "VideoDecoder: FPS:[0-9.]+" | tail -1; }
 {
-  echo "# $LABEL $(date '+%F %T') pid $P uid $UID_APP cycles $N"
+  echo "# $LABEL $(date '+%F %T') pid $P uid $UID_APP cycles $N; before: udp8001_sockets=$(udp8001) uplink_tx_per_s=$(txrate)"
   for i in $(seq 1 "$N"); do
     qadb shell input keyevent KEYCODE_SLEEP
     sleep 12
-    echo "cycle $i asleep: tun0=$(tun0) udp8000_sockets=$(udp8000)"
+    echo "cycle $i asleep: tun0=$(tun0) udp8000_sockets=$(udp8000) udp8001_sockets=$(udp8001)"
     qadb shell input keyevent KEYCODE_WAKEUP
     quest_prox_close
     for _ in $(seq 1 12); do sleep 5; F=$(fps); [ -n "$F" ] && [ "$(tun0)" = "1" ] && break; done
     sleep 6; F=$(fps)
-    echo "cycle $i awake : tun0=$(tun0) udp8000_sockets=$(udp8000) ${F:-no FPS line}"
+    echo "cycle $i awake : tun0=$(tun0) udp8000_sockets=$(udp8000) udp8001_sockets=$(udp8001) uplink_tx_per_s=$(txrate) ${F:-no FPS line}"
   done
   P2=$(qadb shell pidof "$PKG")
   echo "pid after: ${P2:-none} (same process: $([ "$P" = "$P2" ] && echo yes || echo no))"
