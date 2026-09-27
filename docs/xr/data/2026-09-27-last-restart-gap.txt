@@ -1,0 +1,6 @@
+# Same-mode waybeam restart (REC 480p167, start.sh, config untouched md5 3d8a1456), build b2249f15 (501094a, no X23 c).
+# switch_gap.py --min-gap-ms 500 --after-s 5 on one 120 s ab_long trace. Air epochs from the OpenIPC session (PC ~ air + 0.041 s):
+# 1790526889 RESTART_BEGIN, 1790526901 START_SH_DONE fps=166.46, 1790526911 VENC 166.46 fps 2299 kbps, isperr 0.
+
+   at_s  frozen_ms  stream_ms  decoder_ms  decode_ms_after
+   12.4       3564       3535          29     1.46 (n=821)
