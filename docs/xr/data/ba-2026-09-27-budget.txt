@@ -1,0 +1,4 @@
+mode  n  capture  readout   isp_lo   isp_hi    s_air   spread   decode     wait  pkt_per_frame  lost_pct  undecoded_pct   total G2G range (ms)
+rec   2     3.00     2.34     1.50     3.50     2.59     1.12     1.64     3.07     1.98     0.10     0.00   27.4 .. 32.7
+base  2     5.53     5.31     2.00     4.00     6.50     7.97     3.05     4.08     8.38     2.06     1.20   46.6 .. 51.9
+winner: rec
