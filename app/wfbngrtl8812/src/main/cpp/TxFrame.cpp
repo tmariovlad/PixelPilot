@@ -795,6 +795,22 @@ void TxFrame::dataSource(
     }
 }
 
+namespace {
+// Closes a file descriptor when the scope ends.
+class FdGuard {
+  public:
+    explicit FdGuard(int fd) : fd_(fd) {}
+    ~FdGuard() {
+        if (fd_ >= 0) ::close(fd_);
+    }
+    FdGuard(const FdGuard &) = delete;
+    FdGuard &operator=(const FdGuard &) = delete;
+
+  private:
+    int fd_;
+};
+} // namespace
+
 void TxFrame::run(IRtlDevice *rtlDevice, TxArgs *arg) {
     // Decide if using VHT
     if (arg->bandwidth >= 80) {
@@ -906,6 +922,9 @@ void TxFrame::run(IRtlDevice *rtlDevice, TxArgs *arg) {
     std::vector<int> rxFds;
     int bindPort = arg->udp_port;
     int udpFd = TxFrame::open_udp_socket_for_rx(bindPort, arg->rcv_buf);
+    // run() owns this socket: close it however run() ends (stop, error, exception). Before, it stayed open and
+    // bound to udp_port after every run, one leaked socket per link restart.
+    FdGuard udpFdGuard(udpFd);
 
     if (arg->udp_port == 0) {
         // ephemeral port

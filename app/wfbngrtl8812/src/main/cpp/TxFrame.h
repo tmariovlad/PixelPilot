@@ -12,6 +12,7 @@ extern "C" {
 // -- System / C++ Includes --
 #include <algorithm>
 #include <arpa/inet.h>
+#include <atomic>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -390,7 +391,8 @@ class TxFrame {
     void stop();
 
   private:
-    bool shouldStop_ = false;
+    // Set by stop() from another thread and read by the run() loop.
+    std::atomic<bool> shouldStop_{false};
 
     /**
      * @brief Create a UDP socket for receiving data

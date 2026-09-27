@@ -279,9 +279,13 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             __android_log_print(
                 ANDROID_LOG_ERROR, TAG, "radio link ID %d, radio PORT %d", args->link_id, args->radio_port);
 
+            // One TxFrame per TX thread: stop() is final for an instance (its loop exits and never restarts), so a
+            // link that comes back (sleep/wake, replug) needs a fresh one. Reusing the old one made run() return at
+            // once, leaving the uplink dead and its UDP socket open (2026-09-27, docs/xr/troubleshooting.md).
+            txFrame = std::make_shared<TxFrame>();
             init_thread(usb_tx_thread, [&]() {
-                return std::make_unique<std::thread>([this, current_device, args] {
-                    txFrame->run(current_device, args.get());
+                return std::make_unique<std::thread>([tx = txFrame, current_device, args] {
+                    tx->run(current_device, args.get());
                     __android_log_print(ANDROID_LOG_DEBUG, TAG, "usb_transfer thread should terminate");
                 });
             });

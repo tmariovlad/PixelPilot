@@ -55,6 +55,9 @@ in the "Results and deep dives" index of [docs/xr-quest.md](docs/xr-quest.md). T
 - Host gtests (`AccessUnitAssembler`, `DecoderLevers`, `BufferedPacketQueue`) run in **WSL Ubuntu-22.04**
   (Ubuntu-20.04 has no suitable CMake), from the repo root:
   `cmake -S app/videonative/src/main/cpp/tests -B /tmp/ppxr-tests && cmake --build /tmp/ppxr-tests -j8 && (cd /tmp/ppxr-tests && ctest --output-on-failure)`.
+- Host gtests for `TxFrame` (wfb TX lifecycle over real UDP sockets; needs libsodium), same WSL:
+  `cmake -S app/wfbngrtl8812/src/main/cpp/tests -B /tmp/wfbng-tests && cmake --build /tmp/wfbng-tests -j8 && (cd /tmp/wfbng-tests && ctest --output-on-failure)`.
+  If github.com is unreachable from WSL, add `-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=/tmp/ppxr-tests/_deps/googletest-src`.
 - JVM tests: `./gradlew :app:testDebugUnitTest :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTest`.
 
 **The headset**
