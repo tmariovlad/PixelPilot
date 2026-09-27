@@ -83,6 +83,21 @@ Filled in by the coordinator as results come back. Details are in each owner's t
   - XR input (A/X = panel mode, B/Y = hide);
   - decoder recovery (X23; checked in the final slot: the SPS-change rebuild (c) was slower on a live switch and was removed in `501094a`; [result](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27)).
 - **Canonical Quest build.** 7b8baadb (`e889479`). The final build from HEAD is checked in the last slot.
+- **REC defaults persisted** (480p167 / 2000 / FEC 4/8 / MCS2 / 12 dBm). They were validated after a reboot: video at
+  166.5 fps and the tunnel back from `/opt/linkmode`.
+- **`alink_air` deployed.** It was validated after a reboot and now runs the 2-row policy m2f48 ↔ m1f46 (score
+  1600/1590, `hold_down` 2000 ms, `stale` 1500 ms). The adaptive range test was A-B-A in one trace
+  ([link-envelope.md](link-envelope.md), `3d4b8f7`). **At 8 dBm, adaptation cut the post-FEC loss by 2.5–4× and the
+  latency by ~0.4 ms against a fixed m2b2f48.** There were zero oscillations. The step down came 2.6–2.7 s after the
+  power drop and the step up 4.6–4.9 s after it rose. IDR on/off showed no measurable difference. The uplink is now
+  about 14 frames/s instead of ~51.
+- **"BAD n=29" datagrams resolved.** They were a TP-Link Kasa discovery broadcast from the LAN (192.168.100.55)
+  arriving on the air unit's `eth0`, not truncated reports ([troubleshooting.md](troubleshooting.md), `96b404d`).
+  `alink_air` gets a source filter (10.5.0.0/24 only), which is also a safety fix: before it, any LAN host could spoof
+  reports.
+- **Open air-side lever O112.** The encode time is bimodal (+1.2…2.3 ms on bursts of frames), probably because the
+  encoder thread and the ISP thread share a CPU. The read-only investigation is approved. Pinning the threads (P4)
+  needs the user.
 
 ## Air-unit state and reverts (as left by this run)
 
