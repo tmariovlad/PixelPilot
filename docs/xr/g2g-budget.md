@@ -161,6 +161,32 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 - Air unit left at 1080p90 (the prior default); changing the default mode is the coordinator's / user's decision.
 - Phase lock: not applicable at 480p167 (source faster than the display), and W3b showed that 480p at 119.7 fps with even an ideal lock is ~1.2 ms slower than 480p167 without one, so the air-side lock (AU-04) is closed ([compositor-phase.md](compositor-phase.md#phase-lock-steering-the-source-onto-the-compositor-latch-proof-of-concept-2026-09-26)).
 
+## The Quest's "parse" time and the reorder hold after a lost packet (2026-09-27, code + existing traces)
+
+**Question (from AU-13 on the GS: ≥ ~2 ms between RTP-in and the decoder feed):** the Quest overlay shows "parse ~1.75 ms". Is that an extra hop on the critical path?
+
+- **What "parse" measures.** It runs from the arrival of a NALU's **first** RTP packet (`timePointStartOfReceivingNALU`, `parser/ParseRTP.cpp:98,166`) to the entry of `feedDecoder` (`VideoDecoder.cpp:271-272`). With AU aggregation, it is timed from the first NALU of the access unit (`AccessUnitAssembler.h:128`). So it **contains the frame's spread on the radio** (waiting for the frame's remaining packets), which the budget already counts as "spread". It is not an extra segment [PROVEN: code]. Consistent with that: logcat during the replug runs shows Parsing 7.3–7.6 ms [PROVEN: `scripts/quest/out/replug_*.logcat`]. The air unit was then on 1080p90 / 8 Mbit/s, whose spread measured 7.97 ms in the before / after [INFERRED: the mode at that time]. The overlay's "decode" figure is parse + wait + decode (`DecodingInfo.java:42`), so it counts the spread twice.
+- **What sits between the last packet and the decoder.** All of it runs synchronously on the UDP receive thread:
+  - the reorder queue (`BufferedPacketQueue`);
+  - RTP depacketizing (a copy into the NALU buffer);
+  - `interpretNALU` (under `mMutexInputPipe`);
+  - the AU assembler (a second copy);
+  - `dequeueInputBuffer` (its wait is reported separately as "wait");
+  - a copy into the codec buffer, then `queueInputBuffer`.
+
+  The copies are µs for 1.5–3 KB frames. **Measured, the whole stretch is 0.20–0.35 ms:** frame complete → decoded (trace) minus MediaCodec decode (logcat `Decoding:`) is a480 1.68 − 1.48, d1080s 1.86 − 1.59, e720s 1.86 − 1.63 ms [INFERRED: the two averages come from different windows of the same segment].
+- **The one part that can be cut: the reorder hold after a lost packet.** After a sequence gap, `BufferedPacketQueue` holds every following packet until 5 arrive in order or 20 ms pass (`BufferedPacketQueue.h`, MONOTONIC_THRESHOLD 5, MAX_BUFFER_AGE 20 ms). On the wfb-ng path the data has already come through wfb-ng's in-order ring and a loopback socket, and the 22 traces of this evening show **0 reorders** [PROVEN: `transport_analyze.py`, every `mode_*` output]. From the same traces ([gap_hold.py](../../scripts/quest-latch/gap_hold.py)), frames that complete within the hold window after a gap reach the decoder later [PROVEN]:
+
+  | Segments | loss | after-gap frames: complete → decoded | other frames | effect on the mean |
+  |---|---|---|---|---|
+  | REC-like (a480 ×4, rec ×2, c720 ×2, d1080s ×2, e720s ×2; 12 traces) | 0–0.8 % | 1.9–5.4 ms | 1.6–2.1 ms | +0.0…+0.08 ms |
+  | BASE 1080p90 / 8 Mbit/s (2 traces) | ~2 % | **11.9–12.3 ms** | 2.6–2.8 ms | **+0.5…+0.7 ms** |
+
+- **Proposed fix (not made).** On the wfb path, shorten the hold: MONOTONIC_THRESHOLD 5 → 2 and MAX_BUFFER_AGE 20 → 3 ms. A reorder after wfb-ng takes µs, and the one reorder ever seen was a single swap (`rtp_seq.py`). A gap would then cost at most ~1 packet, not ~5.
+  - **Estimate [INFERRED from the table]:** at REC loss, −0.0…−0.1 ms on the mean and −2…−3 ms on the frames after a loss. On a weak link (~2 % loss), −0.5…−0.7 ms on the mean and ~−9 ms on the frames after each loss, i.e. fewer stutters.
+  - **Risk:** a reorder deeper than 2 packets would become a lost packet (one broken frame), which is not seen on this path.
+  - **To land it:** the host gtests in `BufferedPacketQueue_test` need the new bounds. Verify with an A/B of `gap_hold.py` on a lossy link (lower TX power), N ≥ 2 per build.
+
 ## Before / after: the original setup vs the recommended one (2026-09-27, final)
 
 **Question:** how much glass-to-glass do the measured levers buy together? **BASE** = the setup the work started from: 1080p90, 8000 kbit/s, FEC 4/6. **REC** = the recommendation: 480p167 (W3), 2000 kbit/s (slot 2), FEC 4/8 (W2 envelope). Both at MCS2, 12 dBm, GOP 2 s. The method is the W3 per-segment budget above ([w3_budget.py](../../scripts/quest-latch/w3_budget.py)). Order: BASE → REC → REC' → BASE (palindromic, N = 2). waybeam was restarted in every segment, the XR app too ([mode_segment.sh](../../scripts/quest/mode_segment.sh)). Quest on the balcony, canonical build 7b8baadb, picture-order and operating-rate on in every segment. The air side was run by the OpenIPC session: switch, sidecar s_air, `isperr_new=0` in every segment. It ended on PRE (480p167 / 8000 / FEC 4/6).
