@@ -481,7 +481,11 @@ void XrRuntime::renderFrame()
     }
     const XrResult ended = xrEndFrame(mSession, &endInfo);
     if (XR_FAILED(ended) && (mFrames % 120) == 0) XLOGE("xrEndFrame failed: %d", ended);
-    mInput.poll(mSession);   // after the frame is submitted, so input never delays it
+    // After the frame is submitted, so input never delays it. Traced, to measure its cost (ppxr_input_sync).
+    const bool traced = ATrace_isEnabled();
+    if (traced) ATrace_beginSection("ppxr_input_sync");
+    mInput.poll(mSession);
+    if (traced) ATrace_endSection();
     if (++mFrames % 30 == 0)
     {
         readMetrics();
