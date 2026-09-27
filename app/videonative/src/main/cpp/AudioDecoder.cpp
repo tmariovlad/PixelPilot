@@ -18,8 +18,9 @@ AudioDecoder::AudioDecoder()
 AudioDecoder::~AudioDecoder()
 {
     stopAudioProcessing();
-    delete pOpusDecoder;
     stopAudio();
+    opus_decoder_destroy(pOpusDecoder);  // opus.h: the only valid way to free a decoder from opus_decoder_create()
+    pOpusDecoder = nullptr;
 }
 
 void AudioDecoder::enqueueAudio(const uint8_t* data, const std::size_t data_length)
@@ -55,8 +56,12 @@ void AudioDecoder::processAudioQueue()
 void AudioDecoder::initAudio()
 {
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "initAudio");
-    int error;
-    pOpusDecoder = opus_decoder_create(SAMPLE_RATE, CHANNELS, &error);
+    // The decoder outlives stop/init cycles (the 2D activity re-inits after every stop); create it only once.
+    if (!pOpusDecoder)
+    {
+        int error;
+        pOpusDecoder = opus_decoder_create(SAMPLE_RATE, CHANNELS, &error);
+    }
     // Create a stream m_builder
     AAudio_createStreamBuilder(&m_builder);
 

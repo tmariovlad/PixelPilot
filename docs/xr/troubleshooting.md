@@ -118,7 +118,11 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
     - `AudioDecoder.h` now includes `<cstring>` for the `memcpy` it uses; it compiled on the NDK only through a transitive include.
   - **Test:** [AudioDecoder_test.cpp](../../app/videonative/src/main/cpp/tests/AudioDecoder_test.cpp) runs against a fake AAudio ([host_shim/aaudio/AAudio.h](../../app/videonative/src/main/cpp/tests/host_shim/aaudio/AAudio.h)) that counts every call on a closed stream.
     - Before the fix: 2 of 4 tests failed (second stop, and destructor after stop, each made 2 calls on the closed stream).
-    - After the fix: 4 of 4 pass, the full host suite passes 47 of 47, and `:app:videonative:assembleDebug` builds [PROVEN: WSL Ubuntu-22.04 ctest, Gradle].
+    - After the fix: 4 of 4 pass (47 of 47 in the host suite at that commit), and `:app:videonative:assembleDebug` builds [PROVEN: WSL Ubuntu-22.04 ctest, Gradle].
   - **Still to do on the headset:** start XR mode, sleep and wake the display (or relaunch over the running instance), and check there is no SIGABRT.
   - **Until that build is installed:** check `pidof com.openipc.pixelpilot.xr` before launching, and do not relaunch over a running instance.
-  - **Seen, not fixed here:** the destructor frees the opus decoder with `delete` instead of `opus_decoder_destroy()` ([AudioDecoder.cpp](../../app/videonative/src/main/cpp/AudioDecoder.cpp)), which is undefined behaviour for memory from `opus_decoder_create`.
+  - **Opus decoder freed the wrong way and leaked, fixed too (2026-09-27).**
+    - The destructor freed the decoder with `delete`. But opus.h says a decoder from `opus_decoder_create()` is freed with `opus_decoder_destroy()` ([opus.h:509-512](../../app/videonative/src/main/cpp/libs/include/opus.h#L509-L512)) [PROVEN]. libopus allocates it with `malloc` (`opus_alloc`), so `delete` was undefined behaviour [INFERRED: upstream libopus `os_support.h`, not vendored here].
+    - `initAudio()` also created a new decoder on every call. The 2D activity calls it after every stop, so each pause/resume leaked the previous decoder [PROVEN: source; test].
+    - Fix: the decoder is created once, when none exists, and freed once, with `opus_decoder_destroy()`, in the destructor.
+    - Tests `DestructorFreesTheOpusDecoderWithOpusDestroy` and `ReinitDoesNotLeakTheOpusDecoder`: red before the fix (0 destroyed; 3 created, 0 freed after two re-inits), green after. The host suite passes 49 of 49.
