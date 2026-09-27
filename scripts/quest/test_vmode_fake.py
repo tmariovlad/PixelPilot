@@ -44,7 +44,8 @@ def test_switch_then_commit():
     r = ask(s, air, "VMODE1 apply seq=2 preset=wide revert_s=5")
     assert "state=accepted" in r, r
     token = r.split("token=")[1]
-    wait_beacon(s, "pending")
+    b = wait_beacon(s, "pending")
+    assert f"token={token}" in b and " seq=" in b, b
     assert "state=committed" in ask(s, air, f"VMODE1 commit seq=3 token={token}")
     assert "active=wide" in ask(s, air, "VMODE1 list seq=4")
     air.close()
@@ -71,6 +72,15 @@ def test_busy_during_a_switch_and_resend_is_not_applied_twice():
     first = ask(s, air, "VMODE1 apply seq=2 preset=wide revert_s=9")
     assert ask(s, air, "VMODE1 apply seq=2 preset=wide revert_s=9") == first      # same seq: same reply
     assert "state=busy" in ask(s, air, "VMODE1 apply seq=3 preset=balanced revert_s=9")
+    air.close()
+
+
+def test_same_size_mode_is_listed_only_on_request():
+    air, s = start()
+    assert "race-b" not in ask(s, air, "VMODE1 list seq=1")
+    air.close()
+    air, s = start(same_size=True)
+    assert "race-b|Race-B|640x480@167" in ask(s, air, "VMODE1 list seq=1")
     air.close()
 
 

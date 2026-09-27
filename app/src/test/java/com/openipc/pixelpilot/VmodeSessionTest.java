@@ -75,7 +75,7 @@ public class VmodeSessionTest {
         s.tick(0, 0, 640, 480);
         assertTrue(s.switching());
         assertEquals("SWITCHING TO Wide... 25 s", s.headline());
-        s.onReply(r("VMODE1 state preset=race phase=pending pending=wide left_s=24 kbps=2000 req_kbps=2000"));
+        s.onReply(r("VMODE1 state seq=7 preset=race phase=pending pending=wide token=k7 left_s=24 kbps=2000 req_kbps=2000"));
         s.tick(4000, 40, 848, 480);
         assertEquals("VMODE1 commit seq=3 token=k7", air.last());
         s.onReply(r("VMODE1 ack seq=3 state=committed"));
@@ -88,6 +88,29 @@ public class VmodeSessionTest {
         s.onReply(r("VMODE1 ack seq=2 state=accepted token=k7"));
         s.tick(4000, 100, 848, 480);
         assertEquals(2, air.sent.size());
+    }
+
+    @Test public void pendingForAnotherTokenDoesNotCommit() {
+        s.apply(action("wide", 0));
+        s.onReply(r("VMODE1 ack seq=2 state=accepted token=k7"));
+        s.onReply(r("VMODE1 state preset=race phase=pending pending=wide token=zz kbps=2000 req_kbps=2000"));
+        s.tick(4000, 100, 848, 480);
+        assertFalse(air.last().contains("commit"));
+    }
+
+    @Test public void failedPhaseIsShownAsARevert() {
+        s.apply(action("wide", 0));
+        s.onReply(r("VMODE1 ack seq=2 state=accepted token=k7"));
+        s.onReply(r("VMODE1 state preset=race phase=failed kbps=2000 req_kbps=2000"));
+        assertEquals("REVERTED TO Race: NO VIDEO", s.headline());
+    }
+
+    @Test public void listIsRepeatedAsAKeepalive() {
+        int before = air.sent.size();
+        s.tick(VmodeSession.LIST_KEEPALIVE_MS - 1, 0, 640, 480);
+        assertEquals(before, air.sent.size());
+        s.tick(VmodeSession.LIST_KEEPALIVE_MS + 5, 0, 640, 480);
+        assertEquals("VMODE1 list seq=" + air.seq, air.last());
     }
 
     @Test public void revertFromTheAirIsShown() {

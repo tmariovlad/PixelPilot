@@ -127,9 +127,16 @@ public final class XrBridge {
     public static final int INPUT_STICK_PRESS = 64;     // a thumbstick click goes down / up
     public static final int INPUT_STICK_RELEASE = 128;
 
+    private final java.util.concurrent.atomic.AtomicInteger injected = new java.util.concurrent.atomic.AtomicInteger();
+
     /** Controller/hand presses since the last call (INPUT_* bits), taken from the XR thread without blocking it. */
     public int takeInputEvents() {
-        return handle == 0 ? 0 : nativeTakeInputEvents(handle);
+        return (handle == 0 ? 0 : nativeTakeInputEvents(handle)) | injected.getAndSet(0);
+    }
+
+    /** Debug builds: input bits that reach the next {@link #takeInputEvents()} as if a controller sent them. */
+    public void injectInputEvents(int events) {
+        injected.getAndAccumulate(events, (a, b) -> a | b);
     }
 
     private native long nativeCreate();

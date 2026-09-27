@@ -63,7 +63,7 @@ public class VmodeClientTest {
                     String seq = m.find() ? m.group(1) : "-1";
                     byte[] out = ("VMODE1 ack seq=" + seq + " state=committed").getBytes(StandardCharsets.US_ASCII);
                     for (int k = 0; k < 2; k++) fakeAir.send(new DatagramPacket(out, out.length, p.getSocketAddress()));
-                    byte[] beacon = "VMODE1 state preset=race phase=ok".getBytes(StandardCharsets.US_ASCII);
+                    byte[] beacon = "VMODE1 state seq=41 preset=race phase=ok".getBytes(StandardCharsets.US_ASCII);
                     fakeAir.send(new DatagramPacket(beacon, beacon.length, p.getSocketAddress()));
                 }
             } catch (Exception ignored) {

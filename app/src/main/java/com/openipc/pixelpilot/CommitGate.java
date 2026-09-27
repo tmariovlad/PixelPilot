@@ -2,8 +2,9 @@ package com.openipc.pixelpilot;
 
 /**
  * When the app may confirm a mode switch to the air unit (docs/xr/presets-design.md, "Safety"): after the air reports
- * the new mode running ({@code phase=pending}), {@link #FRAMES} frames must be decoded at the new mode's size. The
- * size alone is not enough: two modes can share an encode size (848x480), and frames of the old stream would match.
+ * the new mode running ({@code phase=pending} with the token of our apply), {@link #FRAMES} frames must be decoded at
+ * the new mode's size. The size alone is not enough: two modes can share an encode size (848x480), and frames of the
+ * old stream would match.
  * UI thread only.
  */
 final class CommitGate {
@@ -23,9 +24,9 @@ final class CommitGate {
         frames = 0;
     }
 
-    /** The air reported the new mode running and waiting for our commit. */
-    void arm() {
-        if (token != null) armed = true;
+    /** The air reported a mode running and waiting for the commit of {@code beaconToken}; only ours arms. */
+    void arm(String beaconToken) {
+        if (token != null && token.equals(beaconToken)) armed = true;
     }
 
     /** Frames decoded in one stats tick at the current video size. Returns the token once, when the commit is due. */

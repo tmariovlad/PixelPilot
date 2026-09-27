@@ -108,7 +108,7 @@ final class VmodeClient implements VmodeSender, AutoCloseable {
 
     private void deliver(VmodeProtocol.Reply r) {
         if (r == null) return;
-        if (r.seq() >= 0) {
+        if (!"state".equals(r.verb) && r.seq() >= 0) {   // the beacon has its own counter in seq
             ScheduledFuture<?> f = pending.remove(r.seq());
             if (f == null) return;   // a duplicate of a reply already delivered, or not ours
             f.cancel(false);

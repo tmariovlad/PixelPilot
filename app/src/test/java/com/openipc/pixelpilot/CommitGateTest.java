@@ -8,7 +8,7 @@ public class CommitGateTest {
     @Test public void commitsAfterEnoughFramesAtTheNewSizeOnceArmed() {
         CommitGate g = new CommitGate();
         g.expect("t1", 848, 480);
-        g.arm();
+        g.arm("t1");
         assertNull(g.onFrames(20, 848, 480));
         assertEquals("t1", g.onFrames(10, 848, 480));
         assertNull(g.onFrames(50, 848, 480));      // once
@@ -20,7 +20,7 @@ public class CommitGateTest {
         CommitGate g = new CommitGate();
         g.expect("t1", 848, 480);
         assertNull(g.onFrames(100, 848, 480));
-        g.arm();
+        g.arm("t1");
         assertNull(g.onFrames(29, 848, 480));
         assertEquals("t1", g.onFrames(1, 848, 480));
     }
@@ -28,13 +28,24 @@ public class CommitGateTest {
     @Test public void framesAtAnotherSizeDoNotCount() {
         CommitGate g = new CommitGate();
         g.expect("t1", 1280, 720);
-        g.arm();
+        g.arm("t1");
         assertNull(g.onFrames(100, 640, 480));
     }
 
     @Test public void armWithoutAnApplyDoesNothing() {
         CommitGate g = new CommitGate();
-        g.arm();
+        g.arm("t1");
         assertNull(g.onFrames(100, 640, 480));
+    }
+
+    @Test public void aPendingBeaconForAnotherTokenDoesNotArm() {
+        // e.g. a switch started by another requester, or a stale beacon from an earlier apply
+        CommitGate g = new CommitGate();
+        g.expect("t1", 848, 480);
+        g.arm("t0");
+        g.arm("");
+        assertNull(g.onFrames(100, 848, 480));
+        g.arm("t1");
+        assertEquals("t1", g.onFrames(30, 848, 480));
     }
 }

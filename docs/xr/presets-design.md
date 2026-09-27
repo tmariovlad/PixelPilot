@@ -234,19 +234,30 @@ only what the air's `list` sends.
 | [VmodeSession.java](../../app/src/main/java/com/openipc/pixelpilot/VmodeSession.java) | menu action → request; acks and beacon → catalog, headline, effective bitrate; `revert_s` 25 |
 | [CommitGate.java](../../app/src/main/java/com/openipc/pixelpilot/CommitGate.java) | commit only after the air says `pending` **and** 30 frames decoded at the new size. The size alone would match old frames when two modes share 848×480 |
 | [XrVideoActivity.java](../../app/src/main/java/com/openipc/pixelpilot/XrVideoActivity.java) | wiring: the stats tick feeds input, frames and size; the preset headline wins while switching; menu lines above the panel; `Race 2.0 Mbit (capped)` on the video line; started only with the wfb link |
-| [vmode_fake.py](../../scripts/quest/vmode_fake.py) | the fake air: same protocol, revert timer, `--switch-s`, `--fail <mode>`, `--busy` |
+| [vmode_fake.py](../../scripts/quest/vmode_fake.py) | the fake air: same protocol, revert timer, `--switch-s`, `--fail <mode>`, `--busy`, `--same-size` (lists `race-b` at 640×480, so a commit can happen while the real video stays at Race). c8 uses it as the conformance reference for the air's receiver |
+| [DebugInput.java](../../app/xr/src/main/java/com/openipc/xr/DebugInput.java) | debug builds only: `adb shell am broadcast -a com.openipc.pixelpilot.xr.DEBUG_INPUT --es input <left\|right\|up\|down\|press\|release\|detail\|visibility>`. The bits go into `XrBridge.injectInputEvents`, the same path the thumbsticks use |
+| [preset_flow.py](../../scripts/quest/preset_flow.py) | the scripted headset run: fake air on the PC, `vmode_air` pointed at it, menu driven by broadcasts, screenshots per stage, prefs restored; `--fail` for the revert path |
+
+Aligned with c8's air design (§13/§14/§16, OpenIPC repo `repos/tasks/vmode-presets-2026-09-27/00-DESIGN-vmode-presets.md`):
+- **Commit bound to the token.** The gate arms only on a `phase=pending` beacon whose `token` equals the token of our
+  `accepted`. A stale pending from an earlier apply, or a switch started by another requester, cannot arm it.
+- The beacon carries its own counter in `seq`, and the client does not treat it as a reply.
+- The phases `reverting` and `failed` are shown as a revert.
+- `list` is resent every 60 s as a keepalive, so the air keeps sending its beacon.
+- The air lists only the qualities it can deliver (v1: 2000 and 4000). The menu takes any list length.
+- The air clamps `revert_s` to 15–60 s; the app sends 25.
 
 Tests (all offline, 2026-09-27):
-- JVM, :app:xr: `PresetMenuTest` 12, `PresetStatusTest` 3.
-- JVM, :app: `VmodeProtocolTest` 4, `VmodeSessionTest` 7, `CommitGateTest` 4, `VmodeClientTest` 3 (real UDP on
+- JVM, :app:xr: `PresetMenuTest` 12, `PresetStatusTest` 3, `DebugInputTest` 2.
+- JVM, :app: `VmodeProtocolTest` 4, `VmodeSessionTest` 10, `CommitGateTest` 5, `VmodeClientTest` 3 (real UDP on
   localhost, stable over 4 reruns).
-- Full suites: app 56, xr 61, videonative 18, 0 failures.
-- Python: [test_vmode_fake.py](../../scripts/quest/test_vmode_fake.py) 6: list, switch + commit, revert without commit,
-  a failing mode, busy + idempotent resend, bitrate-only.
+- Full suites: app 60, xr 63, videonative 18, 0 failures.
+- Python: [test_vmode_fake.py](../../scripts/quest/test_vmode_fake.py) 7: list, switch + commit (token and seq in the
+  beacon), revert without commit, a failing mode, busy + idempotent resend, the same-size mode, bitrate-only.
 - The native flick code has no host test; it gets checked on the headset.
 
 Next, on the headset:
-1. Run the flow with `vmode_fake.py` on the PC and the pref `vmode_air` = `192.168.100.213:9998` (the Quest reaches the
-   PC over home Wi-Fi). This checks the thumbsticks, the menu, the countdown, the commit and a forced revert
-   (`--fail wide`).
+1. `python3 preset_flow.py <label>`, then `python3 preset_flow.py <label> --fail`. Both use the fake air on the PC,
+   with the menu driven by the debug broadcast. This checks the menu, the countdown, the commit and the revert on the
+   headset. The real thumbsticks are checked with the user at the end, together with the RTL replug.
 2. After the air side exists, repeat on the tunnel, and measure picture gap, command → commit time, and Q2/Q4/Q6 cost.

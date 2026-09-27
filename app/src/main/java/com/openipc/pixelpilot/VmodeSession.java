@@ -19,6 +19,8 @@ import java.util.function.IntFunction;
 final class VmodeSession implements VmodeClient.Listener {
     /** Seconds the air waits for our commit before it reverts: c8's 10-14 s to a stable encoder plus margin. */
     static final int REVERT_S = 25;
+    /** The air forgets a requester it has not heard from; a list at least this often keeps its beacon coming. */
+    static final long LIST_KEEPALIVE_MS = 60_000;
 
     private final VmodeSender sender;
     private final Consumer<PresetCatalog> onCatalog;
@@ -31,6 +33,7 @@ final class VmodeSession implements VmodeClient.Listener {
     private int applyKbps;
     private int effectiveKbps;
     private long nowMs;
+    private long lastListMs = Long.MIN_VALUE / 2;
 
     VmodeSession(VmodeSender sender, Consumer<PresetCatalog> onCatalog) {
         this.sender = sender;
@@ -40,7 +43,12 @@ final class VmodeSession implements VmodeClient.Listener {
     /** Asks the air for its presets unless a list is known or on its way (at start and when the menu opens). */
     void ensureList() {
         if (catalog != null || listing) return;
+        list();
+    }
+
+    private void list() {
         listing = true;
+        lastListMs = nowMs;
         send("list", VmodeProtocol::list);
     }
 
@@ -59,6 +67,7 @@ final class VmodeSession implements VmodeClient.Listener {
     /** Once per stats tick: frames decoded since the last tick and the current video size. */
     void tick(long nowMs, int frames, int w, int h) {
         this.nowMs = nowMs;
+        if (!listing && nowMs - lastListMs >= LIST_KEEPALIVE_MS) list();
         String token = gate.onFrames(frames, w, h);
         if (token != null) send("commit", seq -> VmodeProtocol.commit(seq, token));
     }
@@ -133,8 +142,8 @@ final class VmodeSession implements VmodeClient.Listener {
     private void onState(VmodeProtocol.Reply r) {
         effectiveKbps = r.intField("kbps", effectiveKbps);
         String phase = r.field("phase");
-        if ("pending".equals(phase) && applyMode != null && applyMode.equals(r.field("pending"))) gate.arm();
-        if ("reverted".equals(phase) && status.switching()) {
+        if ("pending".equals(phase)) gate.arm(r.field("token"));
+        if (("reverting".equals(phase) || "failed".equals(phase) || "reverted".equals(phase)) && status.switching()) {
             gate.clear();
             status.reverted(label(r.field("preset")), nowMs);
         }

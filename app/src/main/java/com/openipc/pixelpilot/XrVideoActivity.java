@@ -19,6 +19,7 @@ import com.openipc.wfbngrtl8812.WfbNGStats;
 import com.openipc.wfbngrtl8812.WfbNGStatsChanged;
 import com.openipc.wfbngrtl8812.WfbNgLink;
 import com.openipc.xr.LayerLayout;
+import com.openipc.xr.DebugInput;
 import com.openipc.xr.PanelMode;
 import com.openipc.xr.PresetMenu;
 import com.openipc.xr.SignalState;
@@ -69,6 +70,15 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private final PresetMenu presetMenu = new PresetMenu();
     private VmodeClient vmodeClient;
     private VmodeSession vmode;
+    // Debug builds: adb broadcasts that act like controller input (DebugInput), for scripted menu tests.
+    private final android.content.BroadcastReceiver debugInput = new android.content.BroadcastReceiver() {
+        @Override
+        public void onReceive(android.content.Context context, Intent intent) {
+            XrBridge bridge = xr;
+            if (bridge != null) bridge.injectInputEvents(DebugInput.bits(intent.getStringExtra(DebugInput.EXTRA)));
+        }
+    };
+    private boolean debugInputRegistered;
 
     private final Runnable statsTick = new Runnable() {
         @Override
@@ -177,6 +187,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             wfbLinkManager.startAdapters();
         }
         MavlinkNative.nativeStart(this);   // reference-counted with the 2D activity's own start/stop
+        registerDebugInput();
         if (!vpnBinding.bind(this, false)) {
             onLinkStatus("VPN not granted - start PixelPilot in 2D once to allow it");
         }
@@ -188,6 +199,10 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         super.onPause();
         if (xr == null) return;
         ui.removeCallbacks(statsTick);
+        if (debugInputRegistered) {
+            unregisterReceiver(debugInput);
+            debugInputRegistered = false;
+        }
         MavlinkNative.nativeStop(this);
         if (wfbLinkManager != null) {
             wfbLinkManager.unregister();
@@ -210,6 +225,18 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         }
         if (presetFirst) renderer.draw(preset, false, lines);
         else renderer.draw(signal.message(), signal.needsAction(), lines);
+    }
+
+    /** Debuggable builds only; exported, because adb broadcasts come from the shell user. */
+    private void registerDebugInput() {
+        if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0 || debugInputRegistered) return;
+        android.content.IntentFilter filter = new android.content.IntentFilter(DebugInput.ACTION);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(debugInput, filter, android.content.Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(debugInput, filter);
+        }
+        debugInputRegistered = true;
     }
 
     /** One VMODE1 client per XR activity; its callbacks are handed to the UI thread. */

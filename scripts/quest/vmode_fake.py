@@ -3,10 +3,12 @@ without the air side: it answers list / apply / commit / save_default and sends 
 air's revert timer. It changes no video. To point the headset at it, set the app pref vmode_air to "<PC IP>:9998"
 (quest_adb.set_prefs keeps only gs.key, so add it to the flags you pass).
 
-Usage: python3 vmode_fake.py [--port 9998] [--switch-s 3] [--fail wide] [--busy]
+Usage: python3 vmode_fake.py [--port 9998] [--switch-s 3] [--fail wide] [--busy] [--same-size]
   --switch-s S  seconds from apply to phase=pending (the new mode "running"); the real air needs ~10-14 s
   --fail MODE   applying MODE never reaches pending, so the revert timer fires
   --busy        answer every apply with state=busy
+  --same-size   also list "race-b", a mode at Race's 640x480: the fake changes no video, so only a mode at the size
+                that is already streaming can reach the app's commit (CommitGate) on a real link
 """
 import argparse
 import secrets
@@ -22,14 +24,18 @@ PRESETS = [
     ("wide", "Wide", "1920x1080@90>848x480", "99x98", "35.3-41.6"),
 ]
 QUALITIES = [(2000, "0"), (4000, "1.7"), (6000, "3.1")]
+SAME_SIZE = ("race-b", "Race-B", "640x480@167", "33x44", "26.7-32.0")
 
 
 class FakeAir:
-    def __init__(self, port=9998, switch_s=3.0, fail=None, busy=False, host="0.0.0.0"):
+    def __init__(self, port=9998, switch_s=3.0, fail=None, busy=False, host="0.0.0.0", same_size=False):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((host, port))
         self.port = self.sock.getsockname()[1]
         self.switch_s, self.fail, self.busy = switch_s, fail, busy
+        self.presets = PRESETS + ([SAME_SIZE] if same_size else [])
+        self.beacons = 0
+        self.log = []               # (monotonic s, event) for a harness: requests received and phase changes
         self.active, self.default, self.kbps = "race", "race", 2000
         self.phase, self.pending, self.token, self.deadline, self.previous = "ok", "", "", 0.0, "race"
         self.replies = {}           # (addr, seq) -> reply, so a resent request is not applied twice
@@ -49,8 +55,9 @@ class FakeAir:
         if (addr, seq) in self.replies:
             return self.replies[(addr, seq)]
         self.peer = addr
+        self.log.append((time.monotonic(), line.strip()))
         if verb == "list":
-            presets = ",".join("|".join(p) for p in PRESETS)
+            presets = ",".join("|".join(p) for p in self.presets)
             qualities = ",".join(f"{k}|{c}" for k, c in QUALITIES)
             r = (f"VMODE1 list seq={seq} active={self.active} default={self.default} kbps={self.kbps} "
                  f"presets={presets} qualities={qualities}")
@@ -74,7 +81,7 @@ class FakeAir:
         if self.busy or self.phase in ("applying", "pending"):
             return f"VMODE1 ack seq={seq} state=busy"
         mode, kbps = f.get("preset"), int(f.get("kbps", "0"))
-        if mode is not None and mode not in [p[0] for p in PRESETS]:
+        if mode is not None and mode not in [p[0] for p in self.presets]:
             return f"VMODE1 ack seq={seq} state=error reason=unknown_preset"
         if kbps:
             self.kbps = kbps
@@ -97,8 +104,10 @@ class FakeAir:
 
     def beacon(self):
         left = max(0, int(self.deadline - time.monotonic())) if self.phase in ("applying", "pending") else 0
-        return (f"VMODE1 state preset={self.active} phase={self.phase} pending={self.pending} left_s={left} "
-                f"kbps={self.kbps} req_kbps={self.kbps} mcs=2 fps=166")
+        self.beacons += 1
+        token = self.token if self.phase in ("applying", "pending") else ""
+        return (f"VMODE1 state seq={self.beacons} preset={self.active} phase={self.phase} pending={self.pending} "
+                f"token={token} left_s={left} kbps={self.kbps} req_kbps={self.kbps} mcs=2 fps=166")
 
     def serve(self):
         self.sock.settimeout(0.1)
@@ -118,6 +127,8 @@ class FakeAir:
                 before = self.phase
                 self.step()
                 changed = self.phase != before
+                if changed:
+                    self.log.append((time.monotonic(), f"phase {before} -> {self.phase} (active {self.active})"))
                 if self.peer and (changed or time.monotonic() - last_beacon >= 1.0):
                     self.sock.sendto(self.beacon().encode(), self.peer)
                     last_beacon = time.monotonic()
@@ -135,8 +146,9 @@ def main():
     ap.add_argument("--switch-s", type=float, default=3.0)
     ap.add_argument("--fail")
     ap.add_argument("--busy", action="store_true")
+    ap.add_argument("--same-size", action="store_true")
     a = ap.parse_args()
-    air = FakeAir(a.port, a.switch_s, a.fail, a.busy)
+    air = FakeAir(a.port, a.switch_s, a.fail, a.busy, same_size=a.same_size)
     print(f"fake air on UDP {air.port} (switch {a.switch_s} s, fail={a.fail}, busy={a.busy}); Ctrl+C to stop", flush=True)
     try:
         air.serve()
