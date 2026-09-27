@@ -167,6 +167,7 @@ applied live (no RTP restart).
 | `ab_run.sh` | one transport A/B sample on the running app (link_measure + 9 s trace + transport_analyze + gaps), same for wfb-ng and APFPV; `out/ab_<label>.{log,pftrace}` |
 | `link_probe.sh` | wfb link-health sample for diagnosing a degraded link (display awake only for the sample, Quest Wi-Fi SSID/freq/RSSI + link_measure); appends to `out/link_probe.log` |
 | `air_tunnel.py` | ADB to the Quest while it is a client of the air unit's APFPV AP: SSH forward over the air unit's eth0 (`adb connect 127.0.0.1:5595`) |
+| `../quest-latch/switch_gap.py` | picture gap after a live air-unit mode switch, from one `ab_long.sh` trace: frozen / stream (air) / decoder (app) ms and decode ms after; offline test `test_switch_gap.py` |
 | `ab_long.sh` | capture for an in-trace A/B: long lean trace + Quest-minus-PC clock offset (analysis: `../quest-latch/ab_segments.py`) |
 | `decode_watch.sh` | watch the running decoder for N s (decode ms, fps, decoder reconfigurations), e.g. after an air-unit restart |
 | `stop_crash_check.sh` | does the XR app survive repeated session stops (`relaunch` over the running instance / display `sleepwake`)? pid, SIGABRT, video re-attached per iteration |
