@@ -23,7 +23,8 @@ PRESETS = [
     ("balanced-lite", "Balanced-lite", "1280x720@119>848x480", "66x66", "31.3-37.6"),
     ("wide", "Wide", "1920x1080@90>848x480", "99x98", "35.3-41.6"),
 ]
-QUALITIES = [(2000, "0"), (4000, "1.7"), (6000, "3.1")]
+# As the air unit v1 lists them (c8): only what it can deliver at MCS2 FEC 4/8; 6000 waits for its own A/B.
+QUALITIES = [(2000, "0"), (4000, "1.7")]
 SAME_SIZE = ("race-b", "Race-B", "640x480@167", "33x44", "26.7-32.0")
 
 
