@@ -132,6 +132,12 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - **With motion, the bitrate shows.** At 2 Mbit/s the moving TV picture is smeared and blocky. At 8 Mbit/s the same area keeps its edges with far fewer blocks [INFERRED: visual comparison of the stills; different TV frames in each, so this is qualitative].
   - Decode rose with motion: 3.36–3.43 ms at 480p (2.44–2.75 ms on the static scene) and 1.48 ms at 1080p90.
   - The air unit recorded the exact bitstreams in parallel (OpenIPC project, local), for a frame-exact comparison.
+- **Field of view per mode (W3c, 2026-09-27 22:24–22:30, TV on, ~2 Mbit/s).** Two stills per mode, each taken only after the latency trace of that step had finished, so the screencap load never overlapped a measurement. They are in `scripts/quest/out/quality_private/quality-2026-09-27-W3c_*.jpg` and are not committed: the TV showed people.
+  - **`a480`** (640×480 at 165 fps, native sensor crop) sees the narrowest field: the door and the TV only.
+  - **`c720`** (1280×720 at 121 fps) is clearly wider: the windows and the table are in.
+  - **`d1080s`** (1920×1080@90 binned over the full sensor, scaled to 848×480, 91 fps) is the widest: the whole room, the chair and the picture on the left wall.
+  - Loss was 0–1 packets in every still [PROVEN: overlay in the stills].
+  - `b1472n` (RES_4 native) was dropped before the stills: its encoder ran at 0.48 fps. The latency side of W3c is the other session's result.
 
 **Adaptive range test: the adaptive link against a fixed setting (2026-09-27 19:01–19:18, 480p167, app build `b8b6dcc3` with the 4 Hz / FEC 1/3 uplink, air receiver `alink_air` using the two-state policy above: hold_down 2000 ms, stale 1500 ms).**
 - **Method.** One 1260 s trace. The air unit changed only the TX power: 17 12 8 12 17 12 8 12 17 dBm, 30 s steps, rises in ≤ 3 dB steps. Three phases ran back to back:
