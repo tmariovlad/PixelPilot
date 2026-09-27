@@ -171,6 +171,7 @@ applied live (no RTP restart).
 | `ab_long.sh` | capture for an in-trace A/B: long lean trace + Quest-minus-PC clock offset (analysis: `../quest-latch/ab_segments.py`) |
 | `decode_watch.sh` | watch the running decoder for N s (decode ms, fps, decoder reconfigurations), e.g. after an air-unit restart |
 | `stop_crash_check.sh` | does the XR app survive repeated session stops (`relaunch` over the running instance / display `sleepwake`)? pid, SIGABRT, video re-attached per iteration |
+| `../quest-latch/ab_timeline.py` | per-second timeline of one trace (RTP packets, decoded frames, wfb rx/lost, RSSI) on the Quest clock: link drops at a switch, adaptive-link settling time |
 | `quest_tx_log.sh` | stream the Quest RTL's uplink injections (devourer `TX DESC`, one Quest epoch per frame) during a trace; `ab_link.py --quest-tx` turns it into TX/s per step (≈ 0 = adaptive link really off) |
 | `quest_thermal_log.sh` | sample the Quest's thermal status, CPU/SoC/battery temperatures and battery level every few seconds during a trace (read-only) |
 | `../quest-latch/ab_link.py` | link side of an in-trace A/B: air TX rate, pre-FEC loss, FEC repairs, loss after FEC, RSSI, air and Quest temperatures per step/state (needs the app's `ppxr_wfb_*` counters from `WfbStatsTrace`) |
