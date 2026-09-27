@@ -9,8 +9,9 @@ pending, so the air's revert timer fires.
 
 Needs: the XR app streaming (air on Race), the Quest reaching this PC over Wi-Fi on UDP 9998. Prefs are rewritten for
 the run (vmode_air -> this PC) and restored at the end (quest_adb.set_prefs keeps gs.key only, plus these flags).
-Usage: python3 preset_flow.py <label> [--fail] [--video-wait-s 15]
-Check first that Windows lets UDP 9998 in to Python (the PPXR1 reports to the PC's UDP 5610 worked on 2026-09-26).
+Usage: python3 preset_flow.py <label> [--fail] [--port 9998] [--video-wait-s 15]
+Check first that Windows lets the UDP port in to Python; if 9998 is blocked, --port 5610 (the PPXR1 report port, which
+reached the PC on 2026-09-26). Do not change firewall rules for this.
 """
 import argparse
 import os
@@ -49,17 +50,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("label")
     ap.add_argument("--fail", action="store_true")
+    ap.add_argument("--port", type=int, default=9998)
     ap.add_argument("--video-wait-s", type=float, default=15)
     a = ap.parse_args()
     out = os.path.join(env.OUT_DIR, "preset_flow_" + a.label)
     os.makedirs(out, exist_ok=True)
     target, steps = ("wide", 3) if a.fail else ("race-b", 4)   # rights from Race in the fake's list order
 
-    air = FakeAir(port=9998, switch_s=3, fail="wide" if a.fail else None, same_size=True)
+    air = FakeAir(port=a.port, switch_s=3, fail="wide" if a.fail else None, same_size=True)
     threading.Thread(target=air.serve, daemon=True).start()
     t0 = time.monotonic()
     try:
-        restart_xr(dict(PREFS, vmode_air=f"{env.PC_IP}:9998"))
+        restart_xr(dict(PREFS, vmode_air=f"{env.PC_IP}:{a.port}"))
         time.sleep(a.video_wait_s)
         print("list requests so far:", sum("list" in e for _, e in air.log), flush=True)
         inp("right")                      # opens the menu on the active mode
