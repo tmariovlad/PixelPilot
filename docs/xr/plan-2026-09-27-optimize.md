@@ -16,9 +16,12 @@ is the plan and the tracker. See [HANDOFF.md](HANDOFF.md) for ownership and appr
   freely.
 - Measurement rule ([CLAUDE.md](../../CLAUDE.md)): alternate states, N >= 2 per state, position fixed, bracket the
   extremes (min / max / middle) before concluding. Tag claims [PROVEN]/[INFERRED]/[SPECULATION].
-- **Temperatures.** Log the air SoC temperature and the Quest thermal status/battery with every step. Stop a step if the
-  air SoC runs away (rising without levelling) or goes above the limit the OpenIPC project documents for this board, or
-  if the Quest reports a thermal throttling status or battery < 30 %.
+- **Temperatures.** Log the air SoC temperature and the Quest thermal status/battery with every step. Air SoC sensor:
+  `/sys/devices/virtual/mstar/msys/TEMP_R`. It is documented to cycle between 43 and 65 °C with the fan. It did not
+  throttle at 65 °C with the fan off and the full overclock [PROVEN per the OpenIPC session:
+  HB-57-ssc338q-expert…md:137-138]. **WARN at 70 °C; STOP the step at ≥ 75 °C or when it rises > 3 °C/min without
+  levelling off.** Do not read `/proc/net/rtl88x2eu/*` while injecting. Stop on the Quest at thermal status ≥ 3 or
+  battery < 30 %.
 - **Physical setup is fixed while the user is away.** The Quest is on the balcony and the air unit is indoors. Range is
   emulated by lowering the air unit's TX power (and the Quest RTL's), not by moving anything.
 - At the end: Quest Guardian/display restored, air unit on the chosen defaults (or the pre-run state if nothing is
