@@ -66,6 +66,19 @@ def test_fit_offset_finds_step_misalignment():
     assert abs(fit_offset(frames, skewed, end - 0.73e9) - 0.73) <= 0.02
 
 
+def test_lost_per_step_counts_sequence_gaps_inside_the_window():
+    frames, steps, end = synth()
+    # one packet per frame, arriving at the frame's first time; drop two seqs in step 1 (B) and one in a guard band
+    pkts = [(f.first, k & 0xFFFF, int(f.capture * 90000 / 1e9)) for k, f in enumerate(frames)]
+    in_b = [k for k, p in enumerate(pkts) if steps[1][0] + 3e9 <= p[0] < steps[1][0] + 5e9][:2]
+    in_guard = [k for k, p in enumerate(pkts) if steps[2][0] - 1e9 <= p[0] < steps[2][0]][:1]
+    pkts = [p for k, p in enumerate(pkts) if k not in in_b + in_guard]
+    per_step, per_state, _ = analyze(frames, steps, end, 2e9, "A", pkts)
+    lost = {i: r["lost"] for i, _, r in per_step}
+    assert lost[1] == 2 and sum(lost.values()) == 2, lost
+    assert dict(per_state)["B"]["lost"] == 2
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

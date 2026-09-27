@@ -48,11 +48,17 @@ def frames_from_packets(pkts, ready):
     return frames, lost
 
 
+def step_window(i, steps, end, guard):
+    """[start, end) of step i without its guard bands."""
+    e = steps[i + 1][0] if i + 1 < len(steps) else end
+    return steps[i][0] + guard, e - guard
+
+
 def step_of(t, steps, end, guard):
     """Index of the step containing t, or None inside a guard band around a switch / outside the run."""
-    for i, (s, _) in enumerate(steps):
-        e = steps[i + 1][0] if i + 1 < len(steps) else end
-        if s + guard <= t < e - guard:
+    for i in range(len(steps)):
+        a, b = step_window(i, steps, end, guard)
+        if a <= t < b:
             return i
     return None
 
@@ -72,9 +78,10 @@ def fit_drift(points):
     return slope, my - slope * mx
 
 
-def analyze(frames, steps, end, guard, baseline):
+def analyze(frames, steps, end, guard, baseline, pkts=None):
     """steps: [(start_ns, label)] sorted. Returns (per_step rows, per_state rows, slope) with delays in ms,
-    each relative to the baseline's drift line."""
+    each relative to the baseline's drift line. With pkts ([(arrival_ns, seq, rtp_ts)]) each row also gets the
+    RTP packets lost inside the step's guarded window ("lost", "lost_per_s")."""
     tagged = [(f, step_of(f.first, steps, end, guard)) for f in frames]
     tagged = [(f, i) for f, i in tagged if i is not None]
     slope, icpt = fit_drift([(f.last, f.last - f.capture) for f, i in tagged if steps[i][1] == baseline])
@@ -95,6 +102,15 @@ def analyze(frames, steps, end, guard, baseline):
                 if any(j == i for _, j in tagged)]
     labels = list(OrderedDict.fromkeys(lab for _, lab in steps))
     per_state = [(lab, stats([f for f, i in tagged if steps[i][1] == lab])) for lab in labels]
+    if pkts is not None:
+        for i, _, row in per_step:
+            a, b = step_window(i, steps, end, guard)
+            row["lost"] = seq_loss([p[1] for p in pkts if a <= p[0] < b])[0]
+            row["lost_per_s"] = row["lost"] / ((b - a) / 1e9)
+        for lab, row in per_state:
+            mine = [r for _, l, r in per_step if l == lab]
+            row["lost"] = sum(r["lost"] for r in mine)
+            row["lost_per_s"] = st.mean(r["lost_per_s"] for r in mine)
     for lab, s in per_state:  # a state's steps are not contiguous: its fps is the mean of its steps' fps
         s["fps"] = st.mean(ps["fps"] for _, l, ps in per_step if l == lab)
     return per_step, per_state, slope
@@ -186,23 +202,23 @@ def main():
     baseline = a.baseline or steps[0][1]
     inside = sum(1 for f in frames if steps[0][0] <= f.first < end)
     print(f"{len(pkts)} packets, {len(frames)} frames, {lost} lost before the app; {inside} frames inside the steps")
-    per_step, per_state, slope = analyze(frames, steps, end, a.guard_s * 1e9, baseline)
+    per_step, per_state, slope = analyze(frames, steps, end, a.guard_s * 1e9, baseline, pkts)
     print(f"clock drift fitted on '{baseline}': {slope * 1e6:+.0f} ppm")
-    hdr = f"{'':14s}{'frames':>7s}{'fps':>7s}{'pkt/f':>7s}{'spread':>8s}{'first':>8s}{'last':>8s}{'last95':>8s}{'decoded':>9s}"
+    hdr = f"{'':14s}{'frames':>7s}{'fps':>7s}{'pkt/f':>7s}{'spread':>8s}{'first':>8s}{'last':>8s}{'last95':>8s}{'decoded':>9s}{'lost/s':>8s}"
     row = lambda name, s: (f"{name:14s}{s['frames']:7d}{s['fps']:7.1f}{s['pkt_per_frame']:7.2f}{s['spread_ms']:8.2f}"
-                           f"{s['first_ms']:8.2f}{s['last_ms']:8.2f}{s['last_p95_ms']:8.2f}{s['decoded_ms']:9.2f}")
+                           f"{s['first_ms']:8.2f}{s['last_ms']:8.2f}{s['last_p95_ms']:8.2f}{s['decoded_ms']:9.2f}{s.get('lost_per_s', float('nan')):8.1f}")
     print("\nper step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)")
     print(hdr)
     for i, lab, s in per_step:
         print(row(f"{i:2d} {lab}", s))
     if a.csv:
         import csv
-        keys = ["frames", "fps", "pkt_per_frame", "spread_ms", "first_ms", "last_ms", "last_p95_ms", "decoded_ms"]
+        keys = ["frames", "fps", "pkt_per_frame", "spread_ms", "first_ms", "last_ms", "last_p95_ms", "decoded_ms", "lost", "lost_per_s"]
         with open(a.csv, "w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["step", "label"] + keys)
             for i, lab, row_ in per_step:
-                w.writerow([i, lab] + [round(row_[k], 3) for k in keys])
+                w.writerow([i, lab] + [round(row_.get(k, float('nan')), 3) for k in keys])
         print(f"per-step rows written to {a.csv}")
     print("\nper state")
     print(hdr + f"{'Δlast':>8s}{'Δdecoded':>10s}")
