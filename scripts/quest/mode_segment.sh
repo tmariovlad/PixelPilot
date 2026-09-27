@@ -6,6 +6,7 @@
 # marks) and analyse it with transport_analyze.py (frame spread on the radio, frame complete -> decoded, loss) and
 # latch_analyze.py (decoded -> compositor latch). The absolute capture -> arrival is not comparable between modes
 # (each waybeam start draws a new random RTP base), so only these per-mode segments are used.
+# Name segments <mode>_<rep> (e.g. 2_a) so w3_budget.py can group them.
 # Output: out/mode_<label>.{pftrace,txt}
 . "$(dirname "$0")/quest_env.sh" || exit 1
 export MSYS_NO_PATHCONV=1
