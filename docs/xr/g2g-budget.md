@@ -10,7 +10,7 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 
 **The number.** The recommended setup (**REC**: 640×480 @ 167 fps, 2000 kbit/s, FEC 4/8, MCS2) gives **27.4–32.7 ms** glass-to-glass. The original setup (1080p90, 8000 kbit/s, FEC 4/6) gives 46.6–51.9 ms, so REC is **19.2 ms faster (−37 %)**. It is also more robust: loss 0.1 % instead of 2.1 %, no undecoded frames instead of 1.2 %, and 2 radio packets per frame instead of 8.4. Measured per segment, N = 2, palindromic ([before / after](#before--after-the-original-setup-vs-the-recommended-one-2026-09-27-final)). The range comes from two inferred terms: the ISP and the panel.
 
-**Field of view (W3c):** 480p167 shows only 33 % × 44 % of the sensor. A wider view costs **+6.3 ms** at 720p120 (66 × 66 %, the same sharpness), or **+9.1 ms** at 1080p90 scaled to 848×480 (99 × 98 %, about 2.2× softer). With the O112 pin, 480p167 now starts at 26.7 ms ([W3c](#field-of-view-against-latency-480p167-vs-720p120-vs-1080p90-scaled-w3c-2026-09-27)).
+**Field of view (W3c):** 480p167 shows only 33 % × 44 % of the sensor. A wider view costs **+4.9 ms** at 720p120 scaled to 848×480 (66 × 66 %, ~1.5× softer), **+6.3 ms** at 720p120 native (66 × 66 %, the same sharpness), or **+9.1 ms** at 1080p90 scaled to 848×480 (99 × 98 %, ~2.2× softer). With the O112 pin, 480p167 now starts at 26.7 ms ([W3c](#field-of-view-against-latency-480p167-vs-720p120-vs-1080p90-scaled-w3c-2026-09-27)).
 
 **The 20–25 ms target is not reached on Quest 2.** About 12 ms of REC's 27.4 ms floor is fixed: the panel (latch → light, 10.2 ms minimum) and the air → Quest floor (1.9 ms).
 
@@ -204,4 +204,15 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 - **Detail per degree (angular resolution):** a480 has 640 px over 33.1 % of the sensor width, 19.3 px per %; c720 has 19.2 px per %; d1080s has only **8.6 px per %** [INFERRED: arithmetic]. d1080s shows the whole scene but ~2.2× softer; c720 keeps a480's sharpness over 3× the area. The screenshots per mode are with the session that took them (pixelpilot-xr-22).
 - **Robustness:** d1080s lost more (0.46 %, 5 and 13 gaps) than c720 (0.14 %) and a480 (0.06 %). Its frames are 2.5 packets against 1.8 [PROVEN]. Whether that is the mode or the time of day is not settled at N = 2 [SPECULATION].
 - **With the O112 pin, encode is unimodal**: a480 encode p95 1.92 ms, against 3.57 ms without the pin. a480's floor drops from 27.4 (before / after) to **26.7 ms** [PROVEN: air rows].
-- **Reading:** for the lowest latency, a480 (26.7–32.0 ms, narrow view). For a wider view at the same sharpness, c720 (+6.3 ms). For the whole scene, d1080s (+9.1 ms, softer picture). Which one to use is the user's choice. The numbers above are the whole cost of each.
+- **Extra arm e720s: 720p120 scaled in the VPE to 848×480** (FOV 66 × 66 %, the cheaper 848×480 encode). Separate palindrome a480 → e720s → e720s → a480 (N = 2), same settings. Viability check: VENC 119.25 fps, DropCnt 0 [PROVEN: OpenIPC session, air 1790533103].
+
+  | Mode | FOV | encode size | capture | readout | ISP (+VPE) | encode | spread | decode | latch wait | pkt/frame | loss | undecoded | **total G2G** |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | a480 (this arm) | 33 × 44 % | 640×480 | 3.00 | 2.34 | 1.5–3.5 | 1.87 | 1.21 | 1.69 | 3.08 | 1.80 | 0.17 % | 0.07 % | 26.9 – 32.2 ms |
+  | **e720s** 720p120 → 848×480 | 66 × 66 % | 848×480 | 4.19 | 3.54 | 2.0–5.0 | 2.14 | 1.24 | 1.85 | 4.18 (uniform; measured 3.68 / 3.85) | 2.08 | 0.45 % | 0.19 % | **31.3 – 37.6 ms** |
+
+  [PROVEN per segment: [air TSV](data/w3c-e720s-2026-09-27-air.tsv), Quest outputs `data/w3c-e720s-2026-09-27-quest-<mode>_<rep>.txt`, [budget](data/w3c-e720s-2026-09-27-budget.txt).]
+  - Against a480: **+4.9 ms for 3.0× the area.** a480 reproduced within 0.2 ms of the main arm.
+  - **Against c720, same field of view:** the measured segments are ~1.7 ms shorter. Encode+send is 2.24 against 3.49 ms, spread 1.24 against 1.48, and decode 1.85 against 2.05. The ISP range is wider because of the VPE scale (< 1 ms by source), so the total ranges overlap: 31.3–37.6 against 33.0–38.3 ms. e720s is **~0.7–1.7 ms faster** than c720 [INFERRED: measured segments minus the VPE uncertainty]. The price is detail: 12.8 px per % of sensor width, against 19.2 for c720 (~1.5× softer), still sharper than d1080s (8.6).
+  - Loss 0.45 % comes from one burst in e720s_a (17 gaps, a transport max of 36 ms). e720s_b lost 2 of 2231 [PROVEN]. So it is not attributed to the mode.
+- **Reading:** for the lowest latency, a480 (26.7–32.0 ms, narrow view). For 3× the view, e720s (+4.9 ms, ~1.5× softer) or c720 (+6.3 ms, as sharp as a480). For the whole scene, d1080s (+9.1 ms, ~2.2× softer). Which one to use is the user's choice. The numbers above are the whole cost of each.

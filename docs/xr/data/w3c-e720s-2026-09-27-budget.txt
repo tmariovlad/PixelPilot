@@ -1,0 +1,7 @@
+mode e720s: latch wait = 4.18 ms (half a display period, uniform phase); measured in the traces: [3.68, 3.85]
+mode   n  capture  readout   isp_lo   isp_hi   encode    s_air   spread   decode     wait  pkt_per_frame  lost_pct  undecoded_pct      fov   total G2G range (ms)
+a480   2     3.00     2.34     1.50     3.50     1.87     1.97     1.21     1.69     3.08     1.80     0.17     0.07   33x44%   26.9 .. 32.2
+e720s  2     4.19     3.54     2.00     5.00     2.14     2.24     1.24     1.85     4.18     2.08     0.45     0.19   66x66%   31.3 .. 37.6
+trade-off a480: +0.0 ms for 1.00x the field-of-view area of the fastest mode
+trade-off e720s: +4.9 ms for 3.01x the field-of-view area of the fastest mode
+winner: a480
