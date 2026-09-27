@@ -8,7 +8,8 @@ SECS=${1:-240}; OUT=${2:-$QUEST_OUT/thermal.csv}; PERIOD=${3:-5}
 echo "quest_epoch,thermal_status,cpu_max_c,soc_c,batt_c,batt_level,charging" > "$OUT"
 end=$(( $(date +%s) + SECS ))
 while [ "$(date +%s)" -lt "$end" ]; do
-  qadb shell "date +%s.%N; dumpsys thermalservice | sed -n '/^Thermal Status/p;/Cached temperatures/,/^[A-Z]/p'; dumpsys battery" \
+  # "Current temperatures from HAL" is live; "Cached temperatures" can be minutes old (68.9 °C flat for a whole run)
+  qadb shell "date +%s.%N; dumpsys thermalservice | sed -n '/^Thermal Status/p;/Current temperatures from HAL/,/Current cooling devices/p'; dumpsys battery" \
     | tr -d '\r' | awk '
       NR == 1 { t = $1 }
       /^Thermal Status:/ { st = $3 }
