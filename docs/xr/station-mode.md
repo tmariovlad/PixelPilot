@@ -74,7 +74,7 @@ The station code lives outside the devourer submodule (which is upstream OpenIPC
      - `msiexec /i usbipd-win_5.3.0_x64.msi REINSTALL=ALL REINSTALLMODE=vamus /qn /norestart` succeeded (exit 0, no reboot), and **`VBoxUSBMon` now runs** [PROVEN]. The MSI is the official release asset, SHA-256 `1c984914…` matching the published digest.
      - Run the elevated steps through a `.ps1` with forward-slash paths: `gsudo` called from Git Bash strips backslashes.
    - **Next blocker:** the `usbipd` service crashes at start with `SocketException 10013` binding TCP 3240. `netsh int ipv4 show excludedportrange protocol=tcp` shows **3202–3301 reserved** (WinNAT / Hyper-V dynamic range) [PROVEN: event log + netsh].
-   - Proposed fix, pending the user: `net stop winnat`, `sc start usbipd`, `net start winnat`. Optionally reserve 3240 persistently with `netsh int ipv4 add excludedportrange`.
+   - **Fixed with the user's approval:** `net stop winnat` → reserve TCP 3240 persistently → `sc start usbipd` → `net start winnat`. `usbipd attach` then worked and the gate ran. Side effect: WSL lost outbound internet until the next reboot ([troubleshooting.md](troubleshooting.md)).
 
 ```bash
 usbipd list                              # find the BUSID of 0bda:8812
