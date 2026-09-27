@@ -125,7 +125,7 @@ Runs from 12:47 to 12:57.
 **Runs excluded from the comparison:**
 - **The app died at 12:53:12** (`am_proc_died` pid 8192, no crash entry; the build was unchanged). This was between s4_apfpv2 and s4_wfb3, while the Quest moved back to the home network. It came back through the 2D activity.
 - **The restarted instance measured differently** (s4_wfb3, s4_wfb3b): bursty RX (44–45 % of packets < 100 µs apart), no link-quality or uplink lines, excess p95 ~28 ms, and 72 / 9 lost.
-- **After a clean force-stop and XR relaunch** (s4_wfb3c, s4_wfb3d), the link quality stayed at ~270–280, against ~945 before, with 110 / 26 lost. The air unit reported 0 dropped. The cause is unknown [SPECULATION: the adapter came back in a different state, or something moved; both unchecked]. See [troubleshooting.md](troubleshooting.md).
+- **After a clean force-stop and XR relaunch** (s4_wfb3c, s4_wfb3d), the link quality stayed at ~270–280, against ~945 before, with 110 / 26 lost. The air unit reported 0 dropped. **Cause: the user moved the Quest to the balcony at ~12:53** [PROVEN: user report via the coordinator session, 2026-09-27]. The lower quality (SNR −3 to −8 dB) and the switch to the stronger home AP (Zeul37) follow from the new position [INFERRED: same moment]. The app's death is probably the RTL cable moving during the move, since hot-plug crashes are known ([troubleshooting.md](troubleshooting.md)) [SPECULATION]. The valid runs (s4_wfb1/2, s4_apfpv1/2) were all taken before the move, so the comparison stands.
 - All eight runs are in the CSV, each with its status.
 
 **Conclusion** [INFERRED, same-room only, N = 2 per arm]:
