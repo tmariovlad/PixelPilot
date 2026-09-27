@@ -27,8 +27,15 @@ def pref_xml(k, v):
 
 
 def write_prefs(xml):
-    """Replace the app's shared_prefs/general.xml (the app must be stopped)."""
+    """Replace the app's shared_prefs/general.xml (the app must be stopped), then read it back.
+
+    Raises if the file on the headset differs: an A/B step must never run silently on the previous prefs. (On
+    2026-09-27 a harness called set_link_prefs.py through subprocess "python3", which on Windows resolves to the
+    Store alias and exits 9009, so a whole key test ran on unchanged prefs; see docs/xr/troubleshooting.md.)"""
     adb("exec-in", "run-as", env.PKG, "sh", "-c", "cat > shared_prefs/general.xml", inp=xml.encode())
+    back = adb("shell", "run-as", env.PKG, "cat", "shared_prefs/general.xml")
+    if back.replace(chr(13), "") != xml.replace(chr(13), ""):   # adb may return CRLF
+        raise RuntimeError("prefs write did not land on the headset (read-back differs)")
 
 
 def set_prefs(flags):
