@@ -27,6 +27,7 @@
 
 #include "mavlink/common/mavlink.h"
 #include "mavlink.h"
+#include "ListenerLifecycle.h"
 
 #define TAG "pixelpilot"
 
@@ -54,17 +55,26 @@ long distance_meters_between(double lat1, double lon1, double lat2, double lon2)
     return (delta * 6372795.0);
 }
 
-int mavlink_thread_signal = 0;
 std::atomic<bool> latestMavlinkDataChange = false;
 
-void *listen(int mavlink_port) {
+// Closes the socket on every way out of listen() (a failed bind or setsockopt used to leak it, and the leaked
+// socket kept port 14550 bound).
+struct SocketCloser {
+    int fd;
+    ~SocketCloser() {
+        if (fd >= 0) close(fd);
+    }
+};
+
+void listen(int mavlink_port, const std::atomic<bool> &stop) {
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "Starting mavlink thread...");
     // Create socket
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    SocketCloser closer{fd};
     if (fd < 0) {
         __android_log_print(ANDROID_LOG_DEBUG, TAG,
                             "ERROR: Unable to create MavLink socket:  %s", strerror(errno));
-        return 0;
+        return;
     }
 
     // Bind port
@@ -78,7 +88,7 @@ void *listen(int mavlink_port) {
     if (bind(fd, (struct sockaddr *) (&addr), sizeof(addr)) != 0) {
         __android_log_print(ANDROID_LOG_ERROR, TAG, "Unable to bind MavLink port %d: %s",
                             mavlink_port, strerror(errno));
-        return 0;
+        return;
     }
 
     // Set Rx timeout
@@ -88,11 +98,11 @@ void *listen(int mavlink_port) {
     if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
         __android_log_print(ANDROID_LOG_ERROR, TAG,
                             "Unable to bind MavLink rx timeout:  %s", strerror(errno));
-        return 0;
+        return;
     }
 
     char buffer[2048];
-    while (!mavlink_thread_signal) {
+    while (!stop) {
         memset(buffer, 0x00, sizeof(buffer));
         int ret = recv(fd, buffer, sizeof(buffer), 0);
         if (ret < 0) {
@@ -102,12 +112,12 @@ void *listen(int mavlink_port) {
                 continue;
             } else {
                 __android_log_print(ANDROID_LOG_ERROR, TAG, "Error receiving mavlink: %s", strerror(errno));
-                return 0;
+                return;
             }
         } else if (ret == 0) {
             // peer has done an orderly shutdown
             __android_log_print(ANDROID_LOG_ERROR, TAG, "Shutting down mavlink: ret=0");
-            return 0;
+            return;
         }
 
         // Parse
@@ -316,8 +326,10 @@ void *listen(int mavlink_port) {
     }
 
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "Mavlink thread done.");
-    return 0;
 }
+
+// The one listener on UDP 14550, shared by every activity (see ListenerLifecycle.h).
+static ListenerLifecycle g_listener([](const std::atomic<bool> &stop) { listen(14550, stop); });
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -375,14 +387,10 @@ Java_com_openipc_mavlink_MavlinkNative_nativeCallBack(JNIEnv *env, jclass clazz,
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_openipc_mavlink_MavlinkNative_nativeStart(JNIEnv *env, jclass clazz, jobject context) {
-    auto threadFunction = []() {
-        listen(14550);
-    };
-    std::thread mavlink_thread(threadFunction);
-    mavlink_thread.detach();
+    g_listener.start();
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_openipc_mavlink_MavlinkNative_nativeStop(JNIEnv *env, jclass clazz, jobject context) {
-    mavlink_thread_signal++;
+    g_listener.stop();   // joins when the last user stops: at most one 100 ms recv timeout
 }

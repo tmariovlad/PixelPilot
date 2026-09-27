@@ -1,9 +1,9 @@
 package com.openipc.pixelpilot.osd;
 
+import com.openipc.pixelpilot.TelemetryUnits;
 import static android.content.Context.MODE_PRIVATE;
 import static java.lang.Math.atan2;
 import static java.lang.Math.cos;
-import static java.lang.Math.floor;
 import static java.lang.Math.sin;
 
 import android.content.Context;
@@ -134,13 +134,11 @@ public class OSDManager {
     }
 
     public void render(MavlinkData data) {
-        float voltage = (float) (data.telemetryBattery / 1000.0);
+        float voltage = (float) TelemetryUnits.volts(data.telemetryBattery);
         binding.tvBat.setText(formatFloat(voltage, "V", ""));
-        int cellCount = (int) (floor(voltage / 4.3) + 1);
-        float cellVolt = voltage / cellCount;
-        binding.tvBatCell.setText(formatFloat(cellVolt, "V", ""));
-        binding.tvCurrent.setText(formatDouble(data.telemetryCurrent / 100.0, "A", ""));
-        binding.tvAlt.setText(formatDouble(data.telemetryAltitude / 100 - 1000, "m", ""));
+        binding.tvBatCell.setText(formatFloat((float) TelemetryUnits.cellVolts(voltage), "V", ""));
+        binding.tvCurrent.setText(formatDouble(TelemetryUnits.amps(data.telemetryCurrent), "A", ""));
+        binding.tvAlt.setText(formatDouble(TelemetryUnits.altitudeM(data.telemetryAltitude), "m", ""));
         binding.tvThrottle.setText(String.format("%.0f", data.telemetryThrottle) + " %\t");
         binding.imgThrottle.setImageResource(data.telemetryArm == 1 ? R.drawable.disarmed : R.drawable.armed);
 
@@ -156,7 +154,7 @@ public class OSDManager {
             if (data.telemetryDistance / 100 > 1000) {
                 binding.tvDis.setText(formatFloat((float) (data.telemetryDistance / 100000), " km", ""));
             } else {
-                binding.tvDis.setText(formatDouble(data.telemetryDistance / 100, " m", ""));
+                binding.tvDis.setText(formatDouble(TelemetryUnits.distanceM(data.telemetryDistance), " m", ""));
             }
 
             binding.tvGndSpeed.setText(formatFloat((float)

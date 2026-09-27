@@ -8,6 +8,9 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.openipc.mavlink.MavlinkData;
+import com.openipc.mavlink.MavlinkNative;
+import com.openipc.mavlink.MavlinkUpdate;
 import com.openipc.videonative.DecodingInfo;
 import com.openipc.videonative.IVideoParamsChanged;
 import com.openipc.videonative.LatencyExperiments;
@@ -27,7 +30,7 @@ import java.util.Locale;
  * decoder never writes while the session is not VISIBLE/FOCUSED.
  */
 public class XrVideoActivity extends Activity implements IVideoParamsChanged, WfbNGStatsChanged,
-        XrBridge.Listener, LinkStatusListener {
+        XrBridge.Listener, LinkStatusListener, MavlinkUpdate {
     private static final String TAG = "pixelpilot-xr";
     private static final long STATS_PERIOD_MS = 250;
 
@@ -52,6 +55,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private volatile WfbNGStats lastLink;
     private volatile long lastLinkNs;
     private volatile String linkStatus = "";
+    private MavlinkData telemetry;         // UI thread (MavlinkNative.nativeCallBack runs in the stats tick)
+    private long telemetryMs;
     private volatile String udpFallback;   // non-null: no adapter, video may still arrive over Wi-Fi here
     // What the pilot is told about the video (NO SIGNAL / WRONG KEY / ...). UI thread only.
     private final SignalState signal = new SignalState();
@@ -62,6 +67,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         @Override
         public void run() {
             if (wfbLinkManager != null) wfbLinkManager.checkHealth(android.os.SystemClock.elapsedRealtime());
+            MavlinkNative.nativeCallBack(XrVideoActivity.this);   // calls onNewMavlinkData only on new data
             // Drained once per tick: the signal state and the phase meter read the same frames.
             long[] frames = videoPlayer != null ? videoPlayer.drainFrameReadyTimes() : new long[0];
             updateSignal(frames);
@@ -136,6 +142,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             wfbLinkManager.refreshAdapters();
             wfbLinkManager.startAdapters();
         }
+        MavlinkNative.nativeStart(this);   // reference-counted with the 2D activity's own start/stop
         if (!vpnBinding.bind(this, false)) {
             onLinkStatus("VPN not granted - start PixelPilot in 2D once to allow it");
         }
@@ -147,6 +154,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         super.onPause();
         if (xr == null) return;
         ui.removeCallbacks(statsTick);
+        MavlinkNative.nativeStop(this);
         if (wfbLinkManager != null) {
             wfbLinkManager.unregister();
             wfbLinkManager.stopAdapters();
@@ -263,6 +271,12 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     }
 
     @Override
+    public void onNewMavlinkData(MavlinkData data) {
+        telemetry = data;
+        telemetryMs = android.os.SystemClock.elapsedRealtime();
+    }
+
+    @Override
     public void onUdpFallbackAddress(String udpUrl) {
         udpFallback = udpUrl;              // kept apart from linkStatus, so neither hides the other
     }
@@ -290,6 +304,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
                 l == null ? "link: no stats" : String.format(Locale.US,
                         "link: sig %d  pkt %d  lost %d  fec %d  bad %d  decerr %d", l.avg_rssi, l.count_p_all,
                         l.count_p_lost, l.count_p_fec_recovered, l.count_p_bad, l.count_p_dec_err),
+                TelemetryLine.format(telemetry, android.os.SystemClock.elapsedRealtime() - telemetryMs),
                 d == null ? "video: no decoded frames yet"
                         : String.format(Locale.US, "%dx%d  %.0f fps  %.1f Mbit/s", videoW, videoH, d.currentFPS,
                         d.currentKiloBitsPerSecond / 1000f),

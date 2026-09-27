@@ -352,8 +352,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         // Button Handlers
         setupButtonHandlers();
 
-        // Mavlink Setup
-        setupMavlink();
+        // Mavlink: started in onStart, stopped in onStop (the native listener is reference-counted and shared with XR)
 
         // Battery Receiver
         setupBatteryReceiver();
@@ -1611,6 +1610,12 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         // Stop VPN service
         Log.w(TAG, "onPause: stopping service");
         vpnBinding.unbind(this);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        setupMavlink();   // pairs with onStop: a start in onCreate left 2D telemetry dead after the first onStop
     }
 
     @Override
