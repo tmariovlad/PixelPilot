@@ -99,6 +99,30 @@ Filled in by the coordinator as results come back. Details are in each owner's t
   encoder thread and the ISP thread share a CPU. The read-only investigation is approved. Pinning the threads (P4)
   needs the user.
 
+## Outcome and what is left for the user
+
+The summary with numbers is
+[g2g-budget.md § Recommendations and numbers](g2g-budget.md#recommendations-and-numbers-summary-2026-09-27).
+
+- **Latency:** 46.6–51.9 → **27.4–32.7 ms** G2G (−19.2 ms), from a per-segment budget, not an optical measurement.
+- **Corruption:** 2.06 % → 0.10 % loss, and undecoded frames went from 1.2 % to 0.
+- **Range:** `alink_air` cuts the loss 2.5–4× at the weakest level tested, against fixed settings.
+- **Temperatures:** air 44–50 °C throughout; the Quest had no thermal throttling.
+- **Final Quest build:** b2249f15 (`501094a`), with every app fix except X23 (c). It was verified with no latency
+  regression. The Quest is restored: Guardian on, display on auto.
+- **The tunnel** runs both ways and is persistent. Tunnel FEC stays at 1/2.
+
+For the user:
+1. **Look at the picture** at 640x480 / 2000 kbit/s in the headset. If it is too soft, use the revert below or raise
+   the bitrate. Each +1000 kbit/s costs about +0.6 ms at 480p [INFERRED: slot 2 8000→4000→2000 = −2.7/−1.8 ms; W2 m2b2→m2b4 = +1.15 ms] ([link-envelope.md](link-envelope.md), [g2g-budget.md](g2g-budget.md)).
+2. **Air-unit supply.** Say what powers `.132` now and connect the DPS-150 for metering before anyone uses more than
+   17 dBm.
+3. **Physical checks that were blocked:** link self-healing and X15 (plugging the adapter in during XR), both needing an
+   RTL replug; controller buttons A/X/B/Y; the slot-3 visual check.
+4. **Decision on O112 P4** (pinning the ISP/encoder threads on the air unit, estimated −1…−2 ms). The read-only part
+   runs first.
+5. **Optional:** a photodiode G2G on the Quest to check the absolute number (±2.6 ms).
+
 ## Air-unit state and reverts (as left by this run)
 
 The persistent defaults on `.132` were validated with a reboot each time. The backups sit next to each file on the air
