@@ -99,6 +99,16 @@ Filled in by the coordinator as results come back. Details are in each owner's t
   encoder thread and the ISP thread share a CPU. The read-only investigation is approved. Pinning the threads (P4)
   needs the user.
 
+- **O112 read-only probe.** Superframe re-encode is ruled out.
+  - [IspDriverThread]/IspMidThreadWq (RR 99) share CPU0 with waybeam main (FIFO 50), which fits H1 but is only a
+    snapshot.
+  - None of the 4 waybeam instances at 480p REC was slow (0–0.2 % frames > 2.5 ms). Only ~2 of 10 instances today were
+    slow, so H1 could not be tested live.
+  - A light 5 Hz sampler (5.4 % of a core) is ready for a future session. The artefacts are in the OpenIPC repo:
+    `repos/tasks/o112-encode-bimodal-2026-09-27/`.
+- **End state of `alink_air`.** It is on m1f46 by design: `reason=stale` once the Quest stopped sending reports,
+  because the headset sleeps after the hygiene restore. It returns to m2f48 by itself when the app runs again.
+
 ## Outcome and what is left for the user
 
 The summary with numbers is
