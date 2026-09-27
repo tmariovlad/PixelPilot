@@ -127,11 +127,13 @@ run while a timed loop on the air unit switches the lever (A B A C A …) and lo
 ```bash
 bash ab_long.sh bitrate 120            # lean trace (quest-latch/transport_long.pbtx) + Quest-minus-PC clock offset
 python3 ../quest-latch/ab_segments.py out/ab_bitrate.pftrace steps.txt --air-offset-s <(quest-pc) - (air-pc)>
-python3 ../quest-latch/ab_loss.py out/ab_bitrate.pftrace steps.txt <offset ab_segments used>   # loss + undecoded frames per step
 ```
 
 `ab_segments.py` fits the drift on the baseline steps only and prints, per step and per state, fps, packets/frame,
-spread and capture → frame complete / → decoded in ms against that line, with the delta vs the baseline. `--fit-offset` refines the air/Quest
+spread and capture → frame complete / → decoded in ms against that line, with the delta vs the baseline, plus RTP loss
+(lost/s and % of the packets in the guarded window) and `undecoded`: frames with no `ppxr_frame_ready` mark within
+20 ms of their last packet. That is not "never decoded": a late decode counts too (in a decoder stall every frame
+does), and a missing frame can take the next frame's mark, so real drops can be undercounted. `--fit-offset` refines the air/Quest
 step offset from the packets/frame steps (bitrate); for FEC use the app's `wfb-ng SESSION` logcat lines. `--csv` writes the
 per-step rows (raw data for `docs/xr/data/`). Offline check: `python3 ../quest-latch/test_ab_segments.py`. Only for levers
 applied live (no RTP restart).

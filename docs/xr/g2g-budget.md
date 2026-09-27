@@ -81,9 +81,9 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 - On the way up the loop set MCS first, then bitrate; on the way down, bitrate first. Each step label was written after the second command. This ran on the OpenIPC side (session openipc-…-3a).
 - Drift fitted on m2b8: +70 ppm. The step offset was fitted from packets/frame (+0.57 s against the +1.01 s measured with the clocks, which were only accurate to ±36 ms, adb RTT 72 ms).
 
-[PROVEN: [data](data/measurements-2026-09-27-quest2-mcs-ab.csv), [air step log](data/steps-2026-09-27-mcs.txt), [loss per step](data/loss-2026-09-27-mcs.txt) from [ab_loss.py](../../scripts/quest-latch/ab_loss.py)]
+[PROVEN: [data](data/measurements-2026-09-27-quest2-mcs-ab.csv) with loss and undecoded frames per step (columns `lost_pct`, `undecoded` from [ab_segments.py](../../scripts/quest-latch/ab_segments.py)), [air step log](data/steps-2026-09-27-mcs.txt)]
 
-| state | packets/frame | frame spread | Δ capture → frame complete | Δ capture → decoded | per repeat | lost after FEC | frames not decoded |
+| state | packets/frame | frame spread | Δ capture → frame complete | Δ capture → decoded | per repeat | lost after FEC | frames without a decoded mark (`undecoded`) |
 |---|---|---|---|---|---|---|---|
 | MCS2, 8 Mbit/s (baseline) | 8.58 | 7.83 ms | 0 | 0 | | 0.10 % | 5 / 4582 |
 | MCS3, 12 Mbit/s | 12.66 | 9.49 ms | +2.41 | **+2.64 ms** | +2.53 / +2.74 | 0.24 % | 1 / 1542 |
@@ -94,7 +94,7 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
   - MCS4 at 12 Mbit/s carries 1.5× the baseline bitrate and is still 1.2 ms faster, because each frame spends less time on the radio.
   - MCS3 at 12 Mbit/s is the worst point: 50 % more bytes at only 33 % more PHY rate.
   - This agrees with slot 2, where a lower bitrate at a fixed MCS saved time for the same reason.
-- **Loss:** every state lost ≤ 0.24 % of packets after FEC, and the higher rates left no frame undecoded. So on the bench MCS4 carries 16 Mbit/s cleanly [PROVEN: loss file].
+- **Loss:** every state lost ≤ 0.24 % of packets after FEC, and at the higher rates no frame lacked a decoded mark (`undecoded` = no `ppxr_frame_ready` within 20 ms of the frame's last packet; a late decode counts too, and a dropped frame can take the next frame's mark, so it is an approximate count). So on the bench MCS4 carries 16 Mbit/s cleanly [PROVEN: `lost_pct` / `undecoded` columns of the data].
 - **Range was not tested.** MCS4 needs more SNR than MCS2, so its range is shorter [INFERRED: 802.11n MCS SNR requirements, not measured here]. Check it at flying distance before using MCS4 in the air.
 - **Picture quality:** the visual comparison in the headset is recorded below once done.
 - **Frame rate** stayed 90.5 fps at every step.

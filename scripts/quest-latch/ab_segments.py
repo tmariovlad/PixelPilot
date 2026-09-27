@@ -81,7 +81,7 @@ def fit_drift(points):
 def analyze(frames, steps, end, guard, baseline, pkts=None):
     """steps: [(start_ns, label)] sorted. Returns (per_step rows, per_state rows, slope) with delays in ms,
     each relative to the baseline's drift line. With pkts ([(arrival_ns, seq, rtp_ts)]) each row also gets the
-    RTP packets lost inside the step's guarded window ("lost", "lost_per_s")."""
+    RTP packets lost inside the step's guarded window ("lost", "lost_per_s", "lost_pct" = lost / (received + lost))."""
     tagged = [(f, step_of(f.first, steps, end, guard)) for f in frames]
     tagged = [(f, i) for f, i in tagged if i is not None]
     slope, icpt = fit_drift([(f.last, f.last - f.capture) for f, i in tagged if steps[i][1] == baseline])
@@ -96,7 +96,12 @@ def analyze(frames, steps, end, guard, baseline, pkts=None):
                 "pkt_per_frame": st.mean(f.npkts for f in fs),
                 "spread_ms": st.mean((f.last - f.first) / 1e6 for f in fs),
                 "first_ms": st.mean(first), "last_ms": st.mean(last), "last_p95_ms": pct(last, .95),
-                "decoded_ms": st.mean(dec) if dec else float("nan"), "decoded_n": len(dec)}
+                "decoded_ms": st.mean(dec) if dec else float("nan"), "decoded_n": len(dec),
+                # frames with no ppxr_frame_ready mark within READY_MAX_NS after their last packet
+                # (frames_from_packets). Not "never decoded": a frame decoded later than that counts too
+                # (in a decoder stall, e.g. ~78 ms, every frame would). And a missing frame can take the next
+                # frame's mark if it falls within READY_MAX_NS, so real drops can be undercounted.
+                "undecoded": len(fs) - len(dec)}
 
     per_step = [(i, lab, stats([f for f, j in tagged if j == i])) for i, (_, lab) in enumerate(steps)
                 if any(j == i for _, j in tagged)]
@@ -105,12 +110,17 @@ def analyze(frames, steps, end, guard, baseline, pkts=None):
     if pkts is not None:
         for i, _, row in per_step:
             a, b = step_window(i, steps, end, guard)
-            row["lost"] = seq_loss([p[1] for p in pkts if a <= p[0] < b])[0]
+            seqs = [p[1] for p in pkts if a <= p[0] < b]
+            row["lost"] = seq_loss(seqs)[0]
+            row["received"] = len(set(seqs))  # unique, like seq_loss; raw 16-bit is fine while a window < 65536 pkts
             row["lost_per_s"] = row["lost"] / ((b - a) / 1e9)
+            row["lost_pct"] = 100.0 * row["lost"] / max(1, row["received"] + row["lost"])
         for lab, row in per_state:
             mine = [r for _, l, r in per_step if l == lab]
             row["lost"] = sum(r["lost"] for r in mine)
+            row["received"] = sum(r["received"] for r in mine)
             row["lost_per_s"] = st.mean(r["lost_per_s"] for r in mine)
+            row["lost_pct"] = 100.0 * row["lost"] / max(1, row["received"] + row["lost"])
     for lab, s in per_state:  # a state's steps are not contiguous: its fps is the mean of its steps' fps
         s["fps"] = st.mean(ps["fps"] for _, l, ps in per_step if l == lab)
     return per_step, per_state, slope
@@ -204,16 +214,18 @@ def main():
     print(f"{len(pkts)} packets, {len(frames)} frames, {lost} lost before the app; {inside} frames inside the steps")
     per_step, per_state, slope = analyze(frames, steps, end, a.guard_s * 1e9, baseline, pkts)
     print(f"clock drift fitted on '{baseline}': {slope * 1e6:+.0f} ppm")
-    hdr = f"{'':14s}{'frames':>7s}{'fps':>7s}{'pkt/f':>7s}{'spread':>8s}{'first':>8s}{'last':>8s}{'last95':>8s}{'decoded':>9s}{'lost/s':>8s}"
+    hdr = f"{'':14s}{'frames':>7s}{'fps':>7s}{'pkt/f':>7s}{'spread':>8s}{'first':>8s}{'last':>8s}{'last95':>8s}{'decoded':>9s}{'lost/s':>8s}{'lost%':>7s}{'undec':>6s}"
     row = lambda name, s: (f"{name:14s}{s['frames']:7d}{s['fps']:7.1f}{s['pkt_per_frame']:7.2f}{s['spread_ms']:8.2f}"
-                           f"{s['first_ms']:8.2f}{s['last_ms']:8.2f}{s['last_p95_ms']:8.2f}{s['decoded_ms']:9.2f}{s.get('lost_per_s', float('nan')):8.1f}")
+                           f"{s['first_ms']:8.2f}{s['last_ms']:8.2f}{s['last_p95_ms']:8.2f}{s['decoded_ms']:9.2f}"
+                           f"{s.get('lost_per_s', float('nan')):8.1f}{s.get('lost_pct', float('nan')):7.2f}{s['undecoded']:6d}")
     print("\nper step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)")
     print(hdr)
     for i, lab, s in per_step:
         print(row(f"{i:2d} {lab}", s))
     if a.csv:
         import csv
-        keys = ["frames", "fps", "pkt_per_frame", "spread_ms", "first_ms", "last_ms", "last_p95_ms", "decoded_ms", "lost", "lost_per_s"]
+        keys = ["frames", "fps", "pkt_per_frame", "spread_ms", "first_ms", "last_ms", "last_p95_ms", "decoded_ms", "lost", "lost_per_s",
+                "lost_pct", "undecoded"]  # append only: docs/xr/data/*-ab.csv keep the earlier column order
         with open(a.csv, "w", newline="", encoding="utf-8") as fh:
             w = csv.writer(fh)
             w.writerow(["step", "label"] + keys)

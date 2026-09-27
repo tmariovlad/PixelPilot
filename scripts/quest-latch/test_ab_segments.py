@@ -77,6 +77,26 @@ def test_lost_per_step_counts_sequence_gaps_inside_the_window():
     lost = {i: r["lost"] for i, _, r in per_step}
     assert lost[1] == 2 and sum(lost.values()) == 2, lost
     assert dict(per_state)["B"]["lost"] == 2
+    # lost_pct uses the same guarded window: 2 lost out of (received in step 1's window + 2)
+    a, b = steps[1][0] + 2e9, steps[2][0] - 2e9
+    received = sum(1 for p in pkts if a <= p[0] < b)
+    row1 = next(r for i, _, r in per_step if i == 1)
+    assert abs(row1["lost_pct"] - 100.0 * 2 / (received + 2)) < 1e-9, row1["lost_pct"]
+    assert all(r["lost_pct"] == 0 for i, _, r in per_step if i != 1)
+
+
+def test_undecoded_counts_frames_without_a_ready_mark_inside_the_window():
+    frames, steps, end = synth()
+    # no decoded-frame mark for 5 frames in the middle of step 3 (C) and for 1 frame inside a guard band
+    mid = [k for k, f in enumerate(frames) if steps[3][0] + 5e9 <= f.first][:5]
+    guard = [k for k, f in enumerate(frames) if steps[4][0] - 1e9 <= f.first][:1]
+    frames = [f._replace(ready=None) if k in mid + guard else f for k, f in enumerate(frames)]
+    per_step, per_state, _ = analyze(frames, steps, end, 2e9, "A")
+    und = {i: r["undecoded"] for i, _, r in per_step}
+    assert und[3] == 5, und
+    assert sum(und.values()) == 5, und
+    assert dict(per_state)["C"]["undecoded"] == 5
+    assert dict(per_state)["A"]["undecoded"] == 0
 
 
 if __name__ == "__main__":
