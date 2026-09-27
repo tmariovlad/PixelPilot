@@ -1,12 +1,13 @@
 #!/bin/bash
 # Usage: tunnel_probe.sh <label> [seconds=20] [ping]
 # One observation window of the running app on the real link: decoded fps and link quality from the app's log,
-# tun0 RX/TX packet deltas (RX = air -> Quest through the tunnel, TX = Quest -> air), and with "ping" a 10-packet
-# ping to the air unit's tunnel end 10.5.0.10 at the start of the window. Output: out/tunnel_probe_<label>.txt
+# tun0 RX/TX packet deltas (RX = air -> Quest through the tunnel, TX = Quest -> air), and with "ping" a ping (PING_N packets,
+# default 10) to the air unit's tunnel end 10.5.0.10 at the start of the window. Output: out/tunnel_probe_<label>.txt
 . "$(dirname "$0")/quest_env.sh" || exit 1
 export MSYS_NO_PATHCONV=1
 cd "$QUEST_DIR" || exit 1
 LABEL=$1; SECS=${2:-20}; PING=$3
+PING_N=${PING_N:-10}; PING_I=${PING_I:-0.5}   # e.g. PING_N=30 PING_I=0.2 (0.2 s is the non-root minimum)
 P=$(qadb shell pidof "$PKG")
 [ -n "$P" ] || { echo "app not running"; exit 1; }
 tun() { qadb shell "grep tun0 /proc/net/dev" | awk '{print $3, $11}'; }  # rx_packets tx_packets
@@ -14,13 +15,15 @@ tun() { qadb shell "grep tun0 /proc/net/dev" | awk '{print $3, $11}'; }  # rx_pa
   echo "# $LABEL $(date '+%F %T') pid $P window ${SECS}s"
   T0=$(qadb shell date +%s | tr -d '\r'); A=$(tun)
   if [ "$PING" = "ping" ]; then
-    qadb shell "ping -c 10 -i 0.5 -W 1 10.5.0.10" 2>&1 | grep -E "packets transmitted|rtt|min/avg" | sed 's/^/  ping: /'
+    qadb shell "ping -c $PING_N -i $PING_I -W 1 10.5.0.10" 2>&1 | grep -E "packets transmitted|rtt|min/avg" | sed 's/^/  ping: /'
   fi
   sleep "$SECS"
   B=$(tun)
   L=$(qadb logcat -d -v epoch --pid="$P" | awk -v t="$T0" '$1+0 >= t')
   echo "  fps: $(echo "$L" | grep -oE 'VideoDecoder: FPS:[0-9.]+' | sed 's/.*://' | tr '\n' ' ')"
-  echo "  quality mean: $(echo "$L" | grep -oE 'quality -?[0-9]+' | awk '{s+=$2; n++} END{if (n) printf "%.0f (n=%d)", s/n, n; else print "n/a"}')"
+  # link score (1000..2000) from the uplink reports "message <epoch>:<score>:..." (builds >= d8b6498 no longer log
+  # "quality N" on every loop)
+  echo "  link score mean: $(echo "$L" | grep -oE ' message [0-9]+:[0-9]+' | awk -F: '{s+=$2; n++} END{if (n) printf "%.0f (n=%d reports)", s/n, n; else print "n/a"}')"
   # tunnel aggregator (radio port 32, air -> Quest) windows logged by builds >= dc58403
   echo "  tunnel downlink: $(echo "$L" | grep -oE 'tunnel window: pkts [0-9]+ lost [0-9]+ fec_recovered [0-9]+' \
     | awk '{p+=$4; l+=$6; r+=$8; n++} END{if (n) printf "pkts %d lost %d fec_recovered %d (%d windows)", p, l, r, n; else print "no tunnel windows logged"}')"

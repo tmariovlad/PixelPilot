@@ -1,0 +1,40 @@
+# Tunnel downlink FEC A/B (air wfb_tx port 32, -C 9001), palindrome 1/2 -> 1/3 -> 1/3 -> 1/2, 2026-09-27
+# Quest side: scripts/quest/tunnel_probe.sh <label> 30 ping, PING_N=30 PING_I=0.2, build b8b6dcc3 (d8b6498, uplink FEC 1/3)
+# fec12_a 2026-09-27 19:23:21 pid 9366 window 30s
+  ping: 30 packets transmitted, 29 received, 3% packet loss, time 5822ms
+  ping: rtt min/avg/max/mdev = 2.965/4.113/6.724/1.102 ms
+  fps: 167.000000 167.000000 167.000000 164.000000 167.000000 164.000000 168.000000 
+  link score mean: 1619 (n=163 reports)
+  tunnel downlink: pkts 222 lost 2 fec_recovered 0 (79 windows)
+  tun0 rx/tx packets: 646 8289 -> 687 8492
+  tun0 delta: rx +41 tx +203 in 30s
+# fec13_a 2026-09-27 19:24:17 pid 9366 window 30s
+  ping: 30 packets transmitted, 28 received, 6% packet loss, time 5824ms
+  ping: rtt min/avg/max/mdev = 2.710/4.353/6.794/1.159 ms
+  fps: 161.000000 167.000000 159.000000 167.000000 167.000000 166.000000 166.000000 
+  link score mean: 1620 (n=178 reports)
+  tunnel downlink: pkts 334 lost 0 fec_recovered 0 (82 windows)
+  tun0 rx/tx packets: 705 8606 -> 745 8822
+  tun0 delta: rx +40 tx +216 in 30s
+# fec13_b 2026-09-27 19:25:10 pid 9366 window 30s
+  ping: 30 packets transmitted, 28 received, 6% packet loss, time 5822ms
+  ping: rtt min/avg/max/mdev = 2.906/4.659/7.010/1.194 ms
+  fps: 161.000000 165.000000 167.000000 166.000000 167.000000 165.000000 161.000000 167.000000 
+  link score mean: 1615 (n=172 reports)
+  tunnel downlink: pkts 324 lost 0 fec_recovered 1 (81 windows)
+  tun0 rx/tx packets: 763 8930 -> 803 9140
+  tun0 delta: rx +40 tx +210 in 30s
+# fec12_b 2026-09-27 19:26:04 pid 9366 window 30s
+  ping: 30 packets transmitted, 29 received, 3% packet loss, time 5819ms
+  ping: rtt min/avg/max/mdev = 2.879/4.472/14.590/2.334 ms
+  fps: 164.000000 166.000000 165.000000 164.000000 167.000000 167.000000 163.000000 
+  link score mean: 1611 (n=171 reports)
+  tunnel downlink: pkts 235 lost 2 fec_recovered 5 (82 windows)
+  tun0 rx/tx packets: 820 9238 -> 862 9445
+  tun0 delta: rx +42 tx +207 in 30s
+# Air side (OpenIPC session, ping air->10.5.0.3 x30 at 0.2 s):
+fec12_a 1790526198 tx=30 rx=29 loss=3.3% rtt 3.043/4.449/8.289/1.368 ms
+fec13_a 1790526253 tx=30 rx=29 loss=3.3% rtt 3.014/4.269/6.956/1.120 ms
+fec13_b 1790526307 tx=30 rx=30 loss=0.0% rtt 3.111/4.339/6.731/1.208 ms
+fec12_b 1790526361 tx=30 rx=30 loss=0.0% rtt 3.078/4.293/8.565/1.423 ms
+# air tunnel wfb_tx PKT: injected ~2x incoming at 1/2, ~3x at 1/3 (~21 vs ~31 frames/s at ping load), 0 dropped, 0 truncated
