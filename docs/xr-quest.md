@@ -47,6 +47,25 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
    activity takes it over.
 4. Video appears as a head-locked screen with a stats panel below it. Leave with the Meta button.
 
+**What the panel tells you** (since commit `8d7728e`, 2026-09-27; not yet checked on the headset):
+- When the video is not fine, the first line is a headline on a coloured band.
+  - **Red** means act now. The panel then moves up over the video's lower part, so a frozen last frame cannot pass for live video:
+    - `NO SIGNAL`: no wfb packets;
+    - `WRONG KEY`: packets arrive but none decrypt;
+    - `VIDEO STALLED`: no new frame for max(250 ms, 6 frame periods);
+    - `NO ADAPTER`;
+    - `SETUP: …`, e.g. a `gs.key` that is not 64 bytes. The link is not started, instead of crashing.
+  - **Amber** clears on its own: `WAITING FOR VIDEO` after a start, `VIDEO RESUMING` until 5 fresh frames arrive.
+- Then the lines, in order:
+  1. `link: sig pkt lost fec bad decerr`;
+  2. resolution / fps / bitrate;
+  3. decode times;
+  4. link status and, without an adapter, the UDP address that still accepts video;
+  5. phase, XR, decoder and levers.
+  Long lines end in "…".
+- The classifier is `app/xr/…/SignalState.java`. The panel is redrawn on the UI thread every 250 ms and adds nothing to the decode path.
+- Why these changes: [XR robustness/UX audit](xr/research/2026-09-27-xr-ux-audit.md).
+
 Everything tunable lives in **Video → Latency experiments** (single source:
 `app/videonative/.../LatencyExperiments.java`):
 
