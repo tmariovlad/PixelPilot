@@ -8,7 +8,7 @@ The goal: receive the air unit's APFPV video (a WPA2 Wi-Fi AP) through the RTL88
 
 | Step (scope §8) | State |
 |---|---|
-| W0 go/no-go gate: does the 8812AU's hardware ACK work against the real AP? | harness built and unit-tested; **not run yet** (needs slot 4 on the air unit) |
+| W0 go/no-go gate: does the 8812AU's hardware ACK work against the real AP? | harness built and unit-tested; **not run yet**: slot 4B on 2026-09-27 was blocked because `usbipd attach` fails on PC-VLAD (below) |
 | W1+ supplicant, CCMP RX, ARP, hand-off to the video path | not started; waits for the W0 result |
 
 ## Code
@@ -41,7 +41,10 @@ The station code lives outside the devourer submodule (which is upstream OpenIPC
 ## W0 gate: procedure for the slot (slot 4 with the coordinator)
 
 1. **Air unit on APFPV** (OpenIPC session: `linkmode-air.sh apfpv`). Check waybeam's bitrate after the switch (`wget -qO- http://127.0.0.1/api/v1/config.json | grep -o '"bitrate":[0-9]*'`): the switch restores `/opt/linkmode/.orig_bitrate`, which once held a stale 1000 ([correction](transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)). The AP takes **one client** (`max_num_sta=1`), so the Quest must not be on `OpenIPC`: `adb shell cmd wifi connect-network Zeul36 …`, or any saved home network.
-2. **RTL8812AU from the Quest to the PC**, then attach it to WSL (usbipd runs as a service; see the global `wsl-usb` rule):
+2. **RTL8812AU from the Quest to the PC**, then attach it to WSL (usbipd runs as a service; see the global `wsl-usb` rule).
+   - **Blocked on PC-VLAD (2026-09-27):** `usbipd bind --busid 4-8` needed admin (one UAC, accepted; the adapter is now "Shared"). `usbipd attach` then fails: "The VBoxUsbMon driver is not correctly installed" [PROVEN].
+   - The `VBoxUSBMon` service does not exist (`sc query` → 1060) and the `usbipd` service is stopped, although the driver files are in `C:/Program Files/usbipd-win/Drivers` [PROVEN]. VirtualBox is no longer installed. [INFERRED: its uninstall removed the shared `VBoxUSBMon` service; the `flash-usb` skill already notes "VBoxUSBMon broken" on this PC.]
+   - Fixes, pending the user's decision: repair usbipd-win (`msiexec /fa {EA1D5623-E6A7-4E4A-9259-E39722050300}`, elevated; reinstalls a kernel driver), or run the harness on a native Linux host with the RTL plugged in (RPi 5, laptop).
 
 ```bash
 usbipd list                              # find the BUSID of 0bda:8812
