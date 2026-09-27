@@ -160,6 +160,7 @@ applied live (no RTP restart).
 | `keycheck.py`, `keyscan.py`, `pwkey.py` | wfb-ng key pairing: check, search, derive from a keygen password |
 | `bq_stats.py`, `gaps.py`, `trace_query.py` | Perfetto analysis: buffer queue, packet gaps, ad-hoc SQL |
 | `ab_run.sh` | one transport A/B sample on the running app (link_measure + 9 s trace + transport_analyze + gaps), same for wfb-ng and APFPV; `out/ab_<label>.{log,pftrace}` |
+| `link_probe.sh` | wfb link-health sample for diagnosing a degraded link (display awake only for the sample, Quest Wi-Fi SSID/freq/RSSI + link_measure); appends to `out/link_probe.log` |
 | `air_tunnel.py` | ADB to the Quest while it is a client of the air unit's APFPV AP: SSH forward over the air unit's eth0 (`adb connect 127.0.0.1:5595`) |
 | `ab_long.sh` | capture for an in-trace A/B: long lean trace + Quest-minus-PC clock offset (analysis: `../quest-latch/ab_segments.py`) |
 | `decode_watch.sh` | watch the running decoder for N s (decode ms, fps, decoder reconfigurations), e.g. after an air-unit restart |
