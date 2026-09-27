@@ -433,7 +433,17 @@ void XrRuntime::renderFrame()
 {
     XrFrameWaitInfo waitInfo{XR_TYPE_FRAME_WAIT_INFO};
     XrFrameState    frameState{XR_TYPE_FRAME_STATE};
-    if (XR_FAILED(xrWaitFrame(mSession, &waitInfo, &frameState))) return;
+    const XrResult waited = xrWaitFrame(mSession, &waitInfo, &frameState);
+    if (XR_FAILED(waited))
+    {
+        // Only on the failure path: without a pause, a runtime that keeps failing xrWaitFrame turned loop() into a
+        // busy spin on one core (audit X25). The normal frame path is untouched.
+        if (!mWaitFailing) XLOGE("xrWaitFrame failed (%d); retrying every 5 ms", static_cast<int>(waited));
+        mWaitFailing = true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        return;
+    }
+    mWaitFailing = false;
     recordDisplayGrid(frameState);
     XrFrameBeginInfo beginInfo{XR_TYPE_FRAME_BEGIN_INFO};
     if (XR_FAILED(xrBeginFrame(mSession, &beginInfo))) return;

@@ -122,6 +122,7 @@ class XrRuntime
     jobject               mStatsSurface = nullptr;
     XrSessionState        mState        = XR_SESSION_STATE_UNKNOWN;
     bool                  mRunning      = false;
+    bool                  mWaitFailing  = false;   // XR thread: xrWaitFrame is failing (log once, back off)
     bool                  mVideoAllowed = false;
     bool                  mRuntimeExit  = false;
     uint64_t              mFrames       = 0;

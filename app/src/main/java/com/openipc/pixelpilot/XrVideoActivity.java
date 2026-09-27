@@ -1,12 +1,12 @@
 package com.openipc.pixelpilot;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import com.openipc.mavlink.MavlinkData;
 import com.openipc.mavlink.MavlinkNative;
@@ -101,9 +101,12 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         if (error != null) {
             // No silent fallback to a slower path: a measurement would not know it changed.
             Log.e(TAG, "XR unavailable: " + error);
-            Toast.makeText(this, "XR mode unavailable: " + error, Toast.LENGTH_LONG).show();
             xr.stop();
             xr = null;
+            // A Toast is invisible in an immersive session (audit X13): report it in the 2D activity instead,
+            // which also skips its XR autostart so the failing start is not retried in a loop.
+            startActivity(new Intent(this, VideoActivity.class)
+                    .putExtra(VideoActivity.EXTRA_XR_ERROR, "XR mode unavailable: " + error));
             finish();
             return;
         }
@@ -129,6 +132,19 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         wfbLink.SetWfbNGStatsChanged(this);
         LinkOptions.apply(this, wfbLink);
         wfbLinkManager = new WfbLinkManager(this, this, wfbLink);
+    }
+
+    /**
+     * Launch XR while this instance is still alive (singleInstance) arrives here, not in onCreate. XR levers changed
+     * in the 2D menu meanwhile would be silently ignored (audit X04), so start over when they differ.
+     */
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        if (experiments != null && !LatencyExperiments.load(this).sameXrStart(experiments)) {
+            Log.i(TAG, "XR levers changed since this XR session started: recreating it");
+            recreate();
+        }
     }
 
     @Override

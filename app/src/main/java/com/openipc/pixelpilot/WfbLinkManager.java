@@ -45,6 +45,11 @@ public class WfbLinkManager extends BroadcastReceiver {
         public int getValue() {
             return value;
         }
+
+        /** 20 or 40 MHz; anything else (an old or hand-edited pref) falls back to 20 instead of leaving null. */
+        public static Bandwidth fromMhz(int mhz) {
+            return mhz == 40 ? BANDWIDTH_40 : BANDWIDTH_20;
+        }
     }
 
     public WfbLinkManager(Context context, LinkStatusListener status, WfbNgLink wfbNgLink) {
@@ -88,17 +93,9 @@ public class WfbLinkManager extends BroadcastReceiver {
         wifiChannel = channel;
     }
     public void setBandwidth(int bw) {
-        switch(bw)
-        {
-            case 20:
-                bandWidth = Bandwidth.BANDWIDTH_20;
-                break;
-            case 40:
-                bandWidth = Bandwidth.BANDWIDTH_40;
-                break;
-            default:
-                break;
-        }
+        // An unknown value used to leave bandWidth null, and startAdapter() then threw an NPE (audit X27).
+        if (bw != 20 && bw != 40) Log.w(TAG, "unsupported bandwidth " + bw + " MHz, using 20");
+        bandWidth = Bandwidth.fromMhz(bw);
     }
 
     @Override

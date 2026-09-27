@@ -183,6 +183,28 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
                 Context.MODE_PRIVATE).getInt("wifi-channel", context.getResources().getInteger(R.integer.default_wifi_channel));
     }
 
+    /** Set by XrVideoActivity when XR could not start: shown here, where a dialog is visible, and no autostart. */
+    static final String EXTRA_XR_ERROR = "com.openipc.pixelpilot.XR_ERROR";
+
+    /** Shows why XR could not start (audit X13: a Toast from the immersive activity was never visible). */
+    private boolean showXrError(Intent intent) {
+        String error = intent == null ? null : intent.getStringExtra(EXTRA_XR_ERROR);
+        if (error == null) return false;
+        intent.removeExtra(EXTRA_XR_ERROR);
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("XR mode could not start")
+                .setMessage(error + "\n\nClose any open system dialog, then use Video > Launch XR.")
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+        return true;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        showXrError(intent);
+    }
+
     /** Opens the immersive viewer (Quest); the 2D activity pauses and releases the adapter. */
     private void launchXr() {
         Intent xr = new Intent(this, XrVideoActivity.class);
@@ -362,7 +384,9 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
         // Headsets go straight to the immersive viewer on a fresh launch (Library or adapter attach);
         // leaving XR comes back here, to the settings.
-        if (savedInstanceState == null && LatencyExperiments.load(this).xrAutostart) {
+        // Not after an XR start failure: that would bounce straight back into the failing XR start.
+        boolean xrFailed = showXrError(getIntent());
+        if (savedInstanceState == null && !xrFailed && LatencyExperiments.load(this).xrAutostart) {
             launchXr();
         }
     }

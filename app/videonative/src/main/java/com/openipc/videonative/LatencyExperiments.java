@@ -175,6 +175,19 @@ public final class LatencyExperiments {
     }
 
     /** Compact description of the active levers, for the stats panel and measurement logs. */
+    /**
+     * True when {@code o} would start the XR mode the same way: every XR lever read once at XR start (refresh rate,
+     * timestamps, layer shape/size/flip, perf level, thread hints, phase report, latch offset). Decoder levers are
+     * not compared: those restart the whole process from the menu.
+     */
+    public boolean sameXrStart(LatencyExperiments o) {
+        return xrRefreshHz == o.xrRefreshHz && xrUseTimestamps == o.xrUseTimestamps && xrLayerShape == o.xrLayerShape
+                && xrPerfSustainedHigh == o.xrPerfSustainedHigh && Float.compare(xrFovDeg, o.xrFovDeg) == 0
+                && xrFlipVertical == o.xrFlipVertical && xrThreadHints == o.xrThreadHints
+                && java.util.Objects.equals(xrPhaseReport, o.xrPhaseReport)
+                && xrLatchToDisplayUs == o.xrLatchToDisplayUs;
+    }
+
     public String summary() {
         StringBuilder dec = new StringBuilder();
         if (lowLatencyDecoder) dec.append("LL ");

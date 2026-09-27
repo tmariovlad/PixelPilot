@@ -157,4 +157,13 @@ public class LatencyExperimentsTest {
         assertEquals(LatencyExperiments.DEFAULT_FOV_DEG, e.xrFovDeg, 0f);
         assertEquals(LatencyExperiments.LayerShape.QUAD, e.xrLayerShape);
     }
+
+    @Test public void sameXrStartComparesOnlyXrLevers() {
+        LatencyExperiments a = LatencyExperiments.from(new MapPrefs());
+        assertTrue(a.sameXrStart(LatencyExperiments.from(new MapPrefs())));
+        // a decoder lever alone does not need an XR restart (the menu restarts the process for those)
+        assertTrue(a.sameXrStart(LatencyExperiments.from(new MapPrefs().put(LatencyExperiments.KEY_DEC_PICTURE_ORDER, true))));
+        assertFalse(a.sameXrStart(LatencyExperiments.from(new MapPrefs().put(LatencyExperiments.KEY_XR_FOV_DEG, 80f))));
+        assertFalse(a.sameXrStart(LatencyExperiments.from(new MapPrefs().put(LatencyExperiments.KEY_XR_REFRESH_HZ, 90))));
+    }
 }
