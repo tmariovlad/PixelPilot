@@ -63,6 +63,49 @@ the latency cost at that band.
 
 ## Results
 
+**Phase 2: MCS × bitrate × FEC at 640×480 @ 167 fps, 17 / 12 / 8 dBm (2026-09-27 17:36–18:01, Quest on the balcony, air unit indoors).**
+- **Method.** One trace per power level ([ab_long.sh](../../scripts/quest/ab_long.sh)), 12 s steps, anchor `m1b2f46` between every state, each state N = 2 in two differently shuffled passes (N = 1 not used). A short extra run `p17b` added `m2b2f48` and `m2b3f46` at 17 dBm. Adaptive-link uplink live (~51 Quest TX/s in every step), W1 tunnel up. Build `cd5fa436`.
+- **Air unit.** Every run ended without ERR or reset, at 46–48 °C, and reverted to its pre-run state. `waybeam.json` was byte-identical to its backup after ~100 live bitrate sets.
+- **Quest.** Thermal status 0, CPU 54–56 °C (live HAL values), battery 96 %.
+- **Step alignment.** `--fit-offset` from packets/frame at 17 and 12 dBm (+0.25 / +0.27 s, within 0.07 s of the clocks). At 8 dBm loss makes packets/frame noisy: the fit moved 0.54 s, so the measured offset (+0.341 s) was used. Both give the same deltas within 0.05 ms.
+- **Data.** Per level: latency/loss [p17](data/measurements-2026-09-27-quest2-w2-480-p17.csv) · [p12](data/measurements-2026-09-27-quest2-w2-480-p12.csv) · [p8](data/measurements-2026-09-27-quest2-w2-480-p8.csv) · [p17b](data/measurements-2026-09-27-quest2-w2-480-p17b.csv); link [p17](data/link-2026-09-27-w2-480-p17.csv) · [p12](data/link-2026-09-27-w2-480-p12.csv) · [p8](data/link-2026-09-27-w2-480-p8.csv) · [p17b](data/link-2026-09-27-w2-480-p17b.csv); air step logs [p17](data/steps-2026-09-27-w2-480-p17.txt) · [p12](data/steps-2026-09-27-w2-480-p12.txt) · [p8](data/steps-2026-09-27-w2-480-p8.txt) · [p17b](data/steps-2026-09-27-w2-480-p17b.txt); Quest thermal [p17](data/thermal-2026-09-27-w2-480-p17.csv) · [p12](data/thermal-2026-09-27-w2-480-p12.csv) · [p8](data/thermal-2026-09-27-w2-480-p8.csv) · [p17b](data/thermal-2026-09-27-w2-480-p17b.csv).
+
+Each cell: Δ capture → decoded vs the anchor in the same trace · loss after FEC · frames without a decoded mark (of ~2800 per state; the anchor has ~24 000). "On air" = bitrate × n/k.
+
+| state (on air) | 17 dBm (RSSI 68.5) | 12 dBm (RSSI 64) | 8 dBm (RSSI 54) |
+|---|---|---|---|
+| `m1b2f46` anchor (3 Mbit/s) | 0 · 0.21 % · 25 (p17b: 0.18 %, 7/7145) | 0 · 0.28 % · 31 | 0 · **0.75 %** · 49 |
+| `m2b2f46` (3) | **−0.43 ms** · 0.32 % · 3 | **−0.13 ms** · 0.67 % · 7 | +1.71 · 7.3 % · 43 |
+| `m2b2f48` (4) | **−0.10 ms · 0.00 % · 0** (p17b) | – | +1.09 · 3.8 % · 21 |
+| `m2b3f46` (4.5) | +0.06 · 0.29 % · 1 (p17b) | – | +2.16 · 8.5 % · 41 |
+| `m2b4f46` (6) | +0.72 · 0.47 % · 0 | +1.04 · 1.86 % · 3 | +2.81 · 10.9 % · 38 |
+| `m2b4f48` (8) | +1.48 · 0.07 % · 1 | +1.55 · 0.66 % · 2 | +2.39 · 5.8 % · 21 |
+| `m3b4f46` (6) | +0.37 · 0.99 % · 1 | +2.42 · 11.9 % · 44 | +2.46 · 13.5 % · 48 |
+| `m4b4f46` (6) | +1.40 · 7.1 % · 15 | +1.78 · 10.3 % · 36 | – |
+| `m4b4f48` (8) | +0.93 · 3.6 % · 8 | +1.20 · 6.2 % · 28 | – |
+| `m4b4f816` (8) | +2.97 · 1.05 % · 3 | +3.24 · 2.85 % · 10 | – |
+| `m4b8f46` (12) | +2.85 · 9.2 % · 31 | +3.61 · 12.1 % · 69 | – |
+
+- **Loss before FEC depends on the MCS, not on the power alone** [PROVEN: link data]. At the same RSSI 68.5 it is ~5 % at MCS1–3 and ~15 % at MCS4. At RSSI 64 it is ~7–8 % at MCS1–2 and ~20 % at MCS3/4. At RSSI 54 it is 9 % at MCS1 and ~20 % at MCS2/3. MCS4 is not usable at this distance, and MCS3 only at 17 dBm.
+- **Low bitrate is the fastest here too.** `m2b2` is 1.15 ms ahead of `m2b4` at 17 dBm, as slot 2 found at 640×480 (bitrate 2000 = −4.5 ms vs 8000).
+- **FEC 4/8 costs almost nothing at low bitrate and removes the residual loss.** At 17 dBm `m2b2f48` loses 0 packets (4/6: 0.32 %) for +0.33 ms. At 8 dBm it halves the loss (7.3 % → 3.8 %).
+- **A longer block covers bursts, but costs about 2 ms.** At equal airtime (`m4b4`) 8/16 loses 1.05 % against 3.6 % for 4/8, for +2.0 ms of block fill [PROVEN: data].
+- **Latency deltas at 8 dBm are measured on the frames that survived.** Frames that complete through FEC repairs arrive late, so there Δ mostly reflects loss.
+- **Picture quality is not assessed.** At 167 fps, 2 Mbit/s is ~12 kbit per frame. Whether that looks acceptable has to be judged by the user in the headset [SPECULATION until then].
+
+**Operating envelope and policy table for the adaptive link (W1 phase 2).** This covers 640×480 @ 167 fps, this geometry and FEC k = 4 unless stated. The band edges are what the receiver can see: RSSI on the app's 0–100 scale and loss before FEC at the current MCS.
+
+| band (receiver view) | seen at | use | expected loss after FEC | Δ latency vs `m1b2f46` |
+|---|---|---|---|---|
+| RSSI ≥ ~68, loss before FEC ≤ ~6 % at MCS2 | 17 dBm | `m2b2f48` (more picture: `m2b3f46`, `m2b4f46`) | 0 % (0.29 / 0.47 %) | −0.1 ms (+0.1 / +0.7) |
+| RSSI ~64, loss before FEC ~8 % at MCS2 | 12 dBm | `m2b2f46`, or `m2b2f48` [INFERRED: not run at 12 dBm; 4/8 helped at 17 and 8] | 0.67 % | −0.1 ms |
+| RSSI ~54, loss before FEC ~20 % at MCS2 | 8 dBm | `m1b2f46` (MCS1) | 0.75 % | 0 |
+| worse | < 8 dBm | nothing at 480p keeps loss < 1 % [INFERRED: phase 1 at 5 dBm ≈ 8 dBm] | – | – |
+
+- Switch **down** one row when loss before FEC at the current MCS passes ~10 % (FEC 4/6 still held 0.3–0.7 % below that and broke at 15–20 %) [INFERRED: from the rows above].
+- Switch **up** only when the next row's MCS would see ≤ 6 %. RSSI rises ~4–5 points per row here. Hysteresis and time constants still have to be tested in closed loop in W1 phase 2 [SPECULATION until then].
+- **Pending:** the adaptive-link on/off A/B at 17 and 8 dBm (phase 3b), and the user's picture-quality check at 2–4 Mbit/s.
+
 **Phase 1: power ladder at 1080p90, MCS2, 8 Mbit/s, FEC 4/6 (2026-09-27 16:38, Quest on the balcony, air unit indoors).**
 - **Method.** Anchor `p17m2b8`; 12 / 8 / 5 dBm, N = 2 each, 12 s steps. Power rises went up in ≤ 3 dB steps 200 ms apart, so no step jumped +11 dB. The W1 tunnel was up (its TX adds nothing measurable to `tx=`: 2381 vs 2378 packets per 2 s), and the adaptive-link uplink was live.
 - **Step alignment.** Power does not change packets per frame, so the measured offset was used: Quest − air = 0.227 − (−0.040) = 0.267 s, ±~40 ms against the 2 s guard.
