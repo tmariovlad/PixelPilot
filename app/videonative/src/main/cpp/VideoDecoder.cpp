@@ -3,6 +3,9 @@
 //
 
 #include "VideoDecoder.h"
+
+#include <iomanip>
+#include <sstream>
 #include <unistd.h>
 #include <android/trace.h>
 #include <ctime>
@@ -200,6 +203,15 @@ bool VideoDecoder::configureAndStart(int idx, const DecoderLevers& levers)
         h264_configureAMediaFormat(mKeyFrameFinder, format);
     }
     applyDecoderLevers(format, levers);
+    // The SPS the decoder is configured with, as hex: scripts/quest/sps_vui.py reads it and says whether the stream
+    // signals max_num_reorder_frames = 0 (VUI bitstream_restriction), i.e. whether the decoder may hold frames.
+    {
+        const NALU&        sps = mKeyFrameFinder.getCSD0();
+        std::ostringstream hex;
+        hex << std::hex << std::setfill('0');
+        for (size_t i = 0; i < static_cast<size_t>(sps.getSize()); i++) hex << std::setw(2) << static_cast<int>(sps.getData()[i]);
+        MLOGD << "csd-0 " << hex.str();
+    }
     MLOGD << "Configuring decoder " << name << ": " << AMediaFormat_toString(format);
     const auto status = AMediaCodec_configure(decoder.codec[idx], format, decoder.window[idx], nullptr, 0);
     AMediaFormat_delete(format);
