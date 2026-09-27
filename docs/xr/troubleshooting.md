@@ -208,3 +208,10 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
     - `quest_adb.write_prefs` now reads the file back and raises if it differs, which covers `set_link_prefs.py`, `set_prefs` and `pref_ab.sh` ([test_quest_adb.py](../../scripts/quest/test_quest_adb.py)).
   - The committed tools were never affected: `pref_ab.sh` calls Python from bash.
   - Later that day the read-back guard failed a step that had actually landed (alink8 step 3, found by the [22] session). The read came too early or caught the file truncated by `cat >`: a race in the harness, not the app [INFERRED: the value was in effect, per [22]]. `write_prefs` now writes atomically (`cat > general.xml.tmp && mv general.xml.tmp general.xml`), so the app can never read an empty file either. It also reads back up to 3 times, ~100 ms apart, before it raises ([test_quest_adb.py](../../scripts/quest/test_quest_adb.py): "first read differs, second ok").
+
+## "Truncated" 29-byte alink reports on the air unit (2026-09-27, not ours)
+
+alink_air counted ~1.2 % of the datagrams on :9999 as BAD, all 29 bytes long. It looked like the tunnel was cutting the Quest's reports. It was not:
+- The Quest sends only whole reports. Over 115 s, logcat has 521 reports of 51–53 characters of text, 56–58 B, and no send failures [PROVEN: `logcat | grep " message "`]. The app has one sender to 10.5.0.10:9999, `start_link_quality_thread`, with one format [PROVEN: grep of `app/`].
+- The air unit's diagnostic binary logged `src=192.168.100.55:9999`, recvfrom = 29. The payload, XOR-autokey 171, decodes to `{"system":{"get_sysinfo":{}}}`: a TP-Link Kasa discovery broadcast from the home LAN. It reached alink_air through the air unit's eth0 because alink_air binds 0.0.0.0:9999 [PROVEN: OpenIPC session's hex log]. The fix is a source filter in alink_air, on the air side.
+- Lesson: a truncated IP/UDP datagram does not reach a kernel socket, because the length and UDP checksum are checked. A short datagram on a socket bound to 0.0.0.0 is someone else's whole datagram, so log the source address first.
