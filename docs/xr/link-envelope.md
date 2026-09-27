@@ -126,6 +126,12 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **1080p90 at 8 Mbit/s (reference): stills taken but not committed.** They show a person in the flat. The origin remote is a GitHub fork, so they stay in the git-ignored `scripts/quest/out/quality_private/` until the user decides.
   - They make one thing plain: **1080p90 sees a much wider field than 480p167.** The whole room is in view, where 480p shows a narrow centre cut. 480p167 is a native crop of the sensor (mode index 7), while 1080p90 bins the full sensor (mode index 2) [PROVEN: waybeam `Sensor pad selected` log lines on the air unit, 2026-09-26/27; the FOV difference is visible in the stills]. For FPV that difference in view is as important as the pixel count.
   - Decode at 1080p90 was 1.43 ms (FPS 90–91) with lost 0.
+- **Second round with motion (21:36–21:43): the TV in the frame was on**, states `Q480_b2m` / `b4m` / `b8m` / `Q1080_b8m`, same settings.
+  - **The stills are not committed**, because the TV showed people. They are in `scripts/quest/out/quality_private/` for the user.
+  - Every still again showed lost 0.
+  - **With motion, the bitrate shows.** At 2 Mbit/s the moving TV picture is smeared and blocky. At 8 Mbit/s the same area keeps its edges with far fewer blocks [INFERRED: visual comparison of the stills; different TV frames in each, so this is qualitative].
+  - Decode rose with motion: 3.36–3.43 ms at 480p (2.44–2.75 ms on the static scene) and 1.48 ms at 1080p90.
+  - The air unit recorded the exact bitstreams in parallel (OpenIPC project, local), for a frame-exact comparison.
 
 **Adaptive range test: the adaptive link against a fixed setting (2026-09-27 19:01–19:18, 480p167, app build `b8b6dcc3` with the 4 Hz / FEC 1/3 uplink, air receiver `alink_air` using the two-state policy above: hold_down 2000 ms, stale 1500 ms).**
 - **Method.** One 1260 s trace. The air unit changed only the TX power: 17 12 8 12 17 12 8 12 17 dBm, 30 s steps, rises in ≤ 3 dB steps. Three phases ran back to back:
