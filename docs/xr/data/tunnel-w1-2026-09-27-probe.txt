@@ -1,0 +1,12 @@
+# w1_before 2026-09-27 16:33:55 pid 6189 window 20s
+  ping: 10 packets transmitted, 0 received, 100% packet loss, time 4564ms
+  fps: 80.000000 80.000000 75.000000 73.000000 86.000000 
+  quality mean: 289 (n=266)
+  tun0 rx/tx packets: 0 2286 -> 0 2552
+  tun0 delta: rx +0 tx +266 in 20s
+# w1_after 2026-09-27 16:35:25 pid 6189 window 20s
+  fps: 78.000000 80.000000 81.000000 80.000000 
+  quality mean: 287 (n=212)
+  tun0 rx/tx packets: 73 3230 -> 92 3430
+  tun0 delta: rx +19 tx +200 in 20s
+# ping from the Quest, 30 pkts after the tunnel came up: 24 received (20% loss), rtt 3.883/10.391/27.669 ms; tun0 rx/tx 41/3104 -> 73/3226
