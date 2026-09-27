@@ -161,3 +161,11 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
 - **TX power 30 vs 20 (NOLO:on vs LO:on):** not judged. NOLO's steps sit earlier in the run (steps 0, 3), so the loss trend biases it; capture → decoded differs by 0.3 ms, inside the step-to-step spread.
 - Conclusion: turning adaptive link off does stop the Quest's ~50 frames/s, but on this link that traffic did not measurably cost loss or latency. Keep adaptive link as the user sets it; the tunnel to the air unit is still one-way (see above), so the uplink carries nothing useful today.
 - **`usbipd attach` fails on PC-VLAD: "The VBoxUsbMon driver is not correctly installed"** (2026-09-27). The `VBoxUSBMon` service is missing and the `usbipd` service is stopped. A USB adapter cannot be passed to WSL until usbipd-win is repaired. Details and options: [station-mode.md](station-mode.md) (W0 procedure, step 2).
+- **Plugging the RTL back in while the headset sleeps crashes the XR build** (2026-09-27 13:58–13:59, build `33f098a2`).
+  - `USB_DEVICE_ATTACHED` started `VideoActivity`, which died in `startVpnService` (`VideoActivity.java:361` → `:1390`). The XR autostart then crashed twice, on the same background-service restriction: `BackgroundServiceStartNotAllowedException` in `WfbServiceControl.startVpn` (`WfbServiceControl.java:24`), called from `XrVideoActivity.onResume` (`XrVideoActivity.java:114`) [PROVEN: logcat crash + events buffers].
+  - It is the release-0.21.0 bug (see [Build and install](../xr-quest.md#build-and-install)) on a new path: attach while the display is off. Not fixed.
+  - Workaround: wake the display (`am broadcast -a com.oculus.vrpowermanager.prox_close`), force-stop, launch XR. It then decoded 89 fps.
+- **WSL has no outbound internet after the WinNAT restart of 2026-09-27** (the usbipd port fix, [station-mode.md](station-mode.md)).
+  - DNS works; HTTPS and ICMP to the internet time out. `wsl --shutdown` did not help. The Windows host itself is fine.
+  - No pre-change baseline exists, so the WinNAT restart is suspected, not proven. Get-NetNat also lists the user's `DongleNAT` (192.168.5.0/24).
+  - Open. Candidate fixes: `Restart-Service hns` plus `wsl --shutdown`, or a reboot.
