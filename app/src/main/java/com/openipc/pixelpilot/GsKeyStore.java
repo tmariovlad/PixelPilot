@@ -20,8 +20,21 @@ public final class GsKeyStore {
     private static final String TAG = "pixelpilot";
     private static final String PREFS = "general";
     private static final String KEY = "gs.key";
+    /**
+     * wfb-ng reads the key file as the rx secret key then the tx public key, 32 bytes each
+     * (wfb-ng/src/rx.cpp:283-292, crypto_box_SECRETKEYBYTES + crypto_box_PUBLICKEYBYTES). A shorter file makes the
+     * native link constructor throw across JNI, which kills the app.
+     */
+    public static final int KEY_BYTES = 64;
 
     private GsKeyStore() {}
+
+    /** Null when {@code key} has the size wfb-ng needs, otherwise why it does not. */
+    public static String problem(byte[] key) {
+        if (key == null || key.length == 0) return "no gs.key";
+        if (key.length != KEY_BYTES) return "gs.key is " + key.length + " bytes, wfb-ng needs " + KEY_BYTES;
+        return null;
+    }
 
     /** Seeds the prefs from the bundled default key if none was imported yet. */
     public static void ensureDefault(Context context) {
@@ -49,6 +62,10 @@ public final class GsKeyStore {
         while ((length = inputStream.read(buffer)) != -1) {
             result.write(buffer, 0, length);
         }
+        String problem = problem(result.toByteArray());
+        if (problem != null) {
+            throw new IOException(problem);     // keep the previous key rather than store one that crashes the link
+        }
         SharedPreferences.Editor editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit();
         editor.putString(KEY, Base64.encodeToString(result.toByteArray(), Base64.DEFAULT));
         editor.apply();
@@ -58,7 +75,8 @@ public final class GsKeyStore {
     public static void copyToFiles(Context context) {
         File file = new File(context.getApplicationContext().getFilesDir(), KEY);
         byte[] keyBytes = get(context);
-        Log.d(TAG, "Using gs.key:" + VideoActivity.bytesToHex(keyBytes) + "; Copying to" + file.getAbsolutePath());
+        // Length only: the key is a secret and logcat is readable over adb.
+        Log.d(TAG, "Using gs.key (" + keyBytes.length + " bytes); copying to " + file.getAbsolutePath());
         try (OutputStream out = new FileOutputStream(file)) {
             out.write(keyBytes, 0, keyBytes.length);
         } catch (IOException e) {

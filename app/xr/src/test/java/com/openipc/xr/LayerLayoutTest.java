@@ -33,11 +33,40 @@ public class LayerLayoutTest {
         assertTrue(l.videoHeightM > 0f && !Float.isNaN(l.videoHeightM));
     }
 
-    @Test public void statsPanelSitsBelowVideoWithGap() {
+    @Test public void statsPanelHangsRightUnderTheVideo() {
         LayerLayout l = LayerLayout.compute(1280, 720, 60f, 2f, false, true);
         float statsTop = l.statsY + l.statsHeightM / 2f;
-        assertTrue(statsTop < -l.videoHeightM / 2f);
-        assertEquals(l.statsWidthM / 2f, l.statsHeightM, EPS);   // 512x256 image aspect
+        assertEquals(-l.videoHeightM / 2f, statsTop, EPS);
+        assertEquals(l.statsWidthM / 4f, l.statsHeightM, EPS);   // 1024x256 image aspect
+        assertEquals(l.videoWidthM / 2f, l.statsWidthM, EPS);
         assertEquals(l.videoZ, l.statsZ, EPS);
+    }
+
+    @Test public void alertPanelSitsInsideTheVideosLowerPart() {
+        for (float fov = 40f; fov <= 90f; fov += 10f) {
+            for (boolean cyl : new boolean[]{false, true}) {
+                LayerLayout l = LayerLayout.compute(1920, 1080, fov, 2f, cyl, true, true);
+                float top = l.statsY + l.statsHeightM / 2f, bottom = l.statsY - l.statsHeightM / 2f;
+                assertTrue("fov " + fov, bottom > -l.videoHeightM / 2f);   // inside the video, above its edge
+                assertTrue("fov " + fov, top < 0f);                        // lower half only
+            }
+        }
+    }
+
+    @Test public void alertPanelIsCloserToTheLineOfSight() {
+        for (float fov = 40f; fov <= 90f; fov += 10f) {
+            LayerLayout normal = LayerLayout.compute(1920, 1080, fov, 2f, false, true, false);
+            LayerLayout alert = LayerLayout.compute(1920, 1080, fov, 2f, false, true, true);
+            double normalDeg = Math.toDegrees(Math.atan(-normal.statsY / 2f));
+            double alertDeg = Math.toDegrees(Math.atan(-alert.statsY / 2f));
+            assertTrue("fov " + fov, alertDeg < normalDeg);
+            assertTrue("fov " + fov + ": " + alertDeg, alertDeg < 21.0);
+        }
+    }
+
+    @Test public void sixArgumentOverloadIsTheNormalPlacement() {
+        LayerLayout a = LayerLayout.compute(1280, 720, 60f, 2f, false, true);
+        LayerLayout b = LayerLayout.compute(1280, 720, 60f, 2f, false, true, false);
+        assertEquals(a.statsY, b.statsY, EPS);
     }
 }

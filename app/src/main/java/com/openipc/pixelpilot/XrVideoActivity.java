@@ -16,6 +16,7 @@ import com.openipc.wfbngrtl8812.WfbNGStats;
 import com.openipc.wfbngrtl8812.WfbNGStatsChanged;
 import com.openipc.wfbngrtl8812.WfbNgLink;
 import com.openipc.xr.LayerLayout;
+import com.openipc.xr.SignalState;
 import com.openipc.xr.XrBridge;
 
 import java.util.Locale;
@@ -49,17 +50,29 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private volatile boolean destroying;
     private volatile DecodingInfo lastDecoding;
     private volatile WfbNGStats lastLink;
+    private volatile long lastLinkNs;
     private volatile String linkStatus = "";
+    private volatile String udpFallback;   // non-null: no adapter, video may still arrive over Wi-Fi here
+    // What the pilot is told about the video (NO SIGNAL / WRONG KEY / ...). UI thread only.
+    private final SignalState signal = new SignalState();
+    private boolean panelOverVideo;        // the panel sits over the video while signal.needsAction(). UI thread.
     private volatile int videoW, videoH;
 
     private final Runnable statsTick = new Runnable() {
         @Override
         public void run() {
+            // Drained once per tick: the signal state and the phase meter read the same frames.
+            long[] frames = videoPlayer != null ? videoPlayer.drainFrameReadyTimes() : new long[0];
+            updateSignal(frames);
+            if (signal.needsAction() != panelOverVideo && xr != null) {
+                panelOverVideo = signal.needsAction();
+                applyLayout();                     // moves only the panel quad; nothing on the video path
+            }
             XrStatsRenderer renderer = stats;
-            if (renderer != null) renderer.draw(statsLines());
+            if (renderer != null) renderer.draw(signal.message(), signal.needsAction(), statsLines());
             XrBridge bridge = xr;
-            if (bridge != null && phase != null && videoPlayer != null) {
-                phase.tick(videoPlayer.drainFrameReadyTimes(), bridge.displayGrid());
+            if (bridge != null && phase != null) {
+                phase.tick(frames, bridge.displayGrid());
             }
             if (bridge != null && experiments.xrThreadHints && videoPlayer != null) {
                 // Receiver/decoder threads are recreated with the decoder, so keep refreshing.
@@ -96,6 +109,13 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
 
         // Launched directly (Quest library) the 2D activity never ran: provide the key ourselves.
         GsKeyStore.ensureDefault(this);
+        String keyProblem = GsKeyStore.problem(GsKeyStore.get(this));
+        if (keyProblem != null) {
+            // The native link would throw on this key and kill the app; say so in the headset instead.
+            Log.e(TAG, "wfb-ng link not started: " + keyProblem);
+            signal.setConfigError(keyProblem + " - import it in the 2D screen");
+            return;
+        }
         GsKeyStore.copyToFiles(this);
         wfbLink = new WfbNgLink(this);
         wfbLink.SetWfbNGStatsChanged(this);
@@ -107,11 +127,13 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     protected void onResume() {
         super.onResume();
         if (xr == null) return;
-        wfbLinkManager.register();
-        wfbLinkManager.setChannel(VideoActivity.getChannel(this));
-        wfbLinkManager.setBandwidth(VideoActivity.getBandwidth(this));
-        wfbLinkManager.refreshAdapters();
-        wfbLinkManager.startAdapters();
+        if (wfbLinkManager != null) {
+            wfbLinkManager.register();
+            wfbLinkManager.setChannel(VideoActivity.getChannel(this));
+            wfbLinkManager.setBandwidth(VideoActivity.getBandwidth(this));
+            wfbLinkManager.refreshAdapters();
+            wfbLinkManager.startAdapters();
+        }
         if (!vpnBinding.bind(this, false)) {
             onLinkStatus("VPN not granted - start PixelPilot in 2D once to allow it");
         }
@@ -123,8 +145,10 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         super.onPause();
         if (xr == null) return;
         ui.removeCallbacks(statsTick);
-        wfbLinkManager.unregister();
-        wfbLinkManager.stopAdapters();
+        if (wfbLinkManager != null) {
+            wfbLinkManager.unregister();
+            wfbLinkManager.stopAdapters();
+        }
         vpnBinding.unbind(this);
     }
 
@@ -142,6 +166,13 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             phase.close();
             phase = null;
         }
+        // Each XR launch creates its own link and player; release what would otherwise keep this destroyed
+        // activity reachable (the link's stats Timer thread, the player's callback). Adapters stopped in onPause.
+        if (wfbLink != null) {
+            wfbLink.close();
+            wfbLink = null;
+        }
+        if (videoPlayer != null) videoPlayer.setIVideoParamsChanged(null);
         super.onDestroy();
     }
 
@@ -178,6 +209,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             videoPlayer.start();
             videoAttached = true;
         }
+        signal.reset(System.nanoTime());   // attachVideo runs on the UI thread, like the stats tick
         Log.i(TAG, "video attached to the compositor surface");
     }
 
@@ -187,12 +219,14 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             videoPlayer.stopAndRemoveReceiverDecoder(0);
             videoAttached = false;
         }
+        lastDecoding = null;               // no stale fps/resolution after a sleep/wake or reattach
         Log.i(TAG, "video detached");
     }
 
     private LayerLayout currentLayout() {
         return LayerLayout.compute(videoW, videoH, experiments.xrFovDeg, LayerLayout.DEFAULT_DISTANCE_M,
-                experiments.xrLayerShape == LatencyExperiments.LayerShape.CYLINDER, experiments.xrFlipVertical);
+                experiments.xrLayerShape == LatencyExperiments.LayerShape.CYLINDER, experiments.xrFlipVertical,
+                panelOverVideo);
     }
 
     private void applyLayout() {
@@ -217,6 +251,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
 
     @Override
     public void onWfbNgStatsChanged(WfbNGStats data) {
+        lastLinkNs = System.nanoTime();
         lastLink = data;
     }
 
@@ -227,7 +262,20 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
 
     @Override
     public void onUdpFallbackAddress(String udpUrl) {
-        linkStatus = "No adapter - push RTP to " + udpUrl;
+        udpFallback = udpUrl;              // kept apart from linkStatus, so neither hides the other
+    }
+
+    private void updateSignal(long[] frames) {
+        DecodingInfo d = lastDecoding;
+        long periodNs = d != null && d.currentFPS > 1 ? (long) (1e9 / d.currentFPS) : 0;
+        WfbNGStats l = lastLink;
+        SignalState.Link link = l == null ? SignalState.Link.NONE
+                : new SignalState.Link(l.count_p_all, l.count_p_dec_ok, l.count_p_dec_err);
+        long now = System.nanoTime();
+        long statsAge = l == null ? Long.MAX_VALUE : now - lastLinkNs;
+        boolean adapter = wfbLink != null && wfbLink.isRunning();
+        if (adapter) udpFallback = null;
+        signal.update(now, frames, periodNs, adapter, link, statsAge);
     }
 
     private String[] statsLines() {
@@ -237,19 +285,21 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         DecodingInfo d = lastDecoding;
         WfbNGStats l = lastLink;
         return new String[]{
-                String.format(Locale.US, "XR %s Hz (req %.0f)  comp GPU %s ms  drop %s",
-                        num(info.refreshHz), info.requestedHz, num(info.compositorGpuMs), num(info.droppedFrames)),
-                d == null ? "video: waiting for stream"
+                l == null ? "link: no stats" : String.format(Locale.US,
+                        "link: sig %d  pkt %d  lost %d  fec %d  bad %d  decerr %d", l.avg_rssi, l.count_p_all,
+                        l.count_p_lost, l.count_p_fec_recovered, l.count_p_bad, l.count_p_dec_err),
+                d == null ? "video: no decoded frames yet"
                         : String.format(Locale.US, "%dx%d  %.0f fps  %.1f Mbit/s", videoW, videoH, d.currentFPS,
                         d.currentKiloBitsPerSecond / 1000f),
                 d == null ? "" : String.format(Locale.US, "decode %.2f ms  parse %.2f ms  wait %.2f ms",
                         d.avgTotalDecodingTime_ms, d.avgParsingTime_ms, d.avgWaitForInputBTime_ms),
-                "dec: " + videoPlayer.getDecoderSummary(),
-                phase == null ? "" : phase.summaryLine(),
-                "exp: " + experiments.summary(),
-                l == null ? "link: no stats" : String.format(Locale.US, "link: rssi %d  lost %d  fec %d  bad %d",
-                        l.avg_rssi, l.count_p_lost, l.count_p_fec_recovered, l.count_p_bad),
                 linkStatus,
+                udpFallback == null ? "" : "no adapter: video accepted at " + udpFallback,
+                phase == null ? "" : phase.summaryLine(),
+                String.format(Locale.US, "XR %s Hz (req %.0f)  comp GPU %s ms  drop %s",
+                        num(info.refreshHz), info.requestedHz, num(info.compositorGpuMs), num(info.droppedFrames)),
+                "dec: " + videoPlayer.getDecoderSummary(),
+                "exp: " + experiments.summary(),
         };
     }
 

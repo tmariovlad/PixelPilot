@@ -66,6 +66,17 @@ public class WfbNgLink implements WfbNGStatsChanged {
         return !linkThreads.isEmpty();
     }
 
+    /**
+     * Ends this link's stats timer and drops the callback, so a destroyed owner (e.g. XrVideoActivity, which creates a
+     * link per launch) is no longer reachable from a live Timer thread. Call after {@link #stopAll}. The native
+     * instance is not freed here; the timer was the only thing keeping it and its owner busy.
+     */
+    public void close() {
+        timer.cancel();
+        timer.purge();
+        statsChanged = null;
+    }
+
     public void refreshKey() {
         nativeRefreshKey(nativeWfbngLink);
     }
