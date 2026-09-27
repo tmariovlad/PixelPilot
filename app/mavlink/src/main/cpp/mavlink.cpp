@@ -27,6 +27,7 @@
 
 #include "mavlink/common/mavlink.h"
 #include "mavlink.h"
+#include "HomePosition.h"
 #include "ListenerLifecycle.h"
 
 #define TAG "pixelpilot"
@@ -56,6 +57,7 @@ long distance_meters_between(double lat1, double lon1, double lat2, double lon2)
 }
 
 std::atomic<bool> latestMavlinkDataChange = false;
+static HomePosition g_home;   // listener thread only
 
 // Closes the socket on every way out of listen() (a failed bind or setsockopt used to leak it, and the leaked
 // socket kept port 14550 bound).
@@ -133,18 +135,12 @@ void listen(int mavlink_port, const std::atomic<bool> &stop) {
                         tmp32 = mavlink_msg_heartbeat_get_custom_mode(&msgMav);
                         tmp8 = mavlink_msg_heartbeat_get_base_mode(&msgMav);
                         latestMavlinkData.flight_mode = 0;
-                        if (tmp8 & MAV_MODE_FLAG_SAFETY_ARMED) {
-                            latestMavlinkData.telemetry_arm = 1;
-                            if (latestMavlinkData.gps_fix_type != 0) {
-                                latestMavlinkData.telemetry_lat_base = latestMavlinkData.telemetry_lat;
-                                latestMavlinkData.telemetry_lon_base = latestMavlinkData.telemetry_lon;
-                            } else {
-                                latestMavlinkData.telemetry_lat_base = 0;
-                                latestMavlinkData.telemetry_lon_base = 0;
-                            }
-                        } else {
-                            latestMavlinkData.telemetry_arm = 0;
-                        }
+                        latestMavlinkData.telemetry_arm = (tmp8 & MAV_MODE_FLAG_SAFETY_ARMED) ? 1 : 0;
+                        // Home is taken once per arming (HomePosition.h); it used to follow the aircraft.
+                        g_home.update(latestMavlinkData.telemetry_arm == 1, latestMavlinkData.gps_fix_type,
+                                      latestMavlinkData.telemetry_lat, latestMavlinkData.telemetry_lon);
+                        latestMavlinkData.telemetry_lat_base = g_home.set ? g_home.lat : 0;
+                        latestMavlinkData.telemetry_lon_base = g_home.set ? g_home.lon : 0;
 
                         switch (tmp32) {
                             case PLANE_MODE_MANUAL:
@@ -249,8 +245,7 @@ void listen(int mavlink_port, const std::atomic<bool> &stop) {
                                 &msgMav);
                         latestMavlinkData.telemetry_lon = mavlink_msg_global_position_int_get_lon(
                                 &msgMav);
-                        if (latestMavlinkData.gps_fix_type != 0 &&
-                            latestMavlinkData.telemetry_arm == 1) {
+                        if (latestMavlinkData.gps_fix_type != 0 && g_home.set) {
                             latestMavlinkData.telemetry_distance = 100 * distance_meters_between(
                                     latestMavlinkData.telemetry_lat_base / 10000000.0,
                                     latestMavlinkData.telemetry_lon_base / 10000000.0,

@@ -18,3 +18,8 @@ target_include_directories(listener_lifecycle_test PRIVATE ${CMAKE_CURRENT_SOURC
 target_link_libraries(listener_lifecycle_test GTest::gtest_main pthread)
 include(GoogleTest)
 gtest_discover_tests(listener_lifecycle_test)
+
+add_executable(home_position_test HomePosition_test.cpp)
+target_include_directories(home_position_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_link_libraries(home_position_test GTest::gtest_main)
+gtest_discover_tests(home_position_test)
