@@ -19,6 +19,18 @@ Excluded on purpose, because they are already known and handled:
 
 ---
 
+## Status of the fixes (updated 2026-09-27)
+
+| Fix | Items | Commit | On the headset |
+|---|---|---|---|
+| 1 signal state + alert | X10, X06, X08, X09, X05 | `8d7728e`, `487832b` (+ native X08 `dc58403` by 2c6ae8) | verified ([xr-quest.md](../../xr-quest.md#use)) |
+| 2 readable panel | X11 | `8d7728e`, `487832b` | verified |
+| 5 per-launch leaks | X21 | `8d7728e` | weak evidence (N=2) |
+| key validation | X24 | `8d7728e` | verified (32-byte key → SETUP, no crash) |
+| 4 link self-healing, USB attach/permission | X17, X14 (part X15) | `c27f8aa` (Java), `ac740e0` (native guard) | not yet |
+| 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2` | not yet |
+| X15 attach pulls XR to 2D | X15 | open: needs a physical replug to confirm before the manifest trampoline | - |
+
 ## 0. Findings at a glance (ranked; details below)
 
 Score = impact (1-5) × likelihood (1-5) / effort (1-5). Every score is an estimate, so read the scores as [INFERRED].

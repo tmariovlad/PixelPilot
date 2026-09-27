@@ -58,10 +58,11 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
   - **Amber** clears on its own: `WAITING FOR VIDEO` after a start, `VIDEO RESUMING` until 5 fresh frames arrive.
 - Then the lines, in order:
   1. `link: sig pkt lost fec bad decerr`;
-  2. resolution / fps / bitrate;
-  3. decode times;
-  4. link status and, without an adapter, the UDP address that still accepts video;
-  5. phase, XR, decoder and levers.
+  2. flight telemetry from MAVLink (UDP 14550): battery V and V per cell, A, altitude, ARMED, GPS sats, distance home; `telemetry: lost n s ago` after 2 s without data (commit `a6c28f2`, not yet verified on the headset);
+  3. resolution / fps / bitrate;
+  4. decode times;
+  5. link status and, without an adapter, the UDP address that still accepts video. `link lost - restarting (n)` means an RX thread that ended on its own is being restarted with a backoff (`c27f8aa`, `ac740e0`);
+  6. phase, XR, decoder and levers.
   Long lines end in "…".
 - The classifier is `app/xr/…/SignalState.java`. The panel is redrawn on the UI thread every 250 ms and adds nothing to the decode path.
 - Why these changes: [XR robustness/UX audit](xr/research/2026-09-27-xr-ux-audit.md).
