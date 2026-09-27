@@ -12,11 +12,14 @@ each mode's budget is a sum of segments that do not need it:
   spread    frame first -> last packet on the Quest             (Quest trace, per mode)  [PROVEN]
   decode    frame complete -> decoded                           (Quest trace, per mode)  [PROVEN]
   wait      decoded -> compositor latch                         (Quest trace, per mode)  [PROVEN]
+            for a source within ~1 % of the display rate the phase slides too slowly for one short trace (a full
+            cycle takes a minute or more), so --uniform-wait MODE replaces the measured wait by its long-run mean,
+            half a display period [INFERRED: phase uniform over time without a lock]
   panel     latch -> light, backlight strobe                    (same for every mode)    [INFERRED]
 Decision: a mode wins only if its whole range is below every other mode's range; the shared constants cancel, so
 the ranges that matter are the per-mode ISP intervals. Otherwise: "equal within uncertainty".
 
-Usage: python3 w3_budget.py air.tsv out/mode_<mode>_<rep>.txt ...
+Usage: python3 w3_budget.py air.tsv out/mode_<mode>_<rep>.txt ... [--uniform-wait <mode>]
   air.tsv: tab-separated with a header containing mode, s_air_med, readout_ms, isp_lo, isp_hi (one row per mode;
   several rows for one mode are averaged). Quest files are named mode_<mode>_<rep>.txt (mode_segment.sh output).
 """
@@ -93,7 +96,15 @@ def decide(res):
     return None
 
 
+DISPLAY_PERIOD_MS = 8.3545  # Quest 2 "120 Hz" = 119.70 Hz (docs/xr/compositor-phase.md, calibration)
+
+
 def main(argv):
+    uniform = set()
+    while "--uniform-wait" in argv:
+        i = argv.index("--uniform-wait")
+        uniform.add(argv[i + 1])
+        del argv[i:i + 2]
     with open(argv[1], newline="", encoding="utf-8") as fh:
         air = parse_air(csv.DictReader(fh, delimiter="\t"))
     quest = defaultdict(list)
@@ -101,7 +112,15 @@ def main(argv):
         m = re.match(r"mode_([^_]+)_", Path(f).name)
         if m:
             quest[m.group(1)].append(parse_quest(Path(f).read_text(encoding="utf-8", errors="ignore")))
+    for mode in uniform:
+        for rep in quest.get(mode, []):
+            rep["wait_measured"] = rep.get("wait")
+            rep["wait"] = DISPLAY_PERIOD_MS / 2
     res = budget(air, quest)
+    for mode in uniform:
+        if mode in res:
+            print(f"mode {mode}: latch wait = {DISPLAY_PERIOD_MS / 2:.2f} ms (half a display period, uniform phase); "
+                  f"measured in the traces: {[r.get('wait_measured') for r in quest[mode]]}")
     cols = ["capture", "readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait", "pkt_per_frame", "lost_pct"]
     print("mode  n  " + "  ".join(f"{c:>7s}" for c in cols) + "   total G2G range (ms)")
     for mode in sorted(res, key=lambda m: res[m]["own_hi"]):
