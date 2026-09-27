@@ -52,6 +52,25 @@ def tx_rates(fields):
     return rates
 
 
+def drop_stale(counters, rtp_ts):
+    """The app clears the wfb-ng counts only when its RX loop handles a video packet (WfbngLink.cpp, should_clear_stats),
+    so while nothing arrives each ~300 ms poll repeats the last interval's counts. A sample with no RTP arrival since
+    the previous sample is such a repeat: its counts become 0 and its RSSI is dropped. rtp_ts: sorted arrival times."""
+    from bisect import bisect_right
+    out = {}
+    for name, samples in counters.items():
+        fixed, prev = [], None
+        for t, v in samples:
+            fresh = prev is None or bisect_right(rtp_ts, t) > bisect_right(rtp_ts, prev)
+            if fresh:
+                fixed.append((t, v))
+            elif name != "ppxr_wfb_rssi":
+                fixed.append((t, 0))
+            prev = t
+        out[name] = fixed
+    return out
+
+
 def window_stats(samples, a, b, per_second):
     """samples [(ts, value)] sorted; sum/s (per_second) or mean of the values with a <= ts < b; None if empty."""
     vals = [v for t, v in samples if a <= t < b]
@@ -108,6 +127,9 @@ def load(path, air_offset_s, steps_path, thermal_path):
     counters = {n: [(r.ts, r.value) for r in q(
         "select c.ts, c.value from counter c join counter_track t on c.track_id=t.id "
         f"where t.name='{n}' order by c.ts")] for n in WFB_COUNTERS}
+    rtp_ts = [r.ts for r in q("select c.ts from counter c join counter_track t on c.track_id=t.id "
+                              "where t.name='ppxr_rtp_seq' order by c.ts")]
+    counters = drop_stale(counters, rtp_ts)
     snap = q("select ts, clock_value from clock_snapshot where clock_name='REALTIME' order by ts limit 1")
     rt_off = snap[0].clock_value - snap[0].ts
     steps, end = read_steps(steps_path, air_offset_s, rt_off)

@@ -80,6 +80,18 @@ def test_per_step_rates_pre_fec_loss_and_thermal():
     assert s["B"]["quest_status_max"] == 1.0
 
 
+def test_drop_stale_zeroes_polls_with_no_rtp_since_the_previous_poll():
+    from ab_link import drop_stale
+    # polls every 0.3 s; RTP packets arrive until 0.99 s, then the link is dead: the 1.2 s poll still covers
+    # arrivals in (0.9, 1.2], the polls from 1.5 s on repeat stale counts
+    polls = [0.3 * k * S for k in range(1, 8)]
+    counters = {"ppxr_wfb_p_all": [(t, 40) for t in polls], "ppxr_wfb_rssi": [(t, 70) for t in polls]}
+    rtp = [x * 0.01 * S for x in range(0, 100)]
+    out = drop_stale(counters, rtp)
+    assert [v for _, v in out["ppxr_wfb_p_all"]] == [40, 40, 40, 40, 0, 0, 0]
+    assert len(out["ppxr_wfb_rssi"]) == 4
+
+
 def test_missing_counters_give_none_not_a_crash():
     steps = [(0.0, "A")]
     rows = per_step({}, [], [{"t": 0.0}], steps, 12 * S, 2 * S)
