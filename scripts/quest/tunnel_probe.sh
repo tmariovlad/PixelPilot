@@ -21,6 +21,9 @@ tun() { qadb shell "grep tun0 /proc/net/dev" | awk '{print $3, $11}'; }  # rx_pa
   L=$(qadb logcat -d -v epoch --pid="$P" | awk -v t="$T0" '$1+0 >= t')
   echo "  fps: $(echo "$L" | grep -oE 'VideoDecoder: FPS:[0-9.]+' | sed 's/.*://' | tr '\n' ' ')"
   echo "  quality mean: $(echo "$L" | grep -oE 'quality -?[0-9]+' | awk '{s+=$2; n++} END{if (n) printf "%.0f (n=%d)", s/n, n; else print "n/a"}')"
+  # tunnel aggregator (radio port 32, air -> Quest) windows logged by builds >= dc58403
+  echo "  tunnel downlink: $(echo "$L" | grep -oE 'tunnel window: pkts [0-9]+ lost [0-9]+ fec_recovered [0-9]+' \
+    | awk '{p+=$4; l+=$6; r+=$8; n++} END{if (n) printf "pkts %d lost %d fec_recovered %d (%d windows)", p, l, r, n; else print "no tunnel windows logged"}')"
   echo "  tun0 rx/tx packets: ${A:-absent} -> ${B:-absent}" | awk '{print}'
   if [ -n "$A" ] && [ -n "$B" ]; then
     set -- $A $B
