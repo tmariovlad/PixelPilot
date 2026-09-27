@@ -28,7 +28,7 @@ Excluded on purpose, because they are already known and handled:
 | 5 per-launch leaks | X21 | `8d7728e` | weak evidence (N=2) |
 | key validation | X24 | `8d7728e` | verified (32-byte key → SETUP, no crash) |
 | 4 link self-healing, USB attach/permission | X17, X14 (part X15) | `c27f8aa` (Java), `ac740e0` (native guard) | not yet |
-| 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2` | not yet |
+| 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2`, home fix `11cb1a7` | telemetry line verified with synthetic MAVLink; 2D↔XR restart weakly; home fix not yet |
 | X15 attach pulls XR to 2D | X15 | open: needs a physical replug to confirm before the manifest trampoline | - |
 
 ## 0. Findings at a glance (ranked; details below)

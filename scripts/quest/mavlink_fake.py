@@ -5,7 +5,9 @@ Messages and field order follow the app's own MAVLink headers (app/mavlink/src/m
 HEARTBEAT (armed), SYS_STATUS (battery), GPS_RAW_INT (fix, sats), GLOBAL_POSITION_INT (position, relative alt).
 Expected XR line for the defaults: "BAT 15.8V 3.95V/c 4.2A  ALT 12.3m  ARMED  GPS 9  HOME ...".
 
-Usage: python3 mavlink_fake.py [seconds=30] [host=QUEST_HOST] [port=14550]
+Usage: python3 mavlink_fake.py [seconds=30] [host=QUEST_HOST] [port=14550] [--arm-after S]
+  --arm-after S  disarmed for the first S seconds, then armed: checks that home is taken at arming and that
+                 HOME then grows as the position drifts north (~1.1 m per 0.2 s tick).
 """
 import struct
 import socket
@@ -55,15 +57,23 @@ def global_position_int(lat, lon, rel_alt_mm=12_300, hdg_cdeg=9000):
 
 
 def main():
-    secs = float(sys.argv[1]) if len(sys.argv) > 1 else 30
-    host = sys.argv[2] if len(sys.argv) > 2 else env.QUEST_HOST
-    port = int(sys.argv[3]) if len(sys.argv) > 3 else 14550
+    args = sys.argv[1:]
+    arm_after = 0.0
+    if "--arm-after" in args:
+        k = args.index("--arm-after")
+        arm_after = float(args[k + 1])
+        del args[k:k + 2]
+    secs = float(args[0]) if len(args) > 0 else 30
+    host = args[1] if len(args) > 1 else env.QUEST_HOST
+    port = int(args[2]) if len(args) > 2 else 14550
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     lat0, lon0 = 444_268_000, 261_025_000          # 1e-7 deg
-    seq, end, i = 0, time.time() + secs, 0
+    t0 = time.time()
+    seq, end, i = 0, t0 + secs, 0
     while time.time() < end:
-        lat, lon = lat0 + i * 100, lon0                  # drift north ~1 cm per tick, so HOME grows
-        for msg, payload in ((GPS_RAW_INT, gps_raw_int(lat, lon)), (HEARTBEAT, heartbeat()),
+        armed = time.time() - t0 >= arm_after
+        lat, lon = lat0 + i * 100, lon0                  # drift north ~1.1 m per tick (1e-5 deg), so HOME grows
+        for msg, payload in ((GPS_RAW_INT, gps_raw_int(lat, lon)), (HEARTBEAT, heartbeat(armed)),
                              (SYS_STATUS, sys_status()), (GLOBAL_POSITION_INT, global_position_int(lat, lon))):
             s.sendto(frame(seq, msg, payload), (host, port))
             seq += 1

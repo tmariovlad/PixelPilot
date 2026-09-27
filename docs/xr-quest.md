@@ -58,7 +58,7 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
   - **Amber** clears on its own: `WAITING FOR VIDEO` after a start, `VIDEO RESUMING` until 5 fresh frames arrive.
 - Then the lines, in order:
   1. `link: sig pkt lost fec bad decerr`;
-  2. flight telemetry from MAVLink (UDP 14550): battery V and V per cell, A, altitude, ARMED, GPS sats, distance home; `telemetry: lost n s ago` after 2 s without data (commit `a6c28f2`, not yet verified on the headset);
+  2. flight telemetry from MAVLink (UDP 14550): battery V and V per cell, A, altitude, ARMED, GPS sats, distance home; `telemetry: lost n s ago` after 2 s without data (commit `a6c28f2`). Verified on the headset with synthetic MAVLink sent from the PC ([mavlink_fake.py](../scripts/quest/mavlink_fake.py); the air unit sends none): the line showed exactly the values sent ([screenshot](xr/img/w5-panel-telemetry.jpg)). No latency cost: the old/new build A/B gave −0.18 ms capture → decoded ([data](xr/data/2026-09-27-w5b-telemetry-build-ab.csv)). HOME stayed 0 m because upstream reset home on every armed heartbeat. Fixed in `11cb1a7`, where home is taken once per arming; not yet re-checked on the headset;
   3. resolution / fps / bitrate;
   4. decode times;
   5. link status and, without an adapter, the UDP address that still accepts video. `link lost - restarting (n)` means an RX thread that ended on its own is being restarted with a backoff (`c27f8aa`, `ac740e0`);
