@@ -98,6 +98,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         GsKeyStore.copyToFiles(this);
         wfbLink = new WfbNgLink(this);
         wfbLink.SetWfbNGStatsChanged(this);
+        LinkOptions.apply(this, wfbLink);
         wfbLinkManager = new WfbLinkManager(this, this, wfbLink);
     }
 

@@ -1087,34 +1087,13 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     }
 
     void initDefaultOptions() {
-        SharedPreferences prefs = getSharedPreferences("general", MODE_PRIVATE);
-        boolean adaptiveEnabled = prefs.getBoolean("adaptive_link_enabled", true);
-        int adaptiveTxPower = prefs.getInt("adaptive_tx_power", 20);
-        wfbLink.nativeSetAdaptiveLinkEnabled(adaptiveEnabled);
-        wfbLink.nativeSetTxPower(adaptiveTxPower);
-        boolean fecEnabled = prefs.getBoolean("custom_fec_enabled", true);
-        wfbLink.nativeSetUseFec(fecEnabled ? 1 : 0);
-
-        // LDPC and STBC default options
-        boolean ldpcEnabled = prefs.getBoolean("custom_ldpc_enabled", true);
-        wfbLink.nativeSetUseLdpc(ldpcEnabled ? 1 : 0);
-
-        boolean stbcEnabled = prefs.getBoolean("custom_stbc_enabled", true);
-        wfbLink.nativeSetUseStbc(stbcEnabled ? 1 : 0);
-
-        setFecThresholdsFromPrefs();
+        LinkOptions.apply(this, wfbLink);
     }
 
     // Read FEC thresholds from prefs and call native method to apply
     private void setFecThresholdsFromPrefs() {
-        SharedPreferences prefs = getSharedPreferences("general", MODE_PRIVATE);
-        int lostTo5 = prefs.getInt("fec_lost_to_5", 2);
-        int recTo4 = prefs.getInt("fec_recovered_to_4", 30);
-        int recTo3 = prefs.getInt("fec_recovered_to_3", 24);
-        int recTo2 = prefs.getInt("fec_recovered_to_2", 14);
-        int recTo1 = prefs.getInt("fec_recovered_to_1", 8);
         if (wfbLink != null) {
-            wfbLink.setFecThresholds(lostTo5, recTo4, recTo3, recTo2, recTo1);
+            LinkOptions.applyFecThresholds(this, wfbLink);
         }
     }
 
