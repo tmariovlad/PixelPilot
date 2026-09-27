@@ -4,6 +4,7 @@
 #include "FecChangeController.h"
 #include "SignalQualityCalculator.h"
 #include "TxFrame.h"
+#include "UplinkSchedule.h"
 
 extern "C" {
 #include "wfb-ng/src/zfex.h"
@@ -63,6 +64,16 @@ class WfbngLink {
     // Runtime configurable PHY parameters
     bool ldpc_enabled{true};
     bool stbc_enabled{true};
+
+    // Uplink airtime (UplinkSchedule.h). The report rate applies at once; FEC and MCS at the next link start.
+    void set_uplink(const UplinkConfig &c) {
+        std::lock_guard<std::mutex> lock(uplink_mutex);
+        uplink = c.sanitized();
+    }
+    UplinkConfig uplink_config() {
+        std::lock_guard<std::mutex> lock(uplink_mutex);
+        return uplink;
+    }
 
     std::map<int, std::shared_ptr<IRtlDevice>> rtl_devices;
 
@@ -131,6 +142,8 @@ class WfbngLink {
     std::string filesDir;
     std::string keyPath;
     std::recursive_mutex thread_mutex;
+    std::mutex uplink_mutex;
+    UplinkConfig uplink;
     std::unique_ptr<WiFiDriver> wifi_driver;
     std::shared_ptr<TxFrame> txFrame;
     uint32_t video_channel_id_be;

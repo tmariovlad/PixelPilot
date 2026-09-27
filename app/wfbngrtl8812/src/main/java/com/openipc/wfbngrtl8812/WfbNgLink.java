@@ -23,6 +23,13 @@ public class WfbNgLink implements WfbNGStatsChanged {
     public void setFecThresholds(int lostTo5, int recTo4, int recTo3, int recTo2, int recTo1) {
         nativeSetFecThresholds(nativeWfbngLink, lostTo5, recTo4, recTo3, recTo2, recTo1);
     }
+    // Uplink airtime (adaptive-link reports + tunnel uplink, radio port 160): report rate, FEC k/n, MCS.
+    // The rate applies at once, FEC and MCS at the next link start (UplinkSchedule.h).
+    public static native void nativeSetUplink(long nativeInstance, int rateHz, int fecK, int fecN, int mcs);
+
+    public void setUplink(int rateHz, int fecK, int fecN, int mcs) {
+        nativeSetUplink(nativeWfbngLink, rateHz, fecK, fecN, mcs);
+    }
     public static String TAG = "pixelpilot";
 
     // Load the native library on application startup.

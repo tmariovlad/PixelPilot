@@ -39,3 +39,8 @@ add_executable(link_guard_test LinkGuard_test.cpp)
 target_include_directories(link_guard_test PRIVATE ${SRC})
 target_link_libraries(link_guard_test GTest::gtest_main)
 gtest_discover_tests(link_guard_test)
+
+add_executable(uplink_schedule_test UplinkSchedule_test.cpp)
+target_include_directories(uplink_schedule_test PRIVATE ${SRC})
+target_link_libraries(uplink_schedule_test GTest::gtest_main)
+gtest_discover_tests(uplink_schedule_test)

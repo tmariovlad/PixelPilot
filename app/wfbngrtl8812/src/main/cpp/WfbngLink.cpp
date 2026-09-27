@@ -267,16 +267,24 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                 args->keypair = keyPath;
                 args->stbc = stbc_enabled;
                 args->ldpc = ldpc_enabled;
-                args->mcs_index = 0;
+                const UplinkConfig up = uplink_config();
+                args->mcs_index = up.mcs;
                 args->vht_mode = false;
                 args->short_gi = false;
                 args->bandwidth = 20;
-                args->k = 1;
-                args->n = 5;
+                args->k = static_cast<uint8_t>(up.fec_k);
+                args->n = static_cast<uint8_t>(up.fec_n);
                 args->radio_port = wfb_tx_port;
 
-                __android_log_print(
-                    ANDROID_LOG_ERROR, TAG, "radio link ID %d, radio PORT %d", args->link_id, args->radio_port);
+                __android_log_print(ANDROID_LOG_ERROR,
+                                    TAG,
+                                    "radio link ID %d, radio PORT %d, uplink FEC %d/%d MCS%d, %d reports/s",
+                                    args->link_id,
+                                    args->radio_port,
+                                    up.fec_k,
+                                    up.fec_n,
+                                    up.mcs,
+                                    up.rate_hz);
 
                 // One TxFrame per TX thread: stop() is final for an instance (its loop exits and never restarts), so a
                 // link that comes back (sleep/wake, replug) needs a fresh one. Reusing the old one made run() return at
@@ -520,11 +528,9 @@ void WfbngLink::start_link_quality_thread(int fd) {
             return;
         }
 
+        UplinkSchedule schedule;
         while (!this->adaptive_link_should_stop) {
             auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
-#if defined(ANDROID_DEBUG_RSSI) || true
-            __android_log_print(ANDROID_LOG_WARN, TAG, "quality %d", quality.quality);
-#endif
             time_t currentEpoch = time(nullptr);
             const auto map_range =
                 [](double value, double inputMin, double inputMax, double outputMin, double outputMax) {
@@ -568,6 +574,18 @@ void WfbngLink::start_link_quality_thread(int fd) {
                     fec.bump(1); // Bump to FEC 1
                 }
 
+                // Only when due (UplinkSchedule.h): every uplink frame costs video airtime.
+                const int fec_change = fec.value();
+                const int64_t now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                           std::chrono::steady_clock::now().time_since_epoch())
+                                           .count();
+                const int interval_ms = uplink_config().interval_ms();
+                if (!schedule.due(now_ms, interval_ms, quality.idr_code, fec_change)) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(UplinkSchedule::kPollMs));
+                    continue;
+                }
+                schedule.sent(now_ms, interval_ms, quality.idr_code, fec_change);
+
                 snprintf(message + sizeof(len),
                          sizeof(message) - sizeof(len),
                          "%ld:%d:%d:%d:%d:%d:%f:0:-1:%d:%s\n",
@@ -578,7 +596,7 @@ void WfbngLink::start_link_quality_thread(int fd) {
                          quality.lost_last_second,
                          quality.quality,
                          quality.snr,
-                         fec.value(),
+                         fec_change,
                          quality.idr_code.c_str());
                 len = strlen(message + sizeof(len));
                 len = htonl(len);
@@ -595,7 +613,7 @@ void WfbngLink::start_link_quality_thread(int fd) {
                     break;
                 }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(UplinkSchedule::kPollMs));
         }
         close(sockfd);
         this->adaptive_link_should_stop = false;
@@ -678,4 +696,10 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     link->fec_recovered_to_3 = recTo3;
     link->fec_recovered_to_2 = recTo2;
     link->fec_recovered_to_1 = recTo1;
+}
+extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetUplink(
+    JNIEnv *env, jclass clazz, jlong nativeInstance, jint rateHz, jint fecK, jint fecN, jint mcs) {
+    WfbngLink *link = reinterpret_cast<WfbngLink *>(nativeInstance);
+    if (!link) return;
+    link->set_uplink(UplinkConfig{rateHz, fecK, fecN, mcs});
 }
