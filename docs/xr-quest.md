@@ -58,7 +58,7 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
   - **Amber** clears on its own: `WAITING FOR VIDEO` after a start, `VIDEO RESUMING` until 5 fresh frames arrive.
 - Then the lines, in order:
   1. `link: sig pkt lost fec bad decerr`;
-  2. flight telemetry from MAVLink (UDP 14550): battery V and V per cell, A, altitude, ARMED, GPS sats, distance home; `telemetry: lost n s ago` after 2 s without data (commit `a6c28f2`). Verified on the headset with synthetic MAVLink sent from the PC ([mavlink_fake.py](../scripts/quest/mavlink_fake.py); the air unit sends none): the line showed exactly the values sent ([screenshot](xr/img/w5-panel-telemetry.jpg)). No latency cost: the old/new build A/B gave −0.18 ms capture → decoded ([data](xr/data/2026-09-27-w5b-telemetry-build-ab.csv)). HOME stayed 0 m because upstream reset home on every armed heartbeat. Fixed in `11cb1a7`, where home is taken once per arming; not yet re-checked on the headset;
+  2. flight telemetry from MAVLink (UDP 14550): battery V and V per cell, A, altitude, ARMED, GPS sats, distance home; `telemetry: lost n s ago` after 2 s without data (commit `a6c28f2`). Verified on the headset with synthetic MAVLink sent from the PC ([mavlink_fake.py](../scripts/quest/mavlink_fake.py); the air unit sends none): the line showed exactly the values sent ([screenshot](xr/img/w5-panel-telemetry.jpg)). No latency cost: the old/new build A/B gave −0.18 ms capture → decoded ([data](xr/data/2026-09-27-w5b-telemetry-build-ab.csv)). HOME stayed 0 m because upstream reset home on every armed heartbeat. Fixed in `11cb1a7`, where home is taken once per arming; verified on the headset on 2026-09-27 (disarmed `HOME …`, then 48 m and 155 m as the position drifts; [screenshots](xr/img/w5-panel-home.jpg));
   3. resolution / fps / bitrate;
   4. decode times;
   5. link status and, without an adapter, the UDP address that still accepts video. `link lost - restarting (n)` means an RX thread that ended on its own is being restarted with a backoff (`c27f8aa`, `ac740e0`);
@@ -173,6 +173,7 @@ The dated result sections that used to follow here were moved verbatim into topi
   ([station mode](xr/station-mode.md): the W0 hardware-ACK gate is GO; [scope](xr/research/2026-09-27-devourer-station-scope.md)).
 - **[Link operating envelope](xr/link-envelope.md)** (W2): at 640x480@167 on the balcony, MCS2 at 2 Mbit/s is the fastest (FEC 4/6: −0.4 ms vs MCS1; with FEC 4/8 it lost nothing at 17 dBm); MCS4 unusable, MCS3 only at 17 dBm; FEC 8/16 covers bursts for +2 ms. TX power × MCS × bitrate × FEC, loss before/after FEC,
   capture → decoded and temperatures; the envelope and the policy table for the adaptive link.
+- **[App fixes, final check on the headset](xr/research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27)** (W5, OLD `7b8baadb` vs NEW `b8b6dcc3`): no latency regression (+0.2 ms, inside the spread between steps), the per-frame input sync costs 68 µs p50 after `xrEndFrame`, phase-to-latch unchanged, home verified. Rebuilding the decoder on an SPS change made a live mode switch slower (decoder part 84 vs 50 ms mean, N = 4), so it was removed (`501094a`).
 - **[Troubleshooting](xr/troubleshooting.md)**: build traps, Horizon OS quirks, adapter and link problems.
 - **Raw data** ([xr/data/](xr/data/)): [decoder levers](xr/data/measurements-2026-09-26-quest2-decoder-levers.csv) ·
   [key isolation](xr/data/measurements-2026-09-26-quest2-key-isolation.csv) ·
@@ -181,7 +182,8 @@ The dated result sections that used to follow here were moved verbatim into topi
   [phase lock](xr/data/measurements-2026-09-26-quest2-phase-lock.csv) ·
   [APFPV vs wfb-ng, slot 1 (withdrawn)](xr/data/2026-09-27-apfpv-vs-wfb-slot1.csv) ·
   [APFPV vs wfb-ng at 8000, slot 4A](xr/data/2026-09-27-apfpv-vs-wfb-slot4a.csv) ·
-  [W0 hardware-ACK gate](xr/data/2026-09-27-w0-ack-gate.csv).
+  [W0 hardware-ACK gate](xr/data/2026-09-27-w0-ack-gate.csv) ·
+  final slot: [build A/B](xr/data/2026-09-27-final-build-ab.csv), [latch and input sync](xr/data/2026-09-27-final-latch-input.txt), [mode switches](xr/data/2026-09-27-final-switch-gap.txt).
 - **Research behind this mode**: [Quest 2 research synthesis](xr/research/2026-09-26-quest2/00-INDEX-SYNTHESIS.md)
   (latency numbers and measurement protocol, APK options, system tweaks, compositor latch timing).
 

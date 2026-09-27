@@ -28,13 +28,25 @@ Excluded on purpose, because they are already known and handled:
 | 5 per-launch leaks | X21 | `8d7728e` | weak evidence (N=2) |
 | key validation | X24 | `8d7728e` | verified (32-byte key → SETUP, no crash) |
 | 4 link self-healing, USB attach/permission | X17, X14 (part X15) | `c27f8aa` (Java), `ac740e0` (native guard) | not yet |
-| 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2`, home fix `11cb1a7` | telemetry line verified with synthetic MAVLink; 2D↔XR restart weakly; home fix not yet |
+| 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2`, home fix `11cb1a7` | telemetry line verified with synthetic MAVLink; 2D↔XR restart weakly; home fix verified in the [final slot](#final-slot-on-the-headset-2026-09-27) |
 | X15 attach pulls XR to 2D | X15 | open: needs a physical replug to confirm before the manifest trampoline | - |
 | XR start errors visible, levers re-applied, bandwidth fallback, loop back-off | X13, X04, X27, X25 | `a8b35de` | not yet |
 | minimal input in XR (panel detail / hide) | X01 | `3a37a88` | not yet |
 | VPN null establish() / bind leak | X26 | fixed by session 2c6ae8 ("survives a null establish()") | - |
-| decoder rebuilds after failures and on SPS change | X23 | `c0f41f2` (SPS part: the 2c6ae8 session's patch) | not yet (final slot: live mode switch, old vs new) |
+| decoder rebuilds after failures (a, b); ~~and on SPS change (c)~~ | X23 | `c0f41f2`; (c) withdrawn in `501094a` | (c) measured slower on a live mode switch and removed ([final slot](#final-slot-on-the-headset-2026-09-27)); (a, b) not triggered on the headset yet |
 | open | X18 (autostart during OS dialogs) | - | - |
+
+### Final slot on the headset (2026-09-27)
+
+OLD = the canonical build, APK md5 `7b8baadb` (`e889479`; pulled from the Quest and its md5 checked). NEW = APK md5 `b8b6dcc3`
+(`d8b6498`: every fix above plus the uplink change of the 2c6ae8 session). Real link, air unit on REC (480p167 / 2000 kbit/s /
+FEC 4/8 / MCS2 / 12 dBm), Guardian paused. Data: [build A/B](../data/2026-09-27-final-build-ab.csv) ([steps](../data/2026-09-27-final-build-ab-steps.txt)),
+[latch and input sync](../data/2026-09-27-final-latch-input.txt), [mode switches](../data/2026-09-27-final-switch-gap.txt).
+
+1. **No latency regression.** One in-trace A/B, OLD NEW OLD NEW NEW OLD × 45 s ([ab_segments.py](../../../scripts/quest-latch/ab_segments.py), drift fitted on OLD). NEW is +0.20 ms at frame complete and +0.21 ms decoded. The decoder's share is equal (decoded − last 1.48 vs 1.49 ms), fps 166.5 on both, loss ≈ 0. The shift is in arrival and lies inside the spread of the steps (OLD 1.60–1.73, NEW 1.74–2.02 ms) [PROVEN: data above].
+2. **The input sync costs nothing on the frame path.** `ppxr_input_sync` p50 68 µs, p95 79 µs, max 0.33 ms (2 traces × ~1045 frames). It runs after `xrEndFrame`. Phase-to-latch is unchanged: ready → latch mean 3.05–3.19 ms, about 35 % of frames miss a latch, on both builds (2 OLD, 4 NEW traces) [PROVEN: data above].
+3. **Home is taken once per arming** (`11cb1a7`). With `mavlink_fake.py 40 --arm-after 5`: `disarmed … HOME …`, then `ARMED … HOME 48m` and `HOME 155m` as the fake position drifts north [PROVEN: [screenshots](../img/w5-panel-home.jpg)].
+4. **Live mode switch 480p167 ↔ 1080p90 without an app restart** (N = 4 per build; the OpenIPC session restarted waybeam on a timed loop, isperr 0 on all 8). The picture is gone ~3.0–3.2 s per switch on both builds, almost all of it the air unit's restart (first new RTP packet ~3.0–3.1 s after the last frame). Decoder part (first new RTP packet → first decoded frame): **OLD 55 / 52 / 45 / 48 ms (mean 50), NEW 131 / 5 / 99 / 101 ms (mean 84)**. Decode after every switch was healthy on both (1.47 ms at 480p, 2.33 ms at 1080p), so the 78 ms stall that (c) was meant to cure ([troubleshooting](../troubleshooting.md)) did not occur on either build [PROVEN: data above]. (c), rebuilding the decoder on every SPS change, is therefore slower and brings no measured benefit. It was removed in `501094a` (APK md5 `b2249f15`; host gtests 55/55); (a) and (b) stay. The build without (c) gets its own check (4 switches + a short latency A/B) in a later slot. Its extra ~35 ms is [INFERRED: from the per-switch numbers] the release and re-creation of the MediaCodec pair, compared with the decoder adapting in place.
 
 ## 0. Findings at a glance (ranked; details below)
 

@@ -81,5 +81,5 @@ Filled in by the coordinator as results come back. Details are in each owner's t
   - native exceptions no longer cross JNI;
   - link self-healing and USB attach (needs a physical replug to verify);
   - XR input (A/X = panel mode, B/Y = hide);
-  - decoder recovery (X23; checked in the final slot).
+  - decoder recovery (X23; checked in the final slot: the SPS-change rebuild (c) was slower on a live switch and was removed in `501094a`; [result](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27)).
 - **Canonical Quest build.** 7b8baadb (`e889479`). The final build from HEAD is checked in the last slot.

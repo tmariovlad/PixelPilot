@@ -1,0 +1,31 @@
+# Live air-unit mode switch 480p167 <-> 1080p90 (both 2000 kbit/s, FEC 4/8, MCS2, 12 dBm), no app restart.
+# switch_gap.py --min-gap-ms 500 --after-s 5 on one 300 s ab_long trace per build. OLD = APK md5 7b8baadb (e889479), NEW = b8b6dcc3 (d8b6498, with X23 c).
+# Air loop by the OpenIPC session: waybeam restarted on the new config; air epochs (PC ~ air + 0.041 s).
+
+## OLD
+   at_s  frozen_ms  stream_ms  decoder_ms  decode_ms_after
+   51.6       3170       3115          55     2.36 (n=451)
+  106.6       3054       3003          52     1.46 (n=831)
+  161.6       3143       3099          45     2.35 (n=451)
+  216.6       3064       3016          48     1.48 (n=833)
+
+1790524080 T0_ready4_OLD
+1790524110 SWITCH old_1080_1 fps=90.41 isperr_new=0 md5=baaef129 1920x1080@90 VENC 90.41 fps 1986 kbps
+1790524165 SWITCH old_480_2 fps=166.47 isperr_new=0 md5=3d8a1456 640x480 VENC 166.46 fps 2288 kbps
+1790524220 SWITCH old_1080_2 fps=90.41 isperr_new=0 md5=baaef129 VENC 90.41 fps 1990 kbps
+1790524275 SWITCH old_480_3 fps=166.46 isperr_new=0 md5=3d8a1456 VENC 166.46 fps 2276 kbps
+1790524289 DONE /etc/waybeam.json md5=3d8a1456
+
+## NEW
+   at_s  frozen_ms  stream_ms  decoder_ms  decode_ms_after
+   33.3       3231       3100         131     2.32 (n=451)
+   88.3       3018       3012           5     1.47 (n=827)
+  144.3       3200       3101          99     2.33 (n=452)
+  199.3       3108       3007         101     1.47 (n=833)
+
+1790524396 T0_ready4_new
+1790524426 SWITCH new_1080_1 fps=90.41 isperr_new=0 md5=baaef129 VENC 90.41 fps 2037 kbps
+1790524481 SWITCH new_480_2 fps=166.47 isperr_new=0 md5=3d8a1456 VENC 166.46 fps 2286 kbps
+1790524536 SWITCH new_1080_2 fps=90.41 isperr_new=0 md5=baaef129 VENC 90.41 fps 1970 kbps
+1790524591 SWITCH new_480_3 fps=166.46 isperr_new=0 md5=3d8a1456 VENC 166.46 fps 2281 kbps
+1790524606 DONE /etc/waybeam.json md5=3d8a1456
