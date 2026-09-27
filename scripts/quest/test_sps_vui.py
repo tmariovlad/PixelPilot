@@ -104,6 +104,24 @@ def test_emulation_prevention_bytes_are_removed():
     assert rbsp(b"\x00\x00\x01\x67\x00\x00\x03\x01\xff") == b"\x00\x00\x01\xff"
 
 
+# Real SPS from the air unit (waybeam, 480p167), logged by the app as csd-0 on 2026-09-27, and the OpenIPC AU-10
+# offline rewrite of it (openipc repo e0e0050): the live one allows reordering, the rewritten one rules it out.
+LIVE_480P167 = "0000000167420020e901407b42000007d200092a1808"
+REWRITTEN_480P167 = "0000000167420020e901407b42000007d200092a181e1108d4"
+
+
+def test_real_waybeam_sps_allows_reordering():
+    s = parse_sps(bytes.fromhex(LIVE_480P167))
+    assert (s["profile_idc"], s["width"], s["height"], s["vui"]) == (66, 640, 480, True)
+    assert not s["bitstream_restriction"]
+
+
+def test_au10_rewrite_of_the_real_sps_rules_it_out():
+    s = parse_sps(bytes.fromhex(REWRITTEN_480P167))
+    assert s["bitstream_restriction"] and s["max_num_reorder_frames"] == 0 and s["max_dec_frame_buffering"] == 1
+    assert (s["width"], s["height"]) == (640, 480)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

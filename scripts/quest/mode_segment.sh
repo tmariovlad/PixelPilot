@@ -32,6 +32,9 @@ qadb pull /data/misc/perfetto-traces/mode.pftrace "$(cygpath -w "$TRACE")" >/dev
   echo "prefs: $(qadb shell run-as "$PKG" cat shared_prefs/general.xml | grep -v gs.key | grep -oE 'name="[^"]+"( value="[^"]+")?' | tr '\n' ' ')"
   echo "decoder: $(qadb logcat -d --pid="$(qadb shell pidof "$PKG")" 2>/dev/null | grep -m1 -oE 'Configuring decoder [^:]*:.*' | grep -oE '(width|height|low-latency|vendor\.qti-ext-dec-picture-order\.enable|operating-rate)[^,]*' | tr '\n' ' ')"
   qadb logcat -d -t 400 --pid="$(qadb shell pidof "$PKG")" 2>/dev/null | grep -oE "VideoDecoder: FPS:[0-9.]+|Decoding:[0-9.]+" | tail -4 | tr '\n' ' '; echo
+  # the SPS the decoder was configured with (builds >= e889479) and whether it rules out frame reordering
+  SPS=$(qadb logcat -d --pid="$(qadb shell pidof "$PKG")" 2>/dev/null | grep -oE "csd-0 [0-9a-f]+" | tail -1)
+  [ -n "$SPS" ] && echo "sps: $SPS" && echo "$SPS" | python3 sps_vui.py - | sed 's/^/sps: /'
   python3 "$QUEST_LATCH/transport_analyze.py" "$(cygpath -w "$TRACE")"
   python3 "$QUEST_LATCH/latch_analyze.py" "$(cygpath -w "$TRACE")" | grep -E "vsync callbacks|frame ready|missed a latch|queued="
 } 2>&1 | tee "$OUT"
