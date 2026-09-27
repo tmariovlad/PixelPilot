@@ -1,0 +1,14 @@
+# d1080s_b 2026-09-27 21:12:15 pid 23667
+prefs: name="od_enabled" value="false" name="adaptive_link_enabled" value="true" 
+decoder: 
+Decoding:1.539000 VideoDecoder: FPS:56.000000 
+1939 packets / 787 frames in 8.7s = 90.3 fps, 2.46 pkt/frame; sequence gaps (lost before the app) = 13, reordered = 0
+frame packet spread (first -> last packet)     n=  781 mean=  2.07 p5=  0.19 p50=  0.86 p95=  4.86 max= 23.13 ms
+air/headset clock drift removed: +61.4 us/s (+61 ppm)
+transport excess, frame complete (last pkt)    n=  787 mean=  2.70 p5=  0.25 p50=  1.04 p95= 12.09 max= 44.28 ms
+transport excess, first packet                 n=  787 mean=  1.13 p5=  0.37 p50=  0.51 p95=  3.01 max= 44.76 ms
+frame complete -> decoded frame ready          n=  785 mean=  1.89 p5=  1.52 p50=  1.81 p95=  2.49 max=  5.38 ms
+no vsync callbacks in this trace: vsync-phase lines skipped
+frame ready (queueBuffer) -> latch           n= 715 mean=  4.10 p5=  0.24 p50=  4.49 p95=  7.53 max=  8.19 ms
+frames that missed a latch (wait > half a period): 53.4 %
+decoded frames queued=781 latched=715 (never shown=66)

@@ -10,6 +10,8 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 
 **The number.** The recommended setup (**REC**: 640×480 @ 167 fps, 2000 kbit/s, FEC 4/8, MCS2) gives **27.4–32.7 ms** glass-to-glass. The original setup (1080p90, 8000 kbit/s, FEC 4/6) gives 46.6–51.9 ms, so REC is **19.2 ms faster (−37 %)**. It is also more robust: loss 0.1 % instead of 2.1 %, no undecoded frames instead of 1.2 %, and 2 radio packets per frame instead of 8.4. Measured per segment, N = 2, palindromic ([before / after](#before--after-the-original-setup-vs-the-recommended-one-2026-09-27-final)). The range comes from two inferred terms: the ISP and the panel.
 
+**Field of view (W3c):** 480p167 shows only 33 % × 44 % of the sensor. A wider view costs **+6.3 ms** at 720p120 (66 × 66 %, the same sharpness), or **+9.1 ms** at 1080p90 scaled to 848×480 (99 × 98 %, about 2.2× softer). With the O112 pin, 480p167 now starts at 26.7 ms ([W3c](#field-of-view-against-latency-480p167-vs-720p120-vs-1080p90-scaled-w3c-2026-09-27)).
+
 **The 20–25 ms target is not reached on Quest 2.** About 12 ms of REC's 27.4 ms floor is fixed: the panel (latch → light, 10.2 ms minimum) and the air → Quest floor (1.9 ms).
 
 **What worked:**
@@ -175,3 +177,31 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 - **Encode is bimodal on the air unit [PROVEN: sidecar per frame, base b, n = 8137].** 76 % of frames take 6.0–6.5 ms and 24 % take 8.0–9.0 ms, with nothing in between. The slow frames come in bursts of 1–10+, are not periodic by frame id, and the 10 s medians are stable. At 480p the slow fraction is near 50 %, so the median jumps between the two modes from one waybeam instance to the next: rec a 3.07 ms against rec b 1.90 ms, same config, same p95 of 3.57 ms. The first reading, "2000 kbit/s costs +1.1 ms of encode", was withdrawn for this reason. The table therefore uses the mean of a and b (2.59 ms). With every frame in the fast mode, REC would start at ~26.8 ms [INFERRED: s_air 2.0 instead of 2.59]. The cause of the bursts is an open air-side lever of −1…−2 ms [SPECULATION: a beat against another periodic load such as DMA/bus or CPU]; it is on the OpenIPC session's list.
 - **The 20–25 ms target is not reached.** In REC's 27.4 ms floor, the fixed parts are the panel (10.2 ms, latch → light) and the air → Quest floor (1.9 ms). What remains reachable: the encode bursts (−0.6 ms on average, up to −1.5 ms), and the latch wait (3.1 ms, since a 166 fps source overruns the 119.70 Hz display and needs no phase lock, W3b). Getting below 25 ms would take a shorter panel path than this Quest 2 offers [INFERRED: floor minus fixed terms].
 - **Not assessed:** picture quality at 480p / 2000 kbit/s. Setting REC as the default is the coordinator's / the user's decision.
+
+## Field of view against latency: 480p167 vs 720p120 vs 1080p90 scaled (W3c, 2026-09-27)
+
+**Question:** 480p167 is a narrow crop of the sensor, 33 % × 44 %. What does a wider view cost in latency? The three modes that run: **a480** = [7] 640×480 @ 167 fps (REC); **c720** = [6] 1280×720 @ 119.2 fps; **d1080s** = [2] 1920×1080 @ 90 fps binned, scaled in the VPE to 848×480 for encode. All at 2000 kbit/s, FEC 4/8, MCS2, 12 dBm, with the O112 thread pin active, so the encode is no longer bimodal. Same method as W3 and before / after: [w3_budget.py](../../scripts/quest-latch/w3_budget.py), order a → c → d → d → c → a (N = 2), waybeam and the app restarted in every segment, the air unit's sidecar running in parallel with each Quest trace. c720 runs within 1 % of the display rate, so its latch wait is the long-run mean, half a period (4.18 ms; measured 3.95 / 4.05). **RES_4 1472×816 @ 150 (FOV 76 × 75 %) was dropped:** with native encode, VENC ran at 0.48 fps with MainScl DropCnt +734 in 10 s, the same failure as the historical RES_4 [PROVEN: OpenIPC session, air 1790532076].
+
+| Mode | FOV (sensor share) | encode size | capture | readout | ISP (+VPE) | encode (median) | spread | decode | latch wait | pkt/frame | loss | undecoded | **total G2G** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **a480** 480p167 | 33 × 44 % | 640×480 | 3.00 | 2.34 | 1.5–3.5 | 1.87 | 1.05 | 1.69 | 3.10 | 1.79 | 0.06 % | 0.03 % | **26.7 – 32.0 ms** |
+| c720 720p120 | 66 × 66 % | 1280×720 | 4.19 | 3.54 | 2.0–4.0 | 3.38 | 1.48 | 2.05 | 4.18 | 2.08 | 0.14 % | 0.10 % | 33.0 – 38.3 ms |
+| d1080s 1080p90 → 848×480 | 99 × 98 % | 848×480 | 5.53 | 5.31 | 2.0–5.0 | 2.28 | 2.02 | 1.88 | 4.09 | 2.50 | 0.46 % | 0.32 % | 35.3 – 41.6 ms |
+
+[PROVEN per segment: [air TSV](data/w3c-2026-09-27-air.tsv), Quest outputs `data/w3c-2026-09-27-quest-<mode>_<rep>.txt`, [budget](data/w3c-2026-09-27-budget.txt). FOV and readout from the IMX415 mode table (OpenIPC `repos/tasks/research/imx415-fov-modes-2026-09-27.md`). The ranges carry the [INFERRED] ISP (for d1080s widened by the VPE scale, < 1 ms by source) and panel terms.]
+
+- **The trade-off:**
+  - c720 costs **+6.3 ms** for **3.0×** the field-of-view area;
+  - d1080s costs **+9.1 ms** for **6.7×**, i.e. the whole sensor;
+  - from c720 to d1080s: +2.8 ms for 2.2× more area.
+
+  All three ranges are disjoint (own ranges without the shared panel term: a480 < c720 < d1080s) [PROVEN: `decide`, budget file].
+- **Where d1080s's latency goes:**
+  - the longer frame period at 90 fps: capture phase +2.5 ms against a480;
+  - the full-height readout: +3.0 ms.
+
+  The VPE downscale costs no visible encode time. Encode at 848×480 takes 2.28 ms, against 1.87 ms at 640×480 and 3.38 ms at 1280×720, so a small encode size is what keeps d1080s close to c720.
+- **Detail per degree (angular resolution):** a480 has 640 px over 33.1 % of the sensor width, 19.3 px per %; c720 has 19.2 px per %; d1080s has only **8.6 px per %** [INFERRED: arithmetic]. d1080s shows the whole scene but ~2.2× softer; c720 keeps a480's sharpness over 3× the area. The screenshots per mode are with the session that took them (pixelpilot-xr-22).
+- **Robustness:** d1080s lost more (0.46 %, 5 and 13 gaps) than c720 (0.14 %) and a480 (0.06 %). Its frames are 2.5 packets against 1.8 [PROVEN]. Whether that is the mode or the time of day is not settled at N = 2 [SPECULATION].
+- **With the O112 pin, encode is unimodal**: a480 encode p95 1.92 ms, against 3.57 ms without the pin. a480's floor drops from 27.4 (before / after) to **26.7 ms** [PROVEN: air rows].
+- **Reading:** for the lowest latency, a480 (26.7–32.0 ms, narrow view). For a wider view at the same sharpness, c720 (+6.3 ms). For the whole scene, d1080s (+9.1 ms, softer picture). Which one to use is the user's choice. The numbers above are the whole cost of each.
