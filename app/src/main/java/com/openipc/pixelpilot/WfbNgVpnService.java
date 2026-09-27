@@ -47,19 +47,36 @@ public class WfbNgVpnService extends VpnService {
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (intent != null && WfbServiceControl.ACTION_BIND_TUNNEL.equals(intent.getAction())) {
+        if (isTunnelIntent(intent)) {
             startTunnel();
             return tunnelBinder;
         }
-        return super.onBind(intent);  // the system's VpnService binding
+        return super.onBind(intent);  // VpnService.SERVICE_INTERFACE: the system's binding, must stay intact
+    }
+
+    // establish() makes the system bind too (Vpn.establish binds with SERVICE_INTERFACE), so the service can outlive
+    // our unbind. Returning true makes Android call onRebind on the next bind instead of handing back the cached
+    // binder without a callback; otherwise the tunnel would stay down after an onPause/onResume (headset asleep).
+    @Override
+    public boolean onUnbind(Intent intent) {
+        if (isTunnelIntent(intent)) {
+            stopTunnel();
+            return true;
+        }
+        return super.onUnbind(intent);
     }
 
     @Override
-    public boolean onUnbind(Intent intent) {
-        if (intent != null && WfbServiceControl.ACTION_BIND_TUNNEL.equals(intent.getAction())) {
-            stopTunnel();
+    public void onRebind(Intent intent) {
+        if (isTunnelIntent(intent)) {
+            startTunnel();
+        } else {
+            super.onRebind(intent);
         }
-        return false;
+    }
+
+    private static boolean isTunnelIntent(Intent intent) {
+        return intent != null && WfbServiceControl.ACTION_BIND_TUNNEL.equals(intent.getAction());
     }
 
     @Override

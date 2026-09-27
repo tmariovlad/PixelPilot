@@ -51,6 +51,36 @@ public class VpnStartRuleTest {
         assertEquals("com.openipc.pixelpilot.action.BIND_TUNNEL", WfbServiceControl.ACTION_BIND_TUNNEL);
     }
 
+    /** Every other bind (the system's VpnService.SERVICE_INTERFACE) must still reach VpnService.onBind. */
+    @Test
+    public void systemBindingStillGoesToVpnService() throws IOException {
+        String onBind = method(serviceSource(), "public IBinder onBind(Intent intent)");
+        assertTrue(onBind, onBind.contains("return super.onBind(intent);"));
+    }
+
+    /** The system keeps its own binding, so ours must ask for onRebind or a second bind never restarts the tunnel. */
+    @Test
+    public void unbindAsksForRebindAndRebindRestartsTheTunnel() throws IOException {
+        String src = serviceSource();
+        String onUnbind = method(src, "public boolean onUnbind(Intent intent)");
+        assertTrue(onUnbind, onUnbind.contains("stopTunnel();") && onUnbind.contains("return true;"));
+        String onRebind = method(src, "public void onRebind(Intent intent)");
+        assertTrue(onRebind, onRebind.contains("startTunnel();"));
+    }
+
+    private static String serviceSource() throws IOException {
+        return new String(Files.readAllBytes(SOURCES.resolve("com/openipc/pixelpilot/WfbNgVpnService.java")),
+                StandardCharsets.UTF_8);
+    }
+
+    /** The body of the method with this signature, up to its closing brace at 4-space indent. */
+    private static String method(String src, String signature) {
+        int a = src.indexOf(signature);
+        assertTrue("missing: " + signature, a >= 0);
+        int b = src.indexOf("\n    }", a);
+        return src.substring(a, b);
+    }
+
     /** The line without a trailing // comment; javadoc / block-comment lines (starting with * or /*) are dropped. */
     private static String stripComment(String line) {
         String t = line.trim();
