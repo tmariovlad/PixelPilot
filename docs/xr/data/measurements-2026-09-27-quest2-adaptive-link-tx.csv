@@ -1,0 +1,7 @@
+step,label,quest_tx_frames_per_s
+0,NOLO:true,46.2
+1,LO:true,51.0
+2,LO:false,0.3
+3,NOLO:true,47.6
+4,LO:false,0.4
+5,LO:true,51.0
