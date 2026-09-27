@@ -58,4 +58,28 @@ Filled in by the coordinator as results come back. Details are in each owner's t
   Persistence is deployed on the air unit (`linkmode-air.sh` md5 b8b60b83, backup `.bak-2026-09-27-pre-tunnel`,
   `/overlay` 196K free). Boot validation is pending.
 - **W2 phase 1 done.** 13 steps from 5 to 17 dBm with m2b8, no reset, 54–55 °C. Results: [link-envelope.md](link-envelope.md).
-- **Canonical Quest build.** 50991744 (`e889f76`). Candidate 9aaf1c2f (`dc58403`) is in the W5 slot.
+- **W3 mode choice.** 640x480@167 wins. Corrected budget: 30.4–35.7 ms at 8 Mbit/s, vs 37.5–42.8 for 720p120 and
+  46.5–51.8 for 1080p90 ([g2g-budget.md](g2g-budget.md)).
+- **AU-04 phase lock closed.** At 480p it would need ~119.7 fps, and even an ideal lock is +1.2 ms at 8 Mbit/s and ≈ 0
+  at 2 Mbit/s. The actuator is also blocked, because AE rewrites VMAX ([compositor-phase.md](compositor-phase.md)).
+  239 fps is not reachable on the IMX415. AU-10 (VUI) gives no latency on our Quest, only compatibility.
+- **W2 phase 2 at 480p167** ([link-envelope.md](link-envelope.md)).
+  - Low bitrate is fastest. MCS4 fails at this distance (~15 % pre-FEC).
+  - FEC 4/8 at 2 Mbit/s costs about +0.3 ms and drops the loss to ~0.
+  - Policy table: m2b2f48 → m2b2f46 → m1b2f46. Stepping down from m2f48 goes straight to m1.
+  - The adaptive-link uplink (~51 frames/s) costs video airtime. It was cut to 12 frames/s in code (`d8b6498`).
+- **Final before/after** ([g2g-budget.md](g2g-budget.md), `5d40d99`). REC = 480p167 / 2000 / FEC 4/8.
+  - REC: **27.4–32.7 ms**. BASE (1080p90 / 8000 / 4/6): 46.6–51.9 ms. That is **−19.2 ms (−37 %)**, with the
+    ranges disjoint.
+  - Loss 0.10 % vs 2.06 %; undecoded 0 vs 1.2 %.
+  - The 20–25 ms target is not reached. The REC floor is fixed by the panel (10.2 ms) and air→Quest (1.9 ms).
+  - Air-side bursts where the encode is bimodal (+2 ms on ~24 % of frames) are an open −1…−2 ms lever.
+  - Picture quality at 2 Mbit/s is not assessed yet.
+- **App (W5 + fixes).** Every fix below is in code with tests, and verified on the Quest where noted:
+  - the NO SIGNAL / WRONG KEY / SETUP headline and the readable panel (verified, no latency cost);
+  - flight telemetry (verified with synthetic MAVLink) and the home-position fix;
+  - native exceptions no longer cross JNI;
+  - link self-healing and USB attach (needs a physical replug to verify);
+  - XR input (A/X = panel mode, B/Y = hide);
+  - decoder recovery (X23; checked in the final slot).
+- **Canonical Quest build.** 7b8baadb (`e889479`). The final build from HEAD is checked in the last slot.
