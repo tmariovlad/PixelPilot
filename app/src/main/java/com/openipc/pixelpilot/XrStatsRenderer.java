@@ -48,7 +48,9 @@ final class XrStatsRenderer {
             return; // surface abandoned while the session ends
         }
         try {
-            canvas.drawColor(0xB0000000, PorterDuff.Mode.SRC);
+            boolean anything = (alert != null && !alert.isEmpty()) || lines.length > 0;
+            // A hidden panel (PanelMode) is cleared to fully transparent, not left as an empty dark box.
+            canvas.drawColor(anything ? 0xB0000000 : 0x00000000, PorterDuff.Mode.SRC);
             float y = 0;
             if (alert != null && !alert.isEmpty()) {
                 band.setColor(severe ? ALERT_RED : ALERT_AMBER);

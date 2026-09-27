@@ -117,6 +117,15 @@ public final class XrBridge {
         listener.onSessionEvent(SessionEvent.values()[event]);
     }
 
+    /** Press bits from {@link #takeInputEvents()}; the same values as XrInput::Event in XrInput.h. */
+    public static final int INPUT_PANEL_DETAIL = 1;
+    public static final int INPUT_PANEL_VISIBILITY = 2;
+
+    /** Controller/hand presses since the last call (INPUT_* bits), taken from the XR thread without blocking it. */
+    public int takeInputEvents() {
+        return handle == 0 ? 0 : nativeTakeInputEvents(handle);
+    }
+
     private native long nativeCreate();
     private native boolean nativeStart(long h, Activity activity, float refreshHz, boolean useTimestamps, boolean perfHigh);
     private native String nativeError(long h);
@@ -126,5 +135,6 @@ public final class XrBridge {
     private native float[] nativeInfo(long h);
     private native long[] nativeDisplayGrid(long h);
     private native void nativeSetWorkerThreads(long h, int[] threadIds);
+    private native int nativeTakeInputEvents(long h);
     private native void nativeDestroy(long h);
 }

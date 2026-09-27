@@ -11,6 +11,7 @@
 #include <vector>
 #include "EglContext.h"
 #include "XrIncludes.h"
+#include "XrInput.h"
 #include "XrLayers.h"
 
 // Matches XrBridge.SessionEvent ordinals.
@@ -68,6 +69,8 @@ class XrRuntime
     // XR thread once the session runs (xrSetAndroidApplicationThreadKHR).
     void          setWorkerThreads(const std::vector<int>& tids);
     XrRuntimeInfo info();
+    // Controller/hand presses since the last call (XrInput::Event bits). Any thread.
+    uint32_t      takeInputEvents() { return mInput.take(); }
     XrDisplayGrid displayGrid();
     std::string   error();
 
@@ -127,6 +130,7 @@ class XrRuntime
     bool                  mRuntimeExit  = false;
     uint64_t              mFrames       = 0;
     XrLayers              mLayers;
+    XrInput               mInput;
 
     PFN_xrCreateSwapchainAndroidSurfaceKHR   pfnCreateSurface   = nullptr;
     PFN_xrEnumerateDisplayRefreshRatesFB     pfnEnumerateRates  = nullptr;

@@ -9,6 +9,7 @@ add_library(PixelPilotXr SHARED
     EglContext.cpp
     XrLayers.cpp
     XrRuntime.cpp
+    XrInput.cpp
     xr_jni.cpp)
 
 # Newer-than-minSdk NDK APIs (ATrace_setCounter) are weak and must sit behind __builtin_available.

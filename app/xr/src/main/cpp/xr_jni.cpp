@@ -106,6 +106,11 @@ XR_JNI(jlongArray, nativeDisplayGrid)(JNIEnv* env, jobject, jlong h)
     return out;
 }
 
+XR_JNI(jint, nativeTakeInputEvents)(JNIEnv*, jobject, jlong h)
+{
+    return static_cast<jint>(handle(h)->runtime.takeInputEvents());
+}
+
 XR_JNI(void, nativeDestroy)(JNIEnv* env, jobject, jlong h)
 {
     Handle* p = handle(h);

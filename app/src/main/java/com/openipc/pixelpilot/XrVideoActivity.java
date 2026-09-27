@@ -19,6 +19,7 @@ import com.openipc.wfbngrtl8812.WfbNGStats;
 import com.openipc.wfbngrtl8812.WfbNGStatsChanged;
 import com.openipc.wfbngrtl8812.WfbNgLink;
 import com.openipc.xr.LayerLayout;
+import com.openipc.xr.PanelMode;
 import com.openipc.xr.SignalState;
 import com.openipc.xr.XrBridge;
 
@@ -60,7 +61,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private volatile String udpFallback;   // non-null: no adapter, video may still arrive over Wi-Fi here
     // What the pilot is told about the video (NO SIGNAL / WRONG KEY / ...). UI thread only.
     private final SignalState signal = new SignalState();
-    private boolean panelOverVideo;        // the panel sits over the video while signal.needsAction(). UI thread.
+    private boolean panelOverVideo;
+    private final PanelMode panelMode = new PanelMode();   // controller-driven: detailed / compact / hidden. UI thread.        // the panel sits over the video while signal.needsAction(). UI thread.
     private volatile int videoW, videoH;
 
     private final Runnable statsTick = new Runnable() {
@@ -76,7 +78,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
                 applyLayout();                     // moves only the panel quad; nothing on the video path
             }
             XrStatsRenderer renderer = stats;
-            if (renderer != null) renderer.draw(signal.message(), signal.needsAction(), statsLines());
+            if (xr != null) panelMode.apply(xr.takeInputEvents());
+            if (renderer != null) renderer.draw(signal.message(), signal.needsAction(), panelMode.select(statsLines()));
             XrBridge bridge = xr;
             if (bridge != null && phase != null) {
                 phase.tick(frames, bridge.displayGrid());

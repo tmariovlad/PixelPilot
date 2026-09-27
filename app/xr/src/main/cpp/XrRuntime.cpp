@@ -251,6 +251,7 @@ bool XrRuntime::setup(JNIEnv* env)
     spaceInfo.referenceSpaceType   = XR_REFERENCE_SPACE_TYPE_VIEW;  // head-locked: never reprojected
     spaceInfo.poseInReferenceSpace = identityPose();
     if (XR_FAILED(xrCreateReferenceSpace(mSession, &spaceInfo, &mViewSpace))) return fail("VIEW space failed");
+    mInput.setup(mInstance, mSession);   // optional: the viewer works without input
 
     loadFunctions();
     if (!pfnCreateSurface) return fail("xrCreateSwapchainAndroidSurfaceKHR missing");
@@ -480,6 +481,7 @@ void XrRuntime::renderFrame()
     }
     const XrResult ended = xrEndFrame(mSession, &endInfo);
     if (XR_FAILED(ended) && (mFrames % 120) == 0) XLOGE("xrEndFrame failed: %d", ended);
+    mInput.poll(mSession);   // after the frame is submitted, so input never delays it
     if (++mFrames % 30 == 0)
     {
         readMetrics();
@@ -558,6 +560,7 @@ void XrRuntime::teardown(JNIEnv* env)
     if (mVideoChain != XR_NULL_HANDLE) xrDestroySwapchain(mVideoChain);
     if (mStatsChain != XR_NULL_HANDLE) xrDestroySwapchain(mStatsChain);
     if (mViewSpace != XR_NULL_HANDLE) xrDestroySpace(mViewSpace);
+    mInput.destroy();
     if (mSession != XR_NULL_HANDLE) xrDestroySession(mSession);
     mEgl.destroy();
     if (mInstance != XR_NULL_HANDLE) xrDestroyInstance(mInstance);
