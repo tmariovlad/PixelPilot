@@ -179,6 +179,9 @@ public class WfbNgVpnService extends VpnService {
         // Route only 10.5.0.0/24 through this interface
         builder.addRoute("10.5.0.0", 24);
 
+        // Same MTU as wfb_tun on the air unit, so no packet is larger than the tunnel can carry
+        builder.setMtu(TunFraming.TUN_MTU);
+
         // You can optionally set DNS servers if needed
         // builder.addDnsServer("8.8.8.8");
 
@@ -213,12 +216,9 @@ public class WfbNgVpnService extends VpnService {
 
                         // log packet data and lentgh
 
-                        if (packet.getLength() < 1)
-                            continue;
-
-                        // Write to the VPN interface (TUN)
-                        try{
-                            vpnOutput.write(packet.getData(), 2, packet.getLength()-2);
+                        // wfb_tun may put several framed packets in one datagram (or none: keep-alive)
+                        try {
+                            TunFraming.forEachPacket(packet.getData(), packet.getLength(), vpnOutput::write);
                         } catch (IOException e) {
                             Log.e(TAG, "UDP → VPN thread error", e);
                         }
@@ -236,7 +236,7 @@ public class WfbNgVpnService extends VpnService {
             @Override
             public void run() {
                 Log.i(TAG, "VPN → UDP (WFB) thread started");
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[TunFraming.TUN_MTU];  // one TUN read = one whole packet
 
                 try (DatagramSocket socket = new DatagramSocket()) {
                     socket.setReuseAddress(true);

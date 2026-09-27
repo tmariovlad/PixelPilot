@@ -86,17 +86,4 @@ public class TunToUdpPumpTest {
         assertEquals(1, tun.awaitCalls);
         assertEquals(0, sent.size());
     }
-
-    @Test
-    public void frameHasBigEndianLengthPrefix() {
-        byte[] packet = new byte[300];
-        packet[0] = 7;
-        packet[299] = 9;
-        byte[] f = TunToUdpPump.frame(packet, 300);
-        assertEquals(302, f.length);
-        assertEquals(1, f[0]);           // 300 = 0x012C
-        assertEquals((byte) 0x2C, f[1]);
-        assertEquals(7, f[2]);
-        assertEquals(9, f[301]);
-    }
 }

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
 /**
- * Moves packets from the VPN (TUN) interface to wfb-ng's local UDP port, each prefixed with its length
- * (2 bytes, network byte order).
+ * Moves packets from the VPN (TUN) interface to wfb-ng's local UDP port, one packet per datagram in the wfb_tun
+ * framing ({@link TunFraming#encode}).
  *
  * <p>The TUN descriptor from {@code VpnService.Builder.establish()} is non-blocking by default, and a read on
  * an empty non-blocking descriptor returns 0 instead of blocking (libcore {@code IoBridge.read}, EAGAIN).
@@ -38,18 +38,9 @@ final class TunToUdpPump {
             int length = tun.read(buffer);
             if (length == -1) break;
             if (length == 0) continue;
-            sink.send(frame(buffer, length));
+            sink.send(TunFraming.encode(buffer, length));
             sent++;
         }
         return sent;
-    }
-
-    /** The first {@code length} bytes of {@code packet}, prefixed with the length (big-endian, 2 bytes). */
-    static byte[] frame(byte[] packet, int length) {
-        byte[] out = new byte[2 + length];
-        out[0] = (byte) ((length >> 8) & 0xFF);
-        out[1] = (byte) (length & 0xFF);
-        System.arraycopy(packet, 0, out, 2, length);
-        return out;
     }
 }
