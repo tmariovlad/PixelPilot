@@ -64,6 +64,7 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
   5. link status and, without an adapter, the UDP address that still accepts video. `link lost - restarting (n)` means an RX thread that ended on its own is being restarted with a backoff (`c27f8aa`, `ac740e0`);
   6. phase, XR, decoder and levers.
   Long lines end in "…".
+- **Controller buttons** (commit `3a37a88`, not yet verified on the headset): **A / X / select-pinch** switch the panel between detailed (default) and compact (link, telemetry, video); **B / Y** hide or show it. The alert headline shows in every mode. The layers are head-locked, so there is no recenter. Native side: `app/xr/…/XrInput.cpp` (synced once per frame after `xrEndFrame`).
 - The classifier is `app/xr/…/SignalState.java`. The panel is redrawn on the UI thread every 250 ms and adds nothing to the decode path.
 - Why these changes: [XR robustness/UX audit](xr/research/2026-09-27-xr-ux-audit.md).
 
