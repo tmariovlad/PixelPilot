@@ -14,6 +14,7 @@ def test_parse_quest_reads_the_three_means_and_robustness():
     assert {k: q[k] for k in ("spread", "decode", "wait")} == {"spread": 5.5, "decode": 2.1, "wait": 4.2}
     assert q["pkt_per_frame"] == 8.1
     assert abs(q["lost_pct"] - 100 * 3 / 3003) < 1e-9
+    assert abs(q["undecoded_pct"] - 100 * (810 - 800) / 810) < 1e-9  # 810 frames, 800 with a decode mark
 
 
 def test_parse_air_averages_rows_of_one_mode():

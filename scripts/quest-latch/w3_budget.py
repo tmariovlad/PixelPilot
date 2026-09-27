@@ -48,11 +48,15 @@ def parse_quest(text):
         m = re.search(re.escape(label) + r".*?mean=\s*([-\d.]+)", text)
         if m:
             out[key] = float(m.group(1))
-    m = re.search(r"(\d+) packets / \d+ frames .*?([\d.]+) pkt/frame; sequence gaps \(lost before the app\) = (\d+)", text)
+    m = re.search(r"(\d+) packets / (\d+) frames .*?([\d.]+) pkt/frame; sequence gaps \(lost before the app\) = (\d+)", text)
     if m:
-        pkts, lost = int(m.group(1)), int(m.group(3))
-        out["pkt_per_frame"] = float(m.group(2))
+        pkts, frames, lost = int(m.group(1)), int(m.group(2)), int(m.group(4))
+        out["pkt_per_frame"] = float(m.group(3))
         out["lost_pct"] = 100.0 * lost / (pkts + lost) if pkts + lost else 0.0
+        d = re.search(re.escape(QUEST_LINES["decode"]) + r"\s+n=\s*(\d+)", text)
+        if d and frames:
+            # frames with no decoded-frame mark within 20 ms (transport_analyze's matching window): dropped or late
+            out["undecoded_pct"] = 100.0 * (frames - int(d.group(1))) / frames
     return out
 
 
@@ -75,7 +79,7 @@ def budget(air, quest):
         if not reps:
             continue
         q = {k: st.mean(r[k] for r in reps if k in r) for k in QUEST_LINES if any(k in r for r in reps)}
-        robust = {k: st.mean(r[k] for r in reps if k in r) for k in ("pkt_per_frame", "lost_pct")
+        robust = {k: st.mean(r[k] for r in reps if k in r) for k in ("pkt_per_frame", "lost_pct", "undecoded_pct")
                   if any(k in r for r in reps)}
         capture = 500.0 / a["fps"] if a.get("fps") else 0.0  # ms: half a frame period
         fixed = capture + a["s_air"] + a["readout"] + TX_FLOOR_MS + sum(q.values())
@@ -121,7 +125,7 @@ def main(argv):
         if mode in res:
             print(f"mode {mode}: latch wait = {DISPLAY_PERIOD_MS / 2:.2f} ms (half a display period, uniform phase); "
                   f"measured in the traces: {[r.get('wait_measured') for r in quest[mode]]}")
-    cols = ["capture", "readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait", "pkt_per_frame", "lost_pct"]
+    cols = ["capture", "readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait", "pkt_per_frame", "lost_pct", "undecoded_pct"]
     print("mode  n  " + "  ".join(f"{c:>7s}" for c in cols) + "   total G2G range (ms)")
     for mode in sorted(res, key=lambda m: res[m]["own_hi"]):
         r = res[mode]
