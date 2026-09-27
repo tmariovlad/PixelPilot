@@ -7,14 +7,15 @@ The fake changes no video. So the success path targets "race-b", a listed mode a
 (the app commits only after 30 frames at the new mode's size). The --fail path targets "wide", which never reaches
 pending, so the air's revert timer fires.
 
-Needs: the XR app streaming (air on Race), the Quest reaching this PC over Wi-Fi on UDP 9998. Prefs are rewritten for
-the run (vmode_air -> this PC) and restored at the end (quest_adb.set_prefs keeps gs.key only, plus these flags).
+Needs: the XR app streaming (air on Race), the Quest reaching this PC over Wi-Fi on UDP 9998. The headset's prefs are
+kept as they are; only vmode_air (-> this PC) is added for the run, and the original file is written back at the end.
 Usage: python3 preset_flow.py <label> [--fail] [--port 9998] [--video-wait-s 15]
 Check first that Windows lets the UDP port in to Python; if 9998 is blocked, --port 5610 (the PPXR1 report port, which
 reached the PC on 2026-09-26). Do not change firewall rules for this.
 """
 import argparse
 import os
+import re
 import subprocess
 import threading
 import time
@@ -24,7 +25,7 @@ import quest_env as env
 from vmode_fake import FakeAir
 
 ACTION = "com.openipc.pixelpilot.xr.DEBUG_INPUT"   # DebugInput.ACTION in app/xr
-PREFS = {"adaptive_link_enabled": True}             # the prefs the headset runs with; vmode_air is added for the run
+VMODE_PREF = re.compile(r'\s*<string name="vmode_air">[^<]*</string>')
 
 
 def inp(name):
@@ -39,11 +40,17 @@ def shot(out, name):
     print("  screenshot", path, len(r.stdout), "bytes", flush=True)
 
 
-def restart_xr(prefs):
+def restart_xr(prefs_xml):
     q.adb("shell", "am", "force-stop", env.PKG)
-    q.set_prefs(prefs)
+    q.write_prefs(prefs_xml)
     q.prox_close()
     q.start_xr()
+
+
+def with_vmode_air(xml, target):
+    """The headset's prefs with vmode_air set to target (every other pref unchanged)."""
+    xml = VMODE_PREF.sub("", xml)
+    return xml.replace("</map>", q.pref_xml("vmode_air", target) + "</map>", 1)
 
 
 def main():
@@ -60,8 +67,11 @@ def main():
     air = FakeAir(port=a.port, switch_s=3, fail="wide" if a.fail else None, same_size=True)
     threading.Thread(target=air.serve, daemon=True).start()
     t0 = time.monotonic()
+    original = q.adb("shell", "run-as", env.PKG, "cat", q.PREFS_FILE).replace(chr(13), "")
+    if "</map>" not in original:
+        raise SystemExit("could not read the headset's prefs")
     try:
-        restart_xr(dict(PREFS, vmode_air=f"{env.PC_IP}:{a.port}"))
+        restart_xr(with_vmode_air(original, f"{env.PC_IP}:{a.port}"))
         time.sleep(a.video_wait_s)
         print("list requests so far:", sum("list" in e for _, e in air.log), flush=True)
         inp("right")                      # opens the menu on the active mode
@@ -92,7 +102,7 @@ def main():
             for t, e in air.log:
                 f.write(f"{t - t0:8.2f} {e}\n")
         air.close()
-        restart_xr(PREFS)                 # back to the real air unit's receiver
+        restart_xr(VMODE_PREF.sub("", original))   # back to the headset's own prefs (no vmode_air)
     ok = (done == "reverted") if a.fail else (done == "committed" and air.active == target)
     print("PASS" if ok else "FAIL", "| log:", os.path.join(out, "fake_air.log"))
 
