@@ -52,7 +52,7 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
 - **Release PixelPilot 0.21.0 crashes on launch** (`BackgroundServiceStartNotAllowedException`) if it is started
   while the headset sleeps: see [Build and install](../xr-quest.md#build-and-install). Wake the headset first.
 - **Hot-plugging the RTL8812AU crashed the app twice** (devourer EEPROM read exception, then a libusb segfault in
-  `~RtlJaguarDevice`); the third enumeration worked. Details and the fix still needed: "Known issue seen during this
+  `~RtlJaguarDevice`); the third enumeration worked. Unplugging the RTL from a running XR app did **not** kill it on 2026-09-27 (pid 15738 survived from 13:12:27 past 13:36, no `am_proc_died`) [PROVEN: logcat events]. The earlier crashes were probably on plug-in / re-enumeration [INFERRED: EEPROM read and device teardown are enumeration-time paths]. Details and the fix still needed: "Known issue seen during this
   work" at the end of [Phase lock](compositor-phase.md#phase-lock-steering-the-source-onto-the-compositor-latch-proof-of-concept-2026-09-26).
 - **Plugging the adapter may open the wrong app**: `USB_DEVICE_ATTACHED` can open the `.xr` app's 2D
   `VideoActivity` instead of the release PixelPilot, because both builds declare the same filter on
