@@ -1,6 +1,6 @@
 # Presets: switch the air unit's video mode and quality from the headset (design, 2026-09-27)
 
-Status: **design for approval, no code yet.** App side: this repo (PixelPilotXr). Air side: the OpenIPC project
+Status: **approved 2026-09-27 (coordinator d2); app side in progress against a fake air, no device yet.** App side: this repo (PixelPilotXr). Air side: the OpenIPC project
 (session c8, writes on `.132` through session a61381). The message format follows c8's proposal. Air-side mechanics
 are marked as questions for c8 at the end.
 
@@ -28,8 +28,7 @@ all at 2000 kbit/s, FEC 4/8, MCS2, 12 dBm, adaptive link on [PROVEN there].
 - **Time the picture is actually frozen on the Quest: 3.1–3.6 s**, 8 switches measured. For the rest of the 10–14 s the
   old mode keeps playing. On the Quest the first new RTP packet arrives 3.0–3.5 s after the last old frame, and the
   decoder then adapts in place in 29–55 ms [PROVEN: [audit § final slot](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27), [data](data/2026-09-27-final-switch-gap.txt)].
-- For the panel warning this means: `switch ~10–14 s, picture frozen ~4 s`. The user asked for "video îngheață
-  ~10–14 s". The two numbers above measure different things, so the coordinator should pick the wording [open point 1].
+- So the panel warning reads `switch ~10–14 s, picture frozen ~4 s` (decided by the coordinator).
 
 ## Axis 2: QUALITY
 
@@ -104,13 +103,16 @@ Headlines stay within the 40-character limit that the panel headline test checks
 
 | Request (app → air) | Reply (air → app) |
 |---|---|
-| `VMODE1 list seq=<n>` | `VMODE1 list seq=<n> active=<mode> default=<mode> presets=<mode>:<desc>,... qualities=2000,4000,6000` |
+| `VMODE1 list seq=<n>` | `VMODE1 list seq=<n> active=<mode> default=<mode> kbps=<req> presets=<p>,<p>,... qualities=<q>,<q>,...` |
 | `VMODE1 apply seq=<n> [preset=<mode>] [kbps=<req>] revert_s=<s>` | `VMODE1 ack seq=<n> state=accepted token=<t>`, or `state=busy`, or `state=error reason=<code>` |
 | `VMODE1 commit seq=<n> token=<t>` | `VMODE1 ack seq=<n> state=committed`, or `state=error reason=no_pending` |
 | `VMODE1 save_default seq=<n>` (the active mode + requested bitrate) | `VMODE1 ack seq=<n> state=saved`, or `state=error reason=enospc\|fail` |
 | (air, 1 Hz and on every change) | `VMODE1 state preset=<mode> phase=<p> pending=<mode> left_s=<s> kbps=<eff> req_kbps=<req> mcs=<m> fps=<x>` |
 
-- `desc` is `<sensor WxH>@<fps>`, plus `><encode WxH>` when the VPE scales, e.g. `1920x1080@90>848x480`.
+- One preset `<p>` is `<mode>|<label>|<desc>|<fov>|<g2g>`, e.g. `wide|Wide|1920x1080@90>848x480|99x98|35.3-41.6`.
+  `desc` is `<sensor WxH>@<fps>`, plus `><encode WxH>` when the VPE scales. `fov` is the sensor share in %, and `g2g`
+  the measured glass-to-glass range in ms (`-` if not measured). No field contains a space, `|` or `,`.
+- One quality `<q>` is `<kbps>|<est. ms against the lowest>`, e.g. `4000|1.7`.
 - `phase` is `ok | applying | pending | reverted`. `pending` means the new mode runs and waits for the app's commit.
 - A bitrate-only `apply` needs no commit: it is live and harmless, and the ack comes back with `state=committed`.
 - Error reasons: `unknown_preset`, `bad_kbps`, `fail` (waybeam did not start, and the air has already reverted),
@@ -162,20 +164,21 @@ extension.
 - The mode definitions live in the daemon (compiled in, or a read-only file installed once with it; c8's choice).
   Switching does not rewrite them.
 
-## Where each fact lives (single source of truth)
+## Where each fact lives (single source of truth; coordinator's decision)
 
-- **Air:** which modes and quality levels exist, their encoder parameters, the bitrate cap.
-- **App:** what the Quest measured about a mode (G2G range, FOV, detail), in one table keyed by the air's `desc` string
-  and copied from W3c. It also holds the estimated bitrate cost. A mode the table does not know is shown as "latency not
-  measured".
-- The app shows the air's names and `desc`, so the two sides cannot silently disagree.
+- **Air:** everything about a preset: which modes and quality levels exist, their encoder parameters, the bitrate cap,
+  and the numbers shown to the pilot (label, FOV, measured G2G, estimated bitrate cost). The G2G and FOV values are
+  taken from [g2g-budget.md](g2g-budget.md) (W3c) when the air config is written; the air config is canonical after
+  that. The app gets all of it through `list`.
+- **App:** nothing about presets is hard-coded. It only holds its own timing: the hold times, the revert time it asks
+  for, and the frames it needs before `commit`.
 
 ## App-side pieces (after approval)
 
 | Piece | Where | Responsibility |
 |---|---|---|
 | `VmodeClient` | `app/src/main/java/.../VmodeClient.java` | the UDP protocol: send, retry, parse, the beacon; no UI |
-| `PresetCatalog` | `app/src/main/java/.../PresetCatalog.java` | Quest-measured numbers per `desc` + bitrate cost; merges the air's `list` |
+| `PresetCatalog` | `app/xr/src/main/java/com/openipc/xr/PresetCatalog.java` | the parsed `list`: modes, qualities, active choice (data only) |
 | `PresetMenu` | `app/xr/src/main/java/com/openipc/xr/PresetMenu.java` | menu state: highlight on two axes, hold timers, timeouts; pure logic, with JVM tests like `PanelMode` |
 | `XrInput` | `app/xr/src/main/cpp/XrInput.cpp` | new actions: thumbstick x/y (float) and thumbstick click (bool) on both hands; new `INPUT_*` bits |
 | Panel | `XrStatsRenderer` / `PanelText` | the menu lines and headlines above |
@@ -196,20 +199,21 @@ Tests:
 
 ## Open points
 
-For the coordinator:
-1. Warning wording: `switch ~10–14 s, picture frozen ~4 s` (both measured) instead of "video freezes ~10–14 s".
+Decided (coordinator, 2026-09-27): the warning wording above; QUALITY must not write the flash (c8 proposes a tmpfs
+bind mount over `/etc/waybeam.json` for the session, which covers mode switches, bitrate sets and alink's own sets);
+the app side is built and tested against a fake air until the air side is approved.
 
-For c8 (air side):
-2. A live bitrate path that does not write `/etc/waybeam.json` (the waybeam API persists it today), and where the cap
+For c8 (air side; c8's design: OpenIPC repo `repos/tasks/vmode-presets-2026-09-27/00-DESIGN-vmode-presets.md`):
+1. A live bitrate path that does not write `/etc/waybeam.json` (the waybeam API persists it today), and where the cap
    per MCS lives (alink_air).
-3. Daemon or alink_air extension, and the UDP port (9998 proposed). How the daemon tells alink_air about a waybeam
+2. Daemon or alink_air extension, and the UDP port (9998 proposed). How the daemon tells alink_air about a waybeam
    restart.
-4. How waybeam starts on a `/tmp` config without writing `/etc`: a config-path option or a bind mount.
-5. Whether the VPE-scaled modes need anything beyond the waybeam config (W3c ran them through `w3_switch`).
+3. How waybeam starts on a `/tmp` config without writing `/etc`: a config-path option or a bind mount.
+4. Whether the VPE-scaled modes need anything beyond the waybeam config (W3c ran them through `w3_switch`).
 
 Answers for c8's questions (app side):
 - **Decoder:** nothing is needed from the air before a switch. A resolution change is handled in place (29–55 ms;
   `501094a` removed the rebuild), and the quad follows the new aspect (`onVideoRatioChanged`). The first frame of the
   new stream must be an IDR, which a waybeam start gives [INFERRED: 0 undecoded frames after the measured switches].
-- **List:** the app takes the list from the air (names + `desc`) and adds the Quest-measured numbers itself.
+- **List:** the app takes everything from the air's `list`, including the Quest-measured numbers.
 - **Rate:** one mode switch at a time, fine. The app asks for `state=busy` instead of silence.
