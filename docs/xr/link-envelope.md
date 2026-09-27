@@ -95,12 +95,15 @@ Each cell: Δ capture → decoded vs the anchor in the same trace · loss after 
 
 **Operating envelope and policy table for the adaptive link (W1 phase 2).** This covers 640×480 @ 167 fps, this geometry and FEC k = 4 unless stated. The band edges are what the receiver can see: RSSI on the app's 0–100 scale and loss before FEC at the current MCS.
 
-| band (receiver view) | seen at | use | expected loss after FEC | Δ latency vs `m1b2f46` |
-|---|---|---|---|---|
-| RSSI ≥ ~68, loss before FEC ≤ ~6 % at MCS2 | 17 dBm | `m2b2f48` (more picture: `m2b3f46`, `m2b4f46`) | 0 % (0.29 / 0.47 %) | −0.1 ms (+0.1 / +0.7) |
-| RSSI ~64, loss before FEC ~8 % at MCS2 | 12 dBm | `m2b2f46`, or `m2b2f48` [INFERRED: not run at 12 dBm; 4/8 helped at 17 and 8] | 0.67 % | −0.1 ms |
-| RSSI ~54, loss before FEC ~20 % at MCS2 | 8 dBm | `m1b2f46` (MCS1) | 0.75 % | 0 |
-| worse | < 8 dBm | nothing at 480p keeps loss < 1 % [INFERRED: phase 1 at 5 dBm ≈ 8 dBm] | – | – |
+| band (receiver view) | alink `score` | seen at | use | expected loss after FEC | Δ latency vs `m1b2f46` |
+|---|---|---|---|---|---|
+| RSSI ≥ ~68, loss before FEC ≤ ~6 % at MCS2 | ≥ ~1680 | 17 dBm | `m2b2f48` (more picture: `m2b3f46`, `m2b4f46`) | 0 % (0.29 / 0.47 %) | −0.1 ms (+0.1 / +0.7) |
+| RSSI ~64, loss before FEC ~8 % at MCS2 | ~1640 | 12 dBm | `m2b2f46`, or `m2b2f48` [INFERRED: not run at 12 dBm; 4/8 helped at 17 and 8] | 0.67 % | −0.1 ms |
+| RSSI ~54, loss before FEC ~20 % at MCS2 | ~1540 | 8 dBm | `m1b2f46` (MCS1) | 0.75 % | 0 |
+| worse | < ~1540 | < 8 dBm | nothing at 480p keeps loss < 1 % [INFERRED: phase 1 at 5 dBm ≈ 8 dBm] | – | – |
+
+- **`score` vs the RSSI column.** The adaptive-link message sends `score = map(quality, −1024…1024 → 1000…2000)` in fields 2, 3 and 6 ([WfbngLink.cpp:534,571-579](../../app/wfbngrtl8812/src/main/cpp/WfbngLink.cpp#L534)). The RSSI column here is the app's `avg_rssi` = `map(quality, −1024…1024 → 0…100)` ([WfbngLink.cpp:469](../../app/wfbngrtl8812/src/main/cpp/WfbngLink.cpp#L469)). Both come from the same `quality` = `map(raw RSSI 0…80 → −1024…1024)` ([SignalQualityCalculator.cpp:89](../../app/wfbngrtl8812/src/main/cpp/SignalQualityCalculator.cpp#L89)), so **score = 1000 + 10 × RSSI column** (= 1000 + 12.5 × raw) [PROVEN: code]. Earlier values of ~1850/1800/1675 took the RSSI column for the raw value.
+- **Loss before FEC is not in the message.** It carries only FEC repairs/s (field 4) and lost/s (field 5). For now the air unit estimates it from its own `tx_packets` against what the ground reports. Sending the Quest's measured pre-FEC loss from the app is a later improvement.
 
 - Switch **down** one row when loss before FEC at the current MCS passes ~10 % (FEC 4/6 still held 0.3–0.7 % below that and broke at 15–20 %) [INFERRED: from the rows above].
 - Switch **up** only when the next row's MCS would see ≤ 6 %. RSSI rises ~4–5 points per row here. Hysteresis and time constants still have to be tested in closed loop in W1 phase 2 [SPECULATION until then].
