@@ -9,7 +9,11 @@ state, the radio and FEC picture plus temperatures, read in the same guarded ste
   upper bound [INFERRED].
 - air_c: the air SoC temperature from the same step line. Quest thermal: --thermal CSV from quest_thermal_log.sh.
 
-Usage: python3 ab_link.py trace.pftrace steps.txt --air-offset-s S [--guard-s 2] [--thermal thermal.csv] [--csv out.csv]
+- Q tx/s: the Quest RTL's uplink injections (adaptive link, tunnel) from --quest-tx (quest_tx_log.sh); ~0 when the
+  adaptive link is off, so it also shows whether a pref A/B step really applied.
+
+Usage: python3 ab_link.py trace.pftrace steps.txt --air-offset-s S [--guard-s 2] [--thermal thermal.csv]
+       [--quest-tx quest_tx.txt] [--csv out.csv]
   --air-offset-s  the offset ab_segments.py used (after --fit-offset, the fitted value it printed).
 """
 import argparse
@@ -91,6 +95,9 @@ def per_step(counters, thermal, fields, steps, end, guard):
             "fec_rec_per_s": window_stats(counters.get("ppxr_wfb_fec_rec", []), a, b, True),
             "wfb_lost_per_s": window_stats(counters.get("ppxr_wfb_lost", []), a, b, True),
             "rssi": window_stats(counters.get("ppxr_wfb_rssi", []), a, b, False),
+            # Quest RTL uplink injections; 0 frames in the window is a real 0 when the log was recorded
+            "quest_tx_per_s": ((window_stats(counters["quest_tx"], a, b, True) or 0.0)
+                               if "quest_tx" in counters else None),
             "tx_per_s": tx[i] if i < len(tx) else None,
             "air_c": fields[i].get("temp") if i < len(fields) else None,
         }
@@ -120,7 +127,7 @@ def per_state(rows):
     return res
 
 
-def load(path, air_offset_s, steps_path, thermal_path):
+def load(path, air_offset_s, steps_path, thermal_path, quest_tx_path=None):
     from perfetto.trace_processor import TraceProcessor
     tp = TraceProcessor(trace=path)
     q = lambda s: list(tp.query(s))
@@ -140,6 +147,9 @@ def load(path, air_offset_s, steps_path, thermal_path):
         for row in csv.DictReader(open(thermal_path, encoding="utf-8")):
             thermal.append((float(row["quest_epoch"]) * 1e9 - rt_off,
                             {k: float(v) for k, v in row.items() if k != "quest_epoch"}))
+    if quest_tx_path:  # one Quest epoch per injected frame (quest_tx_log.sh)
+        counters["quest_tx"] = [(float(x) * 1e9 - rt_off, 1) for x in open(quest_tx_path, encoding="utf-8")
+                                if x.strip()]
     return counters, thermal, read_step_fields(steps_path), steps, end
 
 
@@ -150,15 +160,16 @@ def main():
     ap.add_argument("--air-offset-s", type=float, required=True)
     ap.add_argument("--guard-s", type=float, default=2.0)
     ap.add_argument("--thermal", help="CSV from quest_thermal_log.sh")
+    ap.add_argument("--quest-tx", help="file from quest_tx_log.sh (Quest uplink injections)")
     ap.add_argument("--csv", help="also write the per-step rows to this CSV file")
     a = ap.parse_args()
-    counters, thermal, fields, steps, end = load(a.trace, a.air_offset_s, a.steps, a.thermal)
+    counters, thermal, fields, steps, end = load(a.trace, a.air_offset_s, a.steps, a.thermal, a.quest_tx)
     if not counters["ppxr_wfb_p_all"]:
         print("no ppxr_wfb_* counters in the trace (app build without WfbStatsTrace?)")
     rows = per_step(counters, thermal, fields, steps, end, a.guard_s * 1e9)
     keys = ["tx_per_s", "rx_per_s", "pre_fec_loss_pct", "fec_rec_per_s", "wfb_lost_per_s", "rssi",
-            "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt"]
-    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "air°C", "Q cpu°C", "Q st", "batt"]
+            "quest_tx_per_s", "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt"]
+    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "Q tx/s", "air°C", "Q cpu°C", "Q st", "batt"]
     def fmt(v):
         if v is None:
             return f"{'-':>9}"

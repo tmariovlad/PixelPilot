@@ -92,6 +92,18 @@ def test_drop_stale_zeroes_polls_with_no_rtp_since_the_previous_poll():
     assert len(out["ppxr_wfb_rssi"]) == 4
 
 
+def test_quest_tx_rate_per_step_and_zero_when_off():
+    steps = [(0.0, "on"), (12 * S, "off"), (24 * S, "on")]
+    # 50 frames/s while "on" (0-12 s, 24-36 s), nothing while "off"
+    tx = [(k / 50 * S, 1) for k in range(0, 600)] + [(24 * S + k / 50 * S, 1) for k in range(0, 600)]
+    rows = per_step({"quest_tx": tx}, [], [{"t": 0.0}, {"t": 12.0}, {"t": 24.0}], steps, 36 * S, 2 * S)
+    r = {lab + str(i): row["quest_tx_per_s"] for i, lab, row in rows}
+    assert abs(r["on0"] - 50) < 1, r
+    assert r["off1"] == 0.0, r
+    assert abs(r["on2"] - 50) < 1, r
+    assert per_step({}, [], [{"t": 0.0}], [(0.0, "A")], 12 * S, 2 * S)[0][2]["quest_tx_per_s"] is None
+
+
 def test_missing_counters_give_none_not_a_crash():
     steps = [(0.0, "A")]
     rows = per_step({}, [], [{"t": 0.0}], steps, 12 * S, 2 * S)
