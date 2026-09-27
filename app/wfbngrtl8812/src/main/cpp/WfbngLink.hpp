@@ -25,6 +25,9 @@ extern "C" {
 const uint8_t wfb_tx_port = 160;
 const uint8_t wfb_rx_port = 32;
 
+struct libusb_context;        // libusb.h is included by WfbngLink.cpp
+struct libusb_device_handle;
+
 class WfbngLink {
   public:
     // FEC switching thresholds (for menu)
@@ -36,6 +39,8 @@ class WfbngLink {
     WfbngLink(JNIEnv *env, jobject context);
 
     int run(JNIEnv *env, jobject androidContext, jint wifiChannel, jint bw, jint fd);
+    // The single cleanup of run(): TX, adaptive link, device Stop()/destroy, USB interface, libusb context.
+    void release_link(int fd, libusb_device_handle *dev_handle, libusb_context *ctx);
 
     void initAgg();
 

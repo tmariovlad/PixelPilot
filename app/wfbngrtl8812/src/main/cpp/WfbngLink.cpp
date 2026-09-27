@@ -7,6 +7,7 @@
 
 #include "RxFrame.h"
 #include "SignalQualityCalculator.h"
+#include "LinkGuard.h"
 #include "StatsWindow.h"
 #include "TxFrame.h"
 #include "devourer/src/RxPacket.h"
@@ -15,6 +16,8 @@
 #include "wfb-ng/src/wifibroadcast.hpp"
 
 #include <arpa/inet.h>
+#include <cstdlib>
+#include <cxxabi.h>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
@@ -172,54 +175,64 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
     // Android build has shipped.
     cfg.usb.rx_zerocopy = false;
 
-    rtl_devices[fd] = wifi_driver->CreateRtlDevice(dev_handle, ctx, usb_lock, cfg);
-    if (!rtl_devices.at(fd)) {
-        libusb_exit(ctx);
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "CreateRtlDevice error");
-        return -1;
-    }
-
-    if (stop_requested(fd)) {
-        __android_log_print(ANDROID_LOG_WARN, TAG, "stop requested for fd=%d before bring-up, aborting", fd);
-        rtl_devices.erase(fd);
-        libusb_release_interface(dev_handle, 0);
-        libusb_exit(ctx);
-        return -1;
-    }
-
+    // Everything that can throw (devourer's CreateRtlDevice, bring-up, the RX loop) runs guarded, and every way out
+    // - normal end, early abort, exception - goes through the one release_link() below (audit X17).
     uint8_t *video_channel_id_be8 = reinterpret_cast<uint8_t *>(&video_channel_id_be);
     uint8_t *udp_channel_id_be8 = reinterpret_cast<uint8_t *>(&udp_channel_id_be);
     uint8_t *mavlink_channel_id_be8 = reinterpret_cast<uint8_t *>(&mavlink_channel_id_be);
 
-    try {
-        auto packetProcessor =
-            [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8](const Packet &packet) {
-                RxFrame frame(packet.Data);
-                if (!frame.IsValidWfbFrame()) {
-                    return;
-                }
-                int8_t rssi[4] = {(int8_t)packet.RxAtrib.rssi[0], (int8_t)packet.RxAtrib.rssi[1], 1, 1};
-                uint32_t freq = 0;
-                int8_t noise[4] = {1, 1, 1, 1};
-                uint8_t antenna[4] = {1, 1, 1, 1};
+    const int result = run_guarded(
+        [&]() -> int {
+            rtl_devices[fd] = wifi_driver->CreateRtlDevice(dev_handle, ctx, usb_lock, cfg);
+            // operator[] on purpose: a failed create leaves a null entry, which release_link() erases with find().
+            // Do not "optimise" the check to .at().
+            if (!rtl_devices[fd]) {
+                __android_log_print(ANDROID_LOG_ERROR, TAG, "CreateRtlDevice error");
+                return -1;
+            }
+            if (stop_requested(fd)) {
+                __android_log_print(ANDROID_LOG_WARN, TAG, "stop requested for fd=%d before bring-up, aborting", fd);
+                return -1;
+            }
+            auto packetProcessor =
+                [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8](const Packet &packet) {
+                    RxFrame frame(packet.Data);
+                    if (!frame.IsValidWfbFrame()) {
+                        return;
+                    }
+                    int8_t rssi[4] = {(int8_t)packet.RxAtrib.rssi[0], (int8_t)packet.RxAtrib.rssi[1], 1, 1};
+                    uint32_t freq = 0;
+                    int8_t noise[4] = {1, 1, 1, 1};
+                    uint8_t antenna[4] = {1, 1, 1, 1};
 
-                std::lock_guard<std::mutex> lock(agg_mutex);
-                if (frame.MatchesChannelID(video_channel_id_be8)) {
-                    SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
-                    SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
+                    std::lock_guard<std::mutex> lock(agg_mutex);
+                    if (frame.MatchesChannelID(video_channel_id_be8)) {
+                        SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
+                        SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
 
-                    video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
-                                                     packet.Data.size() - sizeof(ieee80211_header) - 4,
-                                                     0,
-                                                     antenna,
-                                                     rssi,
-                                                     noise,
-                                                     freq,
-                                                     0,
-                                                     0,
-                                                     NULL);
-                } else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
-                    mavlink_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                                                         packet.Data.size() - sizeof(ieee80211_header) - 4,
+                                                         0,
+                                                         antenna,
+                                                         rssi,
+                                                         noise,
+                                                         freq,
+                                                         0,
+                                                         0,
+                                                         NULL);
+                    } else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
+                        mavlink_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                                                           packet.Data.size() - sizeof(ieee80211_header) - 4,
+                                                           0,
+                                                           antenna,
+                                                           rssi,
+                                                           noise,
+                                                           freq,
+                                                           0,
+                                                           0,
+                                                           NULL);
+                    } else if (frame.MatchesChannelID(udp_channel_id_be8)) {
+                        udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                                        packet.Data.size() - sizeof(ieee80211_header) - 4,
                                                        0,
                                                        antenna,
@@ -229,115 +242,105 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                                                        0,
                                                        0,
                                                        NULL);
-                } else if (frame.MatchesChannelID(udp_channel_id_be8)) {
-                    udp_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
-                                                   packet.Data.size() - sizeof(ieee80211_header) - 4,
-                                                   0,
-                                                   antenna,
-                                                   rssi,
-                                                   noise,
-                                                   freq,
-                                                   0,
-                                                   0,
-                                                   NULL);
-                }
-            };
+                    }
+                };
 
-        // Store the current fd for later TX power updates.
-        current_fd = fd;
+            // Store the current fd for later TX power updates.
+            current_fd = fd;
 
-        IRtlDevice *current_device = rtl_devices.at(fd).get();
+            IRtlDevice *current_device = rtl_devices.at(fd).get();
 
-        // TX-capable bring-up with RX enabled (cfg.rx.enable_with_tx). On
-        // Jaguar3 (RTL8812EU/8822EU) this also starts the coex runtime thread
-        // that sustained TX needs.
-        auto bandWidth = (bw == 20 ? CHANNEL_WIDTH_20 : CHANNEL_WIDTH_40);
-        current_device->InitWrite(SelectedChannel{
-            .Channel = static_cast<uint8_t>(wifiChannel),
-            .ChannelOffset = 0,
-            .ChannelWidth = bandWidth,
-        });
-
-        if (!usb_tx_thread) {
-            std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
-            args->udp_port = 8001;
-            args->link_id = link_id;
-            args->keypair = keyPath;
-            args->stbc = stbc_enabled;
-            args->ldpc = ldpc_enabled;
-            args->mcs_index = 0;
-            args->vht_mode = false;
-            args->short_gi = false;
-            args->bandwidth = 20;
-            args->k = 1;
-            args->n = 5;
-            args->radio_port = wfb_tx_port;
-
-            __android_log_print(
-                ANDROID_LOG_ERROR, TAG, "radio link ID %d, radio PORT %d", args->link_id, args->radio_port);
-
-            // One TxFrame per TX thread: stop() is final for an instance (its loop exits and never restarts), so a
-            // link that comes back (sleep/wake, replug) needs a fresh one. Reusing the old one made run() return at
-            // once, leaving the uplink dead and its UDP socket open (2026-09-27, docs/xr/troubleshooting.md).
-            txFrame = std::make_shared<TxFrame>();
-            init_thread(usb_tx_thread, [&]() {
-                return std::make_unique<std::thread>([tx = txFrame, current_device, args] {
-                    tx->run(current_device, args.get());
-                    __android_log_print(ANDROID_LOG_DEBUG, TAG, "usb_transfer thread should terminate");
-                });
+            // TX-capable bring-up with RX enabled (cfg.rx.enable_with_tx). On
+            // Jaguar3 (RTL8812EU/8822EU) this also starts the coex runtime thread
+            // that sustained TX needs.
+            auto bandWidth = (bw == 20 ? CHANNEL_WIDTH_20 : CHANNEL_WIDTH_40);
+            current_device->InitWrite(SelectedChannel{
+                .Channel = static_cast<uint8_t>(wifiChannel),
+                .ChannelOffset = 0,
+                .ChannelWidth = bandWidth,
             });
 
-            if (adaptive_link_enabled) {
-                stop_adaptive_link();
-                start_link_quality_thread(fd);
+            if (!usb_tx_thread) {
+                std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
+                args->udp_port = 8001;
+                args->link_id = link_id;
+                args->keypair = keyPath;
+                args->stbc = stbc_enabled;
+                args->ldpc = ldpc_enabled;
+                args->mcs_index = 0;
+                args->vht_mode = false;
+                args->short_gi = false;
+                args->bandwidth = 20;
+                args->k = 1;
+                args->n = 5;
+                args->radio_port = wfb_tx_port;
+
+                __android_log_print(
+                    ANDROID_LOG_ERROR, TAG, "radio link ID %d, radio PORT %d", args->link_id, args->radio_port);
+
+                // One TxFrame per TX thread: stop() is final for an instance (its loop exits and never restarts), so a
+                // link that comes back (sleep/wake, replug) needs a fresh one. Reusing the old one made run() return at
+                // once, leaving the uplink dead and its UDP socket open (2026-09-27, docs/xr/troubleshooting.md).
+                txFrame = std::make_shared<TxFrame>();
+                init_thread(usb_tx_thread, [&]() {
+                    return std::make_unique<std::thread>([tx = txFrame, current_device, args] {
+                        tx->run(current_device, args.get());
+                        __android_log_print(ANDROID_LOG_DEBUG, TAG, "usb_transfer thread should terminate");
+                    });
+                });
+
+                if (adaptive_link_enabled) {
+                    stop_adaptive_link();
+                    start_link_quality_thread(fd);
+                }
             }
-        }
 
-        // Blocking RX loop on this thread; devourer pumps the libusb events
-        // itself. Returns once StopRxLoop() is called.
-        if (stop_requested(fd)) {
-            __android_log_print(
-                ANDROID_LOG_WARN, TAG, "stop requested for fd=%d during bring-up, not entering the rx loop", fd);
-        } else {
-            current_device->StartRxLoop(packetProcessor);
-        }
-    } catch (const std::runtime_error &error) {
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "runtime_error: %s", error.what());
-        txFrame->stop();
+            // Blocking RX loop on this thread; devourer pumps the libusb events
+            // itself. Returns once StopRxLoop() is called.
+            if (stop_requested(fd)) {
+                __android_log_print(
+                    ANDROID_LOG_WARN, TAG, "stop requested for fd=%d during bring-up, not entering the rx loop", fd);
+            } else {
+                current_device->StartRxLoop(packetProcessor);
+            }
+            __android_log_print(ANDROID_LOG_DEBUG, TAG, "RX loop exited, releasing...");
+            return 0;
+        },
+        [](const char *type, const char *what) {
+            int status = 0;
+            char *readable = abi::__cxa_demangle(type, nullptr, nullptr, &status);
+            __android_log_print(ANDROID_LOG_ERROR, TAG, "link ended by an exception (%s): %s",
+                                status == 0 && readable ? readable : type, what);
+            std::free(readable);
+        });
+    release_link(fd, dev_handle, ctx);
+    return result;
+}
 
-        destroy_thread(usb_tx_thread);
-        stop_adaptive_link();
-        auto dev = rtl_devices.at(fd).get();
-        if (dev) {
-            dev->Stop();
-        }
-        rtl_devices.erase(fd);  // destroy the device: releases the adapter lock (see below)
-        libusb_release_interface(dev_handle, 0);
-        libusb_exit(ctx);
-        return -1;
-    }
-
-    __android_log_print(ANDROID_LOG_DEBUG, TAG, "RX loop exited, releasing...");
+void WfbngLink::release_link(int fd, libusb_device_handle *dev_handle, libusb_context *ctx) {
     txFrame->stop();
-
     destroy_thread(usb_tx_thread);
     stop_adaptive_link();
 
-    // Clean shutdown: halt TRX DMA and power the chip down before releasing
-    // the USB interface.
-    auto dev = rtl_devices.at(fd).get();
-    if (dev) {
-        dev->Stop();
+    // Clean shutdown: halt TRX DMA and power the chip down before releasing the USB interface. find(), not at():
+    // the device may never have been created (CreateRtlDevice threw or returned null).
+    auto it = rtl_devices.find(fd);
+    if (it != rtl_devices.end() && it->second) {
+        try {
+            it->second->Stop();
+        } catch (const std::exception &e) {
+            // Cleanup must not throw: it may run right after the link failed, and there is no caller left to catch.
+            __android_log_print(ANDROID_LOG_ERROR, TAG, "device Stop() failed during release: %s", e.what());
+        }
     }
     // Destroy the device while the handle is still valid: its destructor de-inits the chip and
     // releases the per-adapter lock. Kept in the map, it held the lock for the lifetime of this
     // WfbngLink, so the next activity (2D -> XR) found the adapter "in use" (2026-09-27).
-    rtl_devices.erase(fd);
+    if (it != rtl_devices.end()) rtl_devices.erase(it);
 
-    r = libusb_release_interface(dev_handle, 0);
+    int r = libusb_release_interface(dev_handle, 0);
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "libusb_release_interface: %d", r);
     libusb_exit(ctx);
-    return 0;
 }
 
 void WfbngLink::stop(JNIEnv *env, jobject context, jint fd) {

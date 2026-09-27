@@ -34,3 +34,8 @@ add_executable(stats_window_test StatsWindow_test.cpp)
 target_include_directories(stats_window_test PRIVATE ${SRC})
 target_link_libraries(stats_window_test GTest::gtest_main)
 gtest_discover_tests(stats_window_test)
+
+add_executable(link_guard_test LinkGuard_test.cpp)
+target_include_directories(link_guard_test PRIVATE ${SRC})
+target_link_libraries(link_guard_test GTest::gtest_main)
+gtest_discover_tests(link_guard_test)

@@ -54,6 +54,11 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
 - **Hot-plugging the RTL8812AU crashed the app twice** (devourer EEPROM read exception, then a libusb segfault in
   `~RtlJaguarDevice`); the third enumeration worked. Unplugging the RTL from a running XR app did **not** kill it on 2026-09-27 (pid 15738 survived from 13:12:27 past 13:36, no `am_proc_died`) [PROVEN: logcat events]. The earlier crashes were probably on plug-in / re-enumeration [INFERRED: EEPROM read and device teardown are enumeration-time paths]. Details and the fix still needed: "Known issue seen during this
   work" at the end of [Phase lock](compositor-phase.md#phase-lock-steering-the-source-onto-the-compositor-latch-proof-of-concept-2026-09-26).
+  - **Likely mechanism and fix (2026-09-27, audit X17):**
+    - `WfbngLink::run` caught only `std::runtime_error`, while devourer also throws `std::logic_error`, and `CreateRtlDevice` sat outside the `try`.
+    - An exception there crossed JNI into `std::terminate` and killed the app [INFERRED: code path; the original crash logs are gone].
+    - Fixed in code: `run_guarded` ([LinkGuard.h](../../app/wfbngrtl8812/src/main/cpp/LinkGuard.h), host-tested) turns any exception into -1 and logs its type and `what()`. One `release_link()` cleans up on every path. `WfbLinkManager.checkHealth` then restarts the link with a backoff.
+    - Not yet reproduced on the headset.
 - **Plugging the adapter may open the wrong app**: `USB_DEVICE_ATTACHED` can open the `.xr` app's 2D
   `VideoActivity` instead of the release PixelPilot, because both builds declare the same filter on
   `.VideoActivity` [PROVEN: [app/src/main/AndroidManifest.xml](../../app/src/main/AndroidManifest.xml) lines 52-72; the
