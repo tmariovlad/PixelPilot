@@ -42,4 +42,20 @@ W2 policy → final defaults check. The coordinator may reorder when a slot is b
 
 ## Tracker
 
-Filled in by the coordinator as results come back.
+Filled in by the coordinator as results come back. Details are in each owner's topic file and commits.
+
+- **Air-unit reset at 23 dBm (2026-09-27 ~16:31).** The air unit reset itself on the first step, a jump from 12 to 23 dBm.
+  It was a hardware reset: no panic, since the kernel has `panic=20`. It is the second reset with this pattern
+  (26.09 ~21:23). The suspected cause is a brownout on the supply [INFERRED]. The DPS-150 is not connected to the PC,
+  so the current could not be measured. **TX power above 17 dBm is blocked until the user confirms the air unit's
+  supply.** 17 dBm reached in 12→15→17 steps held without a reset. The Quest app recovered by itself, with no crash
+  and video back after ~35 s.
+- **W1 phase 1 PASS.** The tunnel works both ways: Quest→10.5.0.10 24/30 pings (~10 ms), air→10.5.0.3 2/5. Video is
+  unaffected. The loss is open (downlink FEC 1/2 vs 1/3, after W2). Found and fixed along the way:
+  - the app ↔ `wfb_tun` framing and MTU mismatch (`e889f76`);
+  - the UDP 8001 leak that killed the uplink after the first link restart (`f117c70`, verified on the Quest);
+  - stale wfb counters on a dead link (`dc58403`, device check in the W5 slot).
+  Persistence is deployed on the air unit (`linkmode-air.sh` md5 b8b60b83, backup `.bak-2026-09-27-pre-tunnel`,
+  `/overlay` 196K free). Boot validation is pending.
+- **W2 phase 1 done.** 13 steps from 5 to 17 dBm with m2b8, no reset, 54–55 °C. Results: [link-envelope.md](link-envelope.md).
+- **Canonical Quest build.** 50991744 (`e889f76`). Candidate 9aaf1c2f (`dc58403`) is in the W5 slot.
