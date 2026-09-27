@@ -18,7 +18,7 @@ final class XrStatsRenderer {
     // Sized for the 1024x256 panel image (LayerLayout.STATS_IMAGE_*): ~60 columns, 6 lines under a headline.
     private static final float TEXT_PX = 28f;
     private static final float LINE_PX = 33f;
-    private static final float HEADLINE_PX = 40f;
+    private static final float HEADLINE_PX = 36f;   // ~46 bold columns; SignalState headlines are <= 40
     private static final float HEADLINE_BAND_PX = 54f;
     private static final float MARGIN_PX = 12f;
     private static final int ALERT_RED = 0xE0C62828;

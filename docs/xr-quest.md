@@ -47,7 +47,7 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
    activity takes it over.
 4. Video appears as a head-locked screen with a stats panel below it. Leave with the Meta button.
 
-**What the panel tells you** (since commit `8d7728e`, 2026-09-27; not yet checked on the headset):
+**What the panel tells you** (since commit `8d7728e`, 2026-09-27; verified on the Quest 2 the same day, see below):
 - When the video is not fine, the first line is a headline on a coloured band.
   - **Red** means act now. The panel then moves up over the video's lower part, so a frozen last frame cannot pass for live video:
     - `NO SIGNAL`: no wfb packets;
@@ -65,6 +65,28 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
   Long lines end in "…".
 - The classifier is `app/xr/…/SignalState.java`. The panel is redrawn on the UI thread every 250 ms and adds nothing to the decode path.
 - Why these changes: [XR robustness/UX audit](xr/research/2026-09-27-xr-ux-audit.md).
+
+**Verified on the Quest 2** (build `cd5fa436` = `8d7728e` + the native stats fix `dc58403` + shorter headlines; air unit 1080p90/8000,
+MCS2, FEC 4/6; the headset on the balcony):
+- **No latency cost** [PROVEN: [A/B data](xr/data/2026-09-27-w5-panel-ab.csv), steps in [the step log](xr/data/2026-09-27-w5-panel-ab-steps.txt)].
+  - Setup: one long trace, builds alternated OLD (canonical `50991744`) / NEW / OLD / NEW, 45 s each, analysed with
+    `ab_segments.py --air-offset-s 0 --guard-s 10`.
+  - Result, NEW vs OLD: capture → decoded +0.20 ms, capture → frame complete −0.01 ms. The pairs were +0.52 and
+    −0.15 ms, less than the drift between the two OLD steps (7.56 → 8.58 ms, loss rising on the balcony link).
+- **Video stops mid-flight** (waybeam only stopped for 12 s by the OpenIPC session, twice; wfb_tx untouched) [PROVEN: headset screenshots every ~3 s].
+  - `NO SIGNAL` appeared ~1 s and ~2 s after the stop (air epochs 1790517127.03 → Quest 1790517128; 1790517180.80 → 1790517183).
+  - The panel sat over the video while the last frame stayed frozen, and it cleared when the video returned.
+  - It says NO SIGNAL rather than VIDEO STALLED, which also confirms the native fix `dc58403` on the device: a window without packets now reports 0 packets.
+  - `VIDEO RESUMING` lasts ~55 ms (5 frames at 90 fps), shorter than the screenshot interval, so no screenshot caught it.
+- **Wrong key** (a random 64-byte key in the prefs, alternated with the real one, N = 2): `WRONG KEY - check gs.key`
+  with `decerr` = `pkt` on the link line; the real key brought the video back [PROVEN].
+- **32-byte key:** `SETUP: gs.key 32 B, needs 64`, and the link is not started: no crash, and the log says
+  `wfb-ng link not started` [PROVEN].
+- **Relaunching XR in one process** did not add Timer threads (2 with the activity up, both times), but this is weak evidence
+  (N = 2, `CLEAR_TASK` launches alternately closed the activity).
+
+![panel OK](xr/img/w5-panel-ok.jpg) ![NO SIGNAL over the frozen frame](xr/img/w5-panel-no-signal.jpg)
+![WRONG KEY](xr/img/w5-panel-wrong-key.jpg) ![SETUP: key size](xr/img/w5-panel-setup-key.jpg)
 
 Everything tunable lives in **Video → Latency experiments** (single source:
 `app/videonative/.../LatencyExperiments.java`):

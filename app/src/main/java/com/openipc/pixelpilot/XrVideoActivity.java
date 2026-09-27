@@ -113,7 +113,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         if (keyProblem != null) {
             // The native link would throw on this key and kill the app; say so in the headset instead.
             Log.e(TAG, "wfb-ng link not started: " + keyProblem);
-            signal.setConfigError(keyProblem + " - import it in the 2D screen");
+            signal.setConfigError(keyProblem);
+            linkStatus = "wfb-ng not started: import a 64-byte gs.key in the 2D screen";
             return;
         }
         GsKeyStore.copyToFiles(this);

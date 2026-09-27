@@ -62,7 +62,7 @@ public class SignalStateTest {
         advance(null, true, GOOD);
         now += 400 * MS;
         assertEquals(Kind.VIDEO_STALLED, tick(NONE, true, new Link(1300, 1300, 0)));
-        assertTrue(s.message(), s.message().startsWith("VIDEO STALLED - last frame 0.4 s ago"));
+        assertEquals("VIDEO STALLED (0.4 s)", s.message());
     }
 
     @Test public void shortGapUnderTheThresholdStaysOk() {
@@ -152,9 +152,9 @@ public class SignalStateTest {
     }
 
     @Test public void configErrorComesFirstWhenNoFramesArrive() {
-        s.setConfigError("gs.key is 32 bytes, wfb-ng needs 64");
+        s.setConfigError("gs.key 32 B, needs 64");
         assertEquals(Kind.CONFIG_ERROR, advance(NONE, false, Link.NONE));
-        assertEquals("SETUP: gs.key is 32 bytes, wfb-ng needs 64", s.message());
+        assertEquals("SETUP: gs.key 32 B, needs 64", s.message());
         assertTrue(s.needsAction());
     }
 
@@ -162,5 +162,12 @@ public class SignalStateTest {
         s.setConfigError("no gs.key");                     // e.g. RTP pushed over Wi-Fi without a link
         advance(null, false, Link.NONE);
         assertEquals(Kind.OK, advance(null, false, Link.NONE));
+    }
+
+    @Test public void everyHeadlineFitsTheBand() {
+        for (Kind k : Kind.values()) {
+            String m = SignalState.message(k, 123_400_000_000L);   // a long "x s" still fits
+            assertTrue(k + ": " + m, m.length() <= 40);
+        }
     }
 }

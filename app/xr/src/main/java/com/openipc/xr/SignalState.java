@@ -129,7 +129,7 @@ public final class SignalState {
         return kind != Kind.OK && kind != Kind.WAITING_FOR_VIDEO && !recovering;
     }
 
-    /** One short line for the panel headline; empty when OK. */
+    /** One short line for the panel headline (at most ~40 characters, so it fits the band); empty when OK. */
     public String message() {
         return message;
     }
@@ -138,15 +138,15 @@ public final class SignalState {
         double s = sinceNs / 1e9;
         switch (kind) {
             case NO_ADAPTER:
-                return "NO ADAPTER - plug the RTL8812AU (or send RTP over Wi-Fi)";
+                return "NO ADAPTER - plug in the RTL8812AU";
             case NO_PACKETS:
-                return String.format(Locale.US, "NO SIGNAL - no packets from the air unit (%.1f s)", s);
+                return String.format(Locale.US, "NO SIGNAL (%.1f s)", s);
             case WRONG_KEY:
-                return "WRONG KEY - packets arrive but do not decrypt (gs.key)";
+                return "WRONG KEY - check gs.key";
             case WAITING_FOR_VIDEO:
                 return String.format(Locale.US, "WAITING FOR VIDEO (%.1f s)", s);
             case VIDEO_STALLED:
-                return String.format(Locale.US, "VIDEO STALLED - last frame %.1f s ago", s);
+                return String.format(Locale.US, "VIDEO STALLED (%.1f s)", s);
             default:
                 return "";
         }

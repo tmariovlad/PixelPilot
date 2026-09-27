@@ -32,7 +32,7 @@ public final class GsKeyStore {
     /** Null when {@code key} has the size wfb-ng needs, otherwise why it does not. */
     public static String problem(byte[] key) {
         if (key == null || key.length == 0) return "no gs.key";
-        if (key.length != KEY_BYTES) return "gs.key is " + key.length + " bytes, wfb-ng needs " + KEY_BYTES;
+        if (key.length != KEY_BYTES) return "gs.key " + key.length + " B, needs " + KEY_BYTES;
         return null;
     }
 

@@ -9,7 +9,7 @@ public class GsKeyStoreTest {
     }
 
     @Test public void shortOrLongKeysAreRejected() {
-        assertEquals("gs.key is 32 bytes, wfb-ng needs 64", GsKeyStore.problem(new byte[32]));
+        assertEquals("gs.key 32 B, needs 64", GsKeyStore.problem(new byte[32]));
         assertNotNull(GsKeyStore.problem(new byte[65]));
     }
 
