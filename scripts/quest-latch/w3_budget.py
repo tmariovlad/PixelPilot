@@ -22,6 +22,9 @@ the ranges that matter are the per-mode ISP intervals. Otherwise: "equal within 
 Usage: python3 w3_budget.py air.tsv out/mode_<mode>_<rep>.txt ... [--uniform-wait <mode>]
   air.tsv: tab-separated with a header containing mode, s_air_med, readout_ms, isp_lo, isp_hi (one row per mode;
   several rows for one mode are averaged). Quest files are named mode_<mode>_<rep>.txt (mode_segment.sh output).
+  Optional air columns: encode_med (shown, already inside s_air), fov_h / fov_v (the share of the sensor's width /
+  height the mode uses, in %; W3c: field of view against latency). With fov columns a trade-off line per mode gives
+  its extra latency (range midpoints) against the fastest mode and its field-of-view area against that mode's.
 """
 import csv
 import re
@@ -65,7 +68,7 @@ def parse_air(rows):
     acc = defaultdict(lambda: defaultdict(list))
     for r in rows:
         for k_in, k_out in (("s_air_med", "s_air"), ("readout_ms", "readout"), ("isp_lo", "isp_lo"), ("isp_hi", "isp_hi"),
-                            ("fps", "fps")):
+                            ("fps", "fps"), ("encode_med", "encode"), ("fov_h", "fov_h"), ("fov_v", "fov_v")):
             if r.get(k_in) not in (None, ""):
                 acc[str(r["mode"]).strip()][k_out].append(float(r[k_in]))
     return {m: {k: st.mean(v) for k, v in d.items()} for m, d in acc.items()}
@@ -100,6 +103,18 @@ def decide(res):
     return None
 
 
+def tradeoff(res):
+    """Per mode with fov_h/fov_v: (extra ms against the fastest mode, range midpoints; field-of-view area as a
+    multiple of the fastest mode's). Empty if the fastest mode has no field of view."""
+    fastest = min(res, key=lambda m: res[m]["total_lo"] + res[m]["total_hi"])
+    f = res[fastest]
+    if "fov_h" not in f or "fov_v" not in f:
+        return {}
+    mid = lambda r: (r["total_lo"] + r["total_hi"]) / 2
+    area = lambda r: r["fov_h"] * r["fov_v"]
+    return {m: (mid(r) - mid(f), area(r) / area(f)) for m, r in res.items() if "fov_h" in r and "fov_v" in r}
+
+
 DISPLAY_PERIOD_MS = 8.3545  # Quest 2 "120 Hz" = 119.70 Hz (docs/xr/compositor-phase.md, calibration)
 
 
@@ -125,12 +140,17 @@ def main(argv):
         if mode in res:
             print(f"mode {mode}: latch wait = {DISPLAY_PERIOD_MS / 2:.2f} ms (half a display period, uniform phase); "
                   f"measured in the traces: {[r.get('wait_measured') for r in quest[mode]]}")
-    cols = ["capture", "readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait", "pkt_per_frame", "lost_pct", "undecoded_pct"]
-    print("mode  n  " + "  ".join(f"{c:>7s}" for c in cols) + "   total G2G range (ms)")
+    cols = ["capture", "readout", "isp_lo", "isp_hi", "encode", "s_air", "spread", "decode", "wait", "pkt_per_frame",
+            "lost_pct", "undecoded_pct"]
+    width = max(4, *(len(m) for m in res)) if res else 4
+    print(f"{'mode':{width}s}  n  " + "  ".join(f"{c:>7s}" for c in cols) + "      fov   total G2G range (ms)")
     for mode in sorted(res, key=lambda m: res[m]["own_hi"]):
         r = res[mode]
-        print(f"{mode:4s} {r['repeats']:2d}  " + "  ".join(f"{r.get(c, float('nan')):7.2f}" for c in cols)
-              + f"   {r['total_lo']:.1f} .. {r['total_hi']:.1f}")
+        fov = f"{r['fov_h']:.0f}x{r['fov_v']:.0f}%" if "fov_h" in r and "fov_v" in r else "-"
+        print(f"{mode:{width}s} {r['repeats']:2d}  " + "  ".join(f"{r.get(c, float('nan')):7.2f}" for c in cols)
+              + f"  {fov:>7s}   {r['total_lo']:.1f} .. {r['total_hi']:.1f}")
+    for mode, (extra, area) in sorted(tradeoff(res).items(), key=lambda kv: kv[1][0]):
+        print(f"trade-off {mode}: {extra:+.1f} ms for {area:.2f}x the field-of-view area of the fastest mode")
     w = decide(res)
     print("winner:", w if w else "none: the modes are equal within the ISP uncertainty (needs an optical G2G to decide)")
 

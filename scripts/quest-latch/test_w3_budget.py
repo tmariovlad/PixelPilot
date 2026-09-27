@@ -1,5 +1,5 @@
 """Offline checks of w3_budget.py. Run: python3 test_w3_budget.py"""
-from w3_budget import PANEL_MS, TX_FLOOR_MS, budget, decide, parse_air, parse_quest
+from w3_budget import PANEL_MS, TX_FLOOR_MS, budget, decide, parse_air, parse_quest, tradeoff
 
 SEGMENT = """# 2_a 2026-09-27
 3000 packets / 810 frames in 9.0s = 90.0 fps, 8.10 pkt/frame; sequence gaps (lost before the app) = 3, reordered = 0
@@ -38,6 +38,21 @@ def test_decide_needs_non_overlapping_ranges():
     assert decide(clear) == "A"
     overlap = {"A": {"own_lo": 20, "own_hi": 26}, "B": {"own_lo": 25, "own_hi": 30}}
     assert decide(overlap) is None  # the ISP ranges overlap: no winner
+
+
+def test_parse_air_reads_encode_and_field_of_view():
+    a = parse_air([{"mode": "res4", "s_air_med": "3.0", "readout_ms": "4.0", "isp_lo": "1.5", "isp_hi": "3.5",
+                    "encode_med": "2.8", "fov_h": "76", "fov_v": "75"}])["res4"]
+    assert (a["encode"], a["fov_h"], a["fov_v"]) == (2.8, 76.0, 75.0)
+
+
+def test_tradeoff_against_the_fastest_mode():
+    res = {"rec": {"total_lo": 27.0, "total_hi": 33.0, "fov_h": 33.0, "fov_v": 44.0},
+           "res4": {"total_lo": 30.0, "total_hi": 36.0, "fov_h": 76.0, "fov_v": 75.0}}
+    t = tradeoff(res)
+    assert t["rec"] == (0.0, 1.0)
+    assert abs(t["res4"][0] - 3.0) < 1e-9 and abs(t["res4"][1] - 76 * 75 / (33 * 44)) < 1e-9
+    assert tradeoff({"x": {"total_lo": 1, "total_hi": 2}}) == {}  # no field of view: no trade-off lines
 
 
 if __name__ == "__main__":
