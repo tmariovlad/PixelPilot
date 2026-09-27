@@ -82,7 +82,7 @@ Filled in by the coordinator as results come back. Details are in each owner's t
   - link self-healing and USB attach (needs a physical replug to verify);
   - XR input (A/X = panel mode, B/Y = hide);
   - decoder recovery (X23; checked in the final slot: the SPS-change rebuild (c) was slower on a live switch and was removed in `501094a`; [result](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27)).
-- **Canonical Quest build.** 7b8baadb (`e889479`). The final build from HEAD is checked in the last slot.
+- **Canonical Quest build.** 7b8baadb (`e889479`; file `scripts/quest/out/apks/w5b-e889479.apk`, gitignored). The final build from HEAD is checked in the last slot.
 - **REC defaults persisted** (480p167 / 2000 / FEC 4/8 / MCS2 / 12 dBm). They were validated after a reboot: video at
   166.5 fps and the tunnel back from `/opt/linkmode`.
 - **`alink_air` deployed.** It was validated after a reboot and now runs the 2-row policy m2f48 ↔ m1f46 (score

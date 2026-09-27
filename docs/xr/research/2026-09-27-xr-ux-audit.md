@@ -42,6 +42,7 @@ OLD = the canonical build, APK md5 `7b8baadb` (`e889479`; pulled from the Quest 
 (`d8b6498`: every fix above plus the uplink change of the 2c6ae8 session). Real link, air unit on REC (480p167 / 2000 kbit/s /
 FEC 4/8 / MCS2 / 12 dBm), Guardian paused. Data: [build A/B](../data/2026-09-27-final-build-ab.csv) ([steps](../data/2026-09-27-final-build-ab-steps.txt)),
 [latch and input sync](../data/2026-09-27-final-latch-input.txt), [mode switches](../data/2026-09-27-final-switch-gap.txt).
+APK files on PC-VLAD (gitignored; a rebuild from git gives another md5): `7b8baadb` = `scripts/quest/out/apks/w5b-e889479.apk`, `b2249f15` = `scripts/quest/out/apks/ppxr-b2249f15-501094a.apk`; `b8b6dcc3` was not kept (rebuild `d8b6498` if needed).
 
 1. **No latency regression.** One in-trace A/B, OLD NEW OLD NEW NEW OLD × 45 s ([ab_segments.py](../../../scripts/quest-latch/ab_segments.py), drift fitted on OLD). NEW is +0.20 ms at frame complete and +0.21 ms decoded. The decoder's share is equal (decoded − last 1.48 vs 1.49 ms), fps 166.5 on both, loss ≈ 0. The shift is in arrival and lies inside the spread of the steps (OLD 1.60–1.73, NEW 1.74–2.02 ms) [PROVEN: data above].
 2. **The input sync costs nothing on the frame path.** `ppxr_input_sync` p50 68 µs, p95 79 µs, max 0.33 ms (2 traces × ~1045 frames). It runs after `xrEndFrame`. Phase-to-latch is unchanged: ready → latch mean 3.05–3.19 ms, about 35 % of frames miss a latch, on both builds (2 OLD, 4 NEW traces) [PROVEN: data above].
