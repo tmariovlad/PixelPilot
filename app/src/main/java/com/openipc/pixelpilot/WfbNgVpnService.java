@@ -35,6 +35,10 @@ public class WfbNgVpnService extends VpnService {
     // Threads for bidirectional traffic
     private Thread udpToVpnThread;
     private Thread vpnToUdpThread;
+    // UDP:8000 socket of udpToVpnThread; closing it is what wakes that thread's blocking receive().
+    private DatagramSocket udpInSocket;
+    // Stop waits this long for both threads: the TUN pump notices within one poll timeout.
+    private static final long STOP_TIMEOUT_MS = 3 * TunToUdpPump.WAIT_MS;
 
     // Control flags
     private volatile boolean isRunning = false;
@@ -105,30 +109,57 @@ public class WfbNgVpnService extends VpnService {
             Log.e(TAG, "Failed to establish VPN interface", e);
             return false;
         }
+        try {
+            udpInSocket = bindUdpIn();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to bind UDP:8000 for the VPN tunnel", e);
+            closeQuietly(vpnInterface);
+            vpnInterface = null;
+            return false;
+        }
         isRunning = true;
-        startVpnThreads(vpnInterface);
+        startVpnThreads(vpnInterface, udpInSocket);
         Log.i(TAG, "VPN tunnel started");
         return true;
     }
 
-    /** Stops the traffic threads and closes the TUN interface. */
+    /**
+     * Stops the traffic threads, then closes the TUN interface: closing it first made the pump's poll/read fail with
+     * EBADF. The UDP socket is closed as part of the stop request, since that is what wakes a blocking receive().
+     */
     private synchronized void stopTunnel() {
-        isRunning = false;
-        if (udpToVpnThread != null) {
-            udpToVpnThread.interrupt();
+        final DatagramSocket udpIn = udpInSocket;
+        try {
+            boolean clean = OrderedShutdown.stop(() -> {
+                isRunning = false;
+                if (udpIn != null) udpIn.close();
+            }, STOP_TIMEOUT_MS, vpnInterface, vpnToUdpThread, udpToVpnThread);
+            if (!clean) Log.w(TAG, "VPN threads still running after " + STOP_TIMEOUT_MS + " ms; interface closed anyway");
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to close VPN interface", e);
         }
-        if (vpnToUdpThread != null) {
-            vpnToUdpThread.interrupt();
-        }
-        if (vpnInterface != null) {
-            try {
-                vpnInterface.close();
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to close VPN interface", e);
-            }
-            vpnInterface = null;
-        }
+        vpnInterface = null;
+        udpInSocket = null;
+        udpToVpnThread = null;
+        vpnToUdpThread = null;
         Log.i(TAG, "VPN tunnel stopped");
+    }
+
+    /** UDP:8000, where wfb-ng hands over the packets received for the tunnel. */
+    private static DatagramSocket bindUdpIn() throws IOException {
+        DatagramSocket socket = new DatagramSocket(null);
+        socket.setReuseAddress(true);
+        socket.bind(new InetSocketAddress(8000));
+        return socket;
+    }
+
+    private static void closeQuietly(ParcelFileDescriptor pfd) {
+        if (pfd == null) return;
+        try {
+            pfd.close();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to close VPN interface", e);
+        }
     }
 
     /**
@@ -162,7 +193,7 @@ public class WfbNgVpnService extends VpnService {
      *  1) A thread to read from local UDP port 8000 and inject into VPN
      *  2) A thread to read from VPN and send to local UDP port 8001
      */
-    private void startVpnThreads(final ParcelFileDescriptor vpnInterfacePfd) {
+    private void startVpnThreads(final ParcelFileDescriptor vpnInterfacePfd, final DatagramSocket udpIn) {
         // Prepare input (read from VPN) and output (write to VPN) streams
         final FileInputStream vpnInput = new FileInputStream(vpnInterfacePfd.getFileDescriptor());
         final FileOutputStream vpnOutput = new FileOutputStream(vpnInterfacePfd.getFileDescriptor());
@@ -174,12 +205,7 @@ public class WfbNgVpnService extends VpnService {
                 Log.i(TAG, "UDP (WFB) → VPN thread started");
                 byte[] buffer = new byte[4024];
 
-                try (DatagramSocket socket = new DatagramSocket(null)) {
-                    // Set reuse address before binding
-                    socket.setReuseAddress(true);
-                    // Bind to local UDP port 8000 on all interfaces
-                    socket.bind(new InetSocketAddress(8000));
-
+                try (DatagramSocket socket = udpIn) {
                     while (isRunning) {
                         // Read data from UDP into buffer
                         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
@@ -198,7 +224,8 @@ public class WfbNgVpnService extends VpnService {
                         }
                     }
                 } catch (IOException e) {
-                    Log.e(TAG, "UDP → VPN thread error", e);
+                    // stopTunnel closes the socket to end receive(); only a failure while running is an error
+                    if (isRunning) Log.e(TAG, "UDP → VPN thread error", e);
                 }
                 Log.i(TAG, "UDP → VPN thread stopped");
             }
