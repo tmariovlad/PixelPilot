@@ -29,3 +29,8 @@ target_include_directories(txframe_test PRIVATE ${LOG_SHIM} ${CMAKE_CURRENT_SOUR
 target_link_libraries(txframe_test PkgConfig::sodium GTest::gtest_main pthread)
 include(GoogleTest)
 gtest_discover_tests(txframe_test)
+
+add_executable(stats_window_test StatsWindow_test.cpp)
+target_include_directories(stats_window_test PRIVATE ${SRC})
+target_link_libraries(stats_window_test GTest::gtest_main)
+gtest_discover_tests(stats_window_test)

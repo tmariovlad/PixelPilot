@@ -7,6 +7,7 @@
 
 #include "RxFrame.h"
 #include "SignalQualityCalculator.h"
+#include "StatsWindow.h"
 #include "TxFrame.h"
 #include "devourer/src/RxPacket.h"
 #include "devourer/src/UsbDeviceLock.h"
@@ -217,10 +218,6 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                                                      0,
                                                      0,
                                                      NULL);
-                    if (should_clear_stats) {
-                        video_aggregator->clear_stats();
-                        should_clear_stats = false;
-                    }
                 } else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
                     mavlink_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                                        packet.Data.size() - sizeof(ieee80211_header) - 4,
@@ -436,7 +433,24 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     if (native(wfbngLinkN)->video_aggregator == nullptr) {
         return;
     }
-    auto aggregator = native(wfbngLinkN)->video_aggregator.get();
+    WfbngLink *link = native(wfbngLinkN);
+    // Read and reset both aggregators' counters in one step under the RX thread's lock: a window without packets
+    // then reports zeros instead of repeating the last one (StatsWindow.h).
+    StatsWindow video, tunnel;
+    {
+        std::lock_guard<std::mutex> lock(link->agg_mutex);
+        video = take_window(*link->video_aggregator);
+        if (link->udp_aggregator) tunnel = take_window(*link->udp_aggregator);
+    }
+    if (tunnel.all || tunnel.lost) {
+        __android_log_print(ANDROID_LOG_INFO,
+                            TAG,
+                            "tunnel window: pkts %u lost %u fec_recovered %u dec_err %u",
+                            tunnel.all,
+                            tunnel.lost,
+                            tunnel.fec_recovered,
+                            tunnel.dec_err);
+    }
     jclass jClassExtendsIWfbStatChangedI = env->GetObjectClass(wfbStatChangedI);
     jclass jcStats = env->FindClass("com/openipc/wfbngrtl8812/WfbNGStats");
     if (jcStats == nullptr) {
@@ -446,22 +460,21 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     if (jcStatsConstructor == nullptr) {
         return;
     }
-    SignalQualityCalculator::get_instance().add_fec_data(
-        aggregator->count_p_all, aggregator->count_p_fec_recovered, aggregator->count_p_lost);
+    SignalQualityCalculator::get_instance().add_fec_data(video.all, video.fec_recovered, video.lost);
 
     auto quality = SignalQualityCalculator::get_instance().calculate_signal_quality();
     uint32_t avg_rssi_int = round(map_range(quality.quality, -1024.f, 1024.f, 0.f, 100.f));
 
     auto stats = env->NewObject(jcStats,
                                 jcStatsConstructor,
-                                (jint)aggregator->count_p_all,
-                                (jint)aggregator->count_p_dec_err,
-                                (jint)(aggregator->count_p_all - aggregator->count_p_dec_err),
-                                (jint)aggregator->count_p_fec_recovered,
-                                (jint)aggregator->count_p_lost,
-                                (jint)aggregator->count_p_bad,
-                                (jint)aggregator->count_p_override,
-                                (jint)aggregator->count_p_outgoing,
+                                (jint)video.all,
+                                (jint)video.dec_err,
+                                (jint)(video.all - video.dec_err),
+                                (jint)video.fec_recovered,
+                                (jint)video.lost,
+                                (jint)video.bad,
+                                (jint)video.override_,
+                                (jint)video.outgoing,
                                 (jint)avg_rssi_int);
     if (stats == nullptr) {
         return;
@@ -472,7 +485,6 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
         return;
     }
     env->CallVoidMethod(wfbStatChangedI, onStatsChanged, stats);
-    native(wfbngLinkN)->should_clear_stats = true;
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeRefreshKey(JNIEnv *env,

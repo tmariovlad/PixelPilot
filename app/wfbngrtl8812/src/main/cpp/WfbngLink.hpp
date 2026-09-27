@@ -87,7 +87,6 @@ class WfbngLink {
         return stop_requested_fds.count(fd) > 0;
     }
     std::unique_ptr<std::thread> link_quality_thread{nullptr};
-    bool should_clear_stats{false};
     FecChangeController fec;
 
     void init_thread(std::unique_ptr<std::thread> &thread,
