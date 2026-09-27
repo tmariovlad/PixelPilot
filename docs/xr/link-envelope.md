@@ -112,6 +112,34 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **Switch up** to MCS2 only with margin above ~1600. The score moved ~45 points between 17 and 12 dBm and ~100 between 12 and 8 dBm. Hysteresis and time constants are checked in closed loop by the receiver's author and live by the adaptive-range test below [SPECULATION until then].
 - **Pending:** the user's picture-quality check at 2–4 Mbit/s.
 
+**Adaptive range test: the adaptive link against a fixed setting (2026-09-27 19:01–19:18, 480p167, app build `b8b6dcc3` with the 4 Hz / FEC 1/3 uplink, air receiver `alink_air` using the two-state policy above: hold_down 2000 ms, stale 1500 ms).**
+- **Method.** One 1260 s trace. The air unit changed only the TX power: 17 12 8 12 17 12 8 12 17 dBm, 30 s steps, rises in ≤ 3 dB steps. Three phases ran back to back:
+  - ADAPT1: receiver running;
+  - CTRL: receiver stopped, fixed `m2b2f48`, which is what the air unit sends without the receiver;
+  - ADAPT2: receiver restarted.
+  - Then IDR requests on/off at 8 dBm, 20 s steps in ABBA × 2.
+- **Analysis.** Steps from the air's hold log via [hold_steps.py](../../scripts/quest-latch/hold_steps.py). Every 17 dBm step was relabelled as the common drift reference (+70 ppm over the whole trace). Offset Quest − air = 0.430 + 0.041 s.
+- **Air unit.** No abort, 46–47 °C. It ended at 12 dBm with the receiver on `m2f48` and IDR on. Quest thermal status 0.
+- **Data.** [latency/loss per step](data/measurements-2026-09-27-quest2-w2-range.csv) · [link per step](data/link-2026-09-27-w2-range.csv) · [steps](data/steps-2026-09-27-w2-range.txt) · [air hold log](data/air-hold-2026-09-27-w2-range.txt) · [receiver log](data/air-alink-2026-09-27-w2-range.log) · [Quest thermal](data/thermal-2026-09-27-w2-range.csv).
+
+| 8 dBm | row on air | loss before FEC | loss after FEC (two steps) | frames without a decoded mark | capture → decoded (two steps, vs the 17 dBm line) |
+|---|---|---|---|---|---|
+| ADAPT1 | `m1f46` (receiver) | 7.5 % | 0.33 / 0.48 % | 3 / 6 | 3.43 / 3.41 ms |
+| **CTRL** | **`m2b2f48` fixed** | **13.9 %** | **1.29 / 1.65 %** | **12 / 7** | **4.03 / 3.85 ms** |
+| ADAPT2 | `m1f46` (receiver) | 8.3 % | 0.59 / 0.60 % | 2 / 5 | 3.32 / 3.88 ms |
+
+- **At 8 dBm the adaptive link cuts the loss by 2.5–4× and is ~0.4 ms faster** [PROVEN: in-trace A-B-A, same power steps; CTRL sits between the two ADAPT phases, so a time trend cannot explain it].
+- **At 12 and 17 dBm the phases are the same** (0–0.15 % after FEC), because the receiver stays on `m2f48`, which is also the CTRL setting.
+- **Loss for the same point differs between days.** CTRL at 8 dBm lost 1.3–1.7 % here against 3.8 % for `m2b2f48` in phase 2. Compare across runs only within one trace.
+- **Reaction and stability** [PROVEN: receiver log against the air step log, same clock]:
+  - 12 decisions in the whole run, one per threshold crossing, **no oscillation**.
+  - It goes down 2.6–2.7 s after the power drops to 8 dBm, triggered by `down-loss` at an estimated pre-FEC loss of 0.12–0.13, or by `down-score` at 1550–1551.
+  - It goes up 4.6–4.9 s after the power returns to 12 dBm (score 1636–1639; hold-up 4 s).
+  - After a restart it starts on `m1f46` and climbs 4.7 s after the first reports.
+  - Every radio command returned rc = 0.
+- **Uplink.** The Quest injected ~14 frames/s (4 reports/s × FEC 1/3, plus the tunnel's own), against ~51 before. The air unit received ~4.2 reports/s. 24 of 2073 reports (1.2 %) arrived truncated at 29 B: all reports leave the app at 52–53 B [PROVEN: logcat], so they are cut after the app [INFERRED: in the tunnel's framing]. That is still under investigation.
+- **IDR requests on/off at 8 dBm (on `m1f46`).** On: 0.35–0.45 % after FEC, 0–4 frames without a mark per step, capture → decoded 3.11–3.99 ms. Off: 0.23–0.51 %, 1–5 frames, 2.90–3.79 ms. **No difference in these metrics** [PROVEN: data, N = 4 each]. What IDR requests are for, recovering a corrupted picture sooner, is not something these per-frame metrics measure. The receiver counted 16 IDRs during the run.
+
 **Phase 3b: `m2b2f48` at 12 dBm, and adaptive link on/off (2026-09-27 18:04–18:20, 480p167, build `7b8baadb`).**
 - **Data.** p12b [latency/loss](data/measurements-2026-09-27-quest2-w2-480-p12b.csv) · [link](data/link-2026-09-27-w2-480-p12b.csv) · [steps](data/steps-2026-09-27-w2-480-p12b.txt) · [thermal](data/thermal-2026-09-27-w2-480-p12b.csv); alink at 17 dBm [latency/loss](data/measurements-2026-09-27-quest2-w2-alink-p17.csv) · [link](data/link-2026-09-27-w2-alink-p17.csv) · [steps](data/steps-2026-09-27-w2-alink-p17.txt) · [thermal](data/thermal-2026-09-27-w2-alink-p17.csv); alink at 8 dBm [latency/loss](data/measurements-2026-09-27-quest2-w2-alink-p8.csv) · [link](data/link-2026-09-27-w2-alink-p8.csv) · [steps](data/steps-2026-09-27-w2-alink-p8.txt) · [thermal](data/thermal-2026-09-27-w2-alink-p8.csv).
 - **`m2b2f48` at 12 dBm (p12b, 9 steps, anchor `m1b2f46`).** It lost 0.24 % after FEC at +0.16 ms; `m2b2f46` lost 0.60 % at +0.79 ms. That makes `m2b2f48` the 12 dBm row of the policy (measured now, no longer inferred).

@@ -1,0 +1,390 @@
+1790524757.41 START rows=2 start=m1f46 est=kn tau=448ms p_down=0.100 p_up=0.060 p_up_mcs=0.080 hold_up=4000 hold_down=2000 min_int=2000 stale=1500 bitrate=0 dry=0
+1790524757.41 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 6 9000
+1790524757.41 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 1
+1790524757.53 BAD datagram (short) n=29 total_bad=1
+1790524759.84 BAD datagram (short) n=29 total_bad=2
+1790524760.77 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524762.44 STATUS row=m1f46 score=1643 p=0.032 rpt=18 bad=2 since_valid=29ms changes=0 idr=1(+0) cmd_fail=0
+1790524762.94 DECIDE m1f46 -> m2f48 reason=up score=1644 p=0.029 rec=10 lost=0 tx1s=439 since_valid=23ms dead=0 backoff=1
+1790524762.94 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 2
+1790524762.94 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 8 9000
+1790524767.44 STATUS row=m2f48 score=1645 p=0.047 rpt=39 bad=2 since_valid=222ms changes=1 idr=1(+0) cmd_fail=0
+1790524772.44 STATUS row=m2f48 score=1644 p=0.037 rpt=60 bad=2 since_valid=51ms changes=1 idr=1(+0) cmd_fail=0
+1790524777.44 STATUS row=m2f48 score=1645 p=0.042 rpt=78 bad=2 since_valid=164ms changes=1 idr=1(+0) cmd_fail=0
+1790524782.44 STATUS row=m2f48 score=1643 p=0.032 rpt=97 bad=2 since_valid=234ms changes=1 idr=1(+0) cmd_fail=0
+1790524787.44 STATUS row=m2f48 score=1645 p=0.028 rpt=119 bad=2 since_valid=203ms changes=1 idr=1(+0) cmd_fail=0
+1790524792.44 STATUS row=m2f48 score=1645 p=0.061 rpt=142 bad=2 since_valid=7ms changes=1 idr=1(+0) cmd_fail=0
+1790524797.10 BAD datagram (short) n=29 total_bad=3
+1790524797.44 STATUS row=m2f48 score=1643 p=0.049 rpt=164 bad=3 since_valid=142ms changes=1 idr=1(+0) cmd_fail=0
+1790524802.44 STATUS row=m2f48 score=1644 p=0.044 rpt=185 bad=3 since_valid=255ms changes=1 idr=1(+0) cmd_fail=0
+1790524807.44 STATUS row=m2f48 score=1644 p=0.030 rpt=207 bad=3 since_valid=143ms changes=1 idr=1(+0) cmd_fail=0
+1790524812.44 STATUS row=m2f48 score=1645 p=0.039 rpt=229 bad=3 since_valid=73ms changes=1 idr=1(+0) cmd_fail=0
+1790524817.44 STATUS row=m2f48 score=1644 p=0.048 rpt=253 bad=3 since_valid=45ms changes=1 idr=1(+0) cmd_fail=0
+1790524817.52 BAD datagram (short) n=29 total_bad=4
+1790524819.82 BAD datagram (short) n=29 total_bad=5
+1790524822.44 STATUS row=m2f48 score=1644 p=0.052 rpt=274 bad=5 since_valid=239ms changes=1 idr=1(+0) cmd_fail=0
+1790524827.44 STATUS row=m2f48 score=1641 p=0.030 rpt=295 bad=5 since_valid=186ms changes=1 idr=1(+0) cmd_fail=0
+1790524832.54 STATUS row=m2f48 score=1643 p=0.046 rpt=316 bad=5 since_valid=33ms changes=1 idr=1(+0) cmd_fail=0
+1790524837.54 STATUS row=m2f48 score=1644 p=0.066 rpt=337 bad=5 since_valid=185ms changes=1 idr=1(+0) cmd_fail=0
+1790524842.54 STATUS row=m2f48 score=1643 p=0.028 rpt=359 bad=5 since_valid=34ms changes=1 idr=1(+0) cmd_fail=0
+1790524847.54 STATUS row=m2f48 score=1641 p=0.033 rpt=380 bad=5 since_valid=181ms changes=1 idr=1(+0) cmd_fail=0
+1790524852.54 STATUS row=m2f48 score=1642 p=0.047 rpt=403 bad=5 since_valid=76ms changes=1 idr=1(+0) cmd_fail=0
+1790524857.54 STATUS row=m2f48 score=1644 p=0.039 rpt=425 bad=6 since_valid=127ms changes=1 idr=1(+0) cmd_fail=0
+1790524862.64 STATUS row=m2f48 score=1644 p=0.053 rpt=447 bad=6 since_valid=211ms changes=1 idr=1(+0) cmd_fail=0
+1790524867.64 STATUS row=m2f48 score=1644 p=0.052 rpt=470 bad=6 since_valid=2ms changes=1 idr=1(+0) cmd_fail=0
+1790524872.64 STATUS row=m2f48 score=1685 p=0.021 rpt=489 bad=6 since_valid=112ms changes=1 idr=1(+0) cmd_fail=0
+1790524877.64 STATUS row=m2f48 score=1693 p=0.026 rpt=507 bad=7 since_valid=264ms changes=1 idr=1(+0) cmd_fail=0
+1790524882.64 STATUS row=m2f48 score=1694 p=0.047 rpt=531 bad=8 since_valid=176ms changes=1 idr=1(+0) cmd_fail=0
+1790524887.64 STATUS row=m2f48 score=1692 p=0.028 rpt=552 bad=8 since_valid=226ms changes=1 idr=1(+0) cmd_fail=0
+1790524892.64 STATUS row=m2f48 score=1695 p=0.044 rpt=574 bad=8 since_valid=152ms changes=1 idr=1(+0) cmd_fail=0
+1790524897.64 STATUS row=m2f48 score=1695 p=0.028 rpt=594 bad=8 since_valid=20ms changes=1 idr=1(+0) cmd_fail=0
+1790524902.64 STATUS row=m2f48 score=1686 p=0.039 rpt=615 bad=8 since_valid=153ms changes=1 idr=1(+0) cmd_fail=0
+1790524907.64 STATUS row=m2f48 score=1641 p=0.046 rpt=634 bad=8 since_valid=165ms changes=1 idr=1(+0) cmd_fail=0
+1790524912.64 STATUS row=m2f48 score=1638 p=0.056 rpt=655 bad=8 since_valid=34ms changes=1 idr=1(+0) cmd_fail=0
+1790524917.64 STATUS row=m2f48 score=1641 p=0.049 rpt=678 bad=9 since_valid=4ms changes=1 idr=1(+0) cmd_fail=0
+1790524922.64 STATUS row=m2f48 score=1641 p=0.046 rpt=699 bad=9 since_valid=216ms changes=1 idr=1(+0) cmd_fail=0
+1790524927.64 STATUS row=m2f48 score=1640 p=0.061 rpt=722 bad=9 since_valid=126ms changes=1 idr=1(+0) cmd_fail=0
+1790524932.64 STATUS row=m2f48 score=1641 p=0.067 rpt=744 bad=9 since_valid=14ms changes=1 idr=1(+0) cmd_fail=0
+1790524933.31 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524934.53 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524935.54 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524936.14 DECIDE m2f48 -> m1f46 reason=down-loss score=1551 p=0.127 rec=29 lost=1 tx1s=590 since_valid=109ms dead=0 backoff=1
+1790524936.14 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 6 9000
+1790524936.14 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 1
+1790524936.54 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524937.54 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524937.64 STATUS row=m1f46 score=1550 p=0.127(inv) rpt=765 bad=10 since_valid=89ms changes=2 idr=6(+0) cmd_fail=0
+1790524939.63 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524942.64 STATUS row=m1f46 score=1549 p=0.046 rpt=782 bad=11 since_valid=253ms changes=2 idr=7(+0) cmd_fail=0
+1790524943.52 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524944.54 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524947.64 STATUS row=m1f46 score=1548 p=0.040 rpt=803 bad=11 since_valid=51ms changes=2 idr=9(+0) cmd_fail=0
+1790524948.32 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524949.34 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524951.92 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524952.64 STATUS row=m1f46 score=1550 p=0.048 rpt=824 bad=11 since_valid=112ms changes=2 idr=12(+0) cmd_fail=0
+1790524952.94 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524954.93 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524956.72 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524957.64 STATUS row=m1f46 score=1550 p=0.049 rpt=845 bad=11 since_valid=150ms changes=2 idr=15(+0) cmd_fail=0
+1790524958.23 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524962.43 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524962.64 STATUS row=m1f46 score=1552 p=0.036 rpt=864 bad=11 since_valid=212ms changes=2 idr=17(+0) cmd_fail=0
+1790524963.44 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524967.64 STATUS row=m1f46 score=1638 p=0.031 rpt=885 bad=11 since_valid=54ms changes=2 idr=18(+0) cmd_fail=0
+1790524969.14 DECIDE m1f46 -> m2f48 reason=up score=1636 p=0.031 rec=12 lost=0 tx1s=455 since_valid=198ms dead=0 backoff=1
+1790524969.14 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 2
+1790524969.14 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 8 9000
+1790524972.64 STATUS row=m2f48 score=1639 p=0.054 rpt=907 bad=11 since_valid=151ms changes=3 idr=18(+0) cmd_fail=0
+1790524977.64 STATUS row=m2f48 score=1640 p=0.050 rpt=929 bad=12 since_valid=241ms changes=3 idr=18(+0) cmd_fail=0
+1790524978.94 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524982.74 STATUS row=m2f48 score=1641 p=0.036 rpt=954 bad=12 since_valid=6ms changes=3 idr=19(+0) cmd_fail=0
+1790524983.44 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524987.74 STATUS row=m2f48 score=1640 p=0.044 rpt=974 bad=12 since_valid=97ms changes=3 idr=20(+0) cmd_fail=0
+1790524992.74 STATUS row=m2f48 score=1641 p=0.043 rpt=995 bad=12 since_valid=189ms changes=3 idr=20(+0) cmd_fail=0
+1790524994.84 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790524997.74 STATUS row=m2f48 score=1692 p=0.021 rpt=1018 bad=13 since_valid=73ms changes=3 idr=21(+0) cmd_fail=0
+1790525002.74 STATUS row=m2f48 score=1689 p=0.033 rpt=1038 bad=14 since_valid=168ms changes=3 idr=21(+0) cmd_fail=0
+1790525007.74 STATUS row=m2f48 score=1692 p=0.048 rpt=1061 bad=14 since_valid=35ms changes=3 idr=21(+0) cmd_fail=0
+1790525012.74 STATUS row=m2f48 score=1692 p=0.032 rpt=1082 bad=14 since_valid=66ms changes=3 idr=21(+0) cmd_fail=0
+1790525017.74 STATUS row=m2f48 score=1691 p=0.040 rpt=1103 bad=14 since_valid=179ms changes=3 idr=21(+0) cmd_fail=0
+1790525022.74 STATUS row=m2f48 score=1693 p=0.045 rpt=1125 bad=14 since_valid=27ms changes=3 idr=21(+0) cmd_fail=0
+1790525027.74 STATUS row=m2f48 score=1648 p=0.038 rpt=1145 bad=14 since_valid=220ms changes=3 idr=21(+0) cmd_fail=0
+1790525032.74 STATUS row=m2f48 score=1641 p=0.071 rpt=1167 bad=14 since_valid=230ms changes=3 idr=21(+0) cmd_fail=0
+1790525037.74 STATUS row=m2f48 score=1641 p=0.041 rpt=1187 bad=15 since_valid=141ms changes=3 idr=21(+0) cmd_fail=0
+1790525042.74 STATUS row=m2f48 score=1640 p=0.038 rpt=1209 bad=15 since_valid=30ms changes=3 idr=21(+0) cmd_fail=0
+1790525047.74 STATUS row=m2f48 score=1640 p=0.043 rpt=1229 bad=15 since_valid=526ms changes=3 idr=21(+0) cmd_fail=0
+1790525052.74 STATUS row=m2f48 score=1641 p=0.041 rpt=1251 bad=15 since_valid=133ms changes=3 idr=21(+0) cmd_fail=0
+1790525057.56 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525057.84 STATUS row=m2f48 score=1599 p=0.065 rpt=1274 bad=16 since_valid=19ms changes=3 idr=22(+0) cmd_fail=0
+1790525060.14 DECIDE m2f48 -> m1f46 reason=down-score score=1551 p=0.094 rec=26 lost=0 tx1s=588 since_valid=211ms dead=0 backoff=1
+1790525060.14 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 6 9000
+1790525060.14 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 1
+1790525060.25 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525061.47 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525062.84 STATUS row=m1f46 score=1550 p=0.042 rpt=1295 bad=17 since_valid=76ms changes=4 idr=24(+0) cmd_fail=0
+1790525065.96 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525067.04 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525067.84 STATUS row=m1f46 score=1551 p=0.060 rpt=1318 bad=17 since_valid=117ms changes=4 idr=26(+0) cmd_fail=0
+1790525068.07 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525070.76 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525072.84 STATUS row=m1f46 score=1548 p=0.046 rpt=1341 bad=17 since_valid=78ms changes=4 idr=28(+1) cmd_fail=0
+1790525076.47 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525077.94 STATUS row=m1f46 score=1549 p=0.050 rpt=1360 bad=17 since_valid=175ms changes=4 idr=29(+1) cmd_fail=0
+1790525078.86 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525079.94 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525082.16 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525083.04 STATUS row=m1f46 score=1548 p=0.030 rpt=1383 bad=17 since_valid=93ms changes=4 idr=32(+1) cmd_fail=0
+1790525083.37 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525084.56 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525085.64 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525086.74 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525088.04 STATUS row=m1f46 score=1551 p=0.031 rpt=1407 bad=17 since_valid=154ms changes=4 idr=36(+1) cmd_fail=0
+1790525091.47 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525093.04 STATUS row=m1f46 score=1639 p=0.045 rpt=1425 bad=17 since_valid=54ms changes=4 idr=37(+1) cmd_fail=0
+1790525093.14 DECIDE m1f46 -> m2f48 reason=up score=1639 p=0.045 rec=12 lost=0 tx1s=432 since_valid=154ms dead=0 backoff=1
+1790525093.14 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 2
+1790525093.14 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 8 9000
+1790525098.04 STATUS row=m2f48 score=1641 p=0.048 rpt=1447 bad=18 since_valid=6ms changes=5 idr=37(+1) cmd_fail=0
+1790525103.04 STATUS row=m2f48 score=1641 p=0.042 rpt=1470 bad=18 since_valid=56ms changes=5 idr=37(+1) cmd_fail=0
+1790525108.04 STATUS row=m2f48 score=1641 p=0.052 rpt=1492 bad=18 since_valid=107ms changes=5 idr=37(+1) cmd_fail=0
+1790525109.17 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525113.14 STATUS row=m2f48 score=1632 p=0.071 rpt=1515 bad=18 since_valid=95ms changes=5 idr=38(+1) cmd_fail=0
+1790525118.14 STATUS row=m2f48 score=1634 p=0.040 rpt=1537 bad=19 since_valid=5ms changes=5 idr=38(+1) cmd_fail=0
+1790525123.14 STATUS row=m2f48 score=1692 p=0.023 rpt=1557 bad=20 since_valid=460ms changes=5 idr=38(+1) cmd_fail=0
+1790525128.14 STATUS row=m2f48 score=1694 p=0.040 rpt=1581 bad=20 since_valid=106ms changes=5 idr=38(+1) cmd_fail=0
+1790525133.14 STATUS row=m2f48 score=1693 p=0.031 rpt=1602 bad=20 since_valid=137ms changes=5 idr=38(+1) cmd_fail=0
+1790525138.14 STATUS row=m2f48 score=1693 p=0.029 rpt=1622 bad=20 since_valid=67ms changes=5 idr=38(+1) cmd_fail=0
+1790525143.14 STATUS row=m2f48 score=1692 p=0.024 rpt=1643 bad=20 since_valid=95ms changes=5 idr=38(+1) cmd_fail=0
+1790525148.14 STATUS row=m2f48 score=1690 p=0.023 rpt=1664 bad=20 since_valid=148ms changes=5 idr=38(+1) cmd_fail=0
+1790525150.00 STOP signal, row left as is (reports=1671 changes=5)
+1790525436.06 START rows=2 start=m1f46 est=kn tau=448ms p_down=0.100 p_up=0.060 p_up_mcs=0.080 hold_up=4000 hold_down=2000 min_int=2000 stale=1500 bitrate=0 dry=0
+1790525436.06 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 6 9000
+1790525436.06 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 1
+1790525436.56 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525441.08 STATUS row=m1f46 score=1692 p=0.043 rpt=22 bad=0 since_valid=43ms changes=0 idr=1(+0) cmd_fail=0
+1790525441.78 DECIDE m1f46 -> m2f48 reason=up score=1692 p=0.036 rec=10 lost=0 tx1s=464 since_valid=238ms dead=0 backoff=1
+1790525441.78 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 2
+1790525441.78 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 8 9000
+1790525446.08 STATUS row=m2f48 score=1692 p=0.033 rpt=42 bad=0 since_valid=237ms changes=1 idr=1(+0) cmd_fail=0
+1790525451.09 STATUS row=m2f48 score=1694 p=0.028 rpt=64 bad=0 since_valid=104ms changes=1 idr=1(+0) cmd_fail=0
+1790525456.18 STATUS row=m2f48 score=1692 p=0.037 rpt=86 bad=0 since_valid=187ms changes=1 idr=1(+0) cmd_fail=0
+1790525457.09 BAD datagram (short) n=29 total_bad=1
+1790525461.19 STATUS row=m2f48 score=1693 p=0.034 rpt=108 bad=1 since_valid=195ms changes=1 idr=1(+0) cmd_fail=0
+1790525466.28 STATUS row=m2f48 score=1691 p=0.023 rpt=130 bad=1 since_valid=201ms changes=1 idr=1(+0) cmd_fail=0
+1790525469.60 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525470.68 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525471.29 STATUS row=m2f48 score=1641 p=0.079 rpt=151 bad=1 since_valid=90ms changes=1 idr=3(+0) cmd_fail=0
+1790525474.38 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525476.38 STATUS row=m2f48 score=1639 p=0.039 rpt=171 bad=1 since_valid=237ms changes=1 idr=4(+0) cmd_fail=0
+1790525477.53 BAD datagram (short) n=29 total_bad=2
+1790525477.99 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525479.84 BAD datagram (short) n=29 total_bad=3
+1790525481.39 STATUS row=m2f48 score=1640 p=0.036 rpt=192 bad=3 since_valid=125ms changes=1 idr=5(+0) cmd_fail=0
+1790525481.58 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525486.48 STATUS row=m2f48 score=1639 p=0.046 rpt=213 bad=3 since_valid=191ms changes=1 idr=6(+0) cmd_fail=0
+1790525491.48 STATUS row=m2f48 score=1641 p=0.042 rpt=235 bad=3 since_valid=78ms changes=1 idr=6(+0) cmd_fail=0
+1790525496.48 STATUS row=m2f48 score=1641 p=0.066 rpt=259 bad=3 since_valid=189ms changes=1 idr=6(+0) cmd_fail=0
+1790525499.30 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525501.10 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525501.48 STATUS row=m2f48 score=1553 p=0.108 rpt=281 bad=3 since_valid=97ms changes=1 idr=8(+0) cmd_fail=0
+1790525502.08 DECIDE m2f48 -> m1f46 reason=down-loss score=1551 p=0.124 rec=45 lost=15 tx1s=604 since_valid=89ms dead=0 backoff=1
+1790525502.08 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 6 9000
+1790525502.08 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 1
+1790525502.18 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525503.19 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525504.99 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525506.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525506.48 STATUS row=m1f46 score=1546 p=0.050 rpt=304 bad=3 since_valid=215ms changes=2 idr=12(+2) cmd_fail=0
+1790525507.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525508.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525509.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525510.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525511.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525511.49 STATUS row=m1f46 score=1549 p=0.034 rpt=327 bad=3 since_valid=72ms changes=2 idr=17(+3) cmd_fail=0
+1790525512.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525513.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525514.89 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525515.98 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525516.58 STATUS row=m1f46 score=1549 p=0.045 rpt=348 bad=3 since_valid=110ms changes=2 idr=21(+4) cmd_fail=0
+1790525517.00 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525517.09 BAD datagram (short) n=29 total_bad=4
+1790525519.69 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525520.91 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525521.58 STATUS row=m1f46 score=1548 p=0.032 rpt=369 bad=4 since_valid=168ms changes=2 idr=24(+4) cmd_fail=0
+1790525526.58 STATUS row=m1f46 score=1547 p=0.050 rpt=390 bad=4 since_valid=191ms changes=2 idr=24(+4) cmd_fail=0
+1790525526.60 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525529.01 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525530.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525531.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525531.58 STATUS row=m1f46 score=1625 p=0.049 rpt=412 bad=4 since_valid=189ms changes=2 idr=28(+5) cmd_fail=0
+1790525532.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525535.38 DECIDE m1f46 -> m2f48 reason=up score=1637 p=0.024 rec=8 lost=0 tx1s=464 since_valid=0ms dead=0 backoff=1
+1790525535.38 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 2
+1790525535.38 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 8 9000
+1790525536.50 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525536.58 STATUS row=m2f48 score=1642 p=0.024(inv) rpt=436 bad=4 since_valid=84ms changes=3 idr=30(+6) cmd_fail=0
+1790525537.54 BAD datagram (short) n=29 total_bad=5
+1790525541.58 STATUS row=m2f48 score=1637 p=0.058 rpt=457 bad=6 since_valid=12ms changes=3 idr=30(+6) cmd_fail=0
+1790525546.58 STATUS row=m2f48 score=1638 p=0.048 rpt=477 bad=6 since_valid=62ms changes=3 idr=30(+6) cmd_fail=0
+1790525551.58 STATUS row=m2f48 score=1637 p=0.035 rpt=498 bad=6 since_valid=69ms changes=3 idr=30(+6) cmd_fail=0
+1790525552.10 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525553.91 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525556.58 STATUS row=m2f48 score=1640 p=0.043 rpt=522 bad=6 since_valid=117ms changes=3 idr=32(+6) cmd_fail=0
+1790525561.58 STATUS row=m2f48 score=1645 p=0.067 rpt=541 bad=6 since_valid=165ms changes=3 idr=32(+6) cmd_fail=0
+1790525566.58 STATUS row=m2f48 score=1691 p=0.038 rpt=561 bad=6 since_valid=94ms changes=3 idr=32(+6) cmd_fail=0
+1790525571.58 STATUS row=m2f48 score=1692 p=0.043 rpt=582 bad=6 since_valid=205ms changes=3 idr=32(+6) cmd_fail=0
+1790525576.58 STATUS row=m2f48 score=1693 p=0.041 rpt=605 bad=6 since_valid=194ms changes=3 idr=32(+6) cmd_fail=0
+1790525581.59 STATUS row=m2f48 score=1691 p=0.040 rpt=627 bad=7 since_valid=102ms changes=3 idr=32(+6) cmd_fail=0
+1790525586.68 STATUS row=m2f48 score=1690 p=0.048 rpt=650 bad=7 since_valid=68ms changes=3 idr=32(+6) cmd_fail=0
+1790525591.68 STATUS row=m2f48 score=1691 p=0.037 rpt=672 bad=7 since_valid=116ms changes=3 idr=32(+6) cmd_fail=0
+1790525592.62 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525596.52 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525596.68 STATUS row=m2f48 score=1640 p=0.046 rpt=693 bad=7 since_valid=166ms changes=3 idr=34(+6) cmd_fail=0
+1790525597.58 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525601.68 STATUS row=m2f48 score=1640 p=0.026 rpt=713 bad=9 since_valid=132ms changes=3 idr=35(+6) cmd_fail=0
+1790525606.68 STATUS row=m2f48 score=1640 p=0.044 rpt=737 bad=9 since_valid=38ms changes=3 idr=35(+6) cmd_fail=0
+1790525611.68 STATUS row=m2f48 score=1640 p=0.043 rpt=759 bad=9 since_valid=5ms changes=3 idr=35(+6) cmd_fail=0
+1790525613.04 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525616.68 STATUS row=m2f48 score=1641 p=0.047 rpt=778 bad=9 since_valid=135ms changes=3 idr=36(+6) cmd_fail=0
+1790525618.44 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525621.68 STATUS row=m2f48 score=1642 p=0.040 rpt=798 bad=9 since_valid=244ms changes=3 idr=37(+6) cmd_fail=0
+1790525623.23 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525624.28 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525625.28 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525626.08 DECIDE m2f48 -> m1f46 reason=down-score score=1550 p=0.096 rec=24 lost=3 tx1s=638 since_valid=240ms dead=0 backoff=1
+1790525626.08 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 6 9000
+1790525626.08 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 1
+1790525626.28 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525626.68 STATUS row=m1f46 score=1548 p=0.096(inv) rpt=822 bad=9 since_valid=154ms changes=4 idr=41(+6) cmd_fail=0
+1790525627.28 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525628.33 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525629.38 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525631.68 STATUS row=m1f46 score=1551 p=0.044 rpt=841 bad=9 since_valid=294ms changes=4 idr=44(+6) cmd_fail=0
+1790525632.14 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525633.18 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525634.93 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525635.98 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525636.69 STATUS row=m1f46 score=1547 p=0.061 rpt=858 bad=9 since_valid=557ms changes=4 idr=48(+6) cmd_fail=0
+1790525636.98 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525637.98 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525638.98 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525641.78 STATUS row=m1f46 score=1549 p=0.032 rpt=879 bad=10 since_valid=129ms changes=4 idr=51(+7) cmd_fail=0
+1790525644.53 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525646.05 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525646.78 STATUS row=m1f46 score=1546 p=0.074 rpt=901 bad=10 since_valid=186ms changes=4 idr=53(+7) cmd_fail=0
+1790525647.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525648.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525649.94 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525650.98 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525651.78 STATUS row=m1f46 score=1539 p=0.105 rpt=923 bad=10 since_valid=45ms changes=4 idr=57(+8) cmd_fail=0
+1790525652.04 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525653.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525654.15 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525655.18 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525656.54 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525656.78 STATUS row=m1f46 score=1638 p=0.057 rpt=947 bad=10 since_valid=244ms changes=4 idr=62(+10) cmd_fail=0
+1790525657.58 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525659.38 DECIDE m1f46 -> m2f48 reason=up score=1637 p=0.030 rec=8 lost=0 tx1s=465 since_valid=235ms dead=0 backoff=1
+1790525659.38 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 2
+1790525659.38 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 8 9000
+1790525661.78 STATUS row=m2f48 score=1639 p=0.061 rpt=966 bad=12 since_valid=76ms changes=5 idr=63(+10) cmd_fail=0
+1790525666.78 STATUS row=m2f48 score=1638 p=0.041 rpt=986 bad=12 since_valid=188ms changes=5 idr=63(+10) cmd_fail=0
+1790525671.78 STATUS row=m2f48 score=1640 p=0.058 rpt=1007 bad=12 since_valid=236ms changes=5 idr=63(+10) cmd_fail=0
+1790525674.25 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525676.78 STATUS row=m2f48 score=1640 p=0.067 rpt=1030 bad=12 since_valid=142ms changes=5 idr=64(+10) cmd_fail=0
+1790525679.95 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525681.78 STATUS row=m2f48 score=1639 p=0.049 rpt=1051 bad=12 since_valid=132ms changes=5 idr=65(+10) cmd_fail=0
+1790525686.78 STATUS row=m2f48 score=1685 p=0.039 rpt=1074 bad=12 since_valid=56ms changes=5 idr=65(+10) cmd_fail=0
+1790525691.78 STATUS row=m2f48 score=1690 p=0.025 rpt=1096 bad=12 since_valid=231ms changes=5 idr=65(+10) cmd_fail=0
+1790525692.85 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525696.79 STATUS row=m2f48 score=1691 p=0.025 rpt=1117 bad=12 since_valid=174ms changes=5 idr=66(+10) cmd_fail=0
+1790525701.88 STATUS row=m2f48 score=1692 p=0.042 rpt=1140 bad=13 since_valid=181ms changes=5 idr=66(+10) cmd_fail=0
+1790525706.88 STATUS row=m2f48 score=1693 p=0.033 rpt=1161 bad=13 since_valid=109ms changes=5 idr=66(+10) cmd_fail=0
+1790525711.88 STATUS row=m2f48 score=1687 p=0.043 rpt=1182 bad=13 since_valid=219ms changes=5 idr=66(+10) cmd_fail=0
+1790525716.88 STATUS row=m2f48 score=1687 p=0.049 rpt=1205 bad=13 since_valid=20ms changes=5 idr=66(+10) cmd_fail=0
+1790525717.75 RELOAD idr_enabled=1->1 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525717.75 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525718.78 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525719.79 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525720.39 DECIDE m2f48 -> m1f46 reason=down-loss score=1545 p=0.134 rec=24 lost=2 tx1s=622 since_valid=119ms dead=0 backoff=1
+1790525720.39 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 6 9000
+1790525720.39 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 1
+1790525720.88 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525721.88 STATUS row=m1f46 score=1548 p=0.134(inv) rpt=1230 bad=15 since_valid=118ms changes=6 idr=70(+13) cmd_fail=0
+1790525722.86 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525723.88 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525724.88 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525726.88 STATUS row=m1f46 score=1547 p=0.041 rpt=1252 bad=15 since_valid=74ms changes=6 idr=73(+13) cmd_fail=0
+1790525728.27 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525729.28 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525731.88 STATUS row=m1f46 score=1550 p=0.036 rpt=1273 bad=15 since_valid=214ms changes=6 idr=75(+13) cmd_fail=0
+1790525734.56 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525736.88 STATUS row=m1f46 score=1549 p=0.043 rpt=1293 bad=15 since_valid=53ms changes=6 idr=76(+13) cmd_fail=0
+1790525738.08 RELOAD idr_enabled=1->0 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525741.88 STATUS row=m1f46 score=1549 p=0.036 rpt=1311 bad=15 since_valid=92ms changes=6 idr=76(+13) cmd_fail=0
+1790525746.88 STATUS row=m1f46 score=1549 p=0.046 rpt=1336 bad=15 since_valid=11ms changes=6 idr=76(+13) cmd_fail=0
+1790525751.89 STATUS row=m1f46 score=1549 p=0.059 rpt=1360 bad=15 since_valid=91ms changes=6 idr=76(+13) cmd_fail=0
+1790525756.98 STATUS row=m1f46 score=1550 p=0.038 rpt=1381 bad=15 since_valid=168ms changes=6 idr=76(+13) cmd_fail=0
+1790525759.07 RELOAD idr_enabled=0->0 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525761.98 STATUS row=m1f46 score=1551 p=0.036 rpt=1400 bad=16 since_valid=106ms changes=6 idr=76(+13) cmd_fail=0
+1790525766.98 STATUS row=m1f46 score=1548 p=0.041 rpt=1421 bad=16 since_valid=44ms changes=6 idr=76(+13) cmd_fail=0
+1790525771.98 STATUS row=m1f46 score=1549 p=0.047 rpt=1442 bad=16 since_valid=4ms changes=6 idr=76(+13) cmd_fail=0
+1790525776.98 STATUS row=m1f46 score=1550 p=0.065 rpt=1463 bad=16 since_valid=83ms changes=6 idr=76(+13) cmd_fail=0
+1790525780.06 RELOAD idr_enabled=0->1 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525781.07 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525781.99 STATUS row=m1f46 score=1548 p=0.061 rpt=1484 bad=18 since_valid=226ms changes=6 idr=77(+13) cmd_fail=0
+1790525782.57 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525783.58 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525784.58 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525786.74 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525787.08 STATUS row=m1f46 score=1550 p=0.038 rpt=1507 bad=18 since_valid=38ms changes=6 idr=81(+13) cmd_fail=0
+1790525787.78 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525788.79 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525791.87 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525792.09 STATUS row=m1f46 score=1548 p=0.050 rpt=1525 bad=18 since_valid=214ms changes=6 idr=84(+13) cmd_fail=0
+1790525792.88 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525793.88 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525796.39 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525797.18 STATUS row=m1f46 score=1551 p=0.043 rpt=1547 bad=18 since_valid=206ms changes=6 idr=87(+14) cmd_fail=0
+1790525797.48 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525799.39 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525801.06 RELOAD idr_enabled=1->1 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525801.15 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525802.19 STATUS row=m1f46 score=1547 p=0.067 rpt=1567 bad=18 since_valid=330ms changes=6 idr=90(+14) cmd_fail=0
+1790525802.34 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525803.38 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525807.28 STATUS row=m1f46 score=1550 p=0.044 rpt=1587 bad=18 since_valid=401ms changes=6 idr=92(+15) cmd_fail=0
+1790525809.27 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525811.07 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525812.09 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525812.28 STATUS row=m1f46 score=1549 p=0.060 rpt=1610 bad=18 since_valid=193ms changes=6 idr=95(+16) cmd_fail=0
+1790525813.18 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525815.88 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525816.89 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525817.28 STATUS row=m1f46 score=1551 p=0.050 rpt=1632 bad=19 since_valid=91ms changes=6 idr=98(+16) cmd_fail=0
+1790525818.29 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525822.06 RELOAD idr_enabled=1->0 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525822.29 STATUS row=m1f46 score=1550 p=0.034 rpt=1652 bad=19 since_valid=227ms changes=6 idr=99(+16) cmd_fail=0
+1790525827.38 STATUS row=m1f46 score=1549 p=0.051 rpt=1672 bad=19 since_valid=425ms changes=6 idr=99(+16) cmd_fail=0
+1790525832.38 STATUS row=m1f46 score=1550 p=0.040 rpt=1694 bad=19 since_valid=379ms changes=6 idr=99(+16) cmd_fail=0
+1790525837.38 STATUS row=m1f46 score=1549 p=0.032 rpt=1714 bad=19 since_valid=53ms changes=6 idr=99(+16) cmd_fail=0
+1790525842.38 STATUS row=m1f46 score=1546 p=0.040 rpt=1734 bad=21 since_valid=190ms changes=6 idr=99(+16) cmd_fail=0
+1790525843.06 RELOAD idr_enabled=0->0 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525847.38 STATUS row=m1f46 score=1547 p=0.034 rpt=1754 bad=21 since_valid=126ms changes=6 idr=99(+16) cmd_fail=0
+1790525852.38 STATUS row=m1f46 score=1548 p=0.033 rpt=1774 bad=21 since_valid=182ms changes=6 idr=99(+16) cmd_fail=0
+1790525857.39 STATUS row=m1f46 score=1548 p=0.035 rpt=1794 bad=21 since_valid=179ms changes=6 idr=99(+16) cmd_fail=0
+1790525862.48 STATUS row=m1f46 score=1546 p=0.042 rpt=1815 bad=21 since_valid=233ms changes=6 idr=99(+16) cmd_fail=0
+1790525864.06 RELOAD idr_enabled=0->1 idr_min_ms=1000->1000 verbose=0->0 (other keys apply at restart)
+1790525864.78 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525866.00 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525867.08 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525867.48 STATUS row=m1f46 score=1548 p=0.041 rpt=1839 bad=21 since_valid=86ms changes=6 idr=102(+16) cmd_fail=0
+1790525871.09 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525872.18 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525872.48 STATUS row=m1f46 score=1549 p=0.054 rpt=1858 bad=21 since_valid=41ms changes=6 idr=104(+16) cmd_fail=0
+1790525873.19 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525875.00 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525877.48 STATUS row=m1f46 score=1548 p=0.032 rpt=1875 bad=22 since_valid=238ms changes=6 idr=106(+16) cmd_fail=0
+1790525878.30 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525879.38 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525880.39 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525881.89 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525882.48 STATUS row=m1f46 score=1550 p=0.029 rpt=1898 bad=22 since_valid=172ms changes=6 idr=110(+16) cmd_fail=0
+1790525882.98 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525884.80 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525887.49 STATUS row=m1f46 score=1620 p=0.038 rpt=1916 bad=22 since_valid=169ms changes=6 idr=112(+16) cmd_fail=0
+1790525888.80 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525891.18 DECIDE m1f46 -> m2f48 reason=up score=1639 p=0.060 rec=20 lost=0 tx1s=501 since_valid=78ms dead=0 backoff=1
+1790525891.18 CMD mcs rc=0: /opt/linkmode/wfb_tx_cmd 9000 set_radio -B 20 -G long -S 1 -L 1 -N 1 -M 2
+1790525891.18 CMD fec rc=0: /opt/linkmode/wfb_setfec 4 8 9000
+1790525892.49 STATUS row=m2f48 score=1639 p=0.060(inv) rpt=1938 bad=22 since_valid=122ms changes=7 idr=113(+16) cmd_fail=0
+1790525897.58 STATUS row=m2f48 score=1640 p=0.054 rpt=1961 bad=23 since_valid=45ms changes=7 idr=113(+16) cmd_fail=0
+1790525898.41 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525902.58 STATUS row=m2f48 score=1639 p=0.050 rpt=1982 bad=24 since_valid=151ms changes=7 idr=114(+16) cmd_fail=0
+1790525907.59 STATUS row=m2f48 score=1640 p=0.053 rpt=2005 bad=24 since_valid=197ms changes=7 idr=114(+16) cmd_fail=0
+1790525912.68 STATUS row=m2f48 score=1641 p=0.052 rpt=2029 bad=24 since_valid=137ms changes=7 idr=114(+16) cmd_fail=0
+1790525917.68 STATUS row=m2f48 score=1639 p=0.067 rpt=2051 bad=24 since_valid=466ms changes=7 idr=114(+16) cmd_fail=0
+1790525921.52 CMD idr rc=0: wget -q -T 1 -O /dev/null http://127.0.0.1/request/idr
+1790525922.69 STATUS row=m2f48 score=1640 p=0.063 rpt=2073 bad=24 since_valid=227ms changes=7 idr=115(+16) cmd_fail=0
+1790525927.69 STATUS row=m2f48 score=1638 p=0.038 rpt=2096 bad=24 since_valid=171ms changes=7 idr=115(+16) cmd_fail=0
