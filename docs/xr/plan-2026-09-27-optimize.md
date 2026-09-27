@@ -148,3 +148,39 @@ unit.
 The PC also keeps copies of what was deleted from the air unit to free `/overlay`: `libsodium.so.23*` (not used by
 anything running) and `wfb_tx.v25.bak`. They are in the OpenIPC repo under
 `repos/tasks/hil-build/air-kernel-backups/linkmode/`, with md5 sums.
+
+## Evening session after the user returned (2026-09-27) and resume point
+
+- **Picture quality.** Real bitstream frames and Quest screenshots were captured at 480p with 2/4/8 Mbit/s and at
+  1080p. Files showing people stay local and uncommitted (`scripts/quest/out/quality_private/`). On a static scene
+  the bitrates look alike. With motion, 2 Mbit/s is visibly soft and blocky. See [link-envelope.md](link-envelope.md).
+- **Field of view.** 480p167 is a centre crop (33×44 % of the sensor). W3c + e720s give the latency against the view
+  ([g2g-budget.md](g2g-budget.md)):
+
+  | Mode | View | G2G |
+  |---|---|---|
+  | 480p167 | 33×44 % | 26.7–32.0 ms |
+  | 720p120 → 848×480 | 66 % | 31.3–37.6 ms |
+  | 720p120 native | 66 % | 33.0–38.3 ms |
+  | 1080p90 → 848×480 | full | 35.3–41.6 ms |
+
+  RES_4 1472×816@150 is not viable (VENC 0.48 fps). **The user's mode choice is pending.**
+- **O112 P4 (thread pinning) proven.** Slow encode frames occur only while IspDriverThread runs on CPU0. PIN (ISP on
+  CPU1) gave 0 % slow frames in 5/5 runs, with p95 S_air −155 µs. It is active at **runtime** only and is lost on an
+  air reboot. Persisting it is approved; it will be deployed together with the chosen mode.
+- **Reorder-hold fix** (`952a655`, pref `rtp_tight_reorder`, default ON). Frames after a loss went from 3.0 to
+  1.6 ms (−1.4 ms each) at 8 dBm [PROVEN].
+- **Quest "parse"** already contains the radio spread; it is not an extra hop.
+- **`write_prefs` bug** (ff19253 → fixed in 3cb6ea1). The prefs were not written from 18:16 to 22:34. No result that
+  was used depends on it (audited by 22 and 8d).
+- **Presets** (user request). The app side is implemented (`eb116f5`, `98b3423`; [presets-design.md](presets-design.md))
+  and is being tested against a fake air unit. The air side design is approved (OpenIPC `f596c61`: `/etc/waybeam.json`
+  becomes a symlink to `/tmp`, plus `vmoded`). Its implementation and deploy are pending. The user decided: a single
+  confirm even when armed, and quality presets 2/4 Mbit/s (6 capped to 4 in v1).
+- **Open for the user:**
+  - the mode choice;
+  - powering on the GS `.208` (AU-02/AU-13, ~2 ms on the monitor path only);
+  - the physical checks (RTL replug, controller buttons).
+  - Note: PC C: had only 7.7 GB free.
+- **Resume point.** After the PC restart, finish the preset flow test (8d, fake air), then the air preset
+  implementation and deploy (c8/3a). After that, persist the mode + PIN with a reboot validation.
