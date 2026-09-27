@@ -1,0 +1,14 @@
+# 6_b 2026-09-27 17:10:30 pid 18513
+prefs: name="od_enabled" value="false" name="adaptive_link_enabled" value="true" 
+decoder: width: int32(640) height: int32(480) low-latency: int32(1) low-latency.enable: int32(1) low-latency.enable: int32(1) low-latency-video-dec.video-scene-for-low-latency-req: int32(1) low-latency.enable: int32(1) vendor.qti-ext-dec-picture-order.enable: int32(1) operating-rate: int32(32767)} 
+
+6818 packets / 1041 frames in 8.7s = 119.3 fps, 6.55 pkt/frame; sequence gaps (lost before the app) = 140, reordered = 0
+frame packet spread (first -> last packet)     n= 1039 mean=  5.83 p5=  2.19 p50=  5.29 p95= 10.26 max= 19.67 ms
+air/headset clock drift removed: +92.7 us/s (+93 ppm)
+transport excess, frame complete (last pkt)    n= 1041 mean=  6.41 p5=  3.43 p50=  5.97 p95= 10.65 max= 21.76 ms
+transport excess, first packet                 n= 1041 mean=  1.26 p5=  0.10 p50=  0.69 p95=  5.03 max= 15.35 ms
+frame complete -> decoded frame ready          n= 1028 mean=  2.29 p5=  1.61 p50=  1.85 p95=  4.44 max= 19.51 ms
+no vsync callbacks in this trace: vsync-phase lines skipped
+frame ready (queueBuffer) -> latch           n= 855 mean=  3.81 p5=  0.53 p50=  4.00 p95=  7.52 max=  8.24 ms
+frames that missed a latch (wait > half a period): 47.4 %
+decoded frames queued=964 latched=855 (never shown=109)

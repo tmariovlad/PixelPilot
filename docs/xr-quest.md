@@ -161,6 +161,7 @@ The dated result sections that used to follow here were moved verbatim into topi
   **Measured 2026-09-27** ([in-trace A/B](xr/g2g-budget.md#air-unit-levers-measured-in-one-trace-2026-09-27-slot-2)): bitrate 8000 → 4000 / 2000 kbit/s = −2.7 / −4.5 ms capture → decoded, FEC 4/6 → 4/5 = −1.5 ms, 8/12 no effect.
   **At 1080p90** ([slot 3](xr/g2g-budget.md#mcs--bitrate-at-1080p90-measured-in-one-trace-2026-09-27-slot-3)): relative to MCS2 at 8 Mbit/s,
   MCS4 at 12 Mbit/s is −1.2 ms, MCS4 at 16 Mbit/s +1.8 ms and MCS3 at 12 Mbit/s +2.6 ms capture → decoded; ≤ 0.24 % loss after FEC on the bench (range untested).
+  **Mode choice** ([W3](xr/g2g-budget.md#mode-choice-for-minimum-latency-1080p90-vs-720p120-vs-480p167-w3-2026-09-27), budget per mode, N = 2): 480p167 27.4–32.7 ms < 720p120 33.3–38.6 < 1080p90 40.9–46.2 ms glass-to-glass at 8 Mbit/s; 480p167 also has the fewest packets/frame and lowest loss.
 - **[Transport choice](xr/transport-choice.md)** ([measured](xr/transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)): at 1080p90 in one room,
   the first run was withdrawn (APFPV at ~1000 kbit/s). [Redone at 8000 on both arms](xr/transport-choice.md#re-measured-at-8000-kbits-on-both-arms-slot-4a-2026-09-27) (slot 4A, same room,
   N = 2 each): APFPV through the Quest's own Wi-Fi has 0 vs 1–7 RTP losses, jitter p95 1.4–2.2 vs 9.0–12.8 ms, a frame on the air

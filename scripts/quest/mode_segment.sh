@@ -27,6 +27,10 @@ qadb shell 'perfetto --txt -c - -o /data/misc/perfetto-traces/mode.pftrace' < "$
 qadb pull /data/misc/perfetto-traces/mode.pftrace "$(cygpath -w "$TRACE")" >/dev/null 2>&1
 {
   echo "# $LABEL $(date '+%F %T') pid $(qadb shell pidof "$PKG")"
+  # Prefs and decoder keys actually in effect (a launch once came up without its prefs; picture-order alone is
+  # worth ~95 ms of decode on this stream, docs/xr/real-link.md)
+  echo "prefs: $(qadb shell run-as "$PKG" cat shared_prefs/general.xml | grep -v gs.key | grep -oE 'name="[^"]+"( value="[^"]+")?' | tr '\n' ' ')"
+  echo "decoder: $(qadb logcat -d --pid="$(qadb shell pidof "$PKG")" 2>/dev/null | grep -m1 -oE 'Configuring decoder [^:]*:.*' | grep -oE '(width|height|low-latency|vendor\.qti-ext-dec-picture-order\.enable|operating-rate)[^,]*' | tr '\n' ' ')"
   qadb logcat -d -t 400 --pid="$(qadb shell pidof "$PKG")" 2>/dev/null | grep -oE "VideoDecoder: FPS:[0-9.]+|Decoding:[0-9.]+" | tail -4 | tr '\n' ' '; echo
   python3 "$QUEST_LATCH/transport_analyze.py" "$(cygpath -w "$TRACE")"
   python3 "$QUEST_LATCH/latch_analyze.py" "$(cygpath -w "$TRACE")" | grep -E "vsync callbacks|frame ready|missed a latch|queued="
