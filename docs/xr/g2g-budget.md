@@ -6,6 +6,33 @@ Quest XR docs: [guide](../xr-quest.md) · [decoder levers](decoder-levers.md) ·
 
 Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is the compositor wait ([compositor-phase.md](compositor-phase.md)); branch C uses the decoder settings from [decoder-levers.md](decoder-levers.md) and [real-link.md](real-link.md).
 
+## Recommendations and numbers (summary, 2026-09-27)
+
+**The number.** The recommended setup (**REC**: 640×480 @ 167 fps, 2000 kbit/s, FEC 4/8, MCS2) gives **27.4–32.7 ms** glass-to-glass. The original setup (1080p90, 8000 kbit/s, FEC 4/6) gives 46.6–51.9 ms, so REC is **19.2 ms faster (−37 %)**. It is also more robust: loss 0.1 % instead of 2.1 %, no undecoded frames instead of 1.2 %, and 2 radio packets per frame instead of 8.4. Measured per segment, N = 2, palindromic ([before / after](#before--after-the-original-setup-vs-the-recommended-one-2026-09-27-final)). The range comes from two inferred terms: the ISP and the panel.
+
+**The 20–25 ms target is not reached on Quest 2.** About 12 ms of REC's 27.4 ms floor is fixed: the panel (latch → light, 10.2 ms minimum) and the air → Quest floor (1.9 ms).
+
+**What worked:**
+- **Mode 480p167** over 720p120 / 1080p90: −7 / −16 ms at the same bitrate ([W3](#mode-choice-for-minimum-latency-1080p90-vs-720p120-vs-480p167-w3-2026-09-27)).
+- **Bitrate 2000 kbit/s and FEC 4/8:** another ~−3 ms at 480p167, almost all from a shorter frame spread on the radio ([slot 2](#air-unit-levers-measured-in-one-trace-2026-09-27-slot-2), [before / after](#before--after-the-original-setup-vs-the-recommended-one-2026-09-27-final)).
+- **Decoder keys** (picture-order, low-latency, operating-rate): without picture-order, the Qualcomm decoder holds ~16 frames (~95 ms) on this stream ([real-link.md](real-link.md), [decoder-levers.md](decoder-levers.md)).
+- **App fixes with no latency cost:**
+  - the tunnel pump no longer busy-loops (whole app 124 % → 27 % CPU, [troubleshooting](troubleshooting.md#more-traps-hit-on-2026-09-2627));
+  - the uplink takes 76 % less airtime (4 reports/s × FEC 1/3), and keyframe requests now go out within 20 ms, not 100 ms ([link-envelope.md](link-envelope.md));
+  - robustness fixes for the display turning off, stale statistics and link restarts ([troubleshooting](troubleshooting.md)).
+
+**What did not work (closed):**
+- **Phase lock, AU-04.** At 480p167 the source is faster than the 119.70 Hz display, so there is nothing to lock. Even an ideal lock at 119.7 fps was +1.2 ms slower at 8 Mbit/s ([compositor-phase.md](compositor-phase.md#phase-lock-steering-the-source-onto-the-compositor-latch-proof-of-concept-2026-09-26), W3b).
+- **Slice sending.** Encode went from 4 to 27–30 ms and the rate fell to 45–60 fps ([above](#g2g-budget-on-the-real-link-branch-by-branch-2026-09-26), HB-50).
+- **Decoder rebuild on SPS change (X23 c).** On live mode switches, the decoder part of the gap was slower with the rebuild (84 vs 50 ms mean), and the 78 ms stall it targeted did not occur on either build. It was removed in `501094a` ([final slot](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27)).
+- **Tunnel downlink FEC 1/3 vs 1/2.** Same latency, and 0 vs 4 lost packets, which is not significant (p = 0.07). The tunnel stays on 1/2, with 1/3 kept as an option ([troubleshooting](troubleshooting.md#more-traps-hit-on-2026-09-2627), W1 tunnel entry).
+
+**Still open, with estimates:**
+- **O112, bimodal encode on the air unit.** About a quarter of frames at 1080p, and about half at 480p, take ~2 ms longer, in bursts. With every frame in the fast mode, REC would start at **~26.8 ms** (−0.6 ms on average, up to −2 ms on the slow frames) [INFERRED]. A likely cause is encoder and ISP threads sharing a CPU [SPECULATION]. Pinning the threads needs the user's OK ([plan](plan-2026-09-27-optimize.md)).
+- **Panel and total, photodiode.** The panel term (10.2–13.5 ms) and the total are still [INFERRED] from kernel flash offsets and the per-segment sum. A photodiode at the lens (BPW34 / OPT101 + scope) or 480 fps slow motion would turn the budget into one measured number. That changes no latency, but it would confirm or correct the ±2.7 ms range ([compositor-phase.md](compositor-phase.md)). There is no ESP32 rig yet.
+- **Picture quality at 480p / 2000 kbit/s** has not been assessed. The user should check it before making REC the default.
+- **Latch wait (~3.1 ms)** has no known lever at 480p167: the compositor takes the newest frame, and a lock does not apply.
+
 ## G2G budget on the real link, branch by branch (2026-09-26)
 
 **Method:**
@@ -68,7 +95,7 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 - 4/5 sends a third less parity, so the radio is free sooner for the next frame. It can repair 1 lost packet per 5 instead of 2 per 6; loss per state was not measured (112 of 116 107 packets lost in the whole run, same room).
 - 8/12 vs 4/6 is inside the step-to-step spread of the baseline itself (0.2–1.6 ms), so block length is not a lever here [PROVEN: data].
 
-**Updated budget at 640×480 @ 167 fps:** 30.7 ms − 4.5 ms (2000 kbit/s) ≈ 26 ms; with the phase lock (−2.4 ms measured on the Wi-Fi rig, [compositor-phase.md](compositor-phase.md)) ≈ 24 ms [INFERRED: the inferred total above minus measured deltas; the bitrate and FEC gains are not additive, both shrink the same airtime].
+**Updated budget at 640×480 @ 167 fps:** 30.7 ms − 4.5 ms (2000 kbit/s) ≈ 26 ms; with the phase lock (−2.4 ms measured on the Wi-Fi rig, [compositor-phase.md](compositor-phase.md)) ≈ 24 ms [INFERRED: the inferred total above minus measured deltas; the bitrate and FEC gains are not additive, both shrink the same airtime]. *(Correction 2026-09-27, later: the phase lock does not apply at 480p167, since the source is faster than the display (AU-04 closed, W3b), and the measured REC total is 27.4–32.7 ms; see [the summary](#recommendations-and-numbers-summary-2026-09-27).)*
 
 **Seen during the slot, not explained:** once, after the air unit restarted from 1080p90 to 640×480 while the app ran, the decoder took 78 ms per frame, the app lost ~65 RTP packets/s and arrivals lagged up to 0.9 s, until the app was restarted [PROVEN: logcat `Decoding:78.7`, trace `ab_check640`]. Five further switches in both directions, on the old build and on a build that rebuilds the decoder on every SPS change, all decoded normally (1.4–2.0 ms), so that cause is **not proven** and the build was not kept; the patch is in [patches/decoder-reconfigure-on-sps-change.patch](patches/decoder-reconfigure-on-sps-change.patch). (Correction 2026-09-27, later: the patch was later put in the code (`c0f41f2`, X23 c). On 4 live switches per build it made the decoder part of the gap slower (84 vs 50 ms mean), and the stall did not occur on either build, so it was removed again in `501094a`; [final slot](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27).) See [troubleshooting.md](troubleshooting.md#more-traps-hit-on-2026-09-2627).
 
