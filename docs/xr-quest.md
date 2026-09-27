@@ -125,6 +125,8 @@ The dated result sections that used to follow here were moved verbatim into topi
   N = 2 each): APFPV through the Quest's own Wi-Fi has 0 vs 1–7 RTP losses, jitter p95 1.4–2.2 vs 9.0–12.8 ms, a frame on the air
   in ~0.13 vs ~7.8 ms (wfb MCS2). Boot default still wfb (range and higher wfb MCS untested); APFPV through the RTL needs devourer station mode
   ([station mode](xr/station-mode.md): the W0 hardware-ACK gate is GO; [scope](xr/research/2026-09-27-devourer-station-scope.md)).
+- **[Link operating envelope](xr/link-envelope.md)** (W2, planned): TX power × MCS × bitrate × FEC, loss before/after FEC,
+  capture → decoded and temperatures; the envelope and the policy table for the adaptive link.
 - **[Troubleshooting](xr/troubleshooting.md)**: build traps, Horizon OS quirks, adapter and link problems.
 - **Raw data** ([xr/data/](xr/data/)): [decoder levers](xr/data/measurements-2026-09-26-quest2-decoder-levers.csv) ·
   [key isolation](xr/data/measurements-2026-09-26-quest2-key-isolation.csv) ·

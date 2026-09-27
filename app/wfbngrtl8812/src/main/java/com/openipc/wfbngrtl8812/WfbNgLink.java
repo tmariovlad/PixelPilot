@@ -218,6 +218,7 @@ public class WfbNgLink implements WfbNGStatsChanged {
     // Called by native code via NDK.
     @Override
     public void onWfbNgStatsChanged(WfbNGStats stats) {
+        WfbStatsTrace.emit(stats);
         if (statsChanged != null) {
             statsChanged.onWfbNgStatsChanged(stats);
         }

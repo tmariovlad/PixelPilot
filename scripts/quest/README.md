@@ -127,6 +127,9 @@ run while a timed loop on the air unit switches the lever (A B A C A …) and lo
 ```bash
 bash ab_long.sh bitrate 120            # lean trace (quest-latch/transport_long.pbtx) + Quest-minus-PC clock offset
 python3 ../quest-latch/ab_segments.py out/ab_bitrate.pftrace steps.txt --air-offset-s <(quest-pc) - (air-pc)>
+# link side, same windows: pre-FEC loss (air tx= on every step line), FEC repairs, RSSI, air/Quest temperatures
+bash quest_thermal_log.sh 240 out/thermal_bitrate.csv &                       # start with the trace
+python3 ../quest-latch/ab_link.py out/ab_bitrate.pftrace steps.txt --air-offset-s <offset ab_segments used> --thermal out/thermal_bitrate.csv
 ```
 
 `ab_segments.py` fits the drift on the baseline steps only and prints, per step and per state, fps, packets/frame,
@@ -167,6 +170,8 @@ applied live (no RTP restart).
 | `ab_long.sh` | capture for an in-trace A/B: long lean trace + Quest-minus-PC clock offset (analysis: `../quest-latch/ab_segments.py`) |
 | `decode_watch.sh` | watch the running decoder for N s (decode ms, fps, decoder reconfigurations), e.g. after an air-unit restart |
 | `stop_crash_check.sh` | does the XR app survive repeated session stops (`relaunch` over the running instance / display `sleepwake`)? pid, SIGABRT, video re-attached per iteration |
+| `quest_thermal_log.sh` | sample the Quest's thermal status, CPU/SoC/battery temperatures and battery level every few seconds during a trace (read-only) |
+| `../quest-latch/ab_link.py` | link side of an in-trace A/B: air TX rate, pre-FEC loss, FEC repairs, loss after FEC, RSSI, air and Quest temperatures per step/state (needs the app's `ppxr_wfb_*` counters from `WfbStatsTrace`) |
 | `cpu_threads.py`, `cpu_ab_run.sh` | CPU per app thread over a window (`/proc/<pid>/task/*/stat`); one state of an app-build A/B (install APK, XR, CPU + decode + link) |
 | `blu.py` | Quest 2 backlight flash timing from the kernel panel dtsi numbers (`python3 blu.py 3664 14 7 1 120`) |
 | `build_wb_f8742fe.sh` | **OpenIPC project, not this repo:** rebuild waybeam f8742fe for the air unit (WSL) |
