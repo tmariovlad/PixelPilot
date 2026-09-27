@@ -95,18 +95,21 @@ Each cell: Δ capture → decoded vs the anchor in the same trace · loss after 
 
 **Operating envelope and policy table for the adaptive link (W1 phase 2).** This covers 640×480 @ 167 fps, this geometry and FEC k = 4 unless stated. The band edges are what the receiver can see: RSSI on the app's 0–100 scale and loss before FEC at the current MCS.
 
-| band (receiver view) | alink `score` | seen at | use | expected loss after FEC | Δ latency vs `m1b2f46` |
-|---|---|---|---|---|---|
-| RSSI ≥ ~68, loss before FEC ≤ ~6 % at MCS2 | ≥ ~1680 | 17 dBm | `m2b2f48` (more picture: `m2b3f46`, `m2b4f46`) | 0 % (0.29 / 0.47 %) | −0.1 ms (+0.1 / +0.7) |
-| RSSI ~64, loss before FEC ~8 % at MCS2 | ~1640 | 12 dBm | `m2b2f48` (measured in p12b: 0.24 % vs 0.60 % for `m2b2f46` in the same trace) | 0.24 % | +0.2 ms |
-| RSSI ~54, loss before FEC ~20 % at MCS2 | ~1540 | 8 dBm | `m1b2f46` (MCS1) | 0.75 % | 0 |
-| worse | < ~1540 | < 8 dBm | nothing at 480p keeps loss < 1 % [INFERRED: phase 1 at 5 dBm ≈ 8 dBm] | – | – |
+**Policy: two states.** `m2b2f48` dominates `m2b2f46` wherever MCS2 holds. At 12 dBm, in the same trace, it lost 0.24 % against 0.60 % after FEC for +0.16 ms. At 17 dBm it lost 0 % against 0.32 %. So the MCS2 row keeps only 4/8, and the policy is `m2b2f48` above a score of ~1600 and `m1b2f46` below it. The threshold sits between the 12 dBm point (score ~1640, where `m2b2f48` loses 0.24 %) and the 8 dBm point (~1540, where it loses 3.8 % against 0.75 % for `m1b2f46`) [INFERRED: from the measured points; the exact edge and its hysteresis are for the closed-loop check].
+
+| score (≈ RSSI column) | seen at | use | measured loss after FEC | Δ latency vs `m1b2f46` |
+|---|---|---|---|---|
+| ≥ ~1600 (≥ ~60) | 17 dBm (~1685), 12 dBm (~1640) | `m2b2f48` | 0 % (17 dBm) · 0.24 % (12 dBm) | −0.1 ms (17) · +0.2 ms (12) |
+| < ~1600 | 8 dBm (~1540) | `m1b2f46` | 0.75 % (8 dBm); `m2b2f48` there: 3.8 % | 0 |
+| far below (5 dBm) | – | still `m1b2f46`; nothing at 480p kept loss < 1 % [INFERRED: phase 1 at 5 dBm ≈ 8 dBm] | – | – |
+
+For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.7 ms) held at 17 dBm. They are not part of the policy.
 
 - **`score` vs the RSSI column.** The adaptive-link message sends `score = map(quality, −1024…1024 → 1000…2000)` in fields 2, 3 and 6 ([WfbngLink.cpp:534,571-579](../../app/wfbngrtl8812/src/main/cpp/WfbngLink.cpp#L534)). The RSSI column here is the app's `avg_rssi` = `map(quality, −1024…1024 → 0…100)` ([WfbngLink.cpp:469](../../app/wfbngrtl8812/src/main/cpp/WfbngLink.cpp#L469)). Both come from the same `quality` = `map(raw RSSI 0…80 → −1024…1024)` ([SignalQualityCalculator.cpp:89](../../app/wfbngrtl8812/src/main/cpp/SignalQualityCalculator.cpp#L89)), so **score = 1000 + 10 × RSSI column** (= 1000 + 12.5 × raw) [PROVEN: code]. Earlier values of ~1850/1800/1675 took the RSSI column for the raw value.
 - **Loss before FEC is not in the message.** It carries only FEC repairs/s (field 4) and lost/s (field 5). For now the air unit estimates it from its own `tx_packets` against what the ground reports. Sending the Quest's measured pre-FEC loss from the app is a later improvement.
 
-- Switch **down** one row when loss before FEC at the current MCS passes ~10 % (FEC 4/6 still held 0.3–0.7 % below that and broke at 15–20 %) [INFERRED: from the rows above].
-- Switch **up** only when the next row's MCS would see ≤ 6 %. RSSI rises ~4–5 points per row here. Hysteresis and time constants still have to be tested in closed loop in W1 phase 2 [SPECULATION until then].
+- **Switch down** to MCS1 when the score falls below ~1600, or when loss before FEC at MCS2 passes ~10 %. At MCS2, 8 % before FEC still gave 0.24 % after FEC, and 20 % broke it [INFERRED: from the points above].
+- **Switch up** to MCS2 only with margin above ~1600. The score moved ~45 points between 17 and 12 dBm and ~100 between 12 and 8 dBm. Hysteresis and time constants are checked in closed loop by the receiver's author and live by the adaptive-range test below [SPECULATION until then].
 - **Pending:** the user's picture-quality check at 2–4 Mbit/s.
 
 **Phase 3b: `m2b2f48` at 12 dBm, and adaptive link on/off (2026-09-27 18:04–18:20, 480p167, build `7b8baadb`).**
