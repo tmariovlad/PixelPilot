@@ -33,7 +33,8 @@ Excluded on purpose, because they are already known and handled:
 | XR start errors visible, levers re-applied, bandwidth fallback, loop back-off | X13, X04, X27, X25 | `a8b35de` | not yet |
 | minimal input in XR (panel detail / hide) | X01 | `3a37a88` | not yet |
 | VPN null establish() / bind leak | X26 | fixed by session 2c6ae8 ("survives a null establish()") | - |
-| open | X23 (decoder failure paths: video path, for discussion), X18 (autostart during OS dialogs) | - | - |
+| decoder rebuilds after failures and on SPS change | X23 | `c0f41f2` (SPS part: the 2c6ae8 session's patch) | not yet (final slot: live mode switch, old vs new) |
+| open | X18 (autostart during OS dialogs) | - | - |
 
 ## 0. Findings at a glance (ranked; details below)
 
