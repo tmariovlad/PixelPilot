@@ -137,6 +137,7 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - **`c720`** (1280×720 at 121 fps) is clearly wider: the windows and the table are in.
   - **`d1080s`** (1920×1080@90 binned over the full sensor, scaled to 848×480, 91 fps) is the widest: the whole room, the chair and the picture on the left wall.
   - Loss was 0–1 packets in every still [PROVEN: overlay in the stills].
+  - **`e720s`** (720p120 scaled in the VPE to 848×480, 122 fps, 2.83 ms decode, extra arm at 22:44) sees about what `c720` sees, much wider than `a480`. Stills `quality-2026-09-27-W3c_e720s-{1,2}.jpg`, same folder, same reason for keeping them local.
   - `b1472n` (RES_4 native) was dropped before the stills: its encoder ran at 0.48 fps. The latency side of W3c is the other session's result.
 
 **Adaptive range test: the adaptive link against a fixed setting (2026-09-27 19:01–19:18, 480p167, app build `b8b6dcc3` with the 4 Hz / FEC 1/3 uplink, air receiver `alink_air` using the two-state policy above: hold_down 2000 ms, stale 1500 ms).**
