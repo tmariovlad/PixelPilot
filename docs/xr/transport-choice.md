@@ -53,6 +53,7 @@ Recommendation given: option 1 first. **Status (2026-09-27):** option 1 measured
 >   reset it to 8000 afterwards.
 > - **The data agree** [INFERRED: 1.30–1.34 datagrams per frame on APFPV vs 8.5 on wfb (CSV); the air unit sent ~118 packets/s on
 >   APFPV, i.e. ≤ ~1.3 Mbit/s at ≤ 1500 B per packet].
+> - **Redone at 8000 kbit/s:** [slot 4A below](#re-measured-at-8000-kbits-on-both-arms-slot-4a-2026-09-27).
 > - What survives: the method (alternating, same position, [ab_run.sh](../../scripts/quest/ab_run.sh)), the wfb numbers at 8000
 >   kbit/s, and the ADB and `connect-network` findings. The APFPV loss, jitter and frame-spread numbers below are for 1 Mbit/s
 >   and say nothing about APFPV at 8 Mbit/s. **Redo the APFPV runs at 8000 kbit/s** (check waybeam's bitrate on every step).
@@ -60,7 +61,7 @@ Recommendation given: option 1 first. **Status (2026-09-27):** option 1 measured
 **Setup** (slot 1 on the air unit, coordinated with the OpenIPC session, which ran every switch on `.132`):
 - Air unit and headset **in the same room, fixed for the whole slot**. The headset lay on a desk, Guardian paused, `prox_close`. The RTL stayed on the Quest's USB-C in every run.
 - Air unit video: **1920x1080 @ 90 fps, H.264 CBR 8000 kbit/s** (sensor mode 2), waybeam `13b85893`, 12 dBm.
-- **wfb-ng runs:** `wfb_tx -i 7669206 -p 0 -u 5600 -B 20 -M 2 -S 1 -L 1 -k 4 -n 6 -C 9000` on ch157, 20 MHz. PixelPilotXr receives through devourer on the RTL, adaptive link on (the default), and the Quest's internal Wi-Fi stays on the home network (Zeul36, 5180 MHz).
+- **wfb-ng runs:** `wfb_tx -i 7669206 -p 0 -u 5600 -B 20 -M 2 -S 1 -L 1 -k 4 -n 6 -C 9000` on ch157, 20 MHz. PixelPilotXr receives through devourer on the RTL, adaptive link on (the default; note 2026-09-27: XR ignored the link prefs until commit `41984f1`, and on wfb the Quest then injects ~50 uplink frames/s when `tun0` is up, per another session's audit. Not measured in these runs, so a possible confound on the wfb arm), and the Quest's internal Wi-Fi stays on the home network (Zeul36, 5180 MHz).
 - **APFPV runs:** `linkmode-air.sh apfpv` (hostapd WPA2-CCMP, ch157, VHT80, `max_num_sta=1`). The Quest's internal Wi-Fi was moved onto `OpenIPC` with `adb shell cmd wifi connect-network OpenIPC wpa2 12345678` (works for a saved network; see [troubleshooting.md](troubleshooting.md#horizon-os-quirks-quest-2)). The Quest got `192.168.0.10`, RSSI −42/−43 dBm, link 866 Mbit/s; the air unit saw it at −54 dBm. ADB went through an SSH forward over the air unit's eth0 ([air_tunnel.py](../../scripts/quest/air_tunnel.py)), because the AP takes one client only.
 - **Order:** wfb1, apfpv1, wfb2, apfpv2, wfb3, apfpv3, wfb4 (alternating, N = 4 wfb / 3 APFPV).
 - **Each run:** [ab_run.sh](../../scripts/quest/ab_run.sh), i.e. 10 s of logcat (decoded fps) and then a 9 s Perfetto trace analysed by [transport_analyze.py](../../scripts/quest-latch/transport_analyze.py). The RTP counters are taken in `VideoPlayer::onNewRTPData`, after either transport, so the tool is the same for both.
@@ -94,5 +95,43 @@ Recommendation given: option 1 first. **Status (2026-09-27):** option 1 measured
 - It has no FEC and no MCS2 serialization. Its weak-link behaviour (association loss, hidden retries) was **not** tested here; through walls, see [real-link.md](real-link.md#tx-power-and-radio-settings-through-walls-2026-09-27).
 - wfb-ng at MCS2 pays ~7.8 ms of airtime per 1080p frame. A higher MCS on wfb is the obvious next lever: HANDOFF item 3, hot MCS via `set_radio`.
 - The boot default is unchanged (wfb). A fair decision needs the wfb MCS bracket, and a range test of both transports at the same positions.
+
+
+## Re-measured at 8000 kbit/s on both arms (slot 4A, 2026-09-27)
+
+Runs from 12:47 to 12:57.
+
+**What changed from slot 1:** the bitrate is verified on every step. The OpenIPC session deployed the `.orig_bitrate` fix ("O109", `linkmode-air.sh` md5 `5f0802cd`). After each switch it read `"bitrate":8000` from waybeam's `config.json` before the measurement [PROVEN: its step reports; my own read at epoch 1790502460]. On the Quest, datagrams per frame are checked per run: 8.47–8.77 on both arms. On APFPV the air unit sent ~775–790 pkt/s, 0 dropped.
+
+**Same setup as slot 1**, except:
+- the app build is `33f098a2` (installed 12:46:39, with the VpnToUdpThread fix of another session);
+- adaptive link is at the native default (on). XR did not apply the link prefs until commit `41984f1`.
+- On wfb the Quest injects ~50 uplink frames/s on the video channel when `tun0` is up, according to another session's audit; APFPV has no such traffic. **Not measured in these runs** (no devourer TX counter was read), so it stays a possible confound on the wfb arm [SPECULATION: ~50 short MCS0 frames/s ≈ a few % of airtime].
+
+**Valid runs** (alternating, same app instance, headset and air unit fixed) [PROVEN: [data/2026-09-27-apfpv-vs-wfb-slot4a.csv](data/2026-09-27-apfpv-vs-wfb-slot4a.csv)]:
+
+| Run | Datagrams/frame | RTP lost | Frame spread on air, mean | Excess p50 / p95 / max | Decode p50 |
+|---|---|---|---|---|---|
+| s4_wfb1 | 8.77 | 7 | 7.92 ms | 2.04 / 8.98 / 25.7 ms | 2.31 ms |
+| s4_apfpv1 | 8.51 | 0 | 0.12 ms | 0.22 / 1.35 / 10.0 ms | 2.26 ms |
+| s4_wfb2 | 8.47 | 1 | 7.66 ms | 6.05 / 12.83 / 31.4 ms | 2.30 ms |
+| s4_apfpv2 | 8.51 | 0 | 0.14 ms | 0.31 / 2.20 / 8.5 ms | 2.38 ms |
+
+- **N = 2 per arm, not the planned 3 wfb.** The last wfb step was lost to an app problem (below).
+- At the same 8000 kbit/s, APFPV again shows 0 RTP loss vs 1–7, a frame on the air in ~0.13 ms vs ~7.8 ms, and a lower jitter p95 (1.35–2.20 vs 8.98–12.83 ms) [PROVEN, N = 2 each]. The ranges do not overlap.
+- Decode is equal (~2.3 ms).
+- [INFERRED: frame spread] APFPV delivers the complete 1080p frame ~7.5 ms earlier. Absolute latency is still not measured (random RTP base per waybeam start; needs the photodiode).
+
+**Runs excluded from the comparison:**
+- **The app died at 12:53:12** (`am_proc_died` pid 8192, no crash entry; the build was unchanged). This was between s4_apfpv2 and s4_wfb3, while the Quest moved back to the home network. It came back through the 2D activity.
+- **The restarted instance measured differently** (s4_wfb3, s4_wfb3b): bursty RX (44–45 % of packets < 100 µs apart), no link-quality or uplink lines, excess p95 ~28 ms, and 72 / 9 lost.
+- **After a clean force-stop and XR relaunch** (s4_wfb3c, s4_wfb3d), the link quality stayed at ~270–280, against ~945 before, with 110 / 26 lost. The air unit reported 0 dropped. The cause is unknown [SPECULATION: the adapter came back in a different state, or something moved; both unchecked]. See [troubleshooting.md](troubleshooting.md).
+- All eight runs are in the CSV, each with its status.
+
+**Conclusion** [INFERRED, same-room only, N = 2 per arm]:
+- At 1080p90 / 8000 kbit/s in one room, APFPV through the Quest's own Wi-Fi beats wfb-ng through the RTL at MCS2 on loss, jitter and frame delivery.
+- Most of the gap is wfb's MCS2 / 20 MHz airtime (~7.8 ms per frame).
+- Not tested: range and through-wall behaviour, where APFPV's association and hidden retries matter, and wfb at a higher MCS. Another session measured MCS4 / 12 Mbit at −1.2 ms in slot 3 (see [g2g-budget.md](g2g-budget.md)).
+- The boot default stays wfb until those two are measured.
 
 **Option 2 (APFPV through the RTL):** progress in [station-mode.md](station-mode.md); scoped in [research/2026-09-27-devourer-station-scope.md](research/2026-09-27-devourer-station-scope.md), ~6–8 days of work. The first step is a half-day go/no-go gate: the 8812AU's hardware ACK is documented as degraded as a responder (97 % delivery at ~7 retries, devourer `docs/scheduled-mac.md:182-185`). A slot for that gate (air on APFPV, RTL on the PC) is queued with the coordinator.

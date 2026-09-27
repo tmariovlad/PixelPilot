@@ -121,8 +121,9 @@ The dated result sections that used to follow here were moved verbatim into topi
   **At 1080p90** ([slot 3](xr/g2g-budget.md#mcs--bitrate-at-1080p90-measured-in-one-trace-2026-09-27-slot-3)): relative to MCS2 at 8 Mbit/s,
   MCS4 at 12 Mbit/s is −1.2 ms, MCS4 at 16 Mbit/s +1.8 ms and MCS3 at 12 Mbit/s +2.6 ms capture → decoded; ≤ 0.24 % loss after FEC on the bench (range untested).
 - **[Transport choice](xr/transport-choice.md)** ([measured](xr/transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)): at 1080p90 in one room,
-  **withdrawn:** the APFPV runs of 2026-09-27 were at ~1000 kbit/s vs 8000 on wfb (a stale `.orig_bitrate` in
-  `linkmode-air.sh`), so the comparison is not fair; APFPV must be re-run at 8000. Boot default still wfb; APFPV through the RTL needs devourer station mode
+  the first run was withdrawn (APFPV at ~1000 kbit/s). [Redone at 8000 on both arms](xr/transport-choice.md#re-measured-at-8000-kbits-on-both-arms-slot-4a-2026-09-27) (slot 4A, same room,
+  N = 2 each): APFPV through the Quest's own Wi-Fi has 0 vs 1–7 RTP losses, jitter p95 1.4–2.2 vs 9.0–12.8 ms, a frame on the air
+  in ~0.13 vs ~7.8 ms (wfb MCS2). Boot default still wfb (range and higher wfb MCS untested); APFPV through the RTL needs devourer station mode
   ([station mode](xr/station-mode.md), [scope](xr/research/2026-09-27-devourer-station-scope.md)).
 - **[Troubleshooting](xr/troubleshooting.md)**: build traps, Horizon OS quirks, adapter and link problems.
 - **Raw data** ([xr/data/](xr/data/)): [decoder levers](xr/data/measurements-2026-09-26-quest2-decoder-levers.csv) ·
@@ -130,7 +131,8 @@ The dated result sections that used to follow here were moved verbatim into topi
   [lever recheck](xr/data/measurements-2026-09-26-quest2-lever-recheck.csv) ·
   [codecs](xr/data/measurements-2026-09-26-quest2-codecs.csv) ·
   [phase lock](xr/data/measurements-2026-09-26-quest2-phase-lock.csv) ·
-  [APFPV vs wfb-ng](xr/data/2026-09-27-apfpv-vs-wfb-slot1.csv).
+  [APFPV vs wfb-ng, slot 1 (withdrawn)](xr/data/2026-09-27-apfpv-vs-wfb-slot1.csv) ·
+  [APFPV vs wfb-ng at 8000, slot 4A](xr/data/2026-09-27-apfpv-vs-wfb-slot4a.csv).
 - **Research behind this mode**: [Quest 2 research synthesis](xr/research/2026-09-26-quest2/00-INDEX-SYNTHESIS.md)
   (latency numbers and measurement protocol, APK options, system tweaks, compositor latch timing).
 

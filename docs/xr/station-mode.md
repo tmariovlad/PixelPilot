@@ -2,7 +2,7 @@
 
 Quest XR docs: [guide](../xr-quest.md) · [transport choice](transport-choice.md) · [real link](real-link.md) · [troubleshooting](troubleshooting.md) · repo rules in [CLAUDE.md](../../CLAUDE.md)
 
-The goal: receive the air unit's APFPV video (a WPA2 Wi-Fi AP) through the RTL8812AU on the Quest. That needs a Wi-Fi *client* on top of devourer, which today only has the AP side. The full scope, reuse map and risks are in [research/2026-09-27-devourer-station-scope.md](research/2026-09-27-devourer-station-scope.md) (~6–8 days). The first APFPV-vs-wfb comparison (Quest's own Wi-Fi) was confounded: APFPV ran at ~1000 kbit/s, wfb at 8000 ([correction](transport-choice.md#measured-apfpv-quest-internal-wi-fi-vs-wfb-ng-rtl8812au-2026-09-27)). It needs a redo before it can justify this work.
+The goal: receive the air unit's APFPV video (a WPA2 Wi-Fi AP) through the RTL8812AU on the Quest. That needs a Wi-Fi *client* on top of devourer, which today only has the AP side. The full scope, reuse map and risks are in [research/2026-09-27-devourer-station-scope.md](research/2026-09-27-devourer-station-scope.md) (~6–8 days). At 1080p90 / 8000 kbit/s in one room, APFPV through the Quest's own Wi-Fi beats wfb-ng at MCS2 on loss, jitter and frame delivery ([slot 4A](transport-choice.md#re-measured-at-8000-kbits-on-both-arms-slot-4a-2026-09-27), N = 2 per arm). The first comparison, at ~1000 kbit/s, was withdrawn.
 
 ## Status (2026-09-27)
 
