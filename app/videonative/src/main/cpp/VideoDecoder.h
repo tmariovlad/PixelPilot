@@ -17,6 +17,7 @@
 #include "AccessUnitAssembler.h"
 #include "DecoderLevers.h"
 #include "FrameTimeLog.h"
+#include "DecoderRecovery.h"
 #include "NALU/KeyFrameFinder.hpp"
 #include "NALU/NALU.hpp"
 #include "helper/TimeHelper.hpp"
@@ -116,7 +117,7 @@ class VideoDecoder
         if (mAuAggregationActive) s += " | " + auStatsSummary(mAssembler.stats());
         const auto tooBig = mInputTooBig.load(std::memory_order_relaxed);
         if (tooBig) s += " | too big " + std::to_string(tooBig);
-        return s;
+        return s + mRecovery.summary();
     }
 
     // If the decoder has been configured, feed NALU. Else search for configuration data and
@@ -128,6 +129,8 @@ class VideoDecoder
     // Initialize decoder with SPS / PPS data from KeyFrameFinder
     // Set Decoder.configured to true on success
     void configureStartDecoder(int idx);
+    // Stops and deletes decoder idx (if configured) and forgets the saved SPS/PPS; the window stays.
+    void releaseDecoder(int idx);
 
     // Creates, configures and starts the codec for idx with the given levers. On failure the codec is
     // deleted and false is returned, so the caller can retry with fewer levers.
@@ -159,6 +162,7 @@ class VideoDecoder
     AccessUnitAssembler   mAssembler;
     std::atomic<uint64_t> mInputTooBig{0};
     std::atomic<int>      mOutputTid{0};  // kernel tid of the output-release thread (decoder 0)
+    DecoderRecovery       mRecovery;     // rebuild decisions after decoder failures (audit X23)
     FrameTimeLog          mFrameReady;    // decoder 0 output-release times, for the XR phase meter
     // Holds the AMediaCodec instance, as well as the state (configured or not configured)
     Decoder      decoder{};

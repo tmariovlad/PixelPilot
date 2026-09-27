@@ -64,3 +64,13 @@ add_executable(audio_decoder_test AudioDecoder_test.cpp ../AudioDecoder.cpp)
 target_include_directories(audio_decoder_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(audio_decoder_test GTest::gtest_main)
 gtest_discover_tests(audio_decoder_test)
+
+add_executable(key_frame_finder_test KeyFrameFinder_test.cpp)
+target_include_directories(key_frame_finder_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(key_frame_finder_test GTest::gtest_main)
+gtest_discover_tests(key_frame_finder_test)
+
+add_executable(decoder_recovery_test DecoderRecovery_test.cpp)
+target_include_directories(decoder_recovery_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(decoder_recovery_test GTest::gtest_main)
+gtest_discover_tests(decoder_recovery_test)

@@ -12,6 +12,7 @@
 #include <chrono>
 #include <cstdint>  // for uint8_t
 #include <cstring>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <memory>

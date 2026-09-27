@@ -40,21 +40,7 @@ void VideoDecoder::setOutputSurface(JNIEnv* env, jobject surface, jint idx)
         }
         std::lock_guard<std::mutex> lock(mMutexInputPipe);
         inputPipeClosed = true;
-        if (decoder.configured[idx])
-        {
-            AMediaCodec_stop(decoder.codec[idx]);
-            AMediaCodec_delete(decoder.codec[idx]);
-            decoder.codec[idx] = nullptr;
-            MLOGD << "Set decoder.codec null idx: " << idx;
-            mKeyFrameFinder.reset();
-            mAssembler.reset();
-            decoder.configured[idx] = false;
-            if (mCheckOutputThread[idx]->joinable())
-            {
-                mCheckOutputThread[idx]->join();
-                mCheckOutputThread[idx].reset();
-            }
-        }
+        releaseDecoder(idx);
         if (decoder.window[idx])
         {
             ANativeWindow_release(decoder.window[idx]);
@@ -71,6 +57,23 @@ void VideoDecoder::setOutputSurface(JNIEnv* env, jobject surface, jint idx)
         decoder.window[idx] = ANativeWindow_fromSurface(env, surface);
         // open the input pipe - now the decoder will start as soon as enough data is available
         inputPipeClosed = false;
+    }
+}
+
+void VideoDecoder::releaseDecoder(int idx)
+{
+    if (!decoder.configured[idx]) return;
+    AMediaCodec_stop(decoder.codec[idx]);
+    AMediaCodec_delete(decoder.codec[idx]);
+    decoder.codec[idx] = nullptr;
+    MLOGD << "Set decoder.codec null idx: " << idx;
+    mKeyFrameFinder.reset();
+    mAssembler.reset();
+    decoder.configured[idx] = false;
+    if (mCheckOutputThread[idx]->joinable())
+    {
+        mCheckOutputThread[idx]->join();
+        mCheckOutputThread[idx].reset();
     }
 }
 
@@ -106,6 +109,23 @@ void VideoDecoder::interpretNALU(const NALU& nalu)
         mKeyFrameFinder.saveIfKeyFrame(nalu);
         return;
     }
+    if ((decoder.configured[0] || decoder.configured[1]) && mKeyFrameFinder.isChangedSPS(nalu))
+    {
+        // The encoder restarted with other parameters (e.g. resolution). Rebuild the decoder from the new
+        // SPS/PPS below instead of letting it adapt in place (which kept ~16 frames on Quest 2).
+        MLOGD << "SPS changed: reconfiguring the decoder";
+        releaseDecoder(0);
+        releaseDecoder(1);
+    }
+    // '|', not '||': both decoders' flags are consumed in the same pass.
+    if (mRecovery.shouldRebuild(0, decoder.configured[0]) | mRecovery.shouldRebuild(1, decoder.configured[1]))
+    {
+        // A codec errored out and its output thread ended: the picture would stay frozen. Rebuild from the next
+        // key frame (audit X23 b, DecoderRecovery.h).
+        MLOGE << "decoder failed, rebuilding at the next key frame";
+        releaseDecoder(0);
+        releaseDecoder(1);
+    }
     if (decoder.configured[0] || decoder.configured[1])
     {
         if (mAuAggregationActive)
@@ -140,6 +160,13 @@ void VideoDecoder::interpretNALU(const NALU& nalu)
             MLOGD << "Configuring decoder...";
             configureStartDecoder(0);
             configureStartDecoder(1);
+            if (mRecovery.configureFailed(decoder.configured[0] || decoder.configured[1],
+                                          decoder.window[0] != nullptr || decoder.window[1] != nullptr))
+            {
+                // Do not retry on every following NALU with the same key frames (audit X23 a).
+                MLOGE << "decoder not configured, retrying at the next key frame";
+                mKeyFrameFinder.reset();
+            }
         }
     }
 }
@@ -167,6 +194,7 @@ void VideoDecoder::configureStartDecoder(int idx)
     }
     mAuAggregationActive = wanted.auAggregation;
     mAssembler.reset();
+    mRecovery.configured(idx);
     mCheckOutputThread[idx] = std::make_unique<std::thread>(&VideoDecoder::checkOutputLoop, this, idx);
     NDKThreadHelper::setName(mCheckOutputThread[idx]->native_handle(), "LLDCheckOutput");
     decoder.configured[idx] = true;
@@ -372,8 +400,10 @@ void VideoDecoder::checkOutputLoop(int idx)
         }
         else
         {
-            // Most like AMediaCodec_stop() was called
+            // AMediaCodec_stop() was called (a release), or the codec failed. Flag it either way: a release is
+            // followed by a fresh configure, which clears the flag (DecoderRecovery::configured).
             MLOGD << "dequeueOutputBuffer idx: " << (int) index << " .Exit.";
+            mRecovery.outputFailed(idx);
             decoderProducedUnknown = true;
             continue;
         }
