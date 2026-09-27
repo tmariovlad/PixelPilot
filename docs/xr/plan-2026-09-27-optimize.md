@@ -83,3 +83,19 @@ Filled in by the coordinator as results come back. Details are in each owner's t
   - XR input (A/X = panel mode, B/Y = hide);
   - decoder recovery (X23; checked in the final slot: the SPS-change rebuild (c) was slower on a live switch and was removed in `501094a`; [result](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27)).
 - **Canonical Quest build.** 7b8baadb (`e889479`). The final build from HEAD is checked in the last slot.
+
+## Air-unit state and reverts (as left by this run)
+
+The persistent defaults on `.132` were validated with a reboot each time. The backups sit next to each file on the air
+unit.
+
+| Change | Files | Revert (run on the air unit, `ssh root@192.168.100.132`) |
+|---|---|---|
+| Two-way tunnel (`wfb_rx`/`wfb_tun`, tunnel `wfb_tx -C 9001`) | `/opt/linkmode/linkmode-air.sh`, `wfb_rx`, `wfb_tun`, `wfb_tx_cmd` | `cp /opt/linkmode/linkmode-air.sh.bak-2026-09-27-pre-tunnel /opt/linkmode/linkmode-air.sh && reboot` |
+| REC defaults (480p167, 2000 kbit/s, FEC 4/8) | `/etc/waybeam.json`, `linkmode-air.sh` | `cp /etc/waybeam.json.bak-pre-rec-20260927 /etc/waybeam.json && cp /opt/linkmode/linkmode-air.sh.bak-2026-09-27-pre-rec /opt/linkmode/linkmode-air.sh && reboot` |
+| `alink_air` (adaptive MCS/FEC) | `/opt/linkmode/alink_air`, `alink_air.conf`, `linkmode-air.sh` | `killall alink_air; rm /opt/linkmode/alink_air /opt/linkmode/alink_air.conf && cp /opt/linkmode/linkmode-air.sh.bak-2026-09-27-pre-alink /opt/linkmode/linkmode-air.sh && reboot` |
+| Everything, back to this morning (1080p90 / 8000 / FEC 4/6, no tunnel, no alink) | as above | `cp /etc/waybeam.json.bak-1080p90-20260927 /etc/waybeam.json && cp /opt/linkmode/linkmode-air.sh.bak-2026-09-27-pre-tunnel /opt/linkmode/linkmode-air.sh && reboot` |
+
+The PC also keeps copies of what was deleted from the air unit to free `/overlay`: `libsodium.so.23*` (not used by
+anything running) and `wfb_tx.v25.bak`. They are in the OpenIPC repo under
+`repos/tasks/hil-build/air-kernel-backups/linkmode/`, with md5 sums.
