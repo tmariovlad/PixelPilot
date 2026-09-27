@@ -1,0 +1,5 @@
+run,build,apk_md5,usb_attach_epoch,app_crashes,app_alive_after_wake,video_after_wake,tun0_after_wake
+run1_old,HEAD without the bind fix (LinkOptions build),428fa1a18211,1790511514.7,2,no,no,absent
+run2_new,HEAD cae687c (bind fix),943c6168082c,1790513144.4,0,yes,90 fps quality ~308,up (TX 610 pkts)
+run3_old,HEAD without the bind fix (LinkOptions build),428fa1a18211,1790513446.8,1,no,no,absent
+run4_new,HEAD cae687c (bind fix),943c6168082c,1790513732.5,0,yes,decoding (57-66 fps ramp after wake),up (TX +100 in 10 s)
