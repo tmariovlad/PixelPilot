@@ -43,8 +43,9 @@ every switch, drift fitted on the reference state A, N = 2 per state, states alt
 |---|---|---|---|---|
 | 0 | Install a build with `WfbStatsTrace` (built from a clean checkout of HEAD, not the shared working tree); 60 s dry run: counters present, `tx=`/`temp=` parsed | – | 60 s | 15 min |
 | 1 | **Power ladder** at MCS2 / 8 Mbit/s: RSSI, pre-FEC loss and loss after FEC vs TX power, to find the cliff | A = max power; 5 levels from max to min, each N = 2 | ~4.5 min | 10 min |
-| 2 | **Matrix** at 4–5 power levels picked from phase 1 (max, two above the cliff, at the cliff, min) | A = m1b4 (the most robust point, same reference in every trace so deltas compare across levels); m2b4, m2b8, m3b8, m4b8, m4b12, m5b12 (MCS5 only if 3a confirms it) | ~5 min per level | 35 min |
-| 3 | **FEC** per level on that level's best state | A = 4/6; 4/5, 8/12 | ~2.5 min per level | 15 min |
+| 2 | **Matrix** at 17 / 12 / 8 dBm (chosen from phase 1, see Results; 5 dBm adds nothing over 8) at the mode W3 picks | A = `m1b4f46` (the most robust point, same reference in every trace so deltas compare across levels); m2b4, m2b8, m2b8f48, m1b4f48, m3b8, m4b8 (MCS5 only if 3a confirms it) | ~5 min per level | 25 min |
+| 3 | **FEC block length** per level on that level's best state: longer blocks cover bursts better but wait longer to fill (8/12 cost ≈ 0 ms at 640×480 in [slot 2](g2g-budget.md#air-unit-levers-measured-in-one-trace-2026-09-27-slot-2)) | A = 4/8; 8/12, 8/16 (and 4/6 for reference) | ~2.5 min per level | 15 min |
+| 3b | **Adaptive link on/off** at 17 and 8 dBm (air power fixed per run). It is a Quest pref read at start-up, so it runs with [pref_ab.sh](../../scripts/quest/pref_ab.sh) (app restart per step, guard ≥ 10 s), ABBA order ≥ 2× so a time trend cancels. The [slot 3d run](troubleshooting.md#does-the-quests-uplink-hurt-the-video-slot-3d-2026-09-27) found no effect, but a loss trend during the run masked it | on, off | ~4 min per level | 15 min |
 | 4 | Analysis, envelope + policy table, docs, commit | – | – | 30 min |
 
 About 75 min on the devices and 105 min in total. Guardian paused and `prox_close` only while a trace runs, restored
