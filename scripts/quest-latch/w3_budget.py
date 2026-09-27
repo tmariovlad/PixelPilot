@@ -3,6 +3,8 @@
 Absolute capture -> arrival cannot be compared between modes (each waybeam start draws a new random RTP base), so
 each mode's budget is a sum of segments that do not need it:
   readout   sensor readout from the IMX415 registers            (air, per mode)          [PROVEN]
+            counted in full (active lines x 1H: the top line waits the whole readout), the same for every mode;
+            [2] 1080p 5.31, [6]/[9] 720p 3.52, [7] 480p 2.34 ms (OpenIPC w3-readout-per-mode.md, driver 6e637e75)
   isp       ISP (+ VPE/SCL) before VENC input                   (air, per mode, range)   [INFERRED]
   s_air     VENC input -> last packet sent, waybeam sidecar     (air, per mode)          [PROVEN]
   tx_floor  first packet on air -> Quest                        (same for every mode)    [INFERRED, HIL t2->t3]
