@@ -27,7 +27,7 @@ def read_step_fields(path):
     out = []
     for line in open(path, encoding="utf-8"):
         parts = line.split()
-        if len(parts) < 2 or line.startswith("#") or "ERR" in parts:
+        if len(parts) < 2 or line.startswith("#") or "ERR" in parts or parts[1] == "PRE":
             continue
         try:
             f = {"t": float(parts[0]), "label": parts[1]}
@@ -137,7 +137,11 @@ def main():
     keys = ["tx_per_s", "rx_per_s", "pre_fec_loss_pct", "fec_rec_per_s", "wfb_lost_per_s", "rssi",
             "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt"]
     heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "air°C", "Q cpu°C", "Q st", "batt"]
-    fmt = lambda v: f"{v:9.1f}" if isinstance(v, float) else f"{'-' if v is None else v:>9}"
+    def fmt(v):
+        if v is None:
+            return f"{'-':>9}"
+        return f"{v:9.1f}" if isinstance(v, float) else f"{v:>9}"
+
     hdr = f"{'':14s}" + "".join(f"{h:>9s}" for h in heads)
     print("per step (link side, guarded windows)\n" + hdr)
     for i, lab, r in rows:

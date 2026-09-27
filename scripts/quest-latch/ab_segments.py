@@ -160,6 +160,8 @@ def read_steps(path, air_offset_s, realtime_minus_trace):
             t = (float(parts[0]) + air_offset_s) * 1e9 - realtime_minus_trace
         except ValueError:
             continue
+        if parts[1:2] == ["PRE"]:  # the air loop's state before the first step, not a step
+            continue
         if parts[1:2] == ["END"]:
             end = t
         elif len(parts) >= 2:

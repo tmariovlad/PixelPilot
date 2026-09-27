@@ -16,7 +16,8 @@ def write_steps(text):
 
 
 def test_step_fields_and_tx_rate():
-    path = write_steps("100.0 m2b8 tx=1000 temp=61.5\n"
+    path = write_steps("99.0 PRE p12m2b8 tx=900 temp=61\n"
+                       "100.0 m2b8 tx=1000 temp=61.5\n"
                        "112.0 m4b16 tx=13000 temp=63\n"
                        "112.5 ERR set_radio failed\n"
                        "124.0 END tx=37000 temp=64\n")
@@ -25,6 +26,15 @@ def test_step_fields_and_tx_rate():
     assert [x["label"] for x in f] == ["m2b8", "m4b16", "END"]
     assert f[0]["temp"] == 61.5
     assert tx_rates(f) == [1000.0, 2000.0]
+
+
+def test_read_steps_skips_the_pre_line():
+    from ab_segments import read_steps
+    path = write_steps("99.0 PRE p12m2b8\n100.0 A tx=1\n112.0 B tx=2\n124.0 END tx=3 reverted=p12m2b8\n")
+    steps, end = read_steps(path, 0.0, 0)
+    os.remove(path)
+    assert [lab for _, lab in steps] == ["A", "B"]
+    assert end == 124.0 * S
 
 
 def test_tx_rate_needs_tx_on_both_ends():
