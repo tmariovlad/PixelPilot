@@ -1,0 +1,9 @@
+# stoporder2 2026-09-27 16:05:50 pid 598 uid 10038 cycles 2
+cycle 1 asleep: tun0=0 udp8000_sockets=0
+cycle 1 awake : tun0=1 udp8000_sockets=1 no FPS line
+cycle 2 asleep: tun0=0 udp8000_sockets=0
+cycle 2 awake : tun0=1 udp8000_sockets=1 VideoDecoder: FPS:86.000000
+pid after: 598 (same process: yes)
+EBADF lines since start: 0
+tunnel started / stopped lines: 2 / 4
+late-stop warnings: 0
