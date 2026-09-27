@@ -109,6 +109,12 @@ public class WfbNgVpnService extends VpnService {
             Log.e(TAG, "Failed to establish VPN interface", e);
             return false;
         }
+        if (vpnInterface == null) {
+            // establish() returns null when VPN permission is gone (revoked, or another always-on VPN took over);
+            // the video does not use the tunnel, so the app goes on without it (VpnService.Builder.establish docs)
+            Log.w(TAG, "VPN interface not established (permission revoked or not prepared): tunnel off");
+            return false;
+        }
         try {
             udpInSocket = bindUdpIn();
         } catch (IOException e) {

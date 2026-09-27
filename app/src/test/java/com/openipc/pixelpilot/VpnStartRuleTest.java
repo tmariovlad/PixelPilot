@@ -68,6 +68,16 @@ public class VpnStartRuleTest {
         assertTrue(onRebind, onRebind.contains("startTunnel();"));
     }
 
+    /** establish() returns null when VPN permission is gone; the tunnel must stop there, not NPE on the fd. */
+    @Test
+    public void aNullInterfaceStopsTheTunnelStart() throws IOException {
+        String start = method(serviceSource(), "private synchronized boolean startTunnel()");
+        int establish = start.indexOf("vpnInterface = establishVpnInterface();");
+        int check = start.indexOf("if (vpnInterface == null)");
+        int threads = start.indexOf("startVpnThreads(");
+        assertTrue(start, establish >= 0 && check > establish && threads > check);
+    }
+
     private static String serviceSource() throws IOException {
         return new String(Files.readAllBytes(SOURCES.resolve("com/openipc/pixelpilot/WfbNgVpnService.java")),
                 StandardCharsets.UTF_8);
