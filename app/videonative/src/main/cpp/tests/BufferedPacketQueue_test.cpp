@@ -1,14 +1,17 @@
 #include "BufferedPacketQueue.h"  // the class under test
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cstdint>
 #include <iostream>
 #include <vector>
 
 // ---------- Test fixture ----------------------------------------------------
+// The upstream bounds (5 packets / 20 ms, kLegacyReorderBounds): still used for audio and as the experiment's off
+// state. The video default, kTightReorderBounds, has its own fixture below.
 class BufferedPacketQueueTest : public ::testing::Test
 {
   protected:
-    BufferedPacketQueue   q;
+    BufferedPacketQueue   q{kLegacyReorderBounds};
     std::vector<uint16_t> delivered;
 
     // The queue bounds how long it will hold a packet back, so the tests drive the clock
@@ -99,7 +102,7 @@ TEST_F(BufferedPacketQueueTest, StaleBufferIsFlushedOnTimeout)
     feed(4);
 
     ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 3, 4}))
-        << "Once the buffer is older than MAX_BUFFER_AGE it has to be released";
+        << "Once the buffer is older than the age bound it has to be released";
 }
 
 // The other side of that bound: a reorder that resolves quickly must still be reordered, not
@@ -112,7 +115,7 @@ TEST_F(BufferedPacketQueueTest, ReorderWithinTimeoutIsStillPutBackInOrder)
     feed(2);
 
     ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 2, 3}))
-        << "A packet that arrives late but within MAX_BUFFER_AGE must not be flushed early";
+        << "A packet that arrives late but within the age bound must not be flushed early";
 }
 
 // A large jump is not a reorder - it is a stream that restarted somewhere else. It must not be
@@ -184,6 +187,93 @@ TEST_F(BufferedPacketQueueTest, FlushAcrossTheWrapDeliversInOrder)
 
     ASSERT_EQ(delivered, (std::vector<uint16_t>{65532, 65534, 65535, 0, 1, 2, 3}))
         << "sorted by value this comes out as 0, 1, 2, 65534, 65535";
+}
+
+// ---------- Tight bounds (video default: 2 packets / 3 ms) -----------------
+// On the wfb-ng link a gap is a lost packet, not a reorder (0 reorders in 22 traces), so the frames behind it should
+// not wait long. The only reorder ever seen on this path was a single swap, which must still come out in order.
+class TightQueueTest : public BufferedPacketQueueTest
+{
+  protected:
+    void SetUp() override
+    {
+        BufferedPacketQueueTest::SetUp();
+        q.setBounds(kTightReorderBounds);
+    }
+};
+
+TEST_F(TightQueueTest, BoundsAreTheNamedConstants)
+{
+    EXPECT_EQ(q.bounds().monotonicThreshold, kTightReorderBounds.monotonicThreshold);
+    EXPECT_EQ(q.bounds().maxAge, kTightReorderBounds.maxAge);
+    EXPECT_EQ(kTightReorderBounds.monotonicThreshold, 2u);
+    EXPECT_EQ(kTightReorderBounds.maxAge, std::chrono::milliseconds(3));
+}
+
+TEST_F(TightQueueTest, SingleSwapIsStillPutBackInOrder)
+{
+    feed(1);
+    feed(3);
+    advance(1);
+    feed(2);
+    feed(4);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 2, 3, 4}));
+}
+
+TEST_F(TightQueueTest, LostPacketHoldsOnlyTwoPackets)
+{
+    feed(1);
+    // 2 is lost.
+    feed(3);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1})) << "one packet may still be a swap";
+    feed(4);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 3, 4})) << "the legacy bounds would still hold 3 and 4 here";
+    feed(5);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 3, 4, 5}));
+}
+
+TEST_F(TightQueueTest, LostPacketHoldsAtMostThreeMilliseconds)
+{
+    feed(1);
+    // 2 is lost; the next packet only arrives 3 ms later (a slow stream, e.g. one packet per frame).
+    feed(3);
+    advance(3);
+    feed(4);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 3, 4}));
+}
+
+// Documented limit: a packet more than 2 packets late is treated as lost. The run behind the gap is released
+// without it; when it finally arrives it is delivered on the next flush, out of order (the parser drops the stray
+// fragment, one frame is damaged), and the stream goes on.
+TEST_F(TightQueueTest, DeepReorderIsTreatedAsLoss)
+{
+    feed(1);
+    feed(3);
+    feed(4);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 3, 4})) << "released without waiting for 2";
+    feed(2);  // 2 packets late
+    feed(5);
+    advance(3);
+    for (uint16_t s = 6; s <= 9; ++s) feed(s);
+    ASSERT_EQ(std::count(delivered.begin(), delivered.end(), 2), 1) << "the late packet is delivered once";
+    const auto late = std::find(delivered.begin(), delivered.end(), 2);
+    ASSERT_GT(late - delivered.begin(), 2) << "after 3 and 4, i.e. out of order";
+    ASSERT_EQ(delivered.back(), 9) << "the stream keeps flowing after it";
+    for (uint16_t s = 3; s <= 9; ++s)
+        EXPECT_EQ(std::count(delivered.begin(), delivered.end(), s), 1) << "packet " << s;
+}
+
+// The bound can change while packets flow (the experiment pref is applied from the UI thread).
+TEST_F(TightQueueTest, BoundsCanChangeBetweenPackets)
+{
+    q.setBounds(kLegacyReorderBounds);
+    feed(1);
+    feed(3);
+    feed(4);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1})) << "legacy: still holding";
+    q.setBounds(kTightReorderBounds);
+    feed(5);
+    ASSERT_EQ(delivered, (std::vector<uint16_t>{1, 3, 4, 5})) << "tight: released at the next packet";
 }
 
 // ---------- gtest boilerplate main -----------------------------------------

@@ -99,6 +99,7 @@ Everything tunable lives in **Video → Latency experiments** (single source:
 | Decoder: max operating rate | `dec_operating_rate` | **on for Meta headsets**, off elsewhere | app restart |
 | Decoder: low-latency component | `dec_prefer_low_latency_component` | off | app restart |
 | Decoder: whole access units | `au_aggregation` | off | app restart |
+| RTP: short reorder hold after a lost packet (2 packets / 3 ms instead of 5 / 20 ms; [why](xr/g2g-budget.md#the-quests-parse-time-and-the-reorder-hold-after-a-lost-packet-2026-09-27-code--existing-traces)) | `rtp_tight_reorder` | on | next decoder-lever apply |
 | XR refresh | `xr_refresh_hz` | 120 | next XR start |
 | XR size | `xr_fov_deg` | 60° | next XR start |
 | XR: curved layer | `xr_layer_shape` | quad | next XR start |

@@ -5,6 +5,7 @@
 #include <cstdio>
 #endif
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstdarg>
 #include <cstddef>
@@ -18,12 +19,10 @@
 // Define logging tag and maximum buffer size
 #define BUFFERED_QUEUE_LOG_TAG "BufferedPacketQueue"
 // Last-resort cap on the buffer. How long this is in wall clock time depends entirely on the
-// packet rate, which is why it cannot be the only bound - see MAX_BUFFER_AGE.
+// packet rate, which is why it cannot be the only bound - see ReorderBounds::maxAge.
 constexpr size_t MAX_BUFFER_SIZE = 15;
-// Number of monotonically increasing packets
-constexpr size_t MONOTONIC_THRESHOLD = 5;
 // A monotonic run is only tracked while the gap is plausibly a reorder. Kept separate from
-// MONOTONIC_THRESHOLD: the gap grows by one with every packet held back, so gating the counter
+// ReorderBounds::monotonicThreshold: the gap grows by one with every packet held back, so gating the counter
 // on the same value it is compared against means it can never reach it.
 constexpr size_t MONOTONIC_MAX_DISTANCE = 64;
 
@@ -31,13 +30,24 @@ constexpr size_t MONOTONIC_MAX_DISTANCE = 64;
 using QueueClock     = std::chrono::steady_clock;
 using QueueTimePoint = QueueClock::time_point;
 
-// A gap in the sequence numbers on this path is almost always a packet that FEC could not
-// recover, not a reorder: by the time packets get here they have come through wfb-ng and a
-// loopback socket, where reordering takes microseconds. Waiting for a packet that will never
-// arrive is pure added latency, so the wait is bounded in time rather than in packets - the
-// packet bound alone is worth ~20ms on a 1080p video stream but ~300ms on the audio stream,
-// which runs at a fraction of the packet rate.
-constexpr auto MAX_BUFFER_AGE = std::chrono::milliseconds(20);
+// How long a gap in the sequence numbers may hold the packets behind it: until `monotonicThreshold` later packets
+// have arrived in increasing order, or until the oldest held packet is `maxAge` old (checked when the next packet
+// arrives). A gap on this path is almost always a packet that FEC could not recover, not a reorder: by the time
+// packets get here they have come through wfb-ng's in-order ring and a loopback socket, where reordering takes
+// microseconds. Waiting for a packet that will never arrive is pure added latency for every frame behind it.
+struct ReorderBounds
+{
+    size_t                    monotonicThreshold;
+    std::chrono::milliseconds maxAge;
+};
+// Upstream PixelPilot: 5 packets or 20 ms. On the Quest's wfb-ng link (22 traces, 0 reorders) a frame completing
+// after a loss reached the decoder 2-3 ms later at ~0.3 % loss and ~9 ms later at ~2 % loss (+0.5-0.7 ms on the
+// mean); docs/xr/g2g-budget.md, "The Quest's parse time and the reorder hold". Kept for the audio stream (a fraction
+// of the video packet rate) and as the experiment's off state.
+constexpr ReorderBounds kLegacyReorderBounds{5, std::chrono::milliseconds(20)};
+// Video on a real link: still puts a single swap back in order (the only reorder seen on this path, rtp_seq.py);
+// a reorder deeper than 2 packets is treated as a loss. LatencyExperiments KEY_RTP_TIGHT_REORDER selects it.
+constexpr ReorderBounds kTightReorderBounds{2, std::chrono::milliseconds(3)};
 
 // Type definition for sequence numbers
 using SeqType   = uint16_t;
@@ -53,7 +63,24 @@ class BufferedPacketQueue
     /**
      * @brief Constructs a BufferedPacketQueue instance.
      */
-    BufferedPacketQueue() : mFirstPacket(true), mLastPacketIdx(0), mMonotonicOutOfOrderIncreaseCount(0) {}
+    explicit BufferedPacketQueue(ReorderBounds bounds)
+        : mFirstPacket(true), mLastPacketIdx(0), mMonotonicOutOfOrderIncreaseCount(0)
+    {
+        setBounds(bounds);
+    }
+
+    /** May be called from another thread while packets flow; takes effect on the next packet. */
+    void setBounds(ReorderBounds bounds)
+    {
+        mMonotonicThreshold.store(bounds.monotonicThreshold, std::memory_order_relaxed);
+        mMaxAgeMs.store(bounds.maxAge.count(), std::memory_order_relaxed);
+    }
+
+    ReorderBounds bounds() const
+    {
+        return {mMonotonicThreshold.load(std::memory_order_relaxed),
+                std::chrono::milliseconds(mMaxAgeMs.load(std::memory_order_relaxed))};
+    }
 
     /**
      * @brief Processes an incoming packet based on its sequence index.
@@ -80,12 +107,13 @@ class BufferedPacketQueue
         // Before anything else: give up on a gap we have been waiting on for too long. Done
         // here rather than in handleOutOfOrderPacket so that an in-order packet arriving after
         // a stall does not get delivered ahead of what is already buffered.
-        if (!mPackets.empty() && (now - mOldestBufferedAt) >= MAX_BUFFER_AGE)
+        const auto maxAge = std::chrono::milliseconds(mMaxAgeMs.load(std::memory_order_relaxed));
+        if (!mPackets.empty() && (now - mOldestBufferedAt) >= maxAge)
         {
             logWarning(
                 "Held %zu packet(s) for more than %lldms waiting on Sequence=%u. Flushing.",
                 mPackets.size(),
-                (long long) MAX_BUFFER_AGE.count(),
+                (long long) maxAge.count(),
                 static_cast<unsigned>(static_cast<SeqType>(mLastPacketIdx + 1)));
             mLastPacketIdx = drainBufferInOrder(callback);
         }
@@ -124,9 +152,13 @@ class BufferedPacketQueue
     QueueTimePoint mOldestBufferedAt{};
 
     // This variable is used to track a situation where the sequence number is increasing monotonically while packets
-    // are out of order. if this counter reaches MONOTONIC_THRESHOLD, we will restart buffering and update lastPacketIdx
+    // are out of order. if this counter reaches the monotonic threshold (ReorderBounds), we will restart buffering and update lastPacketIdx
     // to the highest sequence index received.
     size_t mMonotonicOutOfOrderIncreaseCount;
+
+    // ReorderBounds, split into atomics: set from the UI thread, read by the receiving thread.
+    std::atomic<size_t>  mMonotonicThreshold{0};
+    std::atomic<int64_t> mMaxAgeMs{0};
 
     /**
      * @brief Determines if the incoming packet is the first packet.
@@ -244,7 +276,7 @@ class BufferedPacketQueue
             {
                 mMonotonicOutOfOrderIncreaseCount++;
                 logDebug("Monotonic increase count: %zu", mMonotonicOutOfOrderIncreaseCount);
-                if (mMonotonicOutOfOrderIncreaseCount >= MONOTONIC_THRESHOLD)
+                if (mMonotonicOutOfOrderIncreaseCount >= mMonotonicThreshold.load(std::memory_order_relaxed))
                 {
                     mLastPacketIdx = drainBufferInOrder(callback);
                     logWarning("Monotonic threshold reached. Updating lastPacketIdx to %u", mLastPacketIdx);

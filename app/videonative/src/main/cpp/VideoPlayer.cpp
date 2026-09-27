@@ -371,6 +371,13 @@ extern "C"
         }
     }
 
+    JNI_METHOD(void, nativeSetTightReorder)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean tight)
+    {
+        VideoPlayer* p = native(nativeInstance);
+        if (p) p->setTightReorder(tight);
+    }
+
     JNI_METHOD(jintArray, nativeGetLatencyCriticalThreadIds)
     (JNIEnv* env, jclass jclass1, jlong nativeInstance)
     {

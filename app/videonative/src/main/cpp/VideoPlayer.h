@@ -57,6 +57,11 @@ class VideoPlayer
     void setForwarding(const std::string& ip, int port, bool enabled);
 
     void setDecoderLevers(const DecoderLevers& levers) { videoDecoder.setDecoderLevers(levers); }
+    // Video only; audio keeps the upstream bounds (it runs at a fraction of the packet rate).
+    void setTightReorder(bool tight)
+    {
+        mBufferedPacketQueueVideo.setBounds(tight ? kTightReorderBounds : kLegacyReorderBounds);
+    }
 
     std::string getDecoderSummary() { return videoDecoder.getDecoderSummary(); }
     std::vector<int64_t> drainFrameReadyTimes() { return videoDecoder.drainFrameReadyTimes(); }
@@ -82,7 +87,9 @@ class VideoPlayer
     const std::string   GROUND_RECORDING_DIRECTORY;
     JavaVM*             javaVm = nullptr;
     H26XParser          mParser;
-    BufferedPacketQueue mBufferedPacketQueueVideo, mBufferedPacketQueueAudio;
+    // Video starts tight like LatencyExperiments' default and follows setTightReorder.
+    BufferedPacketQueue mBufferedPacketQueueVideo{kTightReorderBounds};
+    BufferedPacketQueue mBufferedPacketQueueAudio{kLegacyReorderBounds};
 
     // A NALU is a non-owning view onto the parser's buffer (see NALU.hpp), which is
     // reused for the next packet. The DVR writer runs on its own thread, so what gets

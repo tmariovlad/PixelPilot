@@ -64,6 +64,18 @@ public class LatencyExperimentsTest {
         assertEquals(LatencyExperiments.LayerShape.QUAD, LatencyExperiments.from(new MapPrefs().put(LatencyExperiments.KEY_XR_LAYER_SHAPE, "sphere")).xrLayerShape);
     }
 
+    // The reorder hold after a lost packet made the next frames ~9 ms late at 2 % loss (docs/xr/g2g-budget.md,
+    // "The Quest's parse time and the reorder hold"); tight is the default everywhere, the upstream bound stays
+    // selectable for an A/B and shows in the summary.
+    @Test public void tightReorderIsTheDefaultAndCanBeTurnedOff() {
+        assertTrue(LatencyExperiments.from(new MapPrefs()).rtpTightReorder);
+        assertTrue(LatencyExperiments.from(new MapPrefs(), true).rtpTightReorder);
+        LatencyExperiments off = LatencyExperiments.from(
+                new MapPrefs().put(LatencyExperiments.KEY_RTP_TIGHT_REORDER, false));
+        assertFalse(off.rtpTightReorder);
+        assertTrue(off.summary(), off.summary().startsWith("LL RQ20 |"));
+    }
+
     @Test public void summaryListsOnlyEnabledLevers() {
         assertEquals("LL | 120Hz quad perf hints flip", LatencyExperiments.from(new MapPrefs()).summary());
         MapPrefs p = new MapPrefs().put(LatencyExperiments.KEY_LOW_LATENCY_DECODER, false)

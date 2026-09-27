@@ -182,10 +182,10 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
   | REC-like (a480 ×4, rec ×2, c720 ×2, d1080s ×2, e720s ×2; 12 traces) | 0–0.8 % | 1.9–5.4 ms | 1.6–2.1 ms | +0.0…+0.08 ms |
   | BASE 1080p90 / 8 Mbit/s (2 traces) | ~2 % | **11.9–12.3 ms** | 2.6–2.8 ms | **+0.5…+0.7 ms** |
 
-- **Proposed fix (not made).** On the wfb path, shorten the hold: MONOTONIC_THRESHOLD 5 → 2 and MAX_BUFFER_AGE 20 → 3 ms. A reorder after wfb-ng takes µs, and the one reorder ever seen was a single swap (`rtp_seq.py`). A gap would then cost at most ~1 packet, not ~5.
+- **Fix, in code (2026-09-27, device A/B pending).** The bounds are named constants in one place, `kTightReorderBounds` {2 packets, 3 ms} and `kLegacyReorderBounds` {5, 20 ms} (`BufferedPacketQueue.h`). Video uses the tight bounds, selected by the experiment pref `rtp_tight_reorder` (default on; off = upstream, for the A/B). Audio keeps the upstream bounds. Host gtests: a single swap still comes out in order; a loss releases after 2 packets or 3 ms; a reorder 2+ packets deep is documented as a loss (delivered once, out of order, and the stream keeps flowing); the bounds can change while packets flow. 61/61 pass, and JVM `LatencyExperimentsTest` 18/18. Original proposal: on the wfb path, shorten the hold from 5 packets / 20 ms to 2 / 3 ms. A reorder after wfb-ng takes µs, and the one reorder ever seen was a single swap (`rtp_seq.py`). A gap would then cost at most ~1 packet, not ~5.
   - **Estimate [INFERRED from the table]:** at REC loss, −0.0…−0.1 ms on the mean and −2…−3 ms on the frames after a loss. On a weak link (~2 % loss), −0.5…−0.7 ms on the mean and ~−9 ms on the frames after each loss, i.e. fewer stutters.
   - **Risk:** a reorder deeper than 2 packets would become a lost packet (one broken frame), which is not seen on this path.
-  - **To land it:** the host gtests in `BufferedPacketQueue_test` need the new bounds. Verify with an A/B of `gap_hold.py` on a lossy link (lower TX power), N ≥ 2 per build.
+  - **Device check (pending):** an A/B of `rtp_tight_reorder` on/off on a lossy link (air at 8 dBm), in one trace series with [gap_hold.py](../../scripts/quest-latch/gap_hold.py), N ≥ 2 per state.
 
 ## Before / after: the original setup vs the recommended one (2026-09-27, final)
 

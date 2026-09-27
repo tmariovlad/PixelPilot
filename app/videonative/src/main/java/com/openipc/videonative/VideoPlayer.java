@@ -56,6 +56,8 @@ public class VideoPlayer implements IVideoParamsChanged {
                                                      boolean auAggregation, int debugKeyMask,
                                                      String componentName);
 
+    public static native void nativeSetTightReorder(long nativeInstance, boolean tight);
+
     public static native String nativeGetDecoderSummary(long nativeInstance);
 
     public static native int[] nativeGetLatencyCriticalThreadIds(long nativeInstance);
@@ -138,11 +140,12 @@ public class VideoPlayer implements IVideoParamsChanged {
 
     /**
      * Decoder latency levers from the single source of truth.
-     * Takes effect the next time the decoder is configured.
+     * Takes effect the next time the decoder is configured; the RTP reorder bound at the next packet.
      */
     public void setDecoderLevers(LatencyExperiments e) {
         nativeSetDecoderLevers(nativeVideoPlayer, e.lowLatencyDecoder, e.decPictureOrder, e.decOperatingRate,
                 e.decPreferLowLatencyComponent, e.auAggregation, e.decDebugKeyMask, e.decComponent);
+        nativeSetTightReorder(nativeVideoPlayer, e.rtpTightReorder);
     }
 
     /** Kernel thread ids on the video latency path (receive/feed, output release); may be empty. */
