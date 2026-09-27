@@ -19,8 +19,7 @@ AudioDecoder::~AudioDecoder()
 {
     stopAudioProcessing();
     delete pOpusDecoder;
-    AAudioStream_requestStop(m_stream);
-    AAudioStream_close(m_stream);
+    stopAudio();
 }
 
 void AudioDecoder::enqueueAudio(const uint8_t* data, const std::size_t data_length)
@@ -81,8 +80,14 @@ void AudioDecoder::initAudio()
 void AudioDecoder::stopAudio()
 {
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "stopAudio");
-    AAudioStream_requestStop(m_stream);
-    AAudioStream_close(m_stream);
+    // AAudioStream_close() frees the stream: a second stop (XrVideoActivity stops the player on every session
+    // stop and never re-inits audio) or the destructor would otherwise call into freed memory (SIGABRT).
+    if (m_stream)
+    {
+        AAudioStream_requestStop(m_stream);
+        AAudioStream_close(m_stream);
+        m_stream = nullptr;
+    }
     isInit = false;
 }
 

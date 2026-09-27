@@ -6,6 +6,7 @@
 #define PIXELPILOT_AUDIODECODER_H
 #include <aaudio/AAudio.h>
 #include <condition_variable>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <queue>

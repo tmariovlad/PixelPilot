@@ -59,3 +59,8 @@ add_executable(frame_time_log_test FrameTimeLog_test.cpp)
 target_include_directories(frame_time_log_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(frame_time_log_test GTest::gtest_main)
 gtest_discover_tests(frame_time_log_test)
+
+add_executable(audio_decoder_test AudioDecoder_test.cpp ../AudioDecoder.cpp)
+target_include_directories(audio_decoder_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(audio_decoder_test GTest::gtest_main)
+gtest_discover_tests(audio_decoder_test)
