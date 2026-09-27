@@ -1,0 +1,2 @@
+mode	rep	n	fps	encode_med	encode_p95	send_med	send_p95	s_air_med	s_air_p95	s_air_max	readout_ms	isp_lo	isp_hi
+7	a	9988	166.5	2.008	3.619	0.156	0.172	2.174	3.782	4.029	2.34	1.5	3.5
