@@ -23,6 +23,7 @@ home of all Quest work.
   - [docs/xr/station-mode.md](docs/xr/station-mode.md): APFPV through the RTL (devourer station mode): code, host build, go/no-go gate.
   - [docs/xr/troubleshooting.md](docs/xr/troubleshooting.md): build traps, Horizon OS quirks, adapter/link problems.
   - [docs/xr/transport-choice.md](docs/xr/transport-choice.md): why wfb-ng is the boot default, not APFPV; why APFPV through the RTL needs new code.
+  - [docs/xr/presets-design.md](docs/xr/presets-design.md): design (for approval) of mode/quality presets switched from the headset, and the VMODE1 protocol to the air.
   - **[docs/xr/HANDOFF.md](docs/xr/HANDOFF.md): current state of air unit / Quest / GS and the open items — start here in a new session.**
   - [docs/xr/data/](docs/xr/data/): raw measurement CSVs (linked from the topic files).
 - Design: [spec](docs/superpowers/specs/2026-09-26-quest-openxr-viewer-design.md) ·
