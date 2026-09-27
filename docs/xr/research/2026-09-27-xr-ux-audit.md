@@ -53,6 +53,10 @@ APK files on PC-VLAD (gitignored; a rebuild from git gives another md5): `7b8baa
    - **Recovery after one same-mode waybeam restart** (config untouched): picture gone 3564 ms, of which 3535 ms before the first new packet and **29 ms decoder**. Decode 1.46 ms afterwards [PROVEN: [data](../data/2026-09-27-last-restart-gap.txt)].
    - **On a resolution switch the build without (c) behaves like OLD**, which has the same decoder code on this path: 45–55 ms decoder part (item 4) [INFERRED: `501094a` restores the pre-`c0f41f2` SPS handling; not re-measured, no switches allowed].
    - `b2249f15` stays installed. The Quest was restored afterwards (Guardian on, `automation_disable`).
+6. **Note (2026-09-27, later): the prefs writes in items 1 and 5 did not land, and the results still hold.**
+   - From 18:16 to 22:34, `quest_adb.write_prefs` did not replace `general.xml` on the Quest. The atomic write of `ff19253` chained `&& mv` inside one `adb exec-in`, and only the `cat` ran in run-as (found by the 2c6ae8 session, fixed in `3cb6ea1`; see [troubleshooting](../troubleshooting.md)).
+   - Both build A/Bs above (`pref_ab.sh`, 18:36 and ~19:05) wrote prefs in that window. Every step asked for the prefs that were already on the headset: `gs.key`, `od_enabled` false, `adaptive_link_enabled` true [PROVEN: `run-as … cat shared_prefs/general.xml` before each run]. So the read-back matched and the prefs in effect were the intended ones.
+   - Only the APK changed between steps, and `adb install` was not affected. The results stand [INFERRED: from the two facts above].
 
 ## 0. Findings at a glance (ranked; details below)
 
