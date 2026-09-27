@@ -98,7 +98,7 @@ Each cell: Δ capture → decoded vs the anchor in the same trace · loss after 
 | band (receiver view) | alink `score` | seen at | use | expected loss after FEC | Δ latency vs `m1b2f46` |
 |---|---|---|---|---|---|
 | RSSI ≥ ~68, loss before FEC ≤ ~6 % at MCS2 | ≥ ~1680 | 17 dBm | `m2b2f48` (more picture: `m2b3f46`, `m2b4f46`) | 0 % (0.29 / 0.47 %) | −0.1 ms (+0.1 / +0.7) |
-| RSSI ~64, loss before FEC ~8 % at MCS2 | ~1640 | 12 dBm | `m2b2f46`, or `m2b2f48` [INFERRED: not run at 12 dBm; 4/8 helped at 17 and 8] | 0.67 % | −0.1 ms |
+| RSSI ~64, loss before FEC ~8 % at MCS2 | ~1640 | 12 dBm | `m2b2f48` (measured in p12b: 0.24 % vs 0.60 % for `m2b2f46` in the same trace) | 0.24 % | +0.2 ms |
 | RSSI ~54, loss before FEC ~20 % at MCS2 | ~1540 | 8 dBm | `m1b2f46` (MCS1) | 0.75 % | 0 |
 | worse | < ~1540 | < 8 dBm | nothing at 480p keeps loss < 1 % [INFERRED: phase 1 at 5 dBm ≈ 8 dBm] | – | – |
 
@@ -107,7 +107,24 @@ Each cell: Δ capture → decoded vs the anchor in the same trace · loss after 
 
 - Switch **down** one row when loss before FEC at the current MCS passes ~10 % (FEC 4/6 still held 0.3–0.7 % below that and broke at 15–20 %) [INFERRED: from the rows above].
 - Switch **up** only when the next row's MCS would see ≤ 6 %. RSSI rises ~4–5 points per row here. Hysteresis and time constants still have to be tested in closed loop in W1 phase 2 [SPECULATION until then].
-- **Pending:** the adaptive-link on/off A/B at 17 and 8 dBm (phase 3b), and the user's picture-quality check at 2–4 Mbit/s.
+- **Pending:** the user's picture-quality check at 2–4 Mbit/s.
+
+**Phase 3b: `m2b2f48` at 12 dBm, and adaptive link on/off (2026-09-27 18:04–18:20, 480p167, build `7b8baadb`).**
+- **Data.** p12b [latency/loss](data/measurements-2026-09-27-quest2-w2-480-p12b.csv) · [link](data/link-2026-09-27-w2-480-p12b.csv) · [steps](data/steps-2026-09-27-w2-480-p12b.txt) · [thermal](data/thermal-2026-09-27-w2-480-p12b.csv); alink at 17 dBm [latency/loss](data/measurements-2026-09-27-quest2-w2-alink-p17.csv) · [link](data/link-2026-09-27-w2-alink-p17.csv) · [steps](data/steps-2026-09-27-w2-alink-p17.txt) · [thermal](data/thermal-2026-09-27-w2-alink-p17.csv); alink at 8 dBm [latency/loss](data/measurements-2026-09-27-quest2-w2-alink-p8.csv) · [link](data/link-2026-09-27-w2-alink-p8.csv) · [steps](data/steps-2026-09-27-w2-alink-p8.txt) · [thermal](data/thermal-2026-09-27-w2-alink-p8.csv).
+- **`m2b2f48` at 12 dBm (p12b, 9 steps, anchor `m1b2f46`).** It lost 0.24 % after FEC at +0.16 ms; `m2b2f46` lost 0.60 % at +0.79 ms. That makes `m2b2f48` the 12 dBm row of the policy (measured now, no longer inferred).
+- **Run-to-run spread.** In phase 2's p12 run, `m2b2f46` was −0.13 ms against the anchor; here it is +0.79 ms. Latency differences under ~1 ms between 2 Mbit/s states are not significant across separate traces.
+- **Adaptive link on/off.** The pref is read at start-up, so [pref_ab.sh](../../scripts/quest/pref_ab.sh) restarted the app on every step: 30 s steps, 12 s guard, so ~6.6 s measured per step. The air unit held one state. Every step's effective pref was checked through the Quest's uplink injections ([quest_tx_log.sh](../../scripts/quest/quest_tx_log.sh)): ~51/s when on, 0.9/s when off, in every step [PROVEN].
+  - **17 dBm, `m2b2f48`, ABBA × 2 (N = 4 each).**
+    - With adaptive link on, the Quest received fewer video packets in every step: 536–554/s against 561–568/s off. The ranges do not overlap. FEC repaired 14.5 against 12.3 packets/s [PROVEN].
+    - The air unit's mean TX over the hold was 602/s, so loss before FEC was ~9.5 % on against ~6.1 % off [INFERRED: the hold average, not per step].
+    - After FEC: 0.06 % against 0 %. Capture → decoded moved +0.10 ms, inside the step-to-step spread (2.8–3.8 ms). **At 17 dBm the uplink costs radio packets but no visible video.**
+  - **8 dBm, `m1b2f46`: weak evidence, and the run was disturbed.**
+    - My wait loop stopped early on a `RuntimeError` line in the pref_ab log (a pref read-back mismatch, below) and asked the air unit to revert too early. The air unit was on the pre-run state (12 dBm, MCS2, 8 Mbit/s) from air epoch 1790522092.15 to 1790522117.83. It was back on `p8m1b2f46` until 1790522140.16, then on the pre-run state again.
+    - Classified on the Quest clock (air + ~0.40 s): steps 0 (on), 1 (off), 2 (off), 3 (on) ran at 8 dBm. Step 3's window ends ~0.3 s into the revert; its rx of 460/s shows 8 dBm. Step 4 is excluded: the power came back inside its window. Steps 5 (off), 6 (off), 7 (on) ran on the pre-run state.
+    - **At 8 dBm** (on 0 and 3 against off 1 and 2, ABBA): rx 435 / 461 against 453 / 452 per s. Loss after FEC 1.37 / 0.52 % against 0.25 / 0.68 %. Capture → decoded 3.68 / 3.51 against 2.68 / 2.33 ms, so on is about +1.1 ms. Same direction as at 17 dBm, but N = 2 [INFERRED: weak].
+    - **On the pre-run state, 12 dBm, MCS2, 8 Mbit/s, 480p** (off 5 and 6 against on 7, N = 1 for on, not order-balanced): rx 1242 / 1229 against 1147 per s, loss after FEC 1.6 / 2.3 % against 5.5 %. Same direction [SPECULATION: N = 1, and a time trend cannot be ruled out].
+  - **Pref read-back mismatch at step 3.** The app was not the cause: it was force-stopped at Quest 1790522073.942 and dead by .010 [PROVEN: logcat], before the write. The step still ran with adaptive link on (51.8/s uplink) although the previous step had written `false`, so the write did land. The harness's read-back came too soon, only ~0.2 s after `adb exec-in … cat >` [INFERRED]. Proposed fix for `quest_adb.write_prefs`: write to a temp file and `mv` it into place, then retry the read-back a few times. Reported to its owner.
+- **Conclusion for the policy.** The uplink does not break the link at a good margin, but it takes radio time from the video, and at a weak margin that shows as loss and ~1 ms [INFERRED]. For W1 phase 2 the uplink rate should stay as low as the control loop allows. It is ~50 frames/s today, 10 messages/s with FEC 1/5 ([troubleshooting](troubleshooting.md#does-the-quests-uplink-hurt-the-video-slot-3d-2026-09-27)).
 
 **Phase 1: power ladder at 1080p90, MCS2, 8 Mbit/s, FEC 4/6 (2026-09-27 16:38, Quest on the balcony, air unit indoors).**
 - **Method.** Anchor `p17m2b8`; 12 / 8 / 5 dBm, N = 2 each, 12 s steps. Power rises went up in ≤ 3 dB steps 200 ms apart, so no step jumped +11 dB. The W1 tunnel was up (its TX adds nothing measurable to `tx=`: 2381 vs 2378 packets per 2 s), and the adaptive-link uplink was live.
