@@ -1,6 +1,6 @@
 # Presets: switch the air unit's video mode and quality from the headset (design, 2026-09-27)
 
-Status: **approved 2026-09-27 (coordinator d2); app side in progress against a fake air, no device yet.** App side: this repo (PixelPilotXr). Air side: the OpenIPC project
+Status: **approved 2026-09-27 (coordinator d2). App side implemented and tested against a fake air, not yet on the headset; air side (c8) pending.** See [Implementation (app side)](#implementation-app-side-2026-09-27). App side: this repo (PixelPilotXr). Air side: the OpenIPC project
 (session c8, writes on `.132` through session a61381). The message format follows c8's proposal. Air-side mechanics
 are marked as questions for c8 at the end.
 
@@ -217,3 +217,36 @@ Answers for c8's questions (app side):
   new stream must be an IDR, which a waybeam start gives [INFERRED: 0 undecoded frames after the measured switches].
 - **List:** the app takes everything from the air's `list`, including the Quest-measured numbers.
 - **Rate:** one mode switch at a time, fine. The app asks for `state=busy` instead of silence.
+
+## Implementation (app side, 2026-09-27)
+
+Built as designed, with the approved decisions above. Nothing about presets is hard-coded in the app: the menu shows
+only what the air's `list` sends.
+
+| File | What it does |
+|---|---|
+| [XrInput.cpp](../../app/xr/src/main/cpp/XrInput.cpp) / [.h](../../app/xr/src/main/cpp/XrInput.h) | thumbstick flicks per hand (on past 0.7, re-armed under 0.3) and thumbstick click down/up, as new event bits (`XrBridge.INPUT_STICK_*`) |
+| [PresetCatalog.java](../../app/xr/src/main/java/com/openipc/xr/PresetCatalog.java) | the parsed `list` (modes, qualities, active choice); `encodeSize()` from `desc` |
+| [PresetMenu.java](../../app/xr/src/main/java/com/openipc/xr/PresetMenu.java) | the menu: two axes, 1 s apply hold, 3 s save hold on the active choice, 6 s idle close, B/Y closes it; menu lines |
+| [PresetStatus.java](../../app/xr/src/main/java/com/openipc/xr/PresetStatus.java) | the headline: `SWITCHING TO Wide... 25 s`, `Wide ACTIVE`, `REVERTED TO Race: NO VIDEO`, `NOT APPLIED: …` (≤ 40 chars) |
+| [VmodeProtocol.java](../../app/src/main/java/com/openipc/pixelpilot/VmodeProtocol.java) | VMODE1 request lines and reply parsing |
+| [VmodeClient.java](../../app/src/main/java/com/openipc/pixelpilot/VmodeClient.java) | one UDP socket, resend every 300 ms × 5, duplicate replies dropped; target `10.5.0.10:9998`, or the debug pref `vmode_air` = `"<IPv4>:<port>"` |
+| [VmodeSession.java](../../app/src/main/java/com/openipc/pixelpilot/VmodeSession.java) | menu action → request; acks and beacon → catalog, headline, effective bitrate; `revert_s` 25 |
+| [CommitGate.java](../../app/src/main/java/com/openipc/pixelpilot/CommitGate.java) | commit only after the air says `pending` **and** 30 frames decoded at the new size. The size alone would match old frames when two modes share 848×480 |
+| [XrVideoActivity.java](../../app/src/main/java/com/openipc/pixelpilot/XrVideoActivity.java) | wiring: the stats tick feeds input, frames and size; the preset headline wins while switching; menu lines above the panel; `Race 2.0 Mbit (capped)` on the video line; started only with the wfb link |
+| [vmode_fake.py](../../scripts/quest/vmode_fake.py) | the fake air: same protocol, revert timer, `--switch-s`, `--fail <mode>`, `--busy` |
+
+Tests (all offline, 2026-09-27):
+- JVM, :app:xr: `PresetMenuTest` 12, `PresetStatusTest` 3.
+- JVM, :app: `VmodeProtocolTest` 4, `VmodeSessionTest` 7, `CommitGateTest` 4, `VmodeClientTest` 3 (real UDP on
+  localhost, stable over 4 reruns).
+- Full suites: app 56, xr 61, videonative 18, 0 failures.
+- Python: [test_vmode_fake.py](../../scripts/quest/test_vmode_fake.py) 6: list, switch + commit, revert without commit,
+  a failing mode, busy + idempotent resend, bitrate-only.
+- The native flick code has no host test; it gets checked on the headset.
+
+Next, on the headset:
+1. Run the flow with `vmode_fake.py` on the PC and the pref `vmode_air` = `192.168.100.213:9998` (the Quest reaches the
+   PC over home Wi-Fi). This checks the thumbsticks, the menu, the countdown, the commit and a forced revert
+   (`--fail wide`).
+2. After the air side exists, repeat on the tunnel, and measure picture gap, command → commit time, and Q2/Q4/Q6 cost.

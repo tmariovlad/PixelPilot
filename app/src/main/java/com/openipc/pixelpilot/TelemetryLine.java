@@ -12,6 +12,11 @@ final class TelemetryLine {
     private TelemetryLine() {
     }
 
+    /** True only for fresh telemetry that says armed; missing or stale telemetry counts as not armed. */
+    static boolean armed(MavlinkData d, long ageMs) {
+        return d != null && ageMs <= STALE_MS && d.telemetryArm == 1;
+    }
+
     /**
      * @param d     the latest MAVLink data, or null if none arrived yet
      * @param ageMs time since {@code d} arrived
@@ -22,7 +27,7 @@ final class TelemetryLine {
         double v = TelemetryUnits.volts(d.telemetryBattery);
         StringBuilder sb = new StringBuilder(String.format(Locale.US, "BAT %.1fV %.2fV/c %.1fA  ALT %.1fm  %s",
                 v, TelemetryUnits.cellVolts(v), TelemetryUnits.amps(d.telemetryCurrent),
-                TelemetryUnits.altitudeM(d.telemetryAltitude), d.telemetryArm == 1 ? "ARMED" : "disarmed"));
+                TelemetryUnits.altitudeM(d.telemetryAltitude), armed(d, ageMs) ? "ARMED" : "disarmed"));
         if (d.gps_fix_type == 0) {
             sb.append("  no GPS");
         } else {

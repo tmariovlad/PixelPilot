@@ -20,6 +20,7 @@ import com.openipc.wfbngrtl8812.WfbNGStatsChanged;
 import com.openipc.wfbngrtl8812.WfbNgLink;
 import com.openipc.xr.LayerLayout;
 import com.openipc.xr.PanelMode;
+import com.openipc.xr.PresetMenu;
 import com.openipc.xr.SignalState;
 import com.openipc.xr.XrBridge;
 
@@ -64,6 +65,10 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private boolean panelOverVideo;
     private final PanelMode panelMode = new PanelMode();   // controller-driven: detailed / compact / hidden. UI thread.        // the panel sits over the video while signal.needsAction(). UI thread.
     private volatile int videoW, videoH;
+    // Presets (docs/xr/presets-design.md): the thumbstick menu and the VMODE1 session with the air unit. UI thread.
+    private final PresetMenu presetMenu = new PresetMenu();
+    private VmodeClient vmodeClient;
+    private VmodeSession vmode;
 
     private final Runnable statsTick = new Runnable() {
         @Override
@@ -78,8 +83,17 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
                 applyLayout();                     // moves only the panel quad; nothing on the video path
             }
             XrStatsRenderer renderer = stats;
-            if (xr != null) panelMode.apply(xr.takeInputEvents());
-            if (renderer != null) renderer.draw(signal.message(), signal.needsAction(), panelMode.select(statsLines()));
+            long now = android.os.SystemClock.elapsedRealtime();
+            int events = xr != null ? xr.takeInputEvents() : 0;
+            panelMode.apply(presetMenu.passThrough(events));
+            boolean menuWasOpen = presetMenu.isOpen();
+            PresetMenu.Action action = presetMenu.update(events, now);
+            if (vmode != null) {
+                if (presetMenu.isOpen() && !menuWasOpen) vmode.ensureList();
+                if (action != null) vmode.apply(action);
+                vmode.tick(now, frames.length, videoW, videoH);
+            }
+            if (renderer != null) drawPanel(renderer, now);
             XrBridge bridge = xr;
             if (bridge != null && phase != null) {
                 phase.tick(frames, bridge.displayGrid());
@@ -135,6 +149,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         wfbLink.SetWfbNGStatsChanged(this);
         LinkOptions.apply(this, wfbLink);
         wfbLinkManager = new WfbLinkManager(this, this, wfbLink);
+        startPresets();   // only with the wfb link: the air's receiver is at the tunnel end
     }
 
     /**
@@ -181,10 +196,57 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         vpnBinding.unbind(this);
     }
 
+    /** The preset headline wins while a mode switch runs (the frozen picture is expected) or when the video is OK. */
+    private void drawPanel(XrStatsRenderer renderer, long now) {
+        String preset = vmode != null ? vmode.headline() : "";
+        boolean presetFirst = !preset.isEmpty() && (vmode.switching() || !signal.needsAction());
+        String[] lines = panelMode.select(statsLines());
+        if (presetMenu.isOpen()) {
+            String[] menu = presetMenu.lines(TelemetryLine.armed(telemetry, now - telemetryMs), now);
+            String[] all = new String[menu.length + lines.length];
+            System.arraycopy(menu, 0, all, 0, menu.length);
+            System.arraycopy(lines, 0, all, menu.length, lines.length);
+            lines = all;
+        }
+        if (presetFirst) renderer.draw(preset, false, lines);
+        else renderer.draw(signal.message(), signal.needsAction(), lines);
+    }
+
+    /** One VMODE1 client per XR activity; its callbacks are handed to the UI thread. */
+    private void startPresets() {
+        vmode = new VmodeSession((verb, build) -> vmodeClient.request(verb, build), presetMenu::setCatalog);
+        vmodeClient = new VmodeClient(VmodeClient.target(getSharedPreferences("general", MODE_PRIVATE)
+                .getString(VmodeClient.PREF_TARGET, "")), new VmodeClient.Listener() {
+            @Override
+            public void onReply(VmodeProtocol.Reply reply) {
+                ui.post(() -> {
+                    if (vmode != null) vmode.onReply(reply);
+                });
+            }
+
+            @Override
+            public void onNoReply(String verb) {
+                ui.post(() -> {
+                    if (vmode != null) vmode.onNoReply(verb);
+                });
+            }
+        }, 300, 5);
+        try {
+            vmodeClient.start();
+            vmode.ensureList();
+        } catch (java.net.SocketException e) {
+            Log.w(TAG, "presets unavailable: " + e.getMessage());
+            vmode = null;
+        }
+    }
+
     @Override
     protected void onDestroy() {
         destroying = true;
         ui.removeCallbacks(statsTick);
+        if (vmodeClient != null) vmodeClient.close();
+        vmodeClient = null;
+        vmode = null;
         detachVideo();          // stop writing before the session ends (no callback round-trip)
         if (xr != null) {
             xr.stop();
@@ -325,8 +387,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
                         l.count_p_lost, l.count_p_fec_recovered, l.count_p_bad, l.count_p_dec_err),
                 TelemetryLine.format(telemetry, android.os.SystemClock.elapsedRealtime() - telemetryMs),
                 d == null ? "video: no decoded frames yet"
-                        : String.format(Locale.US, "%dx%d  %.0f fps  %.1f Mbit/s", videoW, videoH, d.currentFPS,
-                        d.currentKiloBitsPerSecond / 1000f),
+                        : String.format(Locale.US, "%dx%d  %.0f fps  %.1f Mbit/s%s", videoW, videoH, d.currentFPS,
+                        d.currentKiloBitsPerSecond / 1000f, vmode != null ? vmode.videoSuffix() : ""),
                 // Separate, never summed: "parse" runs from a frame's first RTP packet to the feed, so it holds the
                 // frame's spread on the radio, not decoder time (docs/xr/g2g-budget.md, the Quest's "parse" time).
                 d == null ? "" : String.format(Locale.US, "hw decode %.2f ms  rx+parse %.2f ms  wait %.2f ms",

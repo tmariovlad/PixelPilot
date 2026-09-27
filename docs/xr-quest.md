@@ -65,6 +65,7 @@ JVM tests: `./gradlew :app:videonative:testDebugUnitTest :app:xr:testDebugUnitTe
   6. phase, XR, decoder and levers.
   Long lines end in "…".
 - **Controller buttons** (commit `3a37a88`, not yet verified on the headset): **A / X / select-pinch** switch the panel between detailed (default) and compact (link, telemetry, video); **B / Y** hide or show it. The alert headline shows in every mode. The layers are head-locked, so there is no recenter. Native side: `app/xr/…/XrInput.cpp` (synced once per frame after `xrEndFrame`).
+- **Presets from the thumbsticks** (2026-09-27, tested against a fake air only; the air side is pending): flick left/right = video MODE (Race / Balanced / Wide …, restarts the encoder: switch ~10–14 s, picture frozen ~4 s), up/down = QUALITY (2 / 4 / 6 Mbit/s, live). Hold the thumbstick click 1 s to apply, 3 s on the active choice to save it as the air's default. The air reverts by itself unless the new video decodes. Design and implementation: [xr/presets-design.md](xr/presets-design.md).
 - The classifier is `app/xr/…/SignalState.java`. The panel is redrawn on the UI thread every 250 ms and adds nothing to the decode path.
 - Why these changes: [XR robustness/UX audit](xr/research/2026-09-27-xr-ux-audit.md).
 

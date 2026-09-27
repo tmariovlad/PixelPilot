@@ -120,6 +120,12 @@ public final class XrBridge {
     /** Press bits from {@link #takeInputEvents()}; the same values as XrInput::Event in XrInput.h. */
     public static final int INPUT_PANEL_DETAIL = 1;
     public static final int INPUT_PANEL_VISIBILITY = 2;
+    public static final int INPUT_STICK_LEFT = 4;       // a thumbstick flick (preset menu)
+    public static final int INPUT_STICK_RIGHT = 8;
+    public static final int INPUT_STICK_UP = 16;
+    public static final int INPUT_STICK_DOWN = 32;
+    public static final int INPUT_STICK_PRESS = 64;     // a thumbstick click goes down / up
+    public static final int INPUT_STICK_RELEASE = 128;
 
     /** Controller/hand presses since the last call (INPUT_* bits), taken from the XR thread without blocking it. */
     public int takeInputEvents() {

@@ -2,6 +2,7 @@
 
 #include <android/log.h>
 
+#include <cmath>
 #include <cstring>
 
 namespace {
@@ -14,10 +15,16 @@ XrPath path(XrInstance instance, const char* s)
     return p;
 }
 
-bool createAction(XrActionSet set, const char* name, const char* localized, XrAction& out)
+bool createAction(XrActionSet set, const char* name, const char* localized, XrAction& out,
+                  XrActionType type = XR_ACTION_TYPE_BOOLEAN_INPUT, const XrPath* hands = nullptr)
 {
     XrActionCreateInfo info{XR_TYPE_ACTION_CREATE_INFO};
-    info.actionType = XR_ACTION_TYPE_BOOLEAN_INPUT;
+    info.actionType = type;
+    if (hands != nullptr)
+    {
+        info.countSubactionPaths = 2;   // per-hand state, so two sticks do not merge into one
+        info.subactionPaths = hands;
+    }
     std::strncpy(info.actionName, name, XR_MAX_ACTION_NAME_SIZE - 1);
     std::strncpy(info.localizedActionName, localized, XR_MAX_LOCALIZED_ACTION_NAME_SIZE - 1);
     return XR_SUCCEEDED(xrCreateAction(set, &info, &out));
@@ -40,9 +47,13 @@ bool XrInput::setup(XrInstance instance, XrSession session)
     XrActionSetCreateInfo setInfo{XR_TYPE_ACTION_SET_CREATE_INFO};
     std::strncpy(setInfo.actionSetName, "viewer", XR_MAX_ACTION_SET_NAME_SIZE - 1);
     std::strncpy(setInfo.localizedActionSetName, "Viewer", XR_MAX_LOCALIZED_ACTION_SET_NAME_SIZE - 1);
+    mHands[0] = path(instance, "/user/hand/left");
+    mHands[1] = path(instance, "/user/hand/right");
     if (XR_FAILED(xrCreateActionSet(instance, &setInfo, &mSet)) ||
         !createAction(mSet, "panel_detail", "Panel detail", mDetail) ||
-        !createAction(mSet, "panel_visibility", "Show or hide panel", mVisibility))
+        !createAction(mSet, "panel_visibility", "Show or hide panel", mVisibility) ||
+        !createAction(mSet, "preset_stick", "Preset menu", mStick, XR_ACTION_TYPE_VECTOR2F_INPUT, mHands) ||
+        !createAction(mSet, "preset_apply", "Apply preset", mStickClick))
     {
         __android_log_print(ANDROID_LOG_WARN, kTag, "input unavailable: action set/actions not created");
         destroy();
@@ -54,8 +65,12 @@ bool XrInput::setup(XrInstance instance, XrSession session)
         {mDetail, path(instance, "/user/hand/left/input/x/click")},
         {mVisibility, path(instance, "/user/hand/right/input/b/click")},
         {mVisibility, path(instance, "/user/hand/left/input/y/click")},
+        {mStick, path(instance, "/user/hand/left/input/thumbstick")},
+        {mStick, path(instance, "/user/hand/right/input/thumbstick")},
+        {mStickClick, path(instance, "/user/hand/left/input/thumbstick/click")},
+        {mStickClick, path(instance, "/user/hand/right/input/thumbstick/click")},
     };
-    suggest(instance, "/interaction_profiles/oculus/touch_controller", touch, 4);
+    suggest(instance, "/interaction_profiles/oculus/touch_controller", touch, 8);
     const XrActionSuggestedBinding simple[] = {
         {mDetail, path(instance, "/user/hand/right/input/select/click")},
         {mDetail, path(instance, "/user/hand/left/input/select/click")},
@@ -72,7 +87,8 @@ bool XrInput::setup(XrInstance instance, XrSession session)
         return false;
     }
     mReady = true;
-    __android_log_print(ANDROID_LOG_INFO, kTag, "input ready (A/X/select: panel detail, B/Y: show/hide panel)");
+    __android_log_print(ANDROID_LOG_INFO, kTag,
+                        "input ready (A/X/select: panel detail, B/Y: show/hide panel, thumbsticks: presets)");
     return true;
 }
 
@@ -83,6 +99,38 @@ bool XrInput::pressed(XrSession session, XrAction action)
     XrActionStateBoolean state{XR_TYPE_ACTION_STATE_BOOLEAN};
     if (XR_FAILED(xrGetActionStateBoolean(session, &get, &state))) return false;
     return state.isActive && state.changedSinceLastSync && state.currentState;   // rising edge only
+}
+
+uint32_t XrInput::stickEvents(XrSession session)
+{
+    uint32_t events = 0;
+    for (int hand = 0; hand < 2; ++hand)
+    {
+        XrActionStateGetInfo get{XR_TYPE_ACTION_STATE_GET_INFO};
+        get.action = mStick;
+        get.subactionPath = mHands[hand];
+        XrActionStateVector2f state{XR_TYPE_ACTION_STATE_VECTOR2F};
+        if (XR_FAILED(xrGetActionStateVector2f(session, &get, &state)) || !state.isActive) continue;
+        const float x = state.currentState.x, y = state.currentState.y;
+        const float ax = std::fabs(x), ay = std::fabs(y);
+        if (mFlick[hand] == 0 && std::fmax(ax, ay) > kFlickOn)
+        {
+            mFlick[hand] = ax >= ay ? (x > 0 ? kStickRight : kStickLeft) : (y > 0 ? kStickUp : kStickDown);
+            events |= mFlick[hand];
+        }
+        else if (mFlick[hand] != 0 && std::fmax(ax, ay) < kFlickOff)
+        {
+            mFlick[hand] = 0;
+        }
+    }
+    XrActionStateGetInfo get{XR_TYPE_ACTION_STATE_GET_INFO};
+    get.action = mStickClick;
+    XrActionStateBoolean click{XR_TYPE_ACTION_STATE_BOOLEAN};
+    if (XR_SUCCEEDED(xrGetActionStateBoolean(session, &get, &click)) && click.isActive && click.changedSinceLastSync)
+    {
+        events |= click.currentState ? kStickPress : kStickRelease;
+    }
+    return events;
 }
 
 void XrInput::poll(XrSession session)
@@ -96,6 +144,7 @@ void XrInput::poll(XrSession session)
     uint32_t events = 0;
     if (pressed(session, mDetail)) events |= kPanelDetail;
     if (pressed(session, mVisibility)) events |= kPanelVisibility;
+    events |= stickEvents(session);
     if (events) mEvents.fetch_or(events);
 }
 
@@ -104,5 +153,6 @@ void XrInput::destroy()
     mReady = false;
     if (mSet != XR_NULL_HANDLE) xrDestroyActionSet(mSet);   // destroys its actions too
     mSet = XR_NULL_HANDLE;
-    mDetail = mVisibility = XR_NULL_HANDLE;
+    mDetail = mVisibility = mStick = mStickClick = XR_NULL_HANDLE;
+    mFlick[0] = mFlick[1] = 0;
 }
