@@ -2,6 +2,7 @@
 
 Absolute capture -> arrival cannot be compared between modes (each waybeam start draws a new random RTP base), so
 each mode's budget is a sum of segments that do not need it:
+  capture   event -> next exposure: half a frame period on average (air, per mode from fps) [INFERRED: uniform arrival]
   readout   sensor readout from the IMX415 registers            (air, per mode)          [PROVEN]
             counted in full (active lines x 1H: the top line waits the whole readout), the same for every mode;
             [2] 1080p 5.31, [6]/[9] 720p 3.52, [7] 480p 2.34 ms (OpenIPC w3-readout-per-mode.md, driver 6e637e75)
@@ -56,7 +57,8 @@ def parse_air(rows):
     """{mode: {s_air, readout, isp_lo, isp_hi}} averaged over the rows of each mode."""
     acc = defaultdict(lambda: defaultdict(list))
     for r in rows:
-        for k_in, k_out in (("s_air_med", "s_air"), ("readout_ms", "readout"), ("isp_lo", "isp_lo"), ("isp_hi", "isp_hi")):
+        for k_in, k_out in (("s_air_med", "s_air"), ("readout_ms", "readout"), ("isp_lo", "isp_lo"), ("isp_hi", "isp_hi"),
+                            ("fps", "fps")):
             if r.get(k_in) not in (None, ""):
                 acc[str(r["mode"]).strip()][k_out].append(float(r[k_in]))
     return {m: {k: st.mean(v) for k, v in d.items()} for m, d in acc.items()}
@@ -72,10 +74,11 @@ def budget(air, quest):
         q = {k: st.mean(r[k] for r in reps if k in r) for k in QUEST_LINES if any(k in r for r in reps)}
         robust = {k: st.mean(r[k] for r in reps if k in r) for k in ("pkt_per_frame", "lost_pct")
                   if any(k in r for r in reps)}
-        fixed = a["s_air"] + a["readout"] + TX_FLOOR_MS + sum(q.values())
+        capture = 500.0 / a["fps"] if a.get("fps") else 0.0  # ms: half a frame period
+        fixed = capture + a["s_air"] + a["readout"] + TX_FLOOR_MS + sum(q.values())
         lo = fixed + a["isp_lo"] + PANEL_MS[0]
         hi = fixed + a["isp_hi"] + PANEL_MS[1]
-        res[mode] = {**a, **q, **robust, "repeats": len(reps), "own_lo": fixed + a["isp_lo"], "own_hi": fixed + a["isp_hi"],
+        res[mode] = {**a, **q, **robust, "capture": capture, "repeats": len(reps), "own_lo": fixed + a["isp_lo"], "own_hi": fixed + a["isp_hi"],
                      "total_lo": lo, "total_hi": hi}
     return res
 
@@ -99,7 +102,7 @@ def main(argv):
         if m:
             quest[m.group(1)].append(parse_quest(Path(f).read_text(encoding="utf-8", errors="ignore")))
     res = budget(air, quest)
-    cols = ["readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait", "pkt_per_frame", "lost_pct"]
+    cols = ["capture", "readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait", "pkt_per_frame", "lost_pct"]
     print("mode  n  " + "  ".join(f"{c:>7s}" for c in cols) + "   total G2G range (ms)")
     for mode in sorted(res, key=lambda m: res[m]["own_hi"]):
         r = res[mode]

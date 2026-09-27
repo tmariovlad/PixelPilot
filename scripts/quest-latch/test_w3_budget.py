@@ -24,9 +24,10 @@ def test_parse_air_averages_rows_of_one_mode():
 
 
 def test_budget_sums_segments_with_the_shared_constants():
-    air = {"2": {"s_air": 6.5, "readout": 11.0, "isp_lo": 1.0, "isp_hi": 6.0}}
+    air = {"2": {"s_air": 6.5, "readout": 11.0, "isp_lo": 1.0, "isp_hi": 6.0, "fps": 100.0}}
     r = budget(air, {"2": [parse_quest(SEGMENT)]})["2"]
-    fixed = 6.5 + 11.0 + TX_FLOOR_MS + 5.5 + 2.1 + 4.2
+    assert abs(r["capture"] - 5.0) < 1e-9  # half of a 10 ms frame period
+    fixed = 5.0 + 6.5 + 11.0 + TX_FLOOR_MS + 5.5 + 2.1 + 4.2
     assert abs(r["total_lo"] - (fixed + 1.0 + PANEL_MS[0])) < 1e-9
     assert abs(r["total_hi"] - (fixed + 6.0 + PANEL_MS[1])) < 1e-9
 

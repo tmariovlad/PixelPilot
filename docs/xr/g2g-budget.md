@@ -105,6 +105,7 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 
 | Segment | Source | Tag |
 |---|---|---|
+| Capture phase: an event waits on average half a frame period for the next exposure (from the measured fps; added 2026-09-27 later, see the correction below) | arithmetic | [INFERRED] |
 | Sensor readout, counted in full (active lines × 1H, 1H = HMAX 365 / 74.25 MHz ≈ 4.9 µs) | IMX415 registers, driver 6e637e75 (OpenIPC `repos/tasks/hil-build/coord-pixelpilot-xr-2026-09-27/w3-readout-per-mode.md`) | [PROVEN] |
 | ISP + VPE/SCL (whole frame, not line-pipelined; scales weakly with pixels) | OpenIPC SoC analysis (`…/w3-isp-per-mode.md`); no per-frame timestamp exists to measure it | [INFERRED], a range |
 | VENC input → last packet sent (encode + send) | waybeam sidecar, per frame, air clock, 60 s per segment | [PROVEN] |
@@ -114,17 +115,18 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 
 **Setup:** Quest on the balcony (loss ~2.2–2.4 %), canonical build cd5fa436, prefs and decoder keys checked in every segment (picture-order and operating-rate on). Air unit: wfb MCS2, FEC 4/6, 12 dBm, **8000 kbit/s in every mode**, GOP 2 s; only mode/size/fps changed. Order [2] → [6] → [7] → [7] → [6] → [2] (N = 2 per mode, palindromic so a drift over time cancels); the app was restarted in every segment (a live resolution change once left the decoder holding frames, see [troubleshooting.md](troubleshooting.md)). Mode [9] 720p137 was left out: it needs a live sensor parameter and its expected gain over [6] is below the ISP uncertainty.
 
-| Mode | readout | ISP | encode+send (median, a / b) | spread | decode | latch wait | pkt/frame | loss | **total G2G** |
-|---|---|---|---|---|---|---|---|---|---|
-| **[7] 640×480 @ 166.5 fps** | 2.34 | 1.5–3.5 | 2.13 / 2.13 | 4.26 | 2.00 | 3.10 | 5.01 | 2.2 % | **27.4 – 32.7 ms** |
-| [6] 1280×720 @ 119.2 fps | 3.52 | 2.0–4.0 | 3.66 / 3.69 | 5.78 | 2.44 | 3.78 | 6.39 | 2.4 % | 33.3 – 38.6 ms |
-| [2] 1920×1080 @ 90.4 fps | 5.31 | 2.0–4.0 | 6.53 / 6.53 | 8.02 | 3.13 | 3.86 | 8.43 | 2.4 % | 40.9 – 46.2 ms |
+| Mode | capture phase | readout | ISP | encode+send (median, a / b) | spread | decode | latch wait | pkt/frame | loss | **total G2G** |
+|---|---|---|---|---|---|---|---|---|---|---|
+| **[7] 640×480 @ 166.5 fps** | 3.00 | 2.34 | 1.5–3.5 | 2.13 / 2.13 | 4.26 | 2.00 | 3.10 | 5.01 | 2.2 % | **30.4 – 35.7 ms** |
+| [6] 1280×720 @ 119.2 fps | 4.19 | 3.52 | 2.0–4.0 | 3.66 / 3.69 | 5.78 | 2.44 | 3.78 | 6.39 | 2.4 % | 37.5 – 42.8 ms |
+| [2] 1920×1080 @ 90.4 fps | 5.53 | 5.31 | 2.0–4.0 | 6.53 / 6.53 | 8.02 | 3.13 | 3.86 | 8.43 | 2.4 % | 46.5 – 51.8 ms |
 
 [PROVEN per segment: [air TSV](data/w3-2026-09-27-air.tsv), Quest outputs `data/w3-2026-09-27-quest-<mode>_<rep>.txt`, [budget](data/w3-2026-09-27-budget.txt); the ranges carry only the [INFERRED] ISP and panel terms.]
 
-- **Verdict: 480p167 is the lowest-latency mode, by ~6 ms over 720p120 and ~13.5 ms over 1080p90.** Its range lies wholly below the others even with the conservative rule (independent ISP ranges; the ISP error is largely common to all modes, so the real margins are, if anything, cleaner). It is also the most robust at a fixed bitrate: fewest packets per frame and the lowest loss.
+- **Correction 2026-09-27 (later):** the first version of this table left out the capture phase (an event waits half a frame period for the next exposure: 3.0 / 4.2 / 5.5 ms). It mostly depends on fps, so it matters exactly when modes differ in fps; the totals were 27.4–32.7 / 33.3–38.6 / 40.9–46.2 ms. The verdict is unchanged and the margins grew.
+- **Verdict: 480p167 is the lowest-latency mode, by ~7 ms over 720p120 and ~16 ms over 1080p90.** Its range lies wholly below the others even with the conservative rule (independent ISP ranges; the ISP error is largely common to all modes, so the real margins are, if anything, cleaner). It is also the most robust at a fixed bitrate: fewest packets per frame and the lowest loss.
 - Every segment moves the same way as the frame shrinks: readout, encode (6.3 → 3.5 → 2.0 ms), the frame's spread on the radio, decode, and the latch wait (a 166 fps source overruns the 119.70 Hz display, so the compositor takes the newest frame and drops ~29 % of them; the wait falls to ~3.1 ms).
 - Repeatability: encode+send a/b differ by ≤ 0.03 ms, the Quest segments by ≤ 0.3 ms.
-- The 480p167 total (~30 ms mid-range) agrees with the earlier branch estimate of ≈ 30.7 ms at the same mode (top of this page).
+- Cross-check against the branch estimate at the same mode (top of this page, ≈ 30.7 ms): the air side here (capture 3.0 + readout 2.34 + ISP 1.5–3.5 + encode/send 2.13 = 9.0–11.0 ms) matches branch A (HIL LED → encoded, 9.3 ms). The ~2 ms higher total comes from the Quest side: this budget counts the frame's whole spread on the radio (4.26 ms), the earlier one only its excess over the best frame (B2, 2.91 ms) [INFERRED: the two definitions].
 - Not assessed: picture quality at 480p vs 720p/1080p at the same 8 Mbit/s. The bitrate lever from slot 2 (2000–4000 kbit/s: −2.7…−4.5 ms at 480p167) applies on top.
 - Air unit left at 1080p90 (the prior default); changing the default mode is the coordinator's / user's decision.
