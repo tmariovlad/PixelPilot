@@ -12,6 +12,7 @@ mkdir -p "$QUEST_OUT"; OUT="$QUEST_OUT/cpu_$LABEL.txt"
 {
   echo "# $LABEL $(date '+%F %T') apk md5 $(md5sum "$APK" | cut -c1-12)"
   qadb install -r "$(cygpath -w "$APK")" | tail -1
+  qadb shell am force-stop "$PKG"; sleep 1
   quest_prox_close
   quest_start_xr -W | grep -E "Status|Complete"
   sleep 15

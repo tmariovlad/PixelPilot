@@ -1,0 +1,5 @@
+run,build,apk_md5,window_s,vpn_to_udp_thread_cpu_pct,process_cpu_pct,decode_ms,decoded_fps,link_quality_mean,uplink_lost_per_s
+base1,BASE (HEAD without 7fb6652),2223ce9cb79f,20.1,97.6,124.3,2.05,91,949,0.6
+fix1,FIX (HEAD with 7fb6652),33f098a28637,20.2,0.2,27.1,2.07,91,943,0.5
+base2,BASE (HEAD without 7fb6652),2223ce9cb79f,20.0,97.7,124.2,2.04,90,946,1.2
+fix2,FIX (HEAD with 7fb6652),33f098a28637,20.1,0.3,26.9,2.06,90,942,1.1
