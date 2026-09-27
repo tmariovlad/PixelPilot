@@ -30,6 +30,8 @@ Excluded on purpose, because they are already known and handled:
 | 4 link self-healing, USB attach/permission | X17, X14 (part X15) | `c27f8aa` (Java), `ac740e0` (native guard) | not yet |
 | 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2`, home fix `11cb1a7` | telemetry line verified with synthetic MAVLink; 2D↔XR restart weakly; home fix not yet |
 | X15 attach pulls XR to 2D | X15 | open: needs a physical replug to confirm before the manifest trampoline | - |
+| XR start errors visible, levers re-applied, bandwidth fallback, loop back-off | X13, X04, X27, X25 | `a8b35de` | not yet |
+| open, not in the W5 scope | X01 (input in XR: OpenXR actions), X23 (decoder failure paths: video path), X26 (VPN, session 2c6ae8), X18 (autostart during OS dialogs) | - | - |
 
 ## 0. Findings at a glance (ranked; details below)
 
