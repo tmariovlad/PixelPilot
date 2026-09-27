@@ -37,12 +37,18 @@ QUEST_LINES = {
 
 
 def parse_quest(text):
-    """Mean (ms) of each Quest segment from one mode_segment.sh output."""
+    """Mean (ms) of each Quest segment from one mode_segment.sh output, plus the robustness figures of the same
+    trace: packets per frame and the RTP loss before the app in % (tie-breaker when latencies are equal)."""
     out = {}
     for key, label in QUEST_LINES.items():
         m = re.search(re.escape(label) + r".*?mean=\s*([-\d.]+)", text)
         if m:
             out[key] = float(m.group(1))
+    m = re.search(r"(\d+) packets / \d+ frames .*?([\d.]+) pkt/frame; sequence gaps \(lost before the app\) = (\d+)", text)
+    if m:
+        pkts, lost = int(m.group(1)), int(m.group(3))
+        out["pkt_per_frame"] = float(m.group(2))
+        out["lost_pct"] = 100.0 * lost / (pkts + lost) if pkts + lost else 0.0
     return out
 
 
@@ -64,10 +70,12 @@ def budget(air, quest):
         if not reps:
             continue
         q = {k: st.mean(r[k] for r in reps if k in r) for k in QUEST_LINES if any(k in r for r in reps)}
+        robust = {k: st.mean(r[k] for r in reps if k in r) for k in ("pkt_per_frame", "lost_pct")
+                  if any(k in r for r in reps)}
         fixed = a["s_air"] + a["readout"] + TX_FLOOR_MS + sum(q.values())
         lo = fixed + a["isp_lo"] + PANEL_MS[0]
         hi = fixed + a["isp_hi"] + PANEL_MS[1]
-        res[mode] = {**a, **q, "repeats": len(reps), "own_lo": fixed + a["isp_lo"], "own_hi": fixed + a["isp_hi"],
+        res[mode] = {**a, **q, **robust, "repeats": len(reps), "own_lo": fixed + a["isp_lo"], "own_hi": fixed + a["isp_hi"],
                      "total_lo": lo, "total_hi": hi}
     return res
 
@@ -91,7 +99,7 @@ def main(argv):
         if m:
             quest[m.group(1)].append(parse_quest(Path(f).read_text(encoding="utf-8", errors="ignore")))
     res = budget(air, quest)
-    cols = ["readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait"]
+    cols = ["readout", "isp_lo", "isp_hi", "s_air", "spread", "decode", "wait", "pkt_per_frame", "lost_pct"]
     print("mode  n  " + "  ".join(f"{c:>7s}" for c in cols) + "   total G2G range (ms)")
     for mode in sorted(res, key=lambda m: res[m]["own_hi"]):
         r = res[mode]
