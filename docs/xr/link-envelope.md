@@ -112,6 +112,21 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **Switch up** to MCS2 only with margin above ~1600. The score moved ~45 points between 17 and 12 dBm and ~100 between 12 and 8 dBm. Hysteresis and time constants are checked in closed loop by the receiver's author and live by the adaptive-range test below [SPECULATION until then].
 - **Pending:** the user's picture-quality check at 2–4 Mbit/s.
 
+**Picture-quality stills at 2 / 4 / 8 Mbit/s (2026-09-27 21:28–21:35, build `b2249f15`, Quest on the balcony).**
+- **Method.** The user wanted to see the picture without the headset. [quality_shots.sh](../../scripts/quest/quality_shots.sh) takes an `adb screencap` of the compositor output (3664×1920, both eyes) and crops the left eye's video layer together with the stats overlay, so every still shows its own link loss, fps and Mbit/s. There are 3 stills per state, ~2–5 s apart.
+- **Air settings.** 17 dBm, MCS2, receiver stopped so the MCS stayed fixed. FEC 4/8 at 2 and 4 Mbit/s. FEC 4/6 at 8 Mbit/s, because 4/8 would need 16 Mbit/s on air against the ~11.7 available.
+- **Air-side recordings.** In parallel the air unit recorded the exact bitstream it sent (waybeam `record`), in the OpenIPC project.
+
+| 640×480 @ 167, 2 Mbit/s | 4 Mbit/s | 8 Mbit/s |
+|---|---|---|
+| ![2 Mbit/s](img/quality-2026-09-27-Q480_b2-2.jpg) | ![4 Mbit/s](img/quality-2026-09-27-Q480_b4-2.jpg) | ![8 Mbit/s](img/quality-2026-09-27-Q480_b8-2.jpg) |
+
+- **Every still shows lost 0**, so any artifact is the encoder's, not the link's. All stills: [2 Mbit/s 1](img/quality-2026-09-27-Q480_b2-1.jpg) · [2](img/quality-2026-09-27-Q480_b2-2.jpg) · [3](img/quality-2026-09-27-Q480_b2-3.jpg); [4 Mbit/s 1](img/quality-2026-09-27-Q480_b4-1.jpg) · [2](img/quality-2026-09-27-Q480_b4-2.jpg) · [3](img/quality-2026-09-27-Q480_b4-3.jpg); [8 Mbit/s 1](img/quality-2026-09-27-Q480_b8-1.jpg) · [2](img/quality-2026-09-27-Q480_b8-2.jpg) · [3](img/quality-2026-09-27-Q480_b8-3.jpg).
+- **The scene was static and dim**, a room at night. There the three bitrates look alike at this scale: edges are a little cleaner at 8 Mbit/s, and decode rose from 2.44 to 2.75 ms. Bitrate matters most with motion and fine detail, which a static scene does not have [INFERRED]. A moving scene, or flight footage, is the real test.
+- **1080p90 at 8 Mbit/s (reference): stills taken but not committed.** They show a person in the flat. The origin remote is a GitHub fork, so they stay in the git-ignored `scripts/quest/out/quality_private/` until the user decides.
+  - They make one thing plain: **1080p90 sees a much wider field than 480p167.** The whole room is in view, where 480p shows a narrow centre cut. 480p167 is a native crop of the sensor (mode index 7), while 1080p90 bins the full sensor (mode index 2) [PROVEN: waybeam `Sensor pad selected` log lines on the air unit, 2026-09-26/27; the FOV difference is visible in the stills]. For FPV that difference in view is as important as the pixel count.
+  - Decode at 1080p90 was 1.43 ms (FPS 90–91) with lost 0.
+
 **Adaptive range test: the adaptive link against a fixed setting (2026-09-27 19:01–19:18, 480p167, app build `b8b6dcc3` with the 4 Hz / FEC 1/3 uplink, air receiver `alink_air` using the two-state policy above: hold_down 2000 ms, stale 1500 ms).**
 - **Method.** One 1260 s trace. The air unit changed only the TX power: 17 12 8 12 17 12 8 12 17 dBm, 30 s steps, rises in ≤ 3 dB steps. Three phases ran back to back:
   - ADAPT1: receiver running;
