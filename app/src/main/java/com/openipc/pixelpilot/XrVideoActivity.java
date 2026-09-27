@@ -327,8 +327,10 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
                 d == null ? "video: no decoded frames yet"
                         : String.format(Locale.US, "%dx%d  %.0f fps  %.1f Mbit/s", videoW, videoH, d.currentFPS,
                         d.currentKiloBitsPerSecond / 1000f),
-                d == null ? "" : String.format(Locale.US, "decode %.2f ms  parse %.2f ms  wait %.2f ms",
-                        d.avgTotalDecodingTime_ms, d.avgParsingTime_ms, d.avgWaitForInputBTime_ms),
+                // Separate, never summed: "parse" runs from a frame's first RTP packet to the feed, so it holds the
+                // frame's spread on the radio, not decoder time (docs/xr/g2g-budget.md, the Quest's "parse" time).
+                d == null ? "" : String.format(Locale.US, "hw decode %.2f ms  rx+parse %.2f ms  wait %.2f ms",
+                        d.avgHWDecodingTime_ms, d.avgParsingTime_ms, d.avgWaitForInputBTime_ms),
                 linkStatus,
                 udpFallback == null ? "" : "no adapter: video accepted at " + udpFallback,
                 phase == null ? "" : phase.summaryLine(),
