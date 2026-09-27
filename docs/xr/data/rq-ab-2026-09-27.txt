@@ -1,0 +1,26 @@
+# rtp_tight_reorder A/B, 2026-09-27 22:33-22:41, air 8 dBm, m2 FEC 4/8 2000 kbit/s 480p167, alink off, build abab1f13 (952a655+80bf9a2)
+# pref_ab.sh rq8dbm2 rtp_tight_reorder 45 false true true false false true; analysis: gap_hold.py ab_rq8dbm2.pftrace --steps steps_rq8dbm2.txt --guard-s 12
+## steps (Quest epoch)
+1790537758.500484803 false
+1790537804.173092269 true
+1790537849.833591401 true
+1790537895.562742727 false
+1790537941.277730771 false
+1790537986.959262822 true
+1790538032.221213268 END
+## gap_hold.py
+step 1 false             after-gap frames  97 mean   2.82 ms | other 3489 mean  1.53 ms | mean over all  1.57 ms
+step 2 true              after-gap frames  57 mean   1.55 ms | other 3538 mean  1.56 ms | mean over all  1.56 ms
+step 3 true              after-gap frames  27 mean   1.67 ms | other 3585 mean  1.53 ms | mean over all  1.53 ms
+step 4 false             after-gap frames  37 mean   3.23 ms | other 3568 mean  1.54 ms | mean over all  1.55 ms
+step 5 false             after-gap frames  24 mean   3.43 ms | other 3578 mean  1.53 ms | mean over all  1.55 ms
+step 6 true              after-gap frames  12 mean   1.85 ms | other 3525 mean  1.52 ms | mean over all  1.52 ms
+ALL false                after-gap frames 158 mean   3.01 ms | other 10635 mean  1.53 ms | mean over all  1.56 ms
+ALL true                 after-gap frames  96 mean   1.62 ms | other 10648 mean  1.54 ms | mean over all  1.54 ms
+## loss per step (sequence gaps inside the step windows)
+step 1 false 0.98 %
+step 2 true 0.51 %
+step 3 true 0.28 %
+step 4 false 0.39 %
+step 5 false 0.26 %
+step 6 true 0.12 %

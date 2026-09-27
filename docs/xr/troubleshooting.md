@@ -49,6 +49,8 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
 
 ## The app, the adapter and the link
 
+- **Prefs written by the harness did not land, 2026-09-27 18:23–22:34.** `quest_adb.write_prefs` wrote atomically with `adb exec-in run-as PKG sh -c "cat > general.xml.tmp && mv general.xml.tmp general.xml"`. On the Quest only the first command runs inside run-as: the `.tmp` file was written, the rename never happened, and `shared_prefs/general.xml` kept its 18:16 mtime. Every `set_prefs` raised "prefs write did not land" [PROVEN: `ls -la shared_prefs`; reproduced with the app stopped]. **Fixed in 3cb6ea1:** the rename is a separate `adb shell run-as PKG mv` call, followed by the read-back. The offline test's fake adb now runs only the first command of an `exec-in` script, like the device. Any pref-switching A/B (`pref_ab.sh`, `set_prefs`) run in that window used unchanged prefs; its steps raised, so none should have been read as a result, but check before citing one.
+
 - **Release PixelPilot 0.21.0 crashes on launch** (`BackgroundServiceStartNotAllowedException`) if it is started
   while the headset sleeps: see [Build and install](../xr-quest.md#build-and-install). Wake the headset first.
 - **Hot-plugging the RTL8812AU crashed the app twice** (devourer EEPROM read exception, then a libusb segfault in

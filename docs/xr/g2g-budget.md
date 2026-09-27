@@ -182,10 +182,20 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
   | REC-like (a480 ×4, rec ×2, c720 ×2, d1080s ×2, e720s ×2; 12 traces) | 0–0.8 % | 1.9–5.4 ms | 1.6–2.1 ms | +0.0…+0.08 ms |
   | BASE 1080p90 / 8 Mbit/s (2 traces) | ~2 % | **11.9–12.3 ms** | 2.6–2.8 ms | **+0.5…+0.7 ms** |
 
-- **Fix, in code (2026-09-27, device A/B pending).** The bounds are named constants in one place, `kTightReorderBounds` {2 packets, 3 ms} and `kLegacyReorderBounds` {5, 20 ms} (`BufferedPacketQueue.h`). Video uses the tight bounds, selected by the experiment pref `rtp_tight_reorder` (default on; off = upstream, for the A/B). Audio keeps the upstream bounds. Host gtests: a single swap still comes out in order; a loss releases after 2 packets or 3 ms; a reorder 2+ packets deep is documented as a loss (delivered once, out of order, and the stream keeps flowing); the bounds can change while packets flow. 61/61 pass, and JVM `LatencyExperimentsTest` 18/18. Original proposal: on the wfb path, shorten the hold from 5 packets / 20 ms to 2 / 3 ms. A reorder after wfb-ng takes µs, and the one reorder ever seen was a single swap (`rtp_seq.py`). A gap would then cost at most ~1 packet, not ~5.
+- **Fix, in code (2026-09-27; measured on the device, below).** The bounds are named constants in one place, `kTightReorderBounds` {2 packets, 3 ms} and `kLegacyReorderBounds` {5, 20 ms} (`BufferedPacketQueue.h`). Video uses the tight bounds, selected by the experiment pref `rtp_tight_reorder` (default on; off = upstream, for the A/B). Audio keeps the upstream bounds. Host gtests: a single swap still comes out in order; a loss releases after 2 packets or 3 ms; a reorder 2+ packets deep is documented as a loss (delivered once, out of order, and the stream keeps flowing); the bounds can change while packets flow. 61/61 pass, and JVM `LatencyExperimentsTest` 18/18. Original proposal: on the wfb path, shorten the hold from 5 packets / 20 ms to 2 / 3 ms. A reorder after wfb-ng takes µs, and the one reorder ever seen was a single swap (`rtp_seq.py`). A gap would then cost at most ~1 packet, not ~5.
   - **Estimate [INFERRED from the table]:** at REC loss, −0.0…−0.1 ms on the mean and −2…−3 ms on the frames after a loss. On a weak link (~2 % loss), −0.5…−0.7 ms on the mean and ~−9 ms on the frames after each loss, i.e. fewer stutters.
   - **Risk:** a reorder deeper than 2 packets would become a lost packet (one broken frame), which is not seen on this path.
-  - **Device check (pending):** an A/B of `rtp_tight_reorder` on/off on a lossy link (air at 8 dBm), in one trace series with [gap_hold.py](../../scripts/quest-latch/gap_hold.py), N ≥ 2 per state.
+  - **Measured on the Quest (2026-09-27 22:33–22:41).** Air at 8 dBm, MCS2, FEC 4/8, 2000 kbit/s, 480p167, alink off; build abab1f13. One trace, `rtp_tight_reorder` off / on / on / off / off / on, 45 s per step, with an app restart and a 12 s guard at every switch. Analysed with [gap_hold.py](../../scripts/quest-latch/gap_hold.py) `--steps` [PROVEN: [data](data/rq-ab-2026-09-27.txt)]:
+
+    | Setting | frames after a loss: complete → decoded, per step | all | other frames | mean over all frames |
+    |---|---|---|---|---|
+    | off (5 pkts / 20 ms) | 2.82 / 3.23 / 3.43 ms | **3.01 ms** (n = 158) | 1.53 ms | 1.55–1.57 ms |
+    | **on** (2 pkts / 3 ms) | 1.55 / 1.67 / 1.85 ms | **1.62 ms** (n = 96) | 1.54 ms | 1.52–1.56 ms |
+
+    - **Frames after a loss arrive 1.4 ms sooner, and with the lever on they are no different from the rest.** The per-step ranges do not overlap.
+    - The mean over all frames barely moves (−0.02 ms), because the loss at 8 dBm came out low: 0.12–0.98 % per step, falling over the run.
+    - The gain grows with loss. At ~2 % (the BASE traces) the upstream hold cost ~9 ms per affected frame and 0.5–0.7 ms on the mean [INFERRED from the table above, not re-measured with the lever].
+    - The first attempt (`rq8dbm`) was discarded: the prefs writer did not land, see [troubleshooting](troubleshooting.md#the-app-the-adapter-and-the-link).
 
 ## Before / after: the original setup vs the recommended one (2026-09-27, final)
 
