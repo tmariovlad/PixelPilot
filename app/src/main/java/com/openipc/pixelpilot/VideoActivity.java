@@ -154,6 +154,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     private ConstraintLayout constraintLayout;
     private ConstraintSet constraintSet;
     private WfbNgLink wfbLink;
+    private final WfbServiceControl.Binding vpnBinding = new WfbServiceControl.Binding();
 
     private ObjectDetectorHelper objectDetectorHelper;
     private ExecutorService objectDetectionExecutor;
@@ -1387,8 +1388,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
     // VPN SERVICE
     // ----------------------------------------------------------------------------
     private void startVpnService() {
-        WfbServiceControl.startVpn(this, true);
-
+        vpnBinding.bind(this, true);
     }
 
     private Uri openDvrFile() {
@@ -1542,9 +1542,8 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
             }
         } else if (requestCode == WfbServiceControl.VPN_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
-                // VPN permission granted, start the VPN service
-                Intent serviceIntent = new Intent(this, WfbNgVpnService.class);
-                startService(serviceIntent);
+                // VPN permission granted, bring the tunnel up
+                vpnBinding.bind(this, false);
             } else {
                 // VPN permission not granted
                 Log.e(TAG, "VPN permission was not granted by the user.");
@@ -1611,7 +1610,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
 
         // Stop VPN service
         Log.w(TAG, "onPause: stopping service");
-        WfbServiceControl.stopVpn(this);
+        vpnBinding.unbind(this);
     }
 
     @Override

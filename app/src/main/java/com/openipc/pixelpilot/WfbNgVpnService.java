@@ -2,6 +2,8 @@ package com.openipc.pixelpilot;
 
 import android.net.VpnService;
 import android.content.Intent;
+import android.os.Binder;
+import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -37,55 +39,79 @@ public class WfbNgVpnService extends VpnService {
     // Control flags
     private volatile boolean isRunning = false;
 
+    // Local binder for WfbServiceControl.Binding. Activities bind instead of calling startService(): Android 8+
+    // refuses startService() while the app's uid is idle, which is the case when an activity is created or resumed
+    // with the display off (USB attach with the headset asleep) -> BackgroundServiceStartNotAllowedException.
+    // bindService() is not subject to that check, and the tunnel lives exactly as long as an activity is bound.
+    private final Binder tunnelBinder = new Binder();
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        if (intent != null && WfbServiceControl.ACTION_BIND_TUNNEL.equals(intent.getAction())) {
+            startTunnel();
+            return tunnelBinder;
+        }
+        return super.onBind(intent);  // the system's VpnService binding
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        if (intent != null && WfbServiceControl.ACTION_BIND_TUNNEL.equals(intent.getAction())) {
+            stopTunnel();
+        }
+        return false;
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && "STOP_SERVICE".equals(intent.getAction())) {
-            Log.i(TAG, "VPN Service stopping");
-            // Stop threads
-            isRunning = false;
-
-            if (udpToVpnThread != null) {
-                udpToVpnThread.interrupt();
-            }
-            if (vpnToUdpThread != null) {
-                vpnToUdpThread.interrupt();
-            }
-
-            // Close the interface
-            if (vpnInterface != null) {
-                try {
-                    vpnInterface.close();
-                } catch (IOException e) {
-                    Log.e(TAG, "Failed to close VPN interface", e);
-                }
-                vpnInterface = null;
-            }
+            stopTunnel();
             stopSelf();
             return START_NOT_STICKY;
         }
-
-        Log.i(TAG, "VPN Service started");
-
-        // If already running, don't start again
-        if (isRunning) {
-            Log.w(TAG, "VPN Service is already running");
-            return START_STICKY;
+        if (!startTunnel()) {
+            stopSelf();
+            return START_NOT_STICKY;
         }
+        return START_STICKY;
+    }
 
-        // Build the VPN interface (TUN) and set it up
+    /** Establishes the TUN interface and starts the traffic threads, unless already running. */
+    private synchronized boolean startTunnel() {
+        if (isRunning) {
+            Log.w(TAG, "VPN tunnel is already running");
+            return true;
+        }
         try {
             vpnInterface = establishVpnInterface();
-            isRunning = true;
         } catch (Exception e) {
             Log.e(TAG, "Failed to establish VPN interface", e);
-            stopSelf();
-            return START_NOT_STICKY;
+            return false;
         }
-
-        // Start the worker threads
+        isRunning = true;
         startVpnThreads(vpnInterface);
+        Log.i(TAG, "VPN tunnel started");
+        return true;
+    }
 
-        return START_STICKY;
+    /** Stops the traffic threads and closes the TUN interface. */
+    private synchronized void stopTunnel() {
+        isRunning = false;
+        if (udpToVpnThread != null) {
+            udpToVpnThread.interrupt();
+        }
+        if (vpnToUdpThread != null) {
+            vpnToUdpThread.interrupt();
+        }
+        if (vpnInterface != null) {
+            try {
+                vpnInterface.close();
+            } catch (IOException e) {
+                Log.e(TAG, "Failed to close VPN interface", e);
+            }
+            vpnInterface = null;
+        }
+        Log.i(TAG, "VPN tunnel stopped");
     }
 
     /**
@@ -216,25 +242,6 @@ public class WfbNgVpnService extends VpnService {
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "VPN Service destroyed");
-
-        // Stop threads
-        isRunning = false;
-
-        if (udpToVpnThread != null) {
-            udpToVpnThread.interrupt();
-        }
-        if (vpnToUdpThread != null) {
-            vpnToUdpThread.interrupt();
-        }
-
-        // Close the interface
-        if (vpnInterface != null) {
-            try {
-                vpnInterface.close();
-            } catch (IOException e) {
-                Log.e(TAG, "Failed to close VPN interface", e);
-            }
-            vpnInterface = null;
-        }
+        stopTunnel();
     }
 }

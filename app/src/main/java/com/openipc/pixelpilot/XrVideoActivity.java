@@ -38,6 +38,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private VideoPlayer videoPlayer;
     private WfbNgLink wfbLink;
     private WfbLinkManager wfbLinkManager;
+    private final WfbServiceControl.Binding vpnBinding = new WfbServiceControl.Binding();
     // Guards videoAttached: attach runs on the UI thread, detach on the XR thread (INACTIVE) or the
     // UI thread (onDestroy). VideoPlayer's surface/start/stop calls do not need the main looper.
     private final Object videoLock = new Object();
@@ -111,7 +112,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         wfbLinkManager.setBandwidth(VideoActivity.getBandwidth(this));
         wfbLinkManager.refreshAdapters();
         wfbLinkManager.startAdapters();
-        if (!WfbServiceControl.startVpn(this, false)) {
+        if (!vpnBinding.bind(this, false)) {
             onLinkStatus("VPN not granted - start PixelPilot in 2D once to allow it");
         }
         ui.post(statsTick);
@@ -124,7 +125,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         ui.removeCallbacks(statsTick);
         wfbLinkManager.unregister();
         wfbLinkManager.stopAdapters();
-        WfbServiceControl.stopVpn(this);
+        vpnBinding.unbind(this);
     }
 
     @Override
