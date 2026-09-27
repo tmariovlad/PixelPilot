@@ -219,6 +219,11 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
     - `quest_adb.write_prefs` now reads the file back and raises if it differs, which covers `set_link_prefs.py`, `set_prefs` and `pref_ab.sh` ([test_quest_adb.py](../../scripts/quest/test_quest_adb.py)).
   - The committed tools were never affected: `pref_ab.sh` calls Python from bash.
   - Later that day the read-back guard failed a step that had actually landed (alink8 step 3, found by the [22] session). The read came too early or caught the file truncated by `cat >`: a race in the harness, not the app [INFERRED: the value was in effect, per [22]]. `write_prefs` now writes atomically (`cat > general.xml.tmp && mv general.xml.tmp general.xml`), so the app can never read an empty file either. It also reads back up to 3 times, ~100 ms apart, before it raises ([test_quest_adb.py](../../scripts/quest/test_quest_adb.py): "first read differs, second ok").
+  - **Correction (2026-09-27, 22:34):** that one-call version was broken on the Quest. `adb exec-in run-as PKG sh -c "cat > general.xml.tmp && mv general.xml.tmp general.xml"` wrote only the tmp file, and the `mv` never ran inside run-as.
+    - Cause [INFERRED]: adb hands the joined command line to the device's shell, so the `&&` part is not in run-as's `sh -c`.
+    - Effect [PROVEN, 2c6ae8 session]: `general.xml` did not change from 18:16 to 22:34, and every read-back that asked for new prefs failed. The guard did its job: nothing ran silently on the old prefs.
+    - Fix in `3cb6ea1` (2c6ae8 session): two adb calls, `exec-in … sh -c "cat > tmp"`, then `shell run-as PKG mv tmp general.xml`. The fake adb in [test_quest_adb.py](../../scripts/quest/test_quest_adb.py) now models the device and catches a chained rename.
+    - Runs in that window that asked for the prefs already on the headset are unaffected (the final and last slots: [audit](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27), item 6).
 
 ## "Truncated" 29-byte alink reports on the air unit (2026-09-27, not ours)
 
