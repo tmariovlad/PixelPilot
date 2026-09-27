@@ -8,7 +8,7 @@ The goal: receive the air unit's APFPV video (a WPA2 Wi-Fi AP) through the RTL88
 
 | Step (scope §8) | State |
 |---|---|
-| W0 go/no-go gate: does the 8812AU's hardware ACK work against the real AP? | harness built and unit-tested; **not run yet**: slot 4B on 2026-09-27 was blocked because `usbipd attach` fails on PC-VLAD (below) |
+| W0 go/no-go gate: does the 8812AU's hardware ACK work against the real AP? | **GO** (slot 4B, 2026-09-27): with the ACK on, every frame from the AP arrives once; with it off, 100 % are retransmitted ([result](#w0-result-go-2026-09-27)) |
 | W1+ supplicant, CCMP RX, ARP, hand-off to the video path | not started; waits for the W0 result |
 
 ## Code
@@ -37,6 +37,31 @@ The station code lives outside the devourer submodule (which is upstream OpenIPC
 - devourer documents the 8812AU as a degraded responder against another devourer: 97 % delivery at ~7 mean retries (devourer `docs/scheduled-mac.md:182-185`). It has never been tried against a third-party AP. That is why this gate comes first.
 
 **Limit:** mostly low-rate frames (management frames and EAPOL, which the AP sends at a basic rate). It does not show how the ACK behaves for high-MCS video data. That needs W1, the full handshake [SPECULATION: Realtek vendor drivers such as the air unit's 8812eu usually send EAPOL at a low rate; not checked].
+
+## W0 result: GO (2026-09-27)
+
+**Setup:**
+- Air unit `.132` on APFPV: hostapd on ch157 / VHT80, 1080p90 / 8000 kbit/s, no other client; the Quest was on its home network.
+- RTL8812AU on PC-VLAD, attached to WSL Ubuntu-22.04 over usbipd, `sta_ack_gate` as root on ch157 at 20 MHz, station MAC `02:42:75:05:d6:10`.
+- `GATE_ACK` alternated 1 / 0 / 1 / 0, 60 s each, nothing moved.
+- Each run: 11 cycles of auth → assoc → EAPOL msg1 (retried by hostapd) → deauth, 82 distinct MPDUs addressed to us, ~587 beacons per 60 s, RSSI raw ~68.
+
+| Run | ACK | Copies per MPDU (all) | MPDUs repeated | Data (EAPOL msg1) copies per MPDU | Mgmt (auth/assoc resp) copies per MPDU |
+|---|---|---|---|---|---|
+| gate1 | on | 1.00 | 0.0 % | 1.00 | 1.00 / 1.00 |
+| gate2 | off | 22.57 | 100 % | 32.81 | 7.00 / 6.92 |
+| gate3 | on | 1.01 | 1.2 % (one auth response) | 1.00 | 1.08 / 1.00 |
+| gate4 | off | 22.65 | 100 % | 32.94 | 6.92 / 7.00 |
+
+- **Verdict: GO** [PROVEN: [data/2026-09-27-w0-ack-gate.csv](data/2026-09-27-w0-ack-gate.csv)].
+  - With the hardware ACK armed, the AP's frames to our MAC arrive once with Retry = 0.
+  - Without it, the AP's MAC retransmits every one up to its retry limit: ~7 for management, ~33 for data, ~13 for deauth.
+  - The "degraded 8812AU responder" risk from the scope (97 % at ~7 retries against another devourer) does not show against hostapd on the 8812eu at this range.
+- **Independent check on the air unit:** `logread` shows 48 × "associated" and 48 × "disassociated" for `02:42:75:05:d6:10` over the slot [PROVEN: OpenIPC session's report, epoch 1790506383]. That is the 44 counted cycles plus a few reassociations.
+- **Limit:** the gate covers management and EAPOL frames only, sent at a low rate. The ACK for high-MCS video data is proven only in W1.
+- **Data provenance:** the four `GATE` summaries were printed by the harness during the session and are transcribed into the CSV.
+  - The raw run logs were lost. A `wsl.exe … bash -c '…$VAR…'` invocation from Git Bash expanded the variables to nothing, so the logs landed in WSL's `/` and were deleted by the follow-up command.
+  - Next time put WSL commands in a `.sh` file (global escaping rule).
 
 ## W0 gate: procedure for the slot (slot 4 with the coordinator)
 
