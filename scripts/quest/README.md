@@ -177,6 +177,7 @@ applied live (no RTP restart).
 | `blu.py` | Quest 2 backlight flash timing from the kernel panel dtsi numbers (`python3 blu.py 3664 14 7 1 120`) |
 | `build_wb_f8742fe.sh` | **OpenIPC project, not this repo:** rebuild waybeam f8742fe for the air unit (WSL) |
 | `test_quest_env.py` | offline checks of `quest_env.py` |
+| `mavlink_fake.py` | synthetic MAVLink v1 telemetry (HEARTBEAT armed, SYS_STATUS, GPS_RAW_INT, GLOBAL_POSITION_INT) to the Quest's UDP 14550, to check the XR telemetry line when the air unit sends none; offline test `test_mavlink_fake.py` |
 | `test_quest_adb.py` | offline checks of `quest_adb.write_prefs` (read-back after every prefs write; adb faked) |
 
 ## Provenance
