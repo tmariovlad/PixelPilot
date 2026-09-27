@@ -105,7 +105,8 @@ def analyze(frames, steps, end, guard, baseline, pkts=None):
 
     per_step = [(i, lab, stats([f for f, j in tagged if j == i])) for i, (_, lab) in enumerate(steps)
                 if any(j == i for _, j in tagged)]
-    labels = list(OrderedDict.fromkeys(lab for _, lab in steps))
+    # only states with frames inside their guarded windows (a step shorter than 2 guards has none)
+    labels = list(OrderedDict.fromkeys(steps[i][1] for _, i in tagged))
     per_state = [(lab, stats([f for f, i in tagged if steps[i][1] == lab])) for lab in labels]
     if pkts is not None:
         for i, _, row in per_step:

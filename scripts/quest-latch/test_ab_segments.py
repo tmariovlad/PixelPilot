@@ -99,6 +99,14 @@ def test_undecoded_counts_frames_without_a_ready_mark_inside_the_window():
     assert dict(per_state)["A"]["undecoded"] == 0
 
 
+def test_state_whose_steps_are_all_guard_is_skipped_not_a_crash():
+    frames, steps, end = synth()
+    short = steps[:2] + [(steps[2][0], "Z"), (steps[2][0] + 3e9, "A")] + steps[3:]  # "Z" lasts 3 s < 2 guards
+    per_step, per_state, _ = analyze(frames, short, end, 2e9, "A")
+    assert "Z" not in dict(per_state)
+    assert all(lab != "Z" for _, lab, _ in per_step)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
