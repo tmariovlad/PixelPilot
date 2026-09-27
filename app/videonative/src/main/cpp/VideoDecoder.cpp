@@ -109,14 +109,8 @@ void VideoDecoder::interpretNALU(const NALU& nalu)
         mKeyFrameFinder.saveIfKeyFrame(nalu);
         return;
     }
-    if ((decoder.configured[0] || decoder.configured[1]) && mKeyFrameFinder.isChangedSPS(nalu))
-    {
-        // The encoder restarted with other parameters (e.g. resolution). Rebuild the decoder from the new
-        // SPS/PPS below instead of letting it adapt in place (which kept ~16 frames on Quest 2).
-        MLOGD << "SPS changed: reconfiguring the decoder";
-        releaseDecoder(0);
-        releaseDecoder(1);
-    }
+    // A new SPS (the encoder restarted, e.g. with another resolution) is left to the running decoder, which adapts
+    // in place. Rebuilding it on every SPS change was measured slower on a live switch (audit X23 c, withdrawn).
     // '|', not '||': both decoders' flags are consumed in the same pass.
     if (mRecovery.shouldRebuild(0, decoder.configured[0]) | mRecovery.shouldRebuild(1, decoder.configured[1]))
     {

@@ -5,7 +5,6 @@
 #ifndef FPVUE_KEYFRAMEFINDER_HPP
 #define FPVUE_KEYFRAMEFINDER_HPP
 
-#include <cstring>
 #include <memory>
 #include <vector>
 #include "../helper/AndroidLogger.hpp"
@@ -76,17 +75,6 @@ class KeyFrameFinder
     {
         assert(VPS);
         return VPS->get_nal();
-    }
-
-    // True for an SPS whose bytes differ from the saved one, e.g. after the encoder restarted with another
-    // resolution. A decoder configured with the saved SPS must then be rebuilt: left running, the Quest 2
-    // decoder kept ~16 frames (78 ms) after a 1080p -> 480p switch (2026-09-27, docs/xr/g2g-budget.md).
-    bool isChangedSPS(const NALU& nalu) const
-    {
-        if (SPS == nullptr || !nalu.isSPS()) return false;
-        const NALU& saved = SPS->get_nal();
-        return saved.getSize() != nalu.getSize() ||
-               std::memcmp(saved.getData(), nalu.getData(), static_cast<size_t>(nalu.getSize())) != 0;
     }
 
     static void appendNaluData(std::vector<uint8_t>& buff, const NALU& nalu)
