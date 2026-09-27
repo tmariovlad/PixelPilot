@@ -1,50 +1,90 @@
 """Frames right after an RTP sequence gap vs all other frames: frame complete (last packet) -> decoded.
 
 The app's BufferedPacketQueue (app/videonative/src/main/cpp/BufferedPacketQueue.h) holds packets after a sequence
-gap until 5 in-order packets arrive or 20 ms pass (checked on the next arrival), in case the gap is a reorder. This
-shows what that hold costs on a real link, from existing Perfetto traces (mode_segment.sh / compositor.pbtx):
-frames whose last packet arrived within HOLD_PKTS packets after a gap are "after-gap".
+gap until a few in-order packets arrive or a time bound passes, in case the gap is a reorder (upstream 5 packets /
+20 ms; the pref rtp_tight_reorder selects 2 / 3 ms). This shows what that hold costs on a real link, from Perfetto
+traces with the app's RTP counters and frame-ready marks (mode_segment.sh / compositor.pbtx, ab_long.sh): frames
+whose last packet arrived within HOLD_PKTS packets after a gap are "after-gap".
 
-Usage: python3 gap_hold.py out/mode_*.pftrace
+Usage:
+  python3 gap_hold.py out/mode_*.pftrace                         one line per trace
+  python3 gap_hold.py trace.pftrace --steps out/steps_<label>.txt [--guard-s 12]
+                                                                 one line per step of a pref_ab.sh run, plus the
+                                                                 per-value totals (Quest clock, as pref_ab logs it)
 """
-import sys, statistics as st
+import argparse
+import statistics as st
 from bisect import bisect_left
-from collections import OrderedDict
-from perfetto.trace_processor import TraceProcessor
+from collections import OrderedDict, defaultdict
 
-HOLD_PKTS = 6  # MONOTONIC_THRESHOLD 5 + the gap packet
+HOLD_PKTS = 6  # upstream monotonic threshold 5 + the gap packet: the widest window a frame can be held in
+READY_MAX_NS = 40e6  # a frame held for the full upstream 20 ms must still find its decoded mark
 
-def analyse(path):
-    tp = TraceProcessor(trace=path)
-    q = lambda s: list(tp.query(s))
-    cnt = lambda n: [(r.ts, int(r.value)) for r in q(
-        f"select c.ts, c.value from counter c join counter_track t on c.track_id=t.id where t.name='{n}' order by c.ts")]
-    seqs, tss = cnt("ppxr_rtp_seq"), cnt("ppxr_rtp_ts")
-    pk = [(a[0], a[1], b[1]) for a, b in zip(seqs, tss)]
-    gap_after = set()  # arrival indices within the hold window after a gap
-    gaps = 0
-    for i in range(1, len(pk)):
-        step = ((pk[i][1] - pk[i-1][1] + 0x8000) & 0xFFFF) - 0x8000
+
+def frame_delays(pkts, ready, hold_pkts=HOLD_PKTS):
+    """pkts: [(arrival_ns, seq, rtp_ts)] in arrival order; ready: sorted decoded-frame times.
+    Returns [(last_arrival_ns, complete_to_decoded_ms, after_gap)] per frame that has a decoded mark, and the number
+    of sequence gaps. A frame is after-gap if its last packet arrived within hold_pkts packets after a gap."""
+    after, gaps = set(), 0
+    for i in range(1, len(pkts)):
+        step = ((pkts[i][1] - pkts[i - 1][1] + 0x8000) & 0xFFFF) - 0x8000  # signed 16-bit step
         if step > 1:
             gaps += 1
-            for j in range(i, min(len(pk), i + HOLD_PKTS)):
-                gap_after.add(j)
+            after.update(range(i, min(len(pkts), i + hold_pkts)))
     frames = OrderedDict()
-    for i, (t, s, ts) in enumerate(pk):
+    for i, (t, _, ts) in enumerate(pkts):
         frames.setdefault(ts, []).append((t, i))
-    ready = [r.ts for r in q("select ts from slice where name='ppxr_frame_ready' order by ts")]
-    held, clean = [], []
+    out = []
     for v in frames.values():
         last_t, last_i = v[-1]
         k = bisect_left(ready, last_t)
-        if k < len(ready) and ready[k] - last_t < 40e6:
-            (held if last_i in gap_after else clean).append((ready[k] - last_t) / 1e6)
-    tp.close()
-    return gaps, held, clean
+        if k < len(ready) and ready[k] - last_t < READY_MAX_NS:
+            out.append((last_t, (ready[k] - last_t) / 1e6, last_i in after))
+    return out, gaps
 
-for p in sys.argv[1:]:
-    g, h, c = analyse(p)
-    hm = f"{st.mean(h):6.2f}" if h else "   n/a"
-    print(f"{p.split('/')[-1]:24s} gaps {g:3d}  after-gap frames {len(h):3d} mean {hm} ms | other {len(c):4d} mean {st.mean(c):5.2f} ms"
-          f" | share of all frame delay from held frames: {100*sum(h)/(sum(h)+sum(c)) if h else 0:4.1f} %  "
-          f"| mean over all {st.mean(h+c):5.2f}")
+
+def summary(name, delays, gaps=None):
+    held = [d for _, d, a in delays if a]
+    clean = [d for _, d, a in delays if not a]
+    hm = f"{st.mean(held):6.2f}" if held else "   n/a"
+    cm = f"{st.mean(clean):5.2f}" if clean else "  n/a"
+    allm = f"{st.mean(held + clean):5.2f}" if held or clean else "  n/a"
+    g = f"gaps {gaps:3d}  " if gaps is not None else ""
+    return (f"{name:24s} {g}after-gap frames {len(held):3d} mean {hm} ms | other {len(clean):4d} mean {cm} ms"
+            f" | mean over all {allm} ms")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("traces", nargs="+")
+    ap.add_argument("--steps", help="pref_ab.sh step log (Quest epoch, value); needs exactly one trace")
+    ap.add_argument("--guard-s", type=float, default=12.0, help="skip this long after each switch (app restart)")
+    a = ap.parse_args()
+    from ab_segments import load_trace, read_steps, step_of
+    if not a.steps:
+        for path in a.traces:
+            pkts, ready, _ = load_trace(path)
+            d, g = frame_delays(pkts, ready)
+            print(summary(path.replace("\\", "/").split("/")[-1], d, g))
+        return
+    if len(a.traces) != 1:
+        raise SystemExit("--steps needs exactly one trace")
+    pkts, ready, rt_minus_trace = load_trace(a.traces[0])
+    steps, end = read_steps(a.steps, 0.0, rt_minus_trace)
+    end = end if end is not None else pkts[-1][0]
+    guard = a.guard_s * 1e9
+    d, _ = frame_delays(pkts, ready)
+    per_step, per_value = defaultdict(list), defaultdict(list)
+    for f in d:
+        i = step_of(f[0], steps, end, guard)
+        if i is not None:
+            per_step[i].append(f)
+            per_value[steps[i][1].split(":")[-1]].append(f)
+    for i, (_, label) in enumerate(steps):
+        print(summary(f"step {i + 1} {label}", per_step[i]))
+    for value, fs in sorted(per_value.items()):
+        print(summary(f"ALL {value}", fs))
+
+
+if __name__ == "__main__":
+    main()

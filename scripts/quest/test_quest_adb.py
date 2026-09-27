@@ -3,21 +3,32 @@ import quest_adb
 
 
 class FakeAdb:
-    """lose_write: the write never lands. stale_reads: the first N reads still see the old file (a read-back that
-    came too early)."""
+    """Models the Quest: `exec-in run-as PKG sh -c SCRIPT` runs only the FIRST command of SCRIPT (a "cat > F" writes
+    F, anything after "&&" / ";" is lost), `shell run-as PKG mv A B` renames, `shell run-as PKG cat F` reads.
+    lose_write: the write never lands. stale_reads: the first N reads still see the old file (a read-back that came
+    too early)."""
 
     def __init__(self, lose_write=False, crlf=False, stale_reads=0):
-        self.file, self.lose_write, self.crlf, self.stale_reads = "", lose_write, crlf, stale_reads
-        self.new, self.writes, self.reads, self.sleeps = "", [], 0, []
+        self.files = {quest_adb.PREFS_FILE: ""}
+        self.lose_write, self.crlf, self.stale_reads = lose_write, crlf, stale_reads
+        self.writes, self.moves, self.reads, self.sleeps = [], [], 0, []
 
     def __call__(self, *a, inp=None):
         if a[0] == "exec-in":
-            self.writes.append(a[-1])
-            if not self.lose_write:
-                self.new = inp.decode()
+            script = a[-1]
+            self.writes.append(script)
+            first = script.split("&&")[0].split(";")[0].strip()
+            if first.startswith("cat > ") and not self.lose_write:
+                self.files[first[len("cat > "):].strip()] = inp.decode() if inp else ""
+            return ""
+        cmd = a[3:]  # after "shell", "run-as", PKG
+        if cmd[0] == "mv":
+            self.moves.append(cmd[1:])
+            if cmd[1] in self.files:
+                self.files[cmd[2]] = self.files.pop(cmd[1])
             return ""
         self.reads += 1
-        out = self.file if self.reads <= self.stale_reads or self.lose_write else self.new
+        out = "" if self.reads <= self.stale_reads else self.files.get(cmd[1], "")
         return out.replace("\n", "\r\n") if self.crlf else out
 
 
@@ -47,12 +58,20 @@ def test_write_that_lands_passes():
     assert fake.reads == 1 and fake.sleeps == []
 
 
-def test_write_is_atomic_tmp_then_mv():
+def test_write_goes_to_a_tmp_file_then_a_separate_rename():
     fake = FakeAdb()
     with_fake(fake, lambda: quest_adb.write_prefs(XML))
-    cmd, = fake.writes
-    assert cmd.startswith("cat > shared_prefs/general.xml.tmp && mv shared_prefs/general.xml.tmp "), cmd
-    assert cmd.endswith(" shared_prefs/general.xml"), cmd
+    assert fake.writes == ["cat > " + quest_adb.PREFS_TMP]
+    assert fake.moves == [(quest_adb.PREFS_TMP, quest_adb.PREFS_FILE)]
+    assert fake.files == {quest_adb.PREFS_FILE: XML}
+
+
+def test_a_rename_chained_inside_exec_in_would_be_caught():
+    """The 18:16-22:34 failure: with "cat > tmp && mv tmp final" in one exec-in, only the tmp file changes."""
+    fake = FakeAdb()
+    fake("exec-in", "run-as", "pkg", "sh", "-c", "cat > %s && mv %s %s" % (
+        quest_adb.PREFS_TMP, quest_adb.PREFS_TMP, quest_adb.PREFS_FILE), inp=XML.encode())
+    assert fake.files[quest_adb.PREFS_FILE] == "" and fake.files[quest_adb.PREFS_TMP] == XML
 
 
 def test_crlf_read_back_still_matches():

@@ -7,6 +7,8 @@ import quest_env as env
 
 NL = "\n"
 PREFS_HEADER = "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>" + NL + "<map>" + NL
+PREFS_FILE = "shared_prefs/general.xml"
+PREFS_TMP = PREFS_FILE + ".tmp"
 READBACK_TRIES = 3        # a read right after the write can still see the old file
 READBACK_WAIT_S = 0.1
 _sleep = time.sleep       # replaced by the offline test
@@ -39,13 +41,17 @@ def write_prefs(xml):
 
     The write is atomic (a temp file, then mv), so neither the app nor the read-back ever sees a file truncated by
     "cat >", and the read-back is retried a few times before it raises: in the alink8 run on 2026-09-27 the guard
-    failed a step whose value had landed, because the read came too early or caught the truncated file."""
-    adb("exec-in", "run-as", env.PKG, "sh", "-c",
-        "cat > shared_prefs/general.xml.tmp && mv shared_prefs/general.xml.tmp shared_prefs/general.xml",
-        inp=xml.encode())
+    failed a step whose value had landed, because the read came too early or caught the truncated file.
+
+    The temp file and the rename are two adb calls. On the Quest, `adb exec-in run-as PKG sh -c "cat > tmp && mv
+    tmp final"` runs only the first command inside run-as: the tmp file was written, the rename never happened, and
+    general.xml stayed unchanged from 18:16 to 22:34 on 2026-09-27 (every read-back then failed; see
+    docs/xr/troubleshooting.md)."""
+    adb("exec-in", "run-as", env.PKG, "sh", "-c", "cat > " + PREFS_TMP, inp=xml.encode())
+    adb("shell", "run-as", env.PKG, "mv", PREFS_TMP, PREFS_FILE)
     want = xml.replace(chr(13), "")   # adb may return CRLF
     for attempt in range(READBACK_TRIES):
-        if adb("shell", "run-as", env.PKG, "cat", "shared_prefs/general.xml").replace(chr(13), "") == want:
+        if adb("shell", "run-as", env.PKG, "cat", PREFS_FILE).replace(chr(13), "") == want:
             return
         if attempt + 1 < READBACK_TRIES:
             _sleep(READBACK_WAIT_S)
@@ -54,7 +60,7 @@ def write_prefs(xml):
 
 def set_prefs(flags):
     """Keep the stored gs.key, drop every other pref, set od_enabled=false plus `flags`."""
-    xml = adb("shell", "run-as", env.PKG, "cat", "shared_prefs/general.xml")
+    xml = adb("shell", "run-as", env.PKG, "cat", PREFS_FILE)
     key = re.search(r'<string name="gs.key">.*?</string>', xml, re.S).group(0)
     body = "".join(pref_xml(k, v) for k, v in flags.items())
     write_prefs(PREFS_HEADER + "    " + key + NL
