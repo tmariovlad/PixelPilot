@@ -22,6 +22,10 @@ public class WfbLinkManager extends BroadcastReceiver {
     public static final String ACTION_USB_PERMISSION = "com.openipc.pixelpilot.USB_PERMISSION";
     private static final String TAG = "pixelpilot";
     static Map<String, UsbDevice> activeWifiAdapters = new HashMap<>();
+    // Shared by the 2D and XR activities, like activeWifiAdapters: one permission request per attachment.
+    static final UsbPermissionGate permissionGate = new UsbPermissionGate();
+    // Restart decisions for links whose RX thread ended on its own, per adapter device name. UI thread.
+    private final Map<String, RestartPolicy> restartPolicies = new HashMap<>();
     private final WfbNgLink wfbLink;
     private final LinkStatusListener status;
     private final Context context;
@@ -111,9 +115,14 @@ public class WfbLinkManager extends BroadcastReceiver {
                 return;
             }
             Log.d(TAG, "usb device attached: " + dev.getVendorId() + "/" + dev.getProductId());
-            // No need to refresh since this should trigger a call to VideoActivity.onReceive();
+            // The manifest may also route this to VideoActivity; refreshing here lets whichever activity is in
+            // front (XR included) pick the adapter up. refreshAdapters() is idempotent for known adapters.
+            refreshAdapters();
         } else if (ACTION_USB_PERMISSION.equals(intent.getAction())) {
-            Log.d(TAG, "Permission handled");
+            boolean granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false);
+            Log.d(TAG, "usb permission " + (granted ? "granted" : "denied")
+                    + (dev != null ? " for " + dev.getDeviceName() : ""));
+            if (granted) refreshAdapters();
         }
     }
 
@@ -169,8 +178,16 @@ public class WfbLinkManager extends BroadcastReceiver {
         boolean missingPermissions = false;
         android.hardware.usb.UsbManager usbManager =
                 (android.hardware.usb.UsbManager) context.getSystemService(Context.USB_SERVICE);
+        permissionGate.retainAttached(attachedAdapters.keySet());
         for (Map.Entry<String, UsbDevice> entry : attachedAdapters.entrySet()) {
             if (!usbManager.hasPermission(entry.getValue())) {
+                if (!permissionGate.shouldAsk(entry.getKey())) {
+                    // Asked once since it was plugged in: a denial must not turn every resume into a new prompt.
+                    status.onLinkStatus("USB permission missing for " + entry.getValue().getDeviceName()
+                            + " - replug the adapter to be asked again");
+                    missingPermissions = true;
+                    continue;
+                }
                 status.onLinkStatus("No permission for wifi adapter(s) " + entry.getValue().getDeviceName());
                 // Android 14 refuses to deliver a PendingIntent built from an implicit
                 // intent to a runtime registered receiver, so the permission result never
@@ -243,6 +260,26 @@ public class WfbLinkManager extends BroadcastReceiver {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Restarts adapters whose RX thread ended on its own (lock timeout, CreateRtlDevice failure, a devourer error),
+     * with {@link RestartPolicy}'s backoff. Call periodically while the activity is resumed (the XR stats tick).
+     */
+    public synchronized void checkHealth(long nowMs) {
+        for (Map.Entry<String, UsbDevice> entry : activeWifiAdapters.entrySet()) {
+            RestartPolicy policy = restartPolicies.get(entry.getKey());
+            if (policy == null) {
+                policy = new RestartPolicy();
+                restartPolicies.put(entry.getKey(), policy);
+            }
+            if (policy.onTick(nowMs, wfbLink.isAlive(entry.getValue()))) {
+                Log.w(TAG, "wfb-ng link on " + entry.getKey() + " ended; restart " + policy.attempts());
+                status.onLinkStatus("link lost - restarting (" + policy.attempts() + ")");
+                startAdapter(entry.getValue());
+            }
+        }
+        restartPolicies.keySet().retainAll(activeWifiAdapters.keySet());
     }
 
     public synchronized void startAdapters() {

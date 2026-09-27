@@ -61,6 +61,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private final Runnable statsTick = new Runnable() {
         @Override
         public void run() {
+            if (wfbLinkManager != null) wfbLinkManager.checkHealth(android.os.SystemClock.elapsedRealtime());
             // Drained once per tick: the signal state and the phase meter read the same frames.
             long[] frames = videoPlayer != null ? videoPlayer.drainFrameReadyTimes() : new long[0];
             updateSignal(frames);

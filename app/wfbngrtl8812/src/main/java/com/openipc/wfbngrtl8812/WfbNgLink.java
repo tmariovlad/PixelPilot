@@ -62,8 +62,18 @@ public class WfbNgLink implements WfbNGStatsChanged {
         }, 0, 300);
     }
 
-    public boolean isRunning() {
-        return !linkThreads.isEmpty();
+    /** True while at least one RX thread is alive. A thread that ended on its own no longer counts (audit X17). */
+    public synchronized boolean isRunning() {
+        for (Thread t : linkThreads.values()) {
+            if (t.isAlive()) return true;
+        }
+        return false;
+    }
+
+    /** True while the RX thread for {@code dev} is alive; false if it never started or has ended. */
+    public synchronized boolean isAlive(UsbDevice dev) {
+        Thread t = linkThreads.get(dev);
+        return t != null && t.isAlive();
     }
 
     /**
