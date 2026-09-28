@@ -1,0 +1,16 @@
+# R6 air step log 2026-09-28 (beacon-rhythm R6, OpenIPC 9cf5603/4e0416b). Air .132 race 480p167 2 Mbit, 12 dBm, monitor ch157 20 MHz.
+# base: 0x541=0x64 (TBTT hold 3.2 ms) 0x550=0x18 (EN_BCN_FUNCTION|DIS_TSF_UDT, boot state); hold0: 0x541=0x00; bcnoff: 0x550=0x10. Runtime writes, reverted at END.
+# Air-PC offset = -0.336 s (n=7, RTT 17 ms, clk_off.py at PC 1790620376). Quest capture: pixelpilot-xr-25 ab_r6 (quest_minus_pc +616.2 ms).
+# Script: /tmp/r6_steps.sh (DWELL=60). T= empty: no thermal_zone0 on this air.
+BEGIN epoch=1790620361 dwell=60
+STEP base epoch=1790620361 up=225.58 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x18 tx=65358 drop=3 T=
+STEP hold0 epoch=1790620421 up=285.62 rtw_read32(0x540)=0x80000004 rtw_read8(0x550)=0x18 tx=101736 drop=3 T=
+STEP base epoch=1790620481 up=345.66 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x18 tx=137567 drop=3 T=
+STEP hold0 epoch=1790620541 up=405.70 rtw_read32(0x540)=0x80000004 rtw_read8(0x550)=0x18 tx=173138 drop=3 T=
+STEP base epoch=1790620601 up=465.73 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x18 tx=209423 drop=3 T=
+STEP bcnoff epoch=1790620661 up=525.77 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x10 tx=246499 drop=3 T=
+STEP base epoch=1790620721 up=585.80 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x18 tx=284668 drop=3 T=
+STEP bcnoff epoch=1790620781 up=645.84 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x10 tx=322507 drop=3 T=
+STEP base epoch=1790620841 up=705.88 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x18 tx=359333 drop=3 T=
+STEP base epoch=1790620901 up=765.92 rtw_read32(0x540)=0x80006404 rtw_read8(0x550)=0x18 tx=395667 drop=3 T=
+END epoch=1790620901 up=765.96
