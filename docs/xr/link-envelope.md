@@ -155,6 +155,35 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
 - **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
+### Air TX power ceiling 2026-09-28 22:14–22:30: 12 → 31 dBm at MCS2, received power per Quest chain
+
+Question (O115 §12, the stop rules, and the user's "up to the hardware limit"): where does more requested power stop reaching the Quest? Test only; the boot power stays 12 dBm.
+- **Method.** Air race-like: MCS2, 4 Mbit/s, FEC 4/8, 20 MHz 157, alink as at boot. Steps of 60 s, rising ≤ 3 dB at a time; `iw` and the TXAGC index read back per step. Three runs: 12/20/23/24/26/28/12, then 28/29/30, then 30.5/31/"31.75" (applied as 31, the effective driver maximum)/12. Air ≤ 43 °C, DPS 0.422 A at 12 dBm → 0.700 A at 31 dBm. Coordinator's air log with the indices and currents: [air-pwr-ceiling](data/air-pwr-ceiling-2026-09-28.txt).
+  - Quest: detached capture, same desk position as R5–R7, `TRACE LOSS: none`. The first build with per-chain counters: `rssi_a/b` = the raw `gain_trsw` average (≈ dBm + 110, rounded to whole units per window), `snr_a/b` in dB.
+- **Data.** Steps [run 1](data/steps-2026-09-28-pwr-ceiling-run1.txt) · [runs 2–3](data/steps-2026-09-28-pwr-ceiling-run23.txt); link [run 1](data/link-2026-09-28-pwr-ceiling-run1.csv) · [runs 2–3](data/link-2026-09-28-pwr-ceiling-run23.csv); link_audit [run 1](data/audit-2026-09-28-pwr-ceiling-run1.txt) · [runs 2–3](data/audit-2026-09-28-pwr-ceiling-run23.txt).
+
+| requested dBm | TXAGC idx A / B | chain A raw (≈ dBm) | chain B raw (≈ dBm) | SNR A / B dB | p_data | post-FEC |
+|---|---|---|---|---|---|---|
+| 12 | 53 / 44 | 55.0 (−55) | 51.0 (−59) | 17.0 / 17.1 | 2.20 % | 0 |
+| 20 | – | 62.2 (−48) | 59.5 (−51) | 16.8 / 17.3 | 2.07 % | 0 |
+| 23 | – | 65.0 (−45) | 62.0 (−48) | 17.5 / 17.5 | 2.03 % | 0 |
+| 24 | – | 65.8 (−44) | 62.5 (−48) | 17.0 / 17.3 | 2.16 % | 0 |
+| 26 | – | 65.8 (−44) | 63.2 (−47) | 17.0 / 17.1 | 1.89 % | 0 |
+| 28 (runs 1, 2) | 117 / 108 | 67.0 / 66.9 (−43) | 64.0 (−46) | 17.0–17.3 | 1.99–2.22 % | 0 |
+| 29 | 121 / 112 | 67.0 (−43) | 64.0 (−46) | 17.3 / 17.1 | 2.11 % | 0 |
+| 30 | 125 / 116 | 67.0 (−43) | 64.4 (−46) | 17.0 / 17.0 | 2.15 % | 0 |
+| 30.5 | 127 / 118 | 67.0 (−43) | 65.0 (−45) | 17.0 / 17.0 | 2.13 % | 0 |
+| 31 (and "31.75") | 127 / 120 | 67.0 (−43) | 64.0–64.5 (−46) | 17.0 / 17.0 | 2.12–2.15 % | 0 |
+| 12 (after each run) | 53 / 44 | 55.0 (−55) | 51.6–51.9 (−58) | 16.5–16.9 | 1.98–2.12 % | 0–0.01 % |
+
+- **At the Quest, received power follows the request almost 1:1 up to 20 dBm, gains ~2.5–3 dB from 20 to 23 dBm, and is flat from ~24–26 dBm to 31 dBm (+1–2 dB over the last 5–7 dB of request)** [PROVEN: per-chain counters, both chains, 3 runs; the return to 12 dBm reads the same as the start].
+  - The TXAGC index keeps rising 4 per dB up to its register maximum: 127 on path A from 30.5 dBm, path B to 120 at 31 dBm.
+  - The DPS current keeps rising too, 0.565 A at 23 dBm → 0.700 A at 31 dBm.
+- **SNR stays at 16.5–17.5 dB at every power level**, while RSSI changes by 12 dB [PROVEN]. What limits it scales with the signal: transmitter distortion (EVM), multipath, or the receiver's own limit, not thermal noise or an outside source [INFERRED]. So at this position more power does not buy SINR for MCS7. That fits the MCS7 cliff at 21–23 dBm and R5/R7's steady ~0.5 % after FEC.
+- **Caveat: which end saturates is not proven.** At ≈ −43 dBm the flat top could be the air's power amplifier compressing (the rising DPS current fits that) or the Quest RTL's receiver/AGC saturating. The per-chain counter is rounded to whole units, so its steady 67.0 on chain A says nothing either way [INFERRED].
+  - **Discriminator:** the same power ladder with the Quest far away (RSSI ≈ −70 dBm). If the curve still flattens at ~24 dBm, it is the PA; if it keeps rising, it was the receiver. This needs the user to place the headset.
+- MCS2 lost nothing after FEC at any power. p_data 1.9–2.2 % is flat with power, so the pre-FEC floor at MCS2 is not a matter of received power here.
+
 ### R7 + R5 2026-09-28 21:45–22:13 at 1080p90 25 Mbit/s, 17 dBm: the TBTT pause off at full rate; MCS6 short GI vs MCS7 long GI
 
 Same Quest position as R6 (RSSI column 74; raw A 59 / B 55 ≈ −51 / −55 dBm; SNR 17.1–17.5 dB on both chains in R5). Air: 1080p90, 25 Mbit/s, FEC 4/6, 17 dBm, 20 MHz 157, STBC 1, LDPC 1, alink stopped, drop = 0 in every step, the same `inj` per step. Quest: detached capture, `TRACE LOSS: none`. Analysis: [tu_pause.py](../../scripts/quest-latch/tu_pause.py), [link_audit.py](../../scripts/quest-latch/link_audit.py), [ab_segments.py](../../scripts/quest-latch/ab_segments.py).
