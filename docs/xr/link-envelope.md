@@ -184,6 +184,21 @@ Question (O115 §12, the stop rules, and the user's "up to the hardware limit"):
   - **Discriminator:** the same power ladder with the Quest far away (RSSI ≈ −70 dBm). If the curve still flattens at ~24 dBm, it is the PA; if it keeps rising, it was the receiver. This needs the user to place the headset.
 - MCS2 lost nothing after FEC at any power. p_data 1.9–2.2 % is flat with power, so the pre-FEC floor at MCS2 is not a matter of received power here.
 
+### External 102.4 ms transmitter identified 2026-09-28 22:47: a neighbour's AP on ch157
+
+Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes from a transmitter that is neither the air nor the Quest. Its phase stays continuous across Quest relaunches and air reboots. Who is it?
+- **Method.** The air unit itself scanned in managed mode (runtime only): wfb/alink stopped, `iw dev wlan0 scan` over all channels, then a scan of 5745–5825 MHz, then a reboot back to wfb. The driver regdomain is US (chplan 0x76), so UNII-3 is scanned. The PC's `netsh` (EU) never lists 149–165, which is why it had "seen nothing".
+- **Data.** [scan summary + the full ch157 entries](data/air-scan-ch157-2026-09-28.txt).
+- **Result** [PROVEN: scan]:
+  - The only BSSs on 149–165 are two on **ch157**, both from one radio: `b0:8b:92:ee:10:b9` "**Staff - 5GHz**" and `b2:8b:92:9e:10:b9` (hidden SSID).
+  - Both beacon every **100 TU = 102.4 ms** and arrive at −90/−91 dBm at the air.
+  - Channels **149, 153, 161 and 165 had no BSS**.
+  - The user's own networks are Zeul36 on ch36 and Zeul37 on ch48. The spare WiFiLink HD air unit was not seen.
+- **Reading** [INFERRED]:
+  - A neighbour's AP beacons on our channel. That is the external 102.4 ms source of B1/B4 (~6–13 % of lost packets, 12–26 % of gaps).
+  - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
+  - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears.
+
 ### R7 + R5 2026-09-28 21:45–22:13 at 1080p90 25 Mbit/s, 17 dBm: the TBTT pause off at full rate; MCS6 short GI vs MCS7 long GI
 
 Same Quest position as R6 (RSSI column 74; raw A 59 / B 55 ≈ −51 / −55 dBm; SNR 17.1–17.5 dB on both chains in R5). Air: 1080p90, 25 Mbit/s, FEC 4/6, 17 dBm, 20 MHz 157, STBC 1, LDPC 1, alink stopped, drop = 0 in every step, the same `inj` per step. Quest: detached capture, `TRACE LOSS: none`. Analysis: [tu_pause.py](../../scripts/quest-latch/tu_pause.py), [link_audit.py](../../scripts/quest-latch/link_audit.py), [ab_segments.py](../../scripts/quest-latch/ab_segments.py).
