@@ -1,0 +1,3 @@
+1790617126.18 PRE m7b25000f46 tx=6347410 temp=48 verbose_lines=1790 pkt_lines=1852 step=500s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790617126.63 m7b25f46 tx=6348974 temp=50 enc_kbps=25121 enc_fps=90.0 drop=0 inj=1753015
+1790617627.20 END tx=8109982 temp=48 reverted=m7b25000f46 mcs=7 fec=4/6 br=25000
