@@ -1,0 +1,13 @@
+# R7 air step log 2026-09-28 (fix-a proposal §5 step 6, OpenIPC 919c075): EN_BCN_FUNCTION on (0x550=0x18, boot state) vs off (0x10) at 25 Mbit.
+# Setup = R5 m7L: 1080p90 (RAM), 25000 kbit/s, FEC 4/6, 17 dBm, M7 long GI, 20 MHz STBC1 LDPC1, alink stopped. 8 x 60 s, register readback per step.
+# END = 0x550 0x18, race json 3d8a1456, 12 dBm, M2 long GI, FEC 4/8. find /overlay -newer stamp: empty. Air-PC = -0.336 s. Quest capture: pixelpilot-xr-25 ab_r7 (quest_minus_pc +605.4 ms).
+PRE epoch=1790622265 txpower=17.00 fec=k=4 n=6  br="bitrate":25000 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1  temp=44
+STEP on epoch=1790622265 rtw_read8(0x550)=0x18 tx=4107568 drop=0 inj=211089 temp=48
+STEP off epoch=1790622325 rtw_read8(0x550)=0x10 tx=4319112 drop=0 inj=210884 temp=48
+STEP off epoch=1790622385 rtw_read8(0x550)=0x10 tx=4530744 drop=0 inj=210895 temp=48
+STEP on epoch=1790622445 rtw_read8(0x550)=0x18 tx=4742187 drop=0 inj=210865 temp=48
+STEP on epoch=1790622505 rtw_read8(0x550)=0x18 tx=4953640 drop=0 inj=211343 temp=48
+STEP off epoch=1790622565 rtw_read8(0x550)=0x10 tx=5165619 drop=0 inj=211366 temp=48
+STEP off epoch=1790622625 rtw_read8(0x550)=0x10 tx=5377543 drop=0 inj=211400 temp=48
+STEP on epoch=1790622685 rtw_read8(0x550)=0x18 tx=5589545 drop=0 inj=211044 temp=48
+END epoch=1790622757 rtw_read8(0x550)=0x18 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  txpower=12.00 fec=k=4 n=8  temp=44 json=3d8a1456
