@@ -28,7 +28,7 @@ print(f'{o:.1f} {r:.1f}' if not p or r<float(p[1]) else '$best')")
   quest_prox_close
   qadb shell "rm -f $DEV_TX"
   # logcat -T 1: only lines from now on; -v epoch: Quest epoch timestamps. Detached from the adb session.
-  qadb shell "nohup logcat -T 1 -v epoch -s wfb-ng:I devourer:D -f $DEV_TX >/dev/null 2>&1 &"
+  qadb shell "nohup logcat -T 1 -v epoch -s wfb-ng:I devourer:D PPXR_STATS:I -f $DEV_TX >/dev/null 2>&1 &"
   sed "s/^duration_ms: .*/duration_ms: $((SECS * 1000))/" "$QUEST_LATCH/transport_long.pbtx" \
     | qadb shell "perfetto --txt -c - -o $DEV_TRACE --background"
   echo "started: trace $DEV_TRACE for ${SECS}s, TX log $DEV_TX"
