@@ -46,7 +46,7 @@ Estimate: **≈ 9–16 ms at 120 Hz, ≈ 13–24 ms at 72 Hz** [SPECULATION on L
 | # | Lever | Mechanism | Expected Δ at 120 Hz | Tag | Status |
 |---|---|---|---|---|---|
 | 1 | Run at 120 Hz, not 72 (and make sure it is really granted) | Shorter P shrinks L; W barely moves at 167 fps in | W: −0.4 ms mean / −1.5 ms p95 vs 72 Hz [PROVEN, slot T]; L: −2 to −7 ms [SPECULATION] | PROVEN (W) / SPECULATION (L) | Default already 120 and granted. **L: slot O decides.** |
-| 2 | Detect a silent thermal drop to 72 Hz | Handle `XrEventDataDisplayRefreshRateChangedFB`; log the read-back rate | Avoids a hidden +5–10 ms regression | PROVEN mechanism | Code change prepared after the slots (needs a build) |
+| 2 | Detect a silent thermal drop to 72 Hz | Handle `XrEventDataDisplayRefreshRateChangedFB`; log the read-back rate | Avoids a hidden regression after the latch (size = what slot O measures for 72 vs 120) | PROVEN mechanism | **Code done, not installed** (`ce885fb`): the event is logged (from → to), the rate read back after the request is logged, `RefreshWatch` logs every applied-rate change and marks the HUD line " BELOW REQUEST" (JVM test `RefreshWatchTest`, 5 cases) |
 | 3 | Phase-align the source to the latch (air-side phase lock) | W from its current mean to the safety margin | at most ~−2 to −2.5 ms mean at 167 fps (W is ~3 ms, not P/2 — slot T), and it needs the source at the display rate (fewer fps) | INFERRED | The only vendor technique that transfers: WiVRn's pacer aims "decoded" at a p99.5 margin + client margin before the headset uses the frame and moves the phase by 1/10 of the error per step [PROVEN: WiVRn `server/compositor/pacer.cpp` L65-69, L161, checked in a local clone]. Needs the air side (coordinator). |
 | 4 | Keep non-SYNCHRONOUS (mailbox) | No queue behind the latch | avoids +8.3 ms per queued buffer | PROVEN semantics | Already so |
 | 5 | Do not use `USE_TIMESTAMPS` for latency | Can only defer a buffer | 0 at best, +8.3 ms per deferral | INFERRED | Off by default |
@@ -58,7 +58,9 @@ Estimate: **≈ 9–16 ms at 120 Hz, ≈ 13–24 ms at 72 Hz** [SPECULATION on L
 Correctness finding, no latency effect expected: `XrRuntime.cpp:309` chains `XrAndroidSurfaceSwapchainCreateInfoFB`
 with `createFlags = 0`, which the spec forbids ("createFlags must not be 0") [PROVEN:
 <https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrAndroidSurfaceSwapchainCreateInfoFB.html>]. Fix: chain the
-struct only when a flag is set. Held until after slots T and O so both run on the same build.
+struct only when a flag is set. **Fixed in `5a483d3`, not installed yet.** No host harness exists for the native
+xr code, so the check is on the headset after the install: video shows, no swapchain-creation error in logcat, and a
+120 Hz trace (`refresh_bracket.sh` with one 120 step) still shows buffer-queue depth max 1 and ~3 ms decoded → latch.
 
 ## 4. Measurements
 
