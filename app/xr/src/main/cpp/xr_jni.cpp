@@ -54,11 +54,18 @@ XR_JNI(jobject, nativeVideoSurface)(JNIEnv*, jobject, jlong h) { return handle(h
 
 XR_JNI(jobject, nativeStatsSurface)(JNIEnv*, jobject, jlong h) { return handle(h)->runtime.statsSurface(); }
 
+XR_JNI(jobject, nativeMenuSurface)(JNIEnv*, jobject, jlong h) { return handle(h)->runtime.menuSurface(); }
+
+XR_JNI(void, nativeSetMenuVisible)(JNIEnv*, jobject, jlong h, jboolean visible)
+{
+    handle(h)->runtime.setMenuVisible(visible);
+}
+
 XR_JNI(void, nativeSetLayout)
 (JNIEnv* env, jobject, jlong h, jboolean cylinder, jboolean flip, jfloatArray values, jint imageW, jint imageH)
 {
-    jfloat v[12];
-    env->GetFloatArrayRegion(values, 0, 12, v);
+    jfloat v[20];
+    env->GetFloatArrayRegion(values, 0, 20, v);
     LayerConfig c;
     c.cylinder     = cylinder;
     c.flip         = flip;
@@ -74,6 +81,14 @@ XR_JNI(void, nativeSetLayout)
     c.statsZ       = v[9];
     c.statsImageW  = static_cast<int>(v[10]);
     c.statsImageH  = static_cast<int>(v[11]);
+    c.menuWidthM   = v[12];
+    c.menuHeightM  = v[13];
+    c.menuX        = v[14];
+    c.menuY        = v[15];
+    c.menuZ        = v[16];
+    c.menuYawRad   = v[17];
+    c.menuImageW   = static_cast<int>(v[18]);
+    c.menuImageH   = static_cast<int>(v[19]);
     c.imageW       = imageW;
     c.imageH       = imageH;
     handle(h)->runtime.setLayerConfig(c);

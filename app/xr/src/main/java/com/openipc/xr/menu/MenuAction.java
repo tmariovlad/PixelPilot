@@ -17,7 +17,7 @@ public final class MenuAction {
     public final MenuItem item;
     public final String value;
 
-    MenuAction(Type type, MenuItem item, String value) {
+    public MenuAction(Type type, MenuItem item, String value) {
         this.type = type;
         this.item = item;
         this.value = value;

@@ -81,6 +81,18 @@ jobject XrRuntime::statsSurface()
     return mStatsSurface;
 }
 
+jobject XrRuntime::menuSurface()
+{
+    std::lock_guard<std::mutex> lock(mMutex);
+    return mMenuSurface;
+}
+
+void XrRuntime::setMenuVisible(bool visible)
+{
+    std::lock_guard<std::mutex> lock(mMutex);
+    mLayerConfig.menuVisible = visible;
+}
+
 void XrRuntime::setWorkerThreads(const std::vector<int>& tids)
 {
     std::lock_guard<std::mutex> lock(mMutex);
@@ -262,10 +274,13 @@ bool XrRuntime::setup(JNIEnv* env)
     }
     jobject video = createSurface(env, initial.imageW, initial.imageH, mCfg.useTimestamps, mVideoChain);
     jobject stats = video ? createSurface(env, initial.statsImageW, initial.statsImageH, false, mStatsChain) : nullptr;
+    jobject menu  = stats ? createSurface(env, initial.menuImageW, initial.menuImageH, false, mMenuChain) : nullptr;
+    if (stats && !menu) XLOGE("menu surface swapchain creation failed; running without the menu");
     {
         std::lock_guard<std::mutex> lock(mMutex);
         mVideoSurface = video;
         mStatsSurface = stats;
+        mMenuSurface  = menu;
     }
     if (!video) return fail("video surface swapchain creation failed");
     if (!stats) return fail("stats surface swapchain creation failed");
@@ -486,6 +501,7 @@ void XrRuntime::renderFrame()
                       mViewSpace,
                       mVideoChain,
                       mStatsChain,
+                      mMenuChain,
                       enabled(XR_FB_COMPOSITION_LAYER_IMAGE_LAYOUT_EXTENSION_NAME),
                       enabled(XR_KHR_COMPOSITION_LAYER_CYLINDER_EXTENSION_NAME));
         endInfo.layerCount = mLayers.count();
@@ -578,22 +594,25 @@ void XrRuntime::teardown(JNIEnv* env)
 {
     if (mVideoChain != XR_NULL_HANDLE) xrDestroySwapchain(mVideoChain);
     if (mStatsChain != XR_NULL_HANDLE) xrDestroySwapchain(mStatsChain);
+    if (mMenuChain != XR_NULL_HANDLE) xrDestroySwapchain(mMenuChain);
     if (mViewSpace != XR_NULL_HANDLE) xrDestroySpace(mViewSpace);
     mInput.destroy();
     if (mSession != XR_NULL_HANDLE) xrDestroySession(mSession);
     mEgl.destroy();
     if (mInstance != XR_NULL_HANDLE) xrDestroyInstance(mInstance);
-    jobject video, stats;
+    jobject video, stats, menu;
     {
         std::lock_guard<std::mutex> lock(mMutex);
         video         = mVideoSurface;
         stats         = mStatsSurface;
-        mVideoSurface = mStatsSurface = nullptr;
+        menu          = mMenuSurface;
+        mVideoSurface = mStatsSurface = mMenuSurface = nullptr;
     }
     if (video) env->DeleteGlobalRef(video);
     if (stats) env->DeleteGlobalRef(stats);
+    if (menu) env->DeleteGlobalRef(menu);
     if (mActivity) env->DeleteGlobalRef(mActivity);
-    mVideoChain = mStatsChain = XR_NULL_HANDLE;
+    mVideoChain = mStatsChain = mMenuChain = XR_NULL_HANDLE;
     mViewSpace                = XR_NULL_HANDLE;
     mSession                  = XR_NULL_HANDLE;
     mInstance                 = XR_NULL_HANDLE;

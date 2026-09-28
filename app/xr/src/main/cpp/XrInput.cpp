@@ -65,12 +65,11 @@ bool XrInput::setup(XrInstance instance, XrSession session)
         {mDetail, path(instance, "/user/hand/left/input/x/click")},
         {mVisibility, path(instance, "/user/hand/right/input/b/click")},
         {mVisibility, path(instance, "/user/hand/left/input/y/click")},
-        {mStick, path(instance, "/user/hand/left/input/thumbstick")},
         {mStick, path(instance, "/user/hand/right/input/thumbstick")},
-        {mStickClick, path(instance, "/user/hand/left/input/thumbstick/click")},
         {mStickClick, path(instance, "/user/hand/right/input/thumbstick/click")},
     };
-    suggest(instance, "/interaction_profiles/oculus/touch_controller", touch, 8);
+    // The menu is right thumbstick only (docs/xr/menu-design.md: the user's requirement); the left stick is unbound.
+    suggest(instance, "/interaction_profiles/oculus/touch_controller", touch, 6);
     const XrActionSuggestedBinding simple[] = {
         {mDetail, path(instance, "/user/hand/right/input/select/click")},
         {mDetail, path(instance, "/user/hand/left/input/select/click")},
@@ -88,7 +87,7 @@ bool XrInput::setup(XrInstance instance, XrSession session)
     }
     mReady = true;
     __android_log_print(ANDROID_LOG_INFO, kTag,
-                        "input ready (A/X/select: panel detail, B/Y: show/hide panel, thumbsticks: presets)");
+                        "input ready (A/X/select: panel detail, B/Y: show/hide panel, right thumbstick: menu)");
     return true;
 }
 

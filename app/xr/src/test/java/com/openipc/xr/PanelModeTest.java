@@ -46,4 +46,19 @@ public class PanelModeTest {
         m.apply(0);
         assertArrayEquals(LINES, m.select(LINES));
     }
+    // The menu's "Panel > Detail" line (docs/xr/menu-design.md) names the mode and sets it.
+    @Test public void theModeHasANameAndCanBeSetByIt() {
+        PanelMode m = new PanelMode();
+        assertEquals("detailed", m.name());
+        m.set("compact");
+        assertTrue(m.compact());
+        assertEquals("compact", m.name());
+        m.set("hidden");
+        assertTrue(m.hidden());
+        assertEquals("hidden", m.name());
+        m.set("detailed");
+        assertFalse(m.compact());
+        assertFalse(m.hidden());
+        assertEquals(java.util.Arrays.asList("detailed", "compact", "hidden"), PanelMode.NAMES);
+    }
 }

@@ -29,6 +29,20 @@ public final class PanelMode {
         return compact ? Arrays.copyOf(lines, Math.min(COMPACT_LINES, lines.length)) : lines;
     }
 
+    /** The modes by name, in the menu's order. */
+    public static final java.util.List<String> NAMES =
+            java.util.Collections.unmodifiableList(Arrays.asList("detailed", "compact", "hidden"));
+
+    public String name() {
+        return hidden ? "hidden" : compact ? "compact" : "detailed";
+    }
+
+    /** Sets the mode by one of {@link #NAMES}; anything else means detailed. */
+    public void set(String name) {
+        hidden = "hidden".equals(name);
+        compact = "compact".equals(name);
+    }
+
     public boolean compact() {
         return compact;
     }

@@ -64,7 +64,10 @@ class XrRuntime
 
     jobject       videoSurface();
     jobject       statsSurface();
+    // The menu's surface; null if its swapchain could not be created (the viewer then runs without a menu).
+    jobject       menuSurface();
     void          setLayerConfig(const LayerConfig& c);
+    void          setMenuVisible(bool visible);
     // Threads outside this runtime that sit on the video path; hinted as renderer workers on the
     // XR thread once the session runs (xrSetAndroidApplicationThreadKHR).
     void          setWorkerThreads(const std::vector<int>& tids);
@@ -121,8 +124,10 @@ class XrRuntime
     XrSpace               mViewSpace    = XR_NULL_HANDLE;
     XrSwapchain           mVideoChain   = XR_NULL_HANDLE;
     XrSwapchain           mStatsChain   = XR_NULL_HANDLE;
+    XrSwapchain           mMenuChain    = XR_NULL_HANDLE;
     jobject               mVideoSurface = nullptr;
     jobject               mStatsSurface = nullptr;
+    jobject               mMenuSurface  = nullptr;
     XrSessionState        mState        = XR_SESSION_STATE_UNKNOWN;
     bool                  mRunning      = false;
     bool                  mWaitFailing  = false;   // XR thread: xrWaitFrame is failing (log once, back off)

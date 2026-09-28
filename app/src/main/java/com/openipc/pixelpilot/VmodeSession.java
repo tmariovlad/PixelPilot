@@ -55,14 +55,22 @@ final class VmodeSession implements VmodeClient.Listener {
 
     /** A confirmed menu action. */
     void apply(PresetMenu.Action a) {
+        apply(a.mode, a.kbps, a.saveDefault);
+    }
+
+    /**
+     * A confirmed change: {@code mode} null and {@code kbps} 0 leave that axis alone; {@code saveDefault} saves the
+     * active choice as the air's default instead.
+     */
+    void apply(String mode, int kbps, boolean saveDefault) {
         if (catalog == null) return;
-        if (a.saveDefault) {
+        if (saveDefault) {
             send("save_default", VmodeProtocol::saveDefault);
             return;
         }
-        applyMode = a.mode;
-        applyKbps = a.kbps;
-        send("apply", seq -> VmodeProtocol.apply(seq, a.mode, a.kbps, REVERT_S));
+        applyMode = mode;
+        applyKbps = kbps;
+        send("apply", seq -> VmodeProtocol.apply(seq, mode, kbps, REVERT_S));
     }
 
     /** Once per stats tick: frames decoded since the last tick and the current video size. */

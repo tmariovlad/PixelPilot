@@ -21,10 +21,21 @@ import com.openipc.wfbngrtl8812.WfbNgLink;
 import com.openipc.xr.LayerLayout;
 import com.openipc.xr.DebugInput;
 import com.openipc.xr.PanelMode;
-import com.openipc.xr.PresetMenu;
+import com.openipc.xr.OptionCosts;
+import com.openipc.xr.PresetCatalog;
 import com.openipc.xr.RefreshWatch;
 import com.openipc.xr.SignalState;
 import com.openipc.xr.XrBridge;
+import com.openipc.xr.menu.ApplyClass;
+import com.openipc.xr.menu.MenuAction;
+import com.openipc.xr.menu.MenuItem;
+import com.openipc.xr.menu.MenuNavigator;
+import com.openipc.xr.menu.MenuRenderer;
+import com.openipc.xr.menu.OptionCostLabels;
+import com.openipc.xr.menu.PageSource;
+import com.openipc.xr.menu.StatsPages;
+import com.openipc.xr.stats.StatsSnapshot;
+import com.openipc.xr.stats.StatsSource;
 
 import java.util.Locale;
 
@@ -68,10 +79,27 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private boolean panelOverVideo;
     private final PanelMode panelMode = new PanelMode();   // controller-driven: detailed / compact / hidden. UI thread.        // the panel sits over the video while signal.needsAction(). UI thread.
     private volatile int videoW, videoH;
-    // Presets (docs/xr/presets-design.md): the thumbstick menu and the VMODE1 session with the air unit. UI thread.
-    private final PresetMenu presetMenu = new PresetMenu();
+    // The in-headset menu (docs/xr/menu-design.md), right thumbstick only, and the VMODE1 session with the air unit
+    // (docs/xr/presets-design.md) behind its Air lines. UI thread.
+    private static final long MENU_PERIOD_MS = 50;
     private VmodeClient vmodeClient;
     private VmodeSession vmode;
+    private PresetCatalog airCatalog;
+    private MenuNavigator menu;
+    private MenuRenderer menuText;
+    private XrMenuActions menuActions;
+    private XrMenuSurfaceRenderer menuSurface;
+    private boolean menuShown;
+    /** The Stats pages' data (session 36's sidecar/link model); EMPTY until it is attached. */
+    private volatile StatsSource statsSource;
+    private final Runnable menuTick = new Runnable() {
+        @Override
+        public void run() {
+            long now = android.os.SystemClock.elapsedRealtime();
+            handleInput(now);
+            if (menu != null && menu.isOpen()) ui.postDelayed(this, MENU_PERIOD_MS);
+        }
+    };
     // Debug builds: adb broadcasts that act like controller input (DebugInput), for scripted menu tests.
     private final android.content.BroadcastReceiver debugInput = new android.content.BroadcastReceiver() {
         @Override
@@ -96,15 +124,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             }
             XrStatsRenderer renderer = stats;
             long now = android.os.SystemClock.elapsedRealtime();
-            int events = xr != null ? xr.takeInputEvents() : 0;
-            panelMode.apply(presetMenu.passThrough(events));
-            boolean menuWasOpen = presetMenu.isOpen();
-            PresetMenu.Action action = presetMenu.update(events, now);
-            if (vmode != null) {
-                if (presetMenu.isOpen() && !menuWasOpen) vmode.ensureList();
-                if (action != null) vmode.apply(action);
-                vmode.tick(now, frames.length, videoW, videoH);
-            }
+            handleInput(now);
+            if (vmode != null) vmode.tick(now, frames.length, videoW, videoH);
             if (renderer != null) drawPanel(renderer, now);
             XrBridge bridge = xr;
             if (bridge != null && phase != null) {
@@ -140,6 +161,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             return;
         }
         stats = new XrStatsRenderer(xr.statsSurface());
+        startMenu();
         phase = new CompositorPhase(experiments.xrLatchToDisplayUs, experiments.xrPhaseReport);
 
         videoPlayer = new VideoPlayer(this);
@@ -213,6 +235,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         super.onPause();
         if (xr == null) return;
         ui.removeCallbacks(statsTick);
+        ui.removeCallbacks(menuTick);
         if (debugInputRegistered) {
             unregisterReceiver(debugInput);
             debugInputRegistered = false;
@@ -230,15 +253,96 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         String preset = vmode != null ? vmode.headline() : "";
         boolean presetFirst = !preset.isEmpty() && (vmode.switching() || !signal.needsAction());
         String[] lines = panelMode.select(statsLines());
-        if (presetMenu.isOpen()) {
-            String[] menu = presetMenu.lines(TelemetryLine.armed(telemetry, now - telemetryMs), now);
-            String[] all = new String[menu.length + lines.length];
-            System.arraycopy(menu, 0, all, 0, menu.length);
-            System.arraycopy(lines, 0, all, menu.length, lines.length);
-            lines = all;
-        }
         if (presetFirst) renderer.draw(preset, false, lines);
         else renderer.draw(signal.message(), signal.needsAction(), lines);
+    }
+
+    /** The menu layer: tree, values, costs, and what a confirmed line does (docs/xr/menu-design.md). */
+    private void startMenu() {
+        MenuItem tree = XrMenuTree.build();
+        XrMenuModel model = new XrMenuModel(() -> experiments, () -> airCatalog, panelMode::name);
+        menu = new MenuNavigator(tree, model);
+        MenuRenderer.CostLabels costs = item -> "";
+        try (java.io.InputStream in = getResources().openRawResource(com.openipc.xr.R.raw.option_costs)) {
+            byte[] json = new byte[in.available()];
+            int n = in.read(json);
+            costs = new OptionCostLabels(OptionCosts.parse(new String(json, 0, Math.max(n, 0), "UTF-8")),
+                    XrVideoActivity::costEntry);
+        } catch (java.io.IOException | RuntimeException e) {
+            Log.w(TAG, "menu cost table unavailable: " + e.getMessage());
+        }
+        PageSource pages = new StatsPages(() -> {
+            StatsSource src = statsSource;
+            return src != null ? src.snapshot() : StatsSnapshot.EMPTY;
+        });
+        menuText = new MenuRenderer(model, costs, pages);
+        menuActions = new XrMenuActions(new MenuEffects());
+        android.view.Surface s = xr.menuSurface();
+        menuSurface = s != null ? new XrMenuSurfaceRenderer(s) : null;
+    }
+
+    /** The cost-table entry of a menu line: a Quest lever by its pref key, an air line by its current value. */
+    private static String[] costEntry(MenuItem item) {
+        if (item.apply == ApplyClass.LIVE || item.apply == ApplyClass.RELAUNCH) return new String[]{"lever", item.id};
+        return null;
+    }
+
+    /** Input bits of one tick, for the stats panel's shortcuts and the menu; draws the menu while it is open. */
+    private void handleInput(long now) {
+        int events = xr != null ? xr.takeInputEvents() : 0;
+        panelMode.apply(events);
+        if (menu == null) return;
+        boolean wasOpen = menu.isOpen();
+        MenuAction action = menu.update(events, now);
+        if (menu.isOpen() && !wasOpen) {
+            if (vmode != null) vmode.ensureList();
+            ui.removeCallbacks(menuTick);
+            ui.postDelayed(menuTick, MENU_PERIOD_MS);
+        }
+        if (action != null) menuActions.run(action);
+        if (menu.isOpen() != menuShown && xr != null) {
+            menuShown = menu.isOpen();
+            xr.setMenuVisible(menuShown);
+        }
+        if (menuShown && menuSurface != null) menuSurface.draw(menuText.render(menu, now));
+    }
+
+    /** What a confirmed menu line does on this activity (XrMenuActions). */
+    private final class MenuEffects implements XrMenuActions.Effects {
+        private android.content.SharedPreferences.Editor edit() {
+            return getSharedPreferences("general", MODE_PRIVATE).edit();
+        }
+
+        @Override public void putBoolean(String k, boolean v) { edit().putBoolean(k, v).commit(); }
+        @Override public void putInt(String k, int v) { edit().putInt(k, v).commit(); }
+        @Override public void putFloat(String k, float v) { edit().putFloat(k, v).commit(); }
+        @Override public void putString(String k, String v) { edit().putString(k, v).commit(); }
+        @Override public void remove(String k) { edit().remove(k).commit(); }
+
+        @Override
+        public void applyLive() {
+            experiments = LatencyExperiments.load(XrVideoActivity.this);
+            if (videoPlayer != null) videoPlayer.setDecoderLevers(experiments);   // stream levers apply at the next packet
+            if (xr != null) applyLayout();
+        }
+
+        @Override
+        public void relaunch() {
+            Log.i(TAG, "menu: relaunching XR for a start-time lever");
+            ui.postDelayed(XrVideoActivity.this::recreate, 300);
+        }
+
+        @Override public void setPanelMode(String mode) { panelMode.set(mode); }
+
+        @Override
+        public void airApply(String mode, int kbps) {
+            if (vmode != null) vmode.apply(mode, kbps, false);
+        }
+
+        @Override
+        public void airSaveDefault() {
+            if (vmode != null) vmode.apply(null, 0, true);
+        }
     }
 
     /** Debuggable builds only; exported, because adb broadcasts come from the shell user. */
@@ -255,7 +359,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
 
     /** One VMODE1 client per XR activity; its callbacks are handed to the UI thread. */
     private void startPresets() {
-        vmode = new VmodeSession((verb, build) -> vmodeClient.request(verb, build), presetMenu::setCatalog);
+        vmode = new VmodeSession((verb, build) -> vmodeClient.request(verb, build), c -> airCatalog = c);
         vmodeClient = new VmodeClient(VmodeClient.target(getSharedPreferences("general", MODE_PRIVATE)
                 .getString(VmodeClient.PREF_TARGET, "")), new VmodeClient.Listener() {
             @Override
@@ -285,6 +389,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     protected void onDestroy() {
         destroying = true;
         ui.removeCallbacks(statsTick);
+        ui.removeCallbacks(menuTick);
+        menuSurface = null;
         if (vmodeClient != null) vmodeClient.close();
         vmodeClient = null;
         vmode = null;

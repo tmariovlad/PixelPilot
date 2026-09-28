@@ -77,12 +77,23 @@ public final class XrBridge {
         return handle == 0 ? null : (Surface) nativeStatsSurface(handle);
     }
 
+    /** The menu layer's surface (docs/xr/menu-design.md); null if the runtime has no menu swapchain. */
+    public Surface menuSurface() {
+        return handle == 0 ? null : (Surface) nativeMenuSurface(handle);
+    }
+
+    /** The menu layer is submitted only while visible. No-op after stop(). */
+    public void setMenuVisible(boolean visible) {
+        if (handle != 0) nativeSetMenuVisible(handle, visible);
+    }
+
     /** No-op after stop(): late callbacks from other threads may still arrive then. */
     public void setLayout(LayerLayout l) {
         if (handle == 0) return;
         float[] v = {l.videoWidthM, l.videoHeightM, l.videoZ, l.cylRadius, l.cylAngleRad, l.cylAspect,
                 l.statsWidthM, l.statsHeightM, l.statsY, l.statsZ, LayerLayout.STATS_IMAGE_W,
-                LayerLayout.STATS_IMAGE_H};
+                LayerLayout.STATS_IMAGE_H, l.menuWidthM, l.menuHeightM, l.menuX, l.menuY, l.menuZ, l.menuYawRad,
+                LayerLayout.MENU_IMAGE_W, LayerLayout.MENU_IMAGE_H};
         nativeSetLayout(handle, l.cylinder, l.flip, v, l.imageW, l.imageH);
     }
 
@@ -144,6 +155,8 @@ public final class XrBridge {
     private native String nativeError(long h);
     private native Object nativeVideoSurface(long h);
     private native Object nativeStatsSurface(long h);
+    private native Object nativeMenuSurface(long h);
+    private native void nativeSetMenuVisible(long h, boolean visible);
     private native void nativeSetLayout(long h, boolean cylinder, boolean flip, float[] values, int imageW, int imageH);
     private native float[] nativeInfo(long h);
     private native long[] nativeDisplayGrid(long h);

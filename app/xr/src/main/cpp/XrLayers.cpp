@@ -1,5 +1,7 @@
 #include "XrLayers.h"
 
+#include <cmath>
+
 namespace
 {
 XrPosef pose(float x, float y, float z)
@@ -7,6 +9,15 @@ XrPosef pose(float x, float y, float z)
     XrPosef p{};
     p.orientation.w = 1.f;
     p.position      = {x, y, z};
+    return p;
+}
+
+// Turned about the vertical axis, so a quad off to the side faces the eye.
+XrPosef poseYaw(float x, float y, float z, float yawRad)
+{
+    XrPosef p       = pose(x, y, z);
+    p.orientation.y = std::sin(yawRad / 2.f);
+    p.orientation.w = std::cos(yawRad / 2.f);
     return p;
 }
 
@@ -20,7 +31,7 @@ XrSwapchainSubImage subImage(XrSwapchain swapchain, int w, int h)
 }
 }  // namespace
 
-void XrLayers::build(const LayerConfig& c, XrSpace viewSpace, XrSwapchain video, XrSwapchain stats,
+void XrLayers::build(const LayerConfig& c, XrSpace viewSpace, XrSwapchain video, XrSwapchain stats, XrSwapchain menu,
                      bool imageLayoutEnabled, bool cylinderEnabled)
 {
     // Android surfaces arrive top-down; negative subImage heights no longer work on current Horizon OS
@@ -62,4 +73,17 @@ void XrLayers::build(const LayerConfig& c, XrSpace viewSpace, XrSwapchain video,
     mStatsQuad.size          = {c.statsWidthM, c.statsHeightM};
     mPtrs[1]                 = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&mStatsQuad);
     mCount                   = 2;
+
+    if (c.menuVisible && menu != XR_NULL_HANDLE)
+    {
+        mMenuQuad.next          = next;   // an Android surface, oriented like the stats panel
+        mMenuQuad.layerFlags    = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+        mMenuQuad.space         = viewSpace;
+        mMenuQuad.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
+        mMenuQuad.subImage      = subImage(menu, c.menuImageW, c.menuImageH);
+        mMenuQuad.pose          = poseYaw(c.menuX, c.menuY, c.menuZ, c.menuYawRad);
+        mMenuQuad.size          = {c.menuWidthM, c.menuHeightM};
+        mPtrs[2]                = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&mMenuQuad);
+        mCount                  = 3;
+    }
 }
