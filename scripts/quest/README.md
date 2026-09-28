@@ -176,7 +176,7 @@ applied live (no RTP restart).
 | `quality_shots.sh` | picture-quality stills without the headset: `adb screencap`, cropped to the left eye's video layer + stats overlay (link loss, fps, Mbit/s), with the Quest epoch per still |
 | `quest_tx_log.sh` | stream the Quest RTL's uplink injections (devourer `TX DESC`, one Quest epoch per frame) during a trace; `ab_link.py --quest-tx` turns it into TX/s per step (≈ 0 = adaptive link really off) |
 | `quest_thermal_log.sh` | sample the Quest's thermal status, CPU/SoC/battery temperatures and battery level every few seconds during a trace (read-only) |
-| `../quest-latch/ab_link.py` | link side of an in-trace A/B: air TX rate, pre-FEC loss, FEC repairs, loss after FEC, RSSI, air and Quest temperatures per step/state (needs the app's `ppxr_wfb_*` counters from `WfbStatsTrace`) |
+| `../quest-latch/ab_link.py` | link side of an in-trace A/B: air TX rate, pre-FEC loss, FEC repairs, loss after FEC, RSSI (best chain, plus RSSI / SNR per Quest receive chain in newer builds), air and Quest temperatures per step/state (needs the app's `ppxr_wfb_*` counters from `WfbStatsTrace`) |
 | `cpu_threads.py`, `cpu_ab_run.sh` | CPU per app thread over a window (`/proc/<pid>/task/*/stat`); one state of an app-build A/B (install APK, XR, CPU + decode + link) |
 | `blu.py` | Quest 2 backlight flash timing from the kernel panel dtsi numbers (`python3 blu.py 3664 14 7 1 120`) |
 | `build_wb_f8742fe.sh` | **OpenIPC project, not this repo:** rebuild waybeam f8742fe for the air unit (WSL) |

@@ -3,6 +3,9 @@ state, the radio and FEC picture plus temperatures, read in the same guarded ste
 
 - rx/s, fec_rec/s, wfb_lost/s, rssi: the app's 'ppxr_wfb_*' counters (one sample per ~300 ms wfb-ng stats interval,
   written by WfbStatsTrace). rx = packets received over the air, data + FEC parity; wfb_lost = still missing after FEC.
+- rssi A/B, snr A/B: the per-receive-chain counters 'ppxr_wfb_rssi_a/_b', 'ppxr_wfb_snr_a/_b' (app builds from
+  2026-09-28 on; '-' in older traces). RSSI in the adapter's raw units (1 unit = 1 dB), SNR converted to dB (raw
+  rxsnr is 0.5 dB units). They show which Quest antenna carries the signal; 'rssi' is the mapped best chain.
 - tx/s and pre-FEC loss: the air loop writes the cumulative wlan0 tx_packets on every step line
   ("<air epoch> <label> tx=<n> temp=<C>", END line too). tx/s = delta over the whole step on the air clock;
   pre_fec_loss = 1 - rx/s / tx/s. Anything else the air unit transmits on wlan0 counts as sent video, so this is an
@@ -23,7 +26,10 @@ from collections import OrderedDict
 
 from ab_segments import read_steps, step_window
 
-WFB_COUNTERS = ("ppxr_wfb_p_all", "ppxr_wfb_fec_rec", "ppxr_wfb_lost", "ppxr_wfb_rssi")
+# Levels (averages over the last second), not counts: a stale repeat of one is dropped, not zeroed.
+LEVEL_COUNTERS = ("ppxr_wfb_rssi", "ppxr_wfb_rssi_a", "ppxr_wfb_rssi_b", "ppxr_wfb_snr_a", "ppxr_wfb_snr_b")
+WFB_COUNTERS = ("ppxr_wfb_p_all", "ppxr_wfb_fec_rec", "ppxr_wfb_lost") + LEVEL_COUNTERS
+SNR_UNIT_DB = 0.5  # rxsnr in the RTL8812AU PHY status is s(8,1)
 
 
 def read_step_fields(path):
@@ -59,7 +65,8 @@ def tx_rates(fields):
 def drop_stale(counters, rtp_ts):
     """The app clears the wfb-ng counts only when its RX loop handles a video packet (WfbngLink.cpp, should_clear_stats),
     so while nothing arrives each ~300 ms poll repeats the last interval's counts. A sample with no RTP arrival since
-    the previous sample is such a repeat: its counts become 0 and its RSSI is dropped. rtp_ts: sorted arrival times."""
+    the previous sample is such a repeat: its counts become 0 and its levels (RSSI, SNR) are dropped.
+    rtp_ts: sorted arrival times."""
     from bisect import bisect_right
     out = {}
     for name, samples in counters.items():
@@ -68,7 +75,7 @@ def drop_stale(counters, rtp_ts):
             fresh = prev is None or bisect_right(rtp_ts, t) > bisect_right(rtp_ts, prev)
             if fresh:
                 fixed.append((t, v))
-            elif name != "ppxr_wfb_rssi":
+            elif name not in LEVEL_COUNTERS:
                 fixed.append((t, 0))
             prev = t
         out[name] = fixed
@@ -83,6 +90,10 @@ def window_stats(samples, a, b, per_second):
     return sum(vals) / ((b - a) / 1e9) if per_second else st.mean(vals)
 
 
+def scaled(v, k):
+    return None if v is None else v * k
+
+
 def per_step(counters, thermal, fields, steps, end, guard):
     """counters {name: [(trace_ns, v)]}; thermal [(trace_ns, row dict)]; fields/steps aligned by index.
     Returns [(i, label, row)]."""
@@ -95,6 +106,10 @@ def per_step(counters, thermal, fields, steps, end, guard):
             "fec_rec_per_s": window_stats(counters.get("ppxr_wfb_fec_rec", []), a, b, True),
             "wfb_lost_per_s": window_stats(counters.get("ppxr_wfb_lost", []), a, b, True),
             "rssi": window_stats(counters.get("ppxr_wfb_rssi", []), a, b, False),
+            "rssi_a": window_stats(counters.get("ppxr_wfb_rssi_a", []), a, b, False),
+            "rssi_b": window_stats(counters.get("ppxr_wfb_rssi_b", []), a, b, False),
+            "snr_a_db": scaled(window_stats(counters.get("ppxr_wfb_snr_a", []), a, b, False), SNR_UNIT_DB),
+            "snr_b_db": scaled(window_stats(counters.get("ppxr_wfb_snr_b", []), a, b, False), SNR_UNIT_DB),
             # Quest RTL uplink injections; 0 frames in the window is a real 0 when the log was recorded
             "quest_tx_per_s": ((window_stats(counters["quest_tx"], a, b, True) or 0.0)
                                if "quest_tx" in counters else None),
@@ -168,8 +183,8 @@ def main():
         print("no ppxr_wfb_* counters in the trace (app build without WfbStatsTrace?)")
     rows = per_step(counters, thermal, fields, steps, end, a.guard_s * 1e9)
     keys = ["tx_per_s", "rx_per_s", "pre_fec_loss_pct", "fec_rec_per_s", "wfb_lost_per_s", "rssi",
-            "quest_tx_per_s", "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt"]
-    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "Q tx/s", "air°C", "Q cpu°C", "Q st", "batt"]
+            "rssi_a", "rssi_b", "snr_a_db", "snr_b_db", "quest_tx_per_s", "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt"]
+    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "rssi A", "rssi B", "snrA dB", "snrB dB", "Q tx/s", "air°C", "Q cpu°C", "Q st", "batt"]
     def fmt(v):
         if v is None:
             return f"{'-':>9}"

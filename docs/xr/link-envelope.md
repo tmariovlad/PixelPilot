@@ -13,7 +13,7 @@ analysis); air-unit changes by openipc-…-3a. Runs at the resolution mode chose
 | What | Where | Source |
 |---|---|---|
 | capture → frame complete / decoded, spread, loss after FEC (lost/s, %), frames without a decoded mark | [ab_segments.py](../../scripts/quest-latch/ab_segments.py) | app RTP marks `ppxr_rtp_*`, `ppxr_frame_ready` |
-| packets received over the air (data + parity), FEC repairs, still lost after FEC, RSSI | [ab_link.py](../../scripts/quest-latch/ab_link.py) | app counters `ppxr_wfb_*` from [WfbStatsTrace.java](../../app/wfbngrtl8812/src/main/java/com/openipc/wfbngrtl8812/WfbStatsTrace.java) (one sample per ~300 ms wfb-ng stats poll) |
+| packets received over the air (data + parity), FEC repairs, still lost after FEC, RSSI (mapped best chain, plus raw RSSI / SNR per receive chain A/B from app builds after 2026-09-28) | [ab_link.py](../../scripts/quest-latch/ab_link.py) | app counters `ppxr_wfb_*` from [WfbStatsTrace.java](../../app/wfbngrtl8812/src/main/java/com/openipc/wfbngrtl8812/WfbStatsTrace.java) (one sample per ~300 ms wfb-ng stats poll) |
 | pre-FEC loss = 1 − Quest rx/s ÷ air tx/s | `ab_link.py` | air `tx=` (cumulative wlan0 tx_packets) on every step line; an upper bound, other wlan0 traffic counts as video [INFERRED] |
 | air SoC temperature | `ab_link.py` | air `temp=` on every step line |
 | Quest thermal status, CPU/SoC/battery °C, battery % | [quest_thermal_log.sh](../../scripts/quest/quest_thermal_log.sh) → `ab_link.py --thermal` | `dumpsys thermalservice`, `dumpsys battery` |
@@ -126,7 +126,7 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The RSSI column rises by 8.8, which is about +7 dB raw (the column is 1.25 × raw) and +88 alink score points [INFERRED: from the score mapping, see the policy section below].
   - Pre-FEC loss drops from 5.4 % to 3.3 % and FEC repairs from 12.8/s to 7.0/s. Loss after FEC goes from 0.18 % to 0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
-- **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. The app cannot yet tell which Quest chain carries the signal, because it exports only the best-chain RSSI. The per-chain RSSI/SNR patch follows.
+- **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
 **How far the bitrate can go: bitrate × MCS bracket at 1080p90 native, 12 dBm (2026-09-28 11:25–11:40, the user's "at least 25 Mbit", plan §4 of [plan-2026-09-28-presets-quality-power-axis.md](plan-2026-09-28-presets-quality-power-axis.md)).**
 - **Method.**

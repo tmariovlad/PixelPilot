@@ -92,6 +92,31 @@ def test_drop_stale_zeroes_polls_with_no_rtp_since_the_previous_poll():
     assert len(out["ppxr_wfb_rssi"]) == 4
 
 
+def test_per_chain_levels_per_step_snr_in_db_and_stale_dropped():
+    from ab_link import drop_stale
+    steps = [(0.0, "S1"), (12 * S, "S0")]
+    polls = [0.3 * k * S for k in range(0, 80)]  # 0 .. 23.7 s
+    chain = lambda a, b: [(t, a if t < 12 * S else b) for t in polls]
+    counters = {"ppxr_wfb_p_all": [(t, 40) for t in polls],
+                "ppxr_wfb_rssi_a": chain(56, 48), "ppxr_wfb_rssi_b": chain(41, 47),
+                "ppxr_wfb_snr_a": chain(40, 22), "ppxr_wfb_snr_b": chain(18, 20)}
+    # the link dies at 20 s: later polls repeat the last values and must not count
+    rtp = [x * 0.01 * S for x in range(0, 2000)]
+    out = drop_stale(counters, rtp)
+    assert all(t <= 20.1 * S for t, _ in out["ppxr_wfb_snr_a"])
+    rows = per_step(out, [], [{"t": 0.0}, {"t": 12.0}], steps, 24 * S, 2 * S)
+    r = {lab: row for _, lab, row in rows}
+    assert (r["S1"]["rssi_a"], r["S1"]["rssi_b"]) == (56, 41)
+    assert (r["S0"]["rssi_a"], r["S0"]["rssi_b"]) == (48, 47)
+    assert (r["S1"]["snr_a_db"], r["S1"]["snr_b_db"]) == (20.0, 9.0)
+    assert (r["S0"]["snr_a_db"], r["S0"]["snr_b_db"]) == (11.0, 10.0)
+
+
+def test_per_chain_levels_absent_in_old_traces():
+    rows = per_step({"ppxr_wfb_rssi": [(1 * S, 70)]}, [], [{"t": 0.0}], [(0.0, "A")], 12 * S, 0)
+    assert rows[0][2]["rssi_a"] is None and rows[0][2]["snr_b_db"] is None
+
+
 def test_quest_tx_rate_per_step_and_zero_when_off():
     steps = [(0.0, "on"), (12 * S, "off"), (24 * S, "on")]
     # 50 frames/s while "on" (0-12 s, 24-36 s), nothing while "off"
