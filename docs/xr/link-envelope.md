@@ -135,6 +135,10 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **This geometry is easier than W2's.** 12 dBm already gives RSSI 68.7, which W2 on the balcony saw only at 17 dBm. So here the extra power buys margin, not less loss. What that margin is worth at range comes from W2: on the balcony, 17 dBm against 12 dBm cut the loss after FEC from 3.5 % to 1.1 % (1080p90, phase 1).
 - **Quest battery was 36–39 %,** charging, close to the 30 % stop rule.
 - **Regulatory note** [INFERRED: CEPT ERC Rec 70-03 Annex 1, SRD 5725–5875 MHz, 25 mW e.i.r.p.; not checked against the current national decision]. Channel 157 (5785 MHz) is in that band, so above ~14 dBm e.i.r.p. the unit is over the SRD limit in CEPT countries. Which power to run is the user's decision. See also the OpenIPC power-axis design §8.6.
+- **User decision, 2026-09-28: the boot power stays at 12 dBm.** The technical recommendation was 20 dBm (no saturation, +8 dB margin). The user first chose 14 dBm, then chose 12 dBm after the e.i.r.p. note.
+  - `iw` sets the conducted power. With ~2–3 dBi of antenna gain, 14 dBm conducted would give ~16–17 dBm e.i.r.p., above the 25 mW (≈ 14 dBm) CEPT SRD limit [INFERRED: antenna gain not measured].
+  - Higher power will come only adaptively, from the receiver's power axis (O115), when the link needs it.
+  - Nothing was persisted: the air unit's boot default is unchanged (12 dBm).
 
 **Picture-quality stills at 2 / 4 / 8 Mbit/s (2026-09-27 21:28–21:35, build `b2249f15`, Quest on the balcony).**
 - **Method.** The user wanted to see the picture without the headset. [quality_shots.sh](../../scripts/quest/quality_shots.sh) takes an `adb screencap` of the compositor output (3664×1920, both eyes) and crops the left eye's video layer together with the stats overlay, so every still shows its own link loss, fps and Mbit/s. There are 3 stills per state, ~2–5 s apart.
