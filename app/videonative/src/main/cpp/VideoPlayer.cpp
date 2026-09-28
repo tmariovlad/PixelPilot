@@ -143,14 +143,21 @@ void VideoPlayer::processQueue()
 }
 
 // Per-packet arrival marks for a system trace (transport analysis: arrival time vs the RTP capture
-// clock, packet spread within a frame). No cost unless a trace is recording.
-static void traceRtpArrival(uint16_t sequence, uint32_t timestamp)
+// clock, packet spread within a frame), plus the payload type once per frame (96 H.264 / 97 H.265: which codec a
+// segment carried, e.g. around a live codec switch; rtp_seq.codec_segments). No cost unless a trace is recording.
+static void traceRtpArrival(uint16_t sequence, uint32_t timestamp, uint8_t payloadType)
 {
     if (__builtin_available(android 29, *))
     {
         if (!ATrace_isEnabled()) return;
         ATrace_setCounter("ppxr_rtp_seq", sequence);
         ATrace_setCounter("ppxr_rtp_ts", timestamp);
+        static uint32_t lastFrameTimestamp = 0;   // only the receive thread calls this
+        if (payloadType != RTP_PAYLOAD_TYPE_AUDIO && timestamp != lastFrameTimestamp)
+        {
+            lastFrameTimestamp = timestamp;
+            ATrace_setCounter("ppxr_rtp_pt", payloadType);
+        }
     }
 }
 
@@ -160,7 +167,7 @@ void VideoPlayer::onNewRTPData(const uint8_t* data, const std::size_t data_lengt
     // Parse the RTP packet
     const RTP::RTPPacket rtpPacket(data, data_length);
     uint16_t             idx = rtpPacket.header.getSequence();
-    traceRtpArrival(rtpPacket.header.getSequence(), rtpPacket.header.getTimestamp());
+    traceRtpArrival(rtpPacket.header.getSequence(), rtpPacket.header.getTimestamp(), rtpPacket.header.payload);
 
     // Define the callback based on payload type
     auto callback = [&](const uint8_t* packet_data, std::size_t packet_length)

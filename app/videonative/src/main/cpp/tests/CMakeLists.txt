@@ -80,3 +80,18 @@ add_executable(freeze_until_idr_test FreezeUntilIdr_test.cpp)
 target_include_directories(freeze_until_idr_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(freeze_until_idr_test GTest::gtest_main)
 gtest_discover_tests(freeze_until_idr_test)
+
+add_executable(codec_switch_test CodecSwitch_test.cpp)
+target_include_directories(codec_switch_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(codec_switch_test GTest::gtest_main)
+gtest_discover_tests(codec_switch_test)
+
+add_executable(h26x_parser_test H26XParser_test.cpp ../parser/H26XParser.cpp ../parser/ParseRTP.cpp)
+target_include_directories(h26x_parser_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(h26x_parser_test GTest::gtest_main)
+gtest_discover_tests(h26x_parser_test)
+
+add_executable(codec_switch_keyframes_test CodecSwitchKeyFrames_test.cpp)
+target_include_directories(codec_switch_keyframes_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(codec_switch_keyframes_test GTest::gtest_main)
+gtest_discover_tests(codec_switch_keyframes_test)

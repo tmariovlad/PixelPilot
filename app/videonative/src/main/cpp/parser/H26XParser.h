@@ -20,6 +20,7 @@
 #include "../NALU/NALU.hpp"
 
 #include "ParseRTP.h"
+#include "../CodecSwitch.h"
 
 //
 #include <list>
@@ -59,8 +60,9 @@ class H26XParser
 
     RTPDecoder mDecodeRTP;
 
-    int  maxFPS  = 0;
-    bool IS_H265 = false;
+    int         maxFPS  = 0;
+    bool        IS_H265 = false;
+    CodecSwitch mCodec;
     // First time a NALU was succesfully decoded
     // std::chrono::steady_clock::time_point timeFirstNALUArrived=std::chrono::steady_clock::time_point(0);
 };

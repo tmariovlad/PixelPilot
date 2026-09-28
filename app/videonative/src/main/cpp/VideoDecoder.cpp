@@ -89,11 +89,23 @@ void VideoDecoder::registerOnDecodingInfoChangedCallback(DECODING_INFO_CHANGED_C
 
 void VideoDecoder::interpretNALU(const NALU& nalu)
 {
-    // TODO: RN switching between h264 / h265 requires re-setting the surface
-    IS_H265             = nalu.IS_H265_PACKET;
-    decodingInfo.nCodec = IS_H265;
     // we need this lock, since the receiving/parsing/feeding does not run on the same thread who sets the input surface
     std::lock_guard<std::mutex> lock(mMutexInputPipe);
+    if (mCodec.changed(nalu.IS_H265_PACKET))
+    {
+        // The air switched H.264 <-> H.265 (RTP 96 <-> 97). A MediaCodec cannot change its MIME type: release both
+        // decoders and build new ones from the new codec's first key frames. The windows stay, so the decoder is
+        // re-created on the same surface (the XR swapchain), as the X23 rebuild does [docs/xr/decoder-levers.md].
+        // The saved SPS/PPS go too, also when nothing was configured yet: an H.264 SPS next to an H.265 VPS would
+        // otherwise look like a complete H.265 set.
+        MLOGD << "codec changed to " << (nalu.IS_H265_PACKET ? "H.265" : "H.264") << ", rebuilding the decoder";
+        releaseDecoder(0);
+        releaseDecoder(1);
+        mKeyFrameFinder.reset();
+        mAssembler.reset();
+    }
+    IS_H265             = nalu.IS_H265_PACKET;
+    decodingInfo.nCodec = IS_H265;
     decodingInfo.nNALU++;
     if (nalu.getSize() <= 4)
     {

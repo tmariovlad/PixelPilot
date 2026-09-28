@@ -82,3 +82,38 @@ Setup: OR-only defaults at the time, 12 s single-slice streams, N = 3 shuffled r
 - H.264 is 0.1–0.3 ms faster than H.265 at the same resolution. Going from 540p to 1080p adds 0.8–1.1 ms of decode [PROVEN].
 - **Multi-slice H.264** (x264 `--tune zerolatency` uses sliced threads) makes PixelPilot send each slice as its own "frame". Such a stream needs **whole access units** (`au_aggregation`) or a single-slice encoder setting. The OpenIPC air unit's majestic encoder is single-slice by default [SPECULATION: not checked on the air unit].
 - Decode is now ~1.5–2.5 ms. On Quest 2 the fixed display and compositor terms dominate G2G (up to 8.3 ms of refresh wait at 120 Hz plus the panel scan-out and backlight strobe). The next real gain can only be measured with the photodiode and the RTL8812AU.
+
+## Live H.264 ↔ H.265 switch without an app restart (2026-09-29, code; device check pending)
+
+**Before:** the decoder took its MIME type (`video/avc` / `video/hevc`) from the stream only when it was first configured. After an air-side codec switch it kept the old MediaCodec, and H.265 NALUs went into the H.264 decoder until the XR app was restarted. The old "TODO: switching between h264 / h265 requires re-setting the surface" in `VideoDecoder::interpretNALU` said the same [PROVEN: code before this change]. OpenIPC's `codec-h264-h265/00-H264-H265-timing.md` §3 says the Quest "needs NO restart … picks the decoder MIME packet by packet". That was wrong for the decoder: the parser followed the payload type per packet, but the MediaCodec did not.
+
+**Now:**
+- [CodecSwitch.h](../../app/videonative/src/main/cpp/CodecSwitch.h) reports the first NALU (or packet) of a different codec: RTP payload 96 = H.264, 97 = H.265. It never fires on the very first NALU.
+- The parser (`H26XParser::parse_rtp_stream`) drops the old codec's half-built NALU on a switch. Without this, the first H.265 fragment end completed the stale H.264 bytes into a NALU flagged H.265. An H.264 slice header `0x41` reads as H.265 type 32, a VPS [PROVEN: host test failed before the fix].
+- The decoder (`VideoDecoder::interpretNALU`) releases both MediaCodecs, forgets the saved SPS/PPS/VPS and the access-unit buffer, then configures the new codec from its first key frames. This also happens when nothing was configured yet, because an H.264 SPS/PPS next to an H.265 VPS looks like a complete H.265 set [PROVEN: host test].
+- The output windows stay, so the new decoder is created on the same surface, the XR swapchain. Release and re-create under the feed lock is the mechanism of the withdrawn X23 (c) rebuild. That rebuild ran on the headset through 4 live mode switches, with healthy decode after each and ~35 ms more than an in-place adaptation [PROVEN: [UX audit, final slot item 4](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27)].
+- The decoder summary line counts the switches: `| codec switch N (now H.265)`. Logcat has `codec changed to H.26x, rebuilding the decoder`.
+- The app writes `ppxr_rtp_pt`, the payload type once per frame, into a system trace. `transport_analyze.py` prints the codec runs of a segment (`rtp_seq.codec_segments`), so a trace proves which codec it carried.
+
+**Expected freeze** [INFERRED]: the air's waybeam restart (~3 s without frames, as for a mode switch) plus ~50–85 ms from the first new packet to the first decoded frame (item 4 above: 45–131 ms with a rebuild). The pilot sees about the same gap as for a mode switch.
+
+**Tests** (host, WSL 22.04): `CodecSwitch` 6, `CodecSwitchKeyFrames` 3 (models the reset order on the real `KeyFrameFinder`), `H26XParser` 3; all 89 videonative gtests pass. `:app:videonative` builds, including `libVideoNative.so`. The release/re-create itself only runs on the device.
+
+**Not covered:** a DVR recording across a switch. The MP4 writer is initialised once with the first codec (`VideoPlayer.cpp`, `mp4_h26x_write_init`), so the file breaks after a switch.
+
+### Measuring H.264 vs H.265 (slot plan, for the menu's "+X ms")
+
+The RTP timestamp base is random at every waybeam start (OpenIPC `00-H264-H265-timing.md` §2), and a codec switch is a waybeam restart. Capture → arrival therefore cannot be compared across a switch, not even inside one trace. The W3c per-segment method avoids it ([g2g-budget.md](g2g-budget.md#field-of-view-against-latency-480p167-vs-720p120-vs-1080p90-scaled-w3c-2026-09-27), [w3_budget.py](../../scripts/quest-latch/w3_budget.py)); the codec takes the place of the mode:
+
+| Term | Source | Per codec? |
+|---|---|---|
+| capture, readout, ISP | same sensor mode for both codecs | cancels |
+| encode, packetise + send (`s_air`) | air sidecar, per frame ([sidecar_log.py](../../scripts/quest-latch/sidecar_log.py)), 60 s per segment. `ready − capture` crosses clocks (RAW vs MONO), so only the **difference** within one air boot is valid | **yes** |
+| spread on the radio | Quest trace, `transport_analyze.py` "frame packet spread" | yes (bytes per frame, same bitrate) |
+| complete → decoded | Quest trace, `transport_analyze.py` "frame complete -> decoded frame ready"; MediaCodec part from logcat `Decoding:` in the segment output | **yes** (H.265 +0.1–0.3 ms on clean streams, table above) |
+| decoded → latch, panel | compositor | cancels |
+
+- **Order:** h264 → h265 → h265 → h264 (palindrome, N = 2) at one mode, all other air settings fixed, one air boot, O112 pin on. The encode was bimodal without the pin ([g2g-budget.md](g2g-budget.md)).
+- **One segment:** the air switches the codec and runs the sidecar for 60 s. On the Quest, `NO_RESTART=1 mode_segment.sh h265_a`. `NO_RESTART` keeps the app, so the segment measures the decoder rebuilt by the live switch, the one the pilot will use. The output shows `live switch: codec changed to H.265`, and the `codec:` line from the trace confirms the payload type.
+- **Budget:** `w3_budget.py air.tsv out/mode_h264_*.txt out/mode_h265_*.txt`. The air rows carry `mode = h264 / h265`, with the same `readout_ms`, `isp_lo`, `isp_hi` and `fov_h`/`fov_v` for both. The trade-off line then gives H.265's extra latency against H.264, the "+X ms" for the menu.
+- **Which modes:** at least Race 480p167. Also Wide 1080p90 → 848×480 if the menu shows the cost per mode, since H.265 decode grows with resolution (table above). First check that H.265 holds 167 fps on the air. OpenIPC lists a general VENC fps cap regardless of codec (`00-H264-H265-timing.md` §3), and Race runs above it only on the patched `mi_venc`.

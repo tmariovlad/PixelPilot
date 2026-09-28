@@ -17,6 +17,7 @@
 #include "AccessUnitAssembler.h"
 #include "DecoderLevers.h"
 #include "FrameTimeLog.h"
+#include "CodecSwitch.h"
 #include "DecoderRecovery.h"
 #include "NALU/KeyFrameFinder.hpp"
 #include "NALU/NALU.hpp"
@@ -117,7 +118,7 @@ class VideoDecoder
         if (mAuAggregationActive) s += " | " + auStatsSummary(mAssembler.stats());
         const auto tooBig = mInputTooBig.load(std::memory_order_relaxed);
         if (tooBig) s += " | too big " + std::to_string(tooBig);
-        return s + mRecovery.summary();
+        return s + mRecovery.summary() + mCodec.summary();
     }
 
     // If the decoder has been configured, feed NALU. Else search for configuration data and
@@ -163,6 +164,7 @@ class VideoDecoder
     std::atomic<uint64_t> mInputTooBig{0};
     std::atomic<int>      mOutputTid{0};  // kernel tid of the output-release thread (decoder 0)
     DecoderRecovery       mRecovery;     // rebuild decisions after decoder failures (audit X23)
+    CodecSwitch           mCodec;        // H.264 <-> H.265 switches of the incoming stream: rebuild the decoders
     FrameTimeLog          mFrameReady;    // decoder 0 output-release times, for the XR phase meter
     // Holds the AMediaCodec instance, as well as the state (configured or not configured)
     Decoder      decoder{};

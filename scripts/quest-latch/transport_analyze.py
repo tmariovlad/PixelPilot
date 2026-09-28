@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 from perfetto.trace_processor import TraceProcessor
 
-from rtp_seq import seq_loss
+from rtp_seq import codec_segments, seq_loss
 
 
 def pct(v, p):
@@ -52,6 +52,10 @@ def main(path):
         prev = ts
         frames.setdefault(base + ts, []).append(t)
     fr = [(k, v[0], v[-1], len(v)) for k, v in frames.items()]
+    # which codec the segment carried (ppxr_rtp_pt, one sample per frame; builds with live codec switching)
+    runs = codec_segments(cnt("ppxr_rtp_pt"))
+    if runs:
+        print("codec: " + ", ".join(f"{n} {k} frames ({(b - a) / 1e9:.1f} s)" for n, a, b, k in runs))
     print(f"{len(pkts)} packets / {len(fr)} frames in {span:.1f}s = {len(fr)/span:.1f} fps, {len(pkts)/len(fr):.2f} pkt/frame; "
           f"sequence gaps (lost before the app) = {gaps}, reordered = {reorders}")
     summ("frame packet spread (first -> last packet)", [f[2] - f[1] for f in fr if f[3] > 1])

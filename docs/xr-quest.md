@@ -149,7 +149,8 @@ The dated result sections that used to follow here were moved verbatim into topi
 
 - **[Decoder levers](xr/decoder-levers.md)**: [first on-device results](xr/decoder-levers.md#first-on-device-results-quest-2-2026-09-26-horizon-os-build-up1a231005007a1),
   [key isolation](xr/decoder-levers.md#which-low-latency-key-slows-the-quest-2-decoder-key-isolation-2026-09-26), [clean-stream recheck](xr/decoder-levers.md#clean-stream-recheck-ll-keys--operating-rate-is-fastest-2026-09-26),
-  [codec, component and resolution](xr/decoder-levers.md#codec-component-and-resolution-2026-09-26).
+  [codec, component and resolution](xr/decoder-levers.md#codec-component-and-resolution-2026-09-26),
+  [live H.264 ↔ H.265 switch without an app restart + codec measurement plan](xr/decoder-levers.md#live-h264--h265-switch-without-an-app-restart-2026-09-29-code-device-check-pending).
   On complete streams LL keys + max operating rate is fastest: 1.56 / 1.79 / 2.32 ms (H.264 720p / H.265 720p /
   H.265 1080p); the default OMX component beats `c2.qti.*` by about 1 ms. `xr_thread_hints` is inert on Quest 2.
   A light UDP stream over the Quest's own Wi-Fi loses packets to power save, so keep the radio busy in Wi-Fi tests.

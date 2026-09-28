@@ -1,6 +1,6 @@
 """Offline check of the RTP loss count (rtp_seq.py, used by transport_analyze.py and ab_segments.py).
 Run: python3 test_rtp_seq.py"""
-from rtp_seq import seq_loss
+from rtp_seq import codec_segments, seq_loss
 
 
 def test_in_order():
@@ -27,6 +27,17 @@ def test_reorder_across_wrap():
 
 def test_duplicate():
     assert seq_loss([5, 6, 6, 7]) == (0, 0)
+
+
+def test_codec_segments_names_each_run_of_one_payload_type():
+    # ppxr_rtp_pt, one sample per frame: H.264 (96), a live switch to H.265 (97), and back
+    samples = [(0, 96), (1, 96), (2, 97), (3, 97), (4, 97), (5, 96)]
+    assert codec_segments(samples) == [("H.264", 0, 1, 2), ("H.265", 2, 4, 3), ("H.264", 5, 5, 1)]
+
+
+def test_codec_segments_unknown_type_and_empty():
+    assert codec_segments([]) == []
+    assert codec_segments([(7, 33)]) == [("pt33", 7, 7, 1)]
 
 
 if __name__ == "__main__":
