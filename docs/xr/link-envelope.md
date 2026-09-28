@@ -291,7 +291,23 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
 - Pref `idr_min_interval_ms` (−1 = the 200 ms native default) sets a longer interval as a variant. Asked for by the coordinator: at ~96 % airtime, several IDRs per second could raise the bitrate and cause more holes (positive feedback), so the A/B also reads air drop and p95.
 - APK db7ff7a7 (with FIF).
 - **The request reaches the air through the tunnel** [PROVEN 2026-09-29 02:00, APK db7ff7a7, FIF + IDR on, the user walking]. The air's `/api/v1/idr/stats` (read by the coordinator) went from honoured 16 / dropped 6 to 27 / 10 in 10 s: ~1.1 IDRs/s honoured, 0.4/s coalesced by waybeam's own 100 ms `min_spacing`.
-  - Not measured yet: the picture (user verdict pending) and the positive-feedback risk (IDR bitrate spikes → more loss). The 2×2 at a fixed position with air drop and p95 settles that.
+  - Not measured yet: the positive-feedback risk (IDR bitrate spikes → more loss). The 2×2 at a fixed position with air drop and p95 settles that.
+
+**Headset session with the user, 2026-09-29 ~01:55–02:05** (subjective; the user wearing the headset and walking around the room, air 1080p90 30 Mbit/s m7 FEC 8/10 17 dBm, alink off; each variant = the user's own prefs plus the keys below, relaunch):
+
+| variant | prefs | user's verdict | evidence |
+|---|---|---|---|
+| upstream | (none) | the reference: stutter on every hole | measured: 82–84 fps at the fixed position |
+| FIF alone | `feed_incomplete_frames` | "sunt multe mânjeli" (many smears) | 10 stills: blocky smear over large areas, lost 3–16 per overlay interval |
+| FIF + IDR | + `request_idr_on_loss` | "mai bine, dispar mai repede mânjelile" (better, the smears clear faster) | air idr/stats +11 honoured / +4 coalesced in 10 s |
+| IDR alone (HD: air m12b20f48, then m7b16f48) | `request_idr_on_loss` | "even on HD I still see corruption now and then" | expected: the hole frame is dropped, the P frames after it decode against the last good frame until the IDR (~0.1–0.3 s) [INFERRED] |
+| IDR + freeze | + `freeze_until_idr` | *pending* (APK 0c012b37) | |
+
+**Lever `freeze_until_idr`** (pref, default false; "FRZ" in the summary; [FreezeUntilIdr.h](../../app/videonative/src/main/cpp/FreezeUntilIdr.h)):
+- After a lost packet, drop every non-key slice (H.264 types 1–4; H.265 VCL 0–9) until the next key slice (H.264 IDR 5; H.265 IRAP 16–21), or until a 1 s timeout. Parameter sets and SEI pass.
+- The picture holds on the last good frame instead of smearing. With `request_idr_on_loss` the hold should be ~0.1–0.3 s [SPECULATION until measured], like DJI's policy.
+- Trace counter `ppxr_frozen_slices`. Host tests `FreezeUntilIdr_test` (5 cases; the timeout mutant dies).
+
 
 ### Bitrate ceiling 2026-09-29 00:21–00:37: the air recorder, and FEC 8/10 up to 50 Mbit/s (1SS m7, 2SS m12/m13)
 

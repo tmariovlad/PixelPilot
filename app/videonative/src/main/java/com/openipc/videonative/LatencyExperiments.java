@@ -25,6 +25,8 @@ public final class LatencyExperiments {
     public static final String KEY_REQUEST_IDR_ON_LOSS = "request_idr_on_loss";
     /** Minimum time between key-frame requests; -1 = the native default (IdrRequestPolicy.h). */
     public static final String KEY_IDR_MIN_INTERVAL_MS = "idr_min_interval_ms";
+    /** After a lost packet, hold the last good frame until the next key frame; FreezeUntilIdr.h. */
+    public static final String KEY_FREEZE_UNTIL_IDR = "freeze_until_idr";
     /** Debug: bitmask over the individual decoder keys (DecoderLevers.h DecoderKey); -1 = all. */
     public static final String KEY_DEC_DEBUG_KEY_MASK = "dec_debug_key_mask";
     /** Debug: force a decoder component by name (e.g. "c2.qti.hevc.decoder"); "" = default. */
@@ -81,6 +83,7 @@ public final class LatencyExperiments {
     public final boolean feedIncompleteFrames;
     public final boolean requestIdrOnLoss;
     public final int idrMinIntervalMs;
+    public final boolean freezeUntilIdr;
     public final int decDebugKeyMask;
     public final String decComponent;
     public final int xrRefreshHz;
@@ -119,6 +122,9 @@ public final class LatencyExperiments {
         // Unmeasured: off.
         requestIdrOnLoss = p.getBoolean(KEY_REQUEST_IDR_ON_LOSS, false);
         idrMinIntervalMs = p.getInt(KEY_IDR_MIN_INTERVAL_MS, -1);
+        // With request_idr_on_loss the key frame comes within ~0.1-0.3 s; freezing until then trades that short hold
+        // for a picture without smears. Unmeasured: off.
+        freezeUntilIdr = p.getBoolean(KEY_FREEZE_UNTIL_IDR, false);
         decDebugKeyMask = p.getInt(KEY_DEC_DEBUG_KEY_MASK, -1);
         decComponent = p.getString(KEY_DEC_COMPONENT, "");
         xrRefreshHz = validRefresh(p.getInt(KEY_XR_REFRESH_HZ, DEFAULT_REFRESH_HZ));
@@ -222,6 +228,7 @@ public final class LatencyExperiments {
         if (!rtpTightReorder) dec.append("RQ20 ");
         if (feedIncompleteFrames) dec.append("FIF ");
         if (requestIdrOnLoss) dec.append("IDR ");
+        if (freezeUntilIdr) dec.append("FRZ ");
         String decoder = dec.length() == 0 ? "stock" : dec.toString().trim();
         StringBuilder xr = new StringBuilder();
         xr.append(xrRefreshHz).append("Hz ").append(xrLayerShape.prefValue());

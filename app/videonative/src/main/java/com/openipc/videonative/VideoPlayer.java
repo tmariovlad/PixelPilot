@@ -63,6 +63,8 @@ public class VideoPlayer implements IVideoParamsChanged {
     /** {@code minIntervalMs} <= 0 keeps the native default (IdrRequestPolicy.h). */
     public static native void nativeSetRequestIdrOnLoss(long nativeInstance, boolean request, int minIntervalMs);
 
+    public static native void nativeSetFreezeUntilIdr(long nativeInstance, boolean freeze);
+
     public static native String nativeGetDecoderSummary(long nativeInstance);
 
     public static native int[] nativeGetLatencyCriticalThreadIds(long nativeInstance);
@@ -153,6 +155,7 @@ public class VideoPlayer implements IVideoParamsChanged {
         nativeSetTightReorder(nativeVideoPlayer, e.rtpTightReorder);
         nativeSetFeedIncompleteFrames(nativeVideoPlayer, e.feedIncompleteFrames);
         nativeSetRequestIdrOnLoss(nativeVideoPlayer, e.requestIdrOnLoss, e.idrMinIntervalMs);
+        nativeSetFreezeUntilIdr(nativeVideoPlayer, e.freezeUntilIdr);
     }
 
     /** Kernel thread ids on the video latency path (receive/feed, output release); may be empty. */

@@ -6,6 +6,7 @@
 #include <android/native_window_jni.h>
 #include <jni.h>
 #include <atomic>
+#include <chrono>
 #include <fstream>
 #include "AndroidThreadPrioValues.hpp"
 #include "helper/NDKHelper.hpp"
@@ -24,12 +25,32 @@ static void traceIdrRequest(bool ok)
     }
 }
 
+static int64_t steadyNowMs()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+
+// Slices held back by FreezeUntilIdr so far, as a counter for a system trace.
+static void traceFrozen(uint32_t dropped)
+{
+    if (__builtin_available(android 29, *))
+    {
+        if (ATrace_isEnabled()) ATrace_setCounter("ppxr_frozen_slices", dropped);
+    }
+}
+
 VideoPlayer::VideoPlayer(JNIEnv* env, jobject context)
     : mParser{std::bind(&VideoPlayer::onNewNALU, this, std::placeholders::_1)}, videoDecoder(env)
 {
     env->GetJavaVM(&javaVm);
     mIdrRequester.setOnResult(traceIdrRequest);
-    mParser.setOnPacketLoss([this](int) { mIdrRequester.notifyLoss(); });
+    mParser.setOnPacketLoss(
+        [this](int)
+        {
+            mFreezeUntilIdr.onLoss(steadyNowMs());
+            mIdrRequester.notifyLoss();
+        });
     videoDecoder.registerOnDecoderRatioChangedCallback(
         [this](const VideoRatio ratio)
         {
@@ -167,6 +188,11 @@ void VideoPlayer::onNewRTPData(const uint8_t* data, const std::size_t data_lengt
 
 void VideoPlayer::onNewNALU(const NALU& nalu)
 {
+    if (nalu.getSize() > 4 && !mFreezeUntilIdr.admit(nalu.get_nal_unit_type(), nalu.IS_H265_PACKET, steadyNowMs()))
+    {
+        traceFrozen(mFreezeUntilIdr.dropped());
+        return;
+    }
     videoDecoder.interpretNALU(nalu);
     if (dvr_fd <= 0 || latestDecodingInfo.currentFPS <= 0)
     {
@@ -383,6 +409,13 @@ extern "C"
             }
             p->setDecoderLevers(l);
         }
+    }
+
+    JNI_METHOD(void, nativeSetFreezeUntilIdr)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean freeze)
+    {
+        VideoPlayer* p = native(nativeInstance);
+        if (p) p->setFreezeUntilIdr(freeze);
     }
 
     JNI_METHOD(void, nativeSetRequestIdrOnLoss)

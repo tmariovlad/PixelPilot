@@ -15,6 +15,7 @@
 #include "BufferedPacketQueue.h"
 #include "UdpReceiver.h"
 #include "UdsReceiver.h"
+#include "FreezeUntilIdr.h"
 #include "IdrRequester.h"
 #include "VideoDecoder.h"
 #include "minimp4.h"
@@ -65,6 +66,7 @@ class VideoPlayer
     }
 
     void setFeedIncompleteFrames(bool feed) { mParser.setFeedIncompleteFrames(feed); }
+    void setFreezeUntilIdr(bool freeze) { mFreezeUntilIdr.setEnabled(freeze); }
     void setRequestIdrOnLoss(bool request, int min_interval_ms)
     {
         mIdrRequester.setMinIntervalMs(min_interval_ms);
@@ -96,6 +98,7 @@ class VideoPlayer
     JavaVM*             javaVm = nullptr;
     // Declared before mParser: the parser's loss callback uses it, so it must outlive the parser.
     IdrRequester        mIdrRequester;
+    FreezeUntilIdr      mFreezeUntilIdr;
     H26XParser          mParser;
     // Video starts tight like LatencyExperiments' default and follows setTightReorder.
     BufferedPacketQueue mBufferedPacketQueueVideo{kTightReorderBounds};

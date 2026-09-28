@@ -75,3 +75,8 @@ add_executable(idr_request_test IdrRequest_test.cpp ../IdrRequester.cpp)
 target_include_directories(idr_request_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(idr_request_test GTest::gtest_main Threads::Threads)
 gtest_discover_tests(idr_request_test)
+
+add_executable(freeze_until_idr_test FreezeUntilIdr_test.cpp)
+target_include_directories(freeze_until_idr_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(freeze_until_idr_test GTest::gtest_main)
+gtest_discover_tests(freeze_until_idr_test)

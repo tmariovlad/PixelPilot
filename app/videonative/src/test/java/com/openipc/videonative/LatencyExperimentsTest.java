@@ -106,6 +106,17 @@ public class LatencyExperimentsTest {
                 new MapPrefs().put(LatencyExperiments.KEY_IDR_MIN_INTERVAL_MS, 1000)).idrMinIntervalMs);
     }
 
+    // Hold the last good frame from a loss to the next key frame (FreezeUntilIdr.h): off by default, "FRZ" when on.
+    @Test public void freezeUntilIdrIsOffByDefaultAndShowsWhenOn() {
+        assertFalse(LatencyExperiments.from(new MapPrefs()).freezeUntilIdr);
+        assertFalse(LatencyExperiments.from(new MapPrefs(), true).freezeUntilIdr);
+        LatencyExperiments on = LatencyExperiments.from(
+                new MapPrefs().put(LatencyExperiments.KEY_FREEZE_UNTIL_IDR, true));
+        assertTrue(on.freezeUntilIdr);
+        assertTrue(on.summary(), on.summary().contains("FRZ"));
+        assertFalse(LatencyExperiments.from(new MapPrefs()).summary().contains("FRZ"));
+    }
+
     @Test public void summaryListsOnlyEnabledLevers() {
         assertEquals("LL | 120Hz quad perf hints flip", LatencyExperiments.from(new MapPrefs()).summary());
         MapPrefs p = new MapPrefs().put(LatencyExperiments.KEY_LOW_LATENCY_DECODER, false)
