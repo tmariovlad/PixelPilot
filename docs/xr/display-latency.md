@@ -120,7 +120,7 @@ stopped; coordinator read-back at 1790582844).
 ### Slot O: ESP32/LDR on the lens (pending, needs the user)
 
 `scripts/quest/optical_step.sh backup|step|restore` switches the rate (and XR size 90°) through prefs with the headset
-untouched; 25-sample rig runs on COM5 per step (skill `/g2g-latency`), 72/90/120 × N=2 shuffled. This measures the
+untouched; 25-sample rig runs per step (skill `/g2g-latency`; rig port auto-detected by `find_rig_port.py`, never COM5 = the DPS-150), 72/90/120 × N=2 shuffled. This measures the
 effect (light), not the proxy (latch).
 
 ## 5. Open questions only the device can answer

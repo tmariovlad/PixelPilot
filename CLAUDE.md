@@ -19,6 +19,7 @@ home of all Quest work.
   - [docs/xr/compositor-phase.md](docs/xr/compositor-phase.md): compositor latch timing measured + phase-lock proof of concept.
   - [docs/xr/phase-lock-protocol.md](docs/xr/phase-lock-protocol.md): the PPXR1 report and the reference controller (contract for an air-side phase lock).
   - [docs/xr/display-latency.md](docs/xr/display-latency.md): decode → photon on Quest 2 (refresh rate 72/90/120, compositor latch, thermal drop, levers ranked; research reports + refresh bracket).
+  - [docs/xr/stats-backend.md](docs/xr/stats-backend.md): data behind the menu's Stats pages (per-segment latency via the waybeam RTP sidecar + clock sync, RX rate, RSSI dBm, loss).
   - [docs/xr/real-link.md](docs/xr/real-link.md): first real link (Quest 2 + RTL8812AU + OpenIPC air unit): setup, keys, link id, picture order.
   - [docs/xr/g2g-budget.md](docs/xr/g2g-budget.md): G2G budget per branch on the real link.
   - [docs/xr/station-mode.md](docs/xr/station-mode.md): APFPV through the RTL (devourer station mode): code, host build, go/no-go gate.

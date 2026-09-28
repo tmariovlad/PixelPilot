@@ -184,6 +184,11 @@ The dated result sections that used to follow here were moved verbatim into topi
   N = 2 each): APFPV through the Quest's own Wi-Fi has 0 vs 1–7 RTP losses, jitter p95 1.4–2.2 vs 9.0–12.8 ms, a frame on the air
   in ~0.13 vs ~7.8 ms (wfb MCS2). Boot default still wfb (range and higher wfb MCS untested); APFPV through the RTL needs devourer station mode
   ([station mode](xr/station-mode.md): the W0 hardware-ACK gate is GO; [scope](xr/research/2026-09-27-devourer-station-scope.md)).
+- **[Stats pages: data backend](xr/stats-backend.md)** (2026-09-29, built + host/JVM-tested, not yet on the headset): per-frame
+  latency by segment (encode, air send, link, decode, decoded → next predicted display as an estimate; sum = G2G est.
+  without sensor/panel) from waybeam's RTP sidecar matched by (ssrc, RTP ts) with the Quest's decoded frames, air↔Quest
+  clock by NTP-style SYNC (all sidecar clocks are CLOCK_MONOTONIC on the air's build); RX MCS/NSS/GI, RSSI dBm, SNR,
+  pre/post-FEC loss, IDR/freeze levers. Keywords: stats page, sidecar, rtp_ts, FrameTimeline, clock sync, MCS, RSSI.
 - **[Uplink and T4: what the adaptive-link pref turns on](xr/uplink-t4-analysis.md)** (2026-09-28, analysis, no
   code change): the pref adds 4 reports/s × FEC 3 + ≤ ~3 loss-driven "news" reports/s × 3 + 1 session key/s (~24 TX
   frames/s), and also sets the RTL's TX power. T4 counted TX frames with a **streaming** adb logcat over the Quest's
