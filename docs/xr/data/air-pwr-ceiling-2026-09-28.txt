@@ -1,0 +1,51 @@
+# Air TX power ceiling 2026-09-28 (O115 §12; user: "sa cresti pana la limita posibila hardware"). Air .132 race 480p167 2 Mbit,
+# MCS2 long GI, FEC 4/8, 20 MHz STBC1 LDPC1, alink stopped; only `iw dev wlan0 set txpower fixed` changes (up in <= 2 dB ramps).
+# Stop rules (1f, as O110 §2): DPS CC/protection, air >= 70 C, readback != request. None fired (max 44 C, protection OK).
+# Quest (pixelpilot-xr-25): run 1 = ab_pwr, runs 2+3 = ab_pwr2 (RSSI/SNR per chain in their analysis). Air-PC = -0.336 s.
+# NOTE run 2 stopped at 3050 on a false CEILING: `iw` reports whole dBm only (30.00) while the driver applied 30.50
+# (tx_power_idx shows 30.50, A idx 127). Run 3 compares whole dBm.
+# NOTE 3175 (31.75) was applied as 31 by the driver (tx_power_idx "31", same idx as 3100): effective driver max = 31 dBm.
+# TXAGC index rises exactly 4/dB: A 53@12 -> 127@30.5 (7-bit register max, saturated from 30.5 on); B = A - 9, 120@31.
+#
+# DPS-150 at 12.0 V, output current sampled mid-step (PC clock):
+#   12 dBm 0.422 A · 20 0.516 · 23 0.565 · 24 0.591 · 26 0.626 · 28 0.655 · 29 0.663 · 30 0.682 · 30.5 0.696 · 31 0.700 · "31.75"(=31) 0.697
+#
+## run 1 (/tmp/pceil_steps.log)
+PRE epoch=1790622861 txpower=12.00 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  temp=40
+SET 12 epoch=1790622861 readback=12.00 idx= A MCS2 1T 12 53(0x35) 69 ( -16 127 127 127) 0 0 0; A MCS7 1T 12 53(0x35) 69 ( -16 127 127 127) 0 0 0; B MCS2 1T 12 44(0x2c) 60 ( -16 127 127 127) 0 0 0; B MCS7 1T 12 44(0x2c) 60 ( -16 127 127 127) 0 0 0; temp=40
+STEP 12 epoch=1790622861 readback=12.00 temp=40
+SET 20 epoch=1790622922 readback=20.00 idx= A MCS2 1T 20 85(0x55) 69 ( 16 127 127 127) 0 0 0; A MCS7 1T 20 85(0x55) 69 ( 16 127 127 127) 0 0 0; B MCS2 1T 20 76(0x4c) 60 ( 16 127 127 127) 0 0 0; B MCS7 1T 20 76(0x4c) 60 ( 16 127 127 127) 0 0 0; temp=40
+STEP 20 epoch=1790622922 readback=20.00 temp=42
+SET 23 epoch=1790622983 readback=23.00 idx= A MCS2 1T 23 97(0x61) 69 ( 28 127 127 127) 0 0 0; A MCS7 1T 23 97(0x61) 69 ( 28 127 127 127) 0 0 0; B MCS2 1T 23 88(0x58) 60 ( 28 127 127 127) 0 0 0; B MCS7 1T 23 88(0x58) 60 ( 28 127 127 127) 0 0 0; temp=42
+STEP 23 epoch=1790622983 readback=23.00 temp=42
+SET 24 epoch=1790623043 readback=24.00 idx= A MCS2 1T 24 101(0x65) 69 ( 32 127 127 127) 0 0 0; A MCS7 1T 24 101(0x65) 69 ( 32 127 127 127) 0 0 0; B MCS2 1T 24 92(0x5c) 60 ( 32 127 127 127) 0 0 0; B MCS7 1T 24 92(0x5c) 60 ( 32 127 127 127) 0 0 0; temp=43
+STEP 24 epoch=1790623043 readback=24.00 temp=43
+SET 26 epoch=1790623103 readback=26.00 idx= A MCS2 1T 26 109(0x6d) 69 ( 40 127 127 127) 0 0 0; A MCS7 1T 26 109(0x6d) 69 ( 40 127 127 127) 0 0 0; B MCS2 1T 26 100(0x64) 60 ( 40 127 127 127) 0 0 0; B MCS7 1T 26 100(0x64) 60 ( 40 127 127 127) 0 0 0; temp=43
+STEP 26 epoch=1790623103 readback=26.00 temp=43
+SET 28 epoch=1790623164 readback=28.00 idx= A MCS2 1T 28 117(0x75) 69 ( 48 127 127 127) 0 0 0; A MCS7 1T 28 117(0x75) 69 ( 48 127 127 127) 0 0 0; B MCS2 1T 28 108(0x6c) 60 ( 48 127 127 127) 0 0 0; B MCS7 1T 28 108(0x6c) 60 ( 48 127 127 127) 0 0 0; temp=43
+STEP 28 epoch=1790623164 readback=28.00 temp=43
+SET 12 epoch=1790623224 readback=12.00 idx= A MCS2 1T 12 53(0x35) 69 ( -16 127 127 127) 0 0 0; A MCS7 1T 12 53(0x35) 69 ( -16 127 127 127) 0 0 0; B MCS2 1T 12 44(0x2c) 60 ( -16 127 127 127) 0 0 0; B MCS7 1T 12 44(0x2c) 60 ( -16 127 127 127) 0 0 0; temp=44
+STEP 12 epoch=1790623224 readback=12.00 temp=42
+END epoch=1790623284 txpower=12.00 temp=42
+## run 2 (/tmp/pceil2_steps.log)
+PRE epoch=1790623341 mBm=1200 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  temp=42
+SET 2800 epoch=1790623344 readback_mBm=2800 idx= A MCS2 1T 28 117(0x75) 69 ( 48 127 127 127) 0 0 0; B MCS2 1T 28 108(0x6c) 60 ( 48 127 127 127) 0 0 0; temp=40
+STEP 2800 epoch=1790623344 readback_mBm=2800 temp=43
+SET 2900 epoch=1790623404 readback_mBm=2900 idx= A MCS2 1T 29 121(0x79) 69 ( 52 127 127 127) 0 0 0; B MCS2 1T 29 112(0x70) 60 ( 52 127 127 127) 0 0 0; temp=43
+STEP 2900 epoch=1790623404 readback_mBm=2900 temp=44
+SET 3000 epoch=1790623465 readback_mBm=3000 idx= A MCS2 1T 30 125(0x7d) 69 ( 56 127 127 127) 0 0 0; B MCS2 1T 30 116(0x74) 60 ( 56 127 127 127) 0 0 0; temp=44
+STEP 3000 epoch=1790623465 readback_mBm=3000 temp=43
+SET 3050 epoch=1790623525 readback_mBm=3000 idx= A MCS2 1T 30.50 127(0x7f) 69 ( 58 127 127 127) 0 0 0; B MCS2 1T 30.50 118(0x76) 60 ( 58 127 127 127) 0 0 0; temp=44
+CEILING readback 3000 != request 3050
+END epoch=1790623525 mBm=1200 temp=43
+## run 3 (/tmp/pceil3_steps.log)
+PRE epoch=1790623591 mBm=1200 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  temp=42
+SET 3050 epoch=1790623594 readback_mBm=3000 idx= A MCS2 1T 30.50 127(0x7f) 69 ( 58 127 127 127) 0 0 0; B MCS2 1T 30.50 118(0x76) 60 ( 58 127 127 127) 0 0 0; temp=42
+STEP 3050 epoch=1790623594 readback_mBm=3000 temp=43
+SET 3100 epoch=1790623655 readback_mBm=3100 idx= A MCS2 1T 31 127(0x7f) 69 ( 60 127 127 127) 0 0 0; B MCS2 1T 31 120(0x78) 60 ( 60 127 127 127) 0 0 0; temp=44
+STEP 3100 epoch=1790623655 readback_mBm=3100 temp=44
+SET 3175 epoch=1790623715 readback_mBm=3100 idx= A MCS2 1T 31 127(0x7f) 69 ( 60 127 127 127) 0 0 0; B MCS2 1T 31 120(0x78) 60 ( 60 127 127 127) 0 0 0; temp=44
+STEP 3175 epoch=1790623715 readback_mBm=3100 temp=44
+SET 1200 epoch=1790623776 readback_mBm=1200 idx= A MCS2 1T 12 53(0x35) 69 ( -16 127 127 127) 0 0 0; B MCS2 1T 12 44(0x2c) 60 ( -16 127 127 127) 0 0 0; temp=44
+STEP 1200 epoch=1790623776 readback_mBm=1200 temp=42
+END epoch=1790623836 mBm=1200 temp=42
