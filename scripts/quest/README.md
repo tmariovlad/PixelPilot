@@ -183,6 +183,7 @@ applied live (no RTP restart).
 | `test_quest_env.py` | offline checks of `quest_env.py` |
 | `mavlink_fake.py` | synthetic MAVLink v1 telemetry (HEARTBEAT armed, SYS_STATUS, GPS_RAW_INT, GLOBAL_POSITION_INT) to the Quest's UDP 14550, to check the XR telemetry line when the air unit sends none; offline test `test_mavlink_fake.py` |
 | `vmode_fake.py` | a stand-in for the air unit's VMODE1 preset receiver (list / apply / commit / save_default, 1 Hz state beacon, revert timer; `--switch-s`, `--fail <mode>`, `--busy`), to run the headset's preset menu without the air side; point the app at it with the pref `vmode_air` = `<PC IP>:9998` ([design](../../docs/xr/presets-design.md)); offline test `test_vmode_fake.py` |
+| `physical_step.sh` | monitor for hands-on checks with the user (buttons, menu, RTL replug): `start <label>` pauses the Guardian and starts a logcat of the app tags + activity/USB events, `<step>` takes a screenshot and prints the log since the last step, `stop` restores the Guardian |
 | `preset_flow.py` | scripted preset run on the headset against `vmode_fake.py` (menu driven by the debug broadcast `com.openipc.pixelpilot.xr.DEBUG_INPUT`): screenshots per stage, commit or `--fail` revert, prefs restored |
 | `test_quest_adb.py` | offline checks of `quest_adb.write_prefs` (read-back after every prefs write; adb faked) |
 

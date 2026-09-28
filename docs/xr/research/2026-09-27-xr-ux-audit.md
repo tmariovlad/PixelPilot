@@ -27,11 +27,11 @@ Excluded on purpose, because they are already known and handled:
 | 2 readable panel | X11 | `8d7728e`, `487832b` | verified |
 | 5 per-launch leaks | X21 | `8d7728e` | weak evidence (N=2) |
 | key validation | X24 | `8d7728e` | verified (32-byte key → SETUP, no crash) |
-| 4 link self-healing, USB attach/permission | X17, X14 (part X15) | `c27f8aa` (Java), `ac740e0` (native guard) | not yet |
+| 4 link self-healing, USB attach/permission | X17, X14 (part X15) | `c27f8aa` (Java), `ac740e0` (native guard) | link restarts by itself after a replug, 3/3 ([hands-on checks](#hands-on-checks-with-the-user-2026-09-28)); no permission dialog appeared |
 | 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2`, home fix `11cb1a7` | telemetry line verified with synthetic MAVLink; 2D↔XR restart weakly; home fix verified in the [final slot](#final-slot-on-the-headset-2026-09-27) |
-| X15 attach pulls XR to 2D | X15 | open: needs a physical replug to confirm before the manifest trampoline | - |
+| X15 attach pulls XR to 2D | X15 | **confirmed 3/3** on the headset; the manifest trampoline is next | the pilot stayed in 2D after the 2nd replug ([hands-on checks](#hands-on-checks-with-the-user-2026-09-28)) |
 | XR start errors visible, levers re-applied, bandwidth fallback, loop back-off | X13, X04, X27, X25 | `a8b35de` | not yet |
-| minimal input in XR (panel detail / hide) | X01 | `3a37a88` | not yet |
+| minimal input in XR (panel detail / hide) | X01 | `3a37a88` | A and B verified on the headset; X/Y share the bindings, not pressed ([hands-on checks](#hands-on-checks-with-the-user-2026-09-28)) |
 | VPN null establish() / bind leak | X26 | fixed by session 2c6ae8 ("survives a null establish()") | - |
 | decoder rebuilds after failures (a, b); ~~and on SPS change (c)~~ | X23 | `c0f41f2`; (c) withdrawn in `501094a` | (c) measured slower on a live mode switch and removed ([final slot](#final-slot-on-the-headset-2026-09-27)); (a, b) not triggered on the headset yet |
 | open | X18 (autostart during OS dialogs) | - | - |
@@ -57,6 +57,50 @@ APK files on PC-VLAD (gitignored; a rebuild from git gives another md5): `7b8baa
    - From 18:16 to 22:34, `quest_adb.write_prefs` did not replace `general.xml` on the Quest. The atomic write of `ff19253` chained `&& mv` inside one `adb exec-in`, and only the `cat` ran in run-as (found by the 2c6ae8 session, fixed in `3cb6ea1`; see [troubleshooting](../troubleshooting.md)).
    - Both build A/Bs above (`pref_ab.sh`, 18:36 and ~19:05) wrote prefs in that window. Every step asked for the prefs that were already on the headset: `gs.key`, `od_enabled` false, `adaptive_link_enabled` true [PROVEN: `run-as … cat shared_prefs/general.xml` before each run]. So the read-back matched and the prefs in effect were the intended ones.
    - Only the APK changed between steps, and `adb install` was not affected. The results stand [INFERRED: from the two facts above].
+
+### Hands-on checks with the user (2026-09-28)
+
+03:32–03:46. Build `c31ddd0f` (`672aaa6`), headset on the table, the user on the controller and the RTL adapter; the
+coordinator relayed each step. The monitor was [physical_step.sh](../../../scripts/quest/physical_step.sh): logcat of the
+app tags plus `ActivityTaskManager` and `UsbHostManager`, and screenshots. Data: [filtered log](../data/2026-09-28-physical-x15.txt).
+
+1. **X01, A and B** [PROVEN: [screenshots](../img/w5-buttons.jpg)]:
+   - one A: detailed (7 lines) → compact (link / telemetry / video);
+   - one B: the panel hides, the video keeps running;
+   - a second B: the panel comes back, still compact.
+
+   X and Y are bound to the same actions in `XrInput.cpp` and were not pressed.
+2. **Preset menu** [PROVEN: [screenshot](../img/w5-menu-open.jpg), 03:36:47]: a thumbstick flick opens the menu. It
+   shows `PRESETS  no list from the air unit yet`, which is right while the air runs no `vmoded`.
+   - After the flick → flick → B sequence the menu was closed and the panel still visible. So B was taken by the menu
+     and did not hide the panel [INFERRED: the moment of closing was not caught, and the 6 s idle close cannot be ruled
+     out for it].
+   - The strict B-closes-the-menu proof waits for the test with the real `vmoded`.
+3. **RTL unplug 10 s + replug, N = 2, plus one unplanned replug** (the user put the Quest on its charger at 03:41:28,
+   which moved the cable) [PROVEN: log + [replug 1](../img/x15-replug-1.jpg) / [replug 2](../img/x15-replug-2.jpg)]:
+
+   | | Replug 1 (03:38:01) | Replug 2 (03:39:54) | Unplanned (03:41:31) |
+   |---|---|---|---|
+   | detach | `NO ADAPTER - plug in the RTL8812AU` (red), link thread stopped cleanly | same | - |
+   | attach: XR's link | restarted at once (`c27f8aa`) | restarted at once | restarted at once |
+   | X15: `START VideoActivity` from `USB_DEVICE_ATTACHED` | yes, ×2 | yes, ×2 | yes, ×2 |
+   | back in XR? | yes: VideoActivity was new, and its XR autostart relaunched XR 0.5 s later | **no**: VideoActivity already existed (onNewIntent, no autostart). Horizon's placeholder stayed in front with the 2D panel visible | yes (VideoActivity was new again) |
+   | second link on the same adapter | yes: 2× `did not stop within 3000ms`, `adapter still in use after 10000 ms` | yes: `adapter still in use after 10000 ms` | yes: 2× `did not stop`, `still in use` |
+   | picture back | 03:38:12, ~11 s after the attach | the link ran, but the pilot was in 2D | yes |
+
+   - **X15 is real and worse than a flicker.** On a replug the system starts the 2D `VideoActivity` (it owns the
+     `USB_DEVICE_ATTACHED` filter).
+   - The first time, its autostart bounces back to XR. After that the instance is kept (singleInstance), so a later
+     replug leaves the pilot in 2D. That matches the audit's prediction for X15 and X03.
+   - Each time, the 2D activity also starts its own link on the adapter XR is already using. Most of the ~11 s to
+     picture is probably that fight plus the XR session cycling (`video detached`/`attached`) [INFERRED from the log order].
+   - **Self-healing works:** XR's link restarted on every attach with no dialog [PROVEN].
+4. **Restore:** force-stop, then a clean XR start (03:45:50). Result: one link start, no `still in use`, 167 fps with 0
+   lost, no VideoActivity instance, Guardian restored.
+
+**Next:** the X15 trampoline (Fix 4, optional part), now justified. `USB_DEVICE_ATTACHED` moves to a no-display activity.
+It finishes at once when XR is in front, since XR's receiver already restarts the link; otherwise it opens
+`VideoActivity`. That also removes the second link start.
 
 ## 0. Findings at a glance (ranked; details below)
 

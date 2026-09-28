@@ -128,7 +128,9 @@ For the user:
 2. **Air-unit supply.** Say what powers `.132` now and connect the DPS-150 for metering before anyone uses more than
    17 dBm.
 3. **Physical checks that were blocked:** link self-healing and X15 (plugging the adapter in during XR), both needing an
-   RTL replug; controller buttons A/X/B/Y; the slot-3 visual check.
+   RTL replug; controller buttons A/X/B/Y; the slot-3 visual check. **Done 2026-09-28** (except the slot-3 visual check):
+   A/B work, the link heals itself 3/3, and X15 is confirmed 3/3, with the pilot left in 2D on the 2nd replug
+   ([hands-on checks](research/2026-09-27-xr-ux-audit.md#hands-on-checks-with-the-user-2026-09-28)).
 4. **Decision on O112 P4** (pinning the ISP/encoder threads on the air unit, estimated −1…−2 ms). The read-only part
    runs first.
 5. **Optional:** a photodiode G2G on the Quest to check the absolute number (±2.6 ms).

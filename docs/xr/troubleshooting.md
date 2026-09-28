@@ -66,6 +66,19 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   `.VideoActivity` [PROVEN: [app/src/main/AndroidManifest.xml](../../app/src/main/AndroidManifest.xml) lines 52-72; the
   debug build only adds `applicationIdSuffix ".xr"`]. Start the XR mode from **Video → Launch XR (Quest)** in the app
   you want.
+- **Replugging the RTL while in XR pulls the pilot into 2D (X15, confirmed 2026-09-28, 3/3 replugs).**
+  - What happens:
+    - The system starts the 2D `VideoActivity` for `USB_DEVICE_ATTACHED`.
+    - On the first replug its XR autostart bounces back within 0.5 s. The instance then stays alive (singleInstance),
+      so on the next replug it only gets the intent, and the pilot stays in 2D (Horizon's placeholder in front, the
+      2D panel visible).
+    - Each time, the 2D activity also starts its own link on the adapter XR already uses (`did not stop within
+      3000ms`, `adapter still in use after 10000 ms`). The picture came back only ~11 s after the attach.
+  - XR's own link heals itself on every attach, with no permission dialog.
+  - Workaround until the fix: after a replug, relaunch PixelPilotXr from the Library, or force-stop it and start it
+    again.
+  - Details and data: [audit, hands-on checks](research/2026-09-27-xr-ux-audit.md#hands-on-checks-with-the-user-2026-09-28).
+    Fix: an attach trampoline that stays out of the way while XR runs.
 - **No video from a real OpenIPC air unit** (air unit in APFPV instead of wfb, `drone.key`/`gs.key` pair, link id 0
   vs 7669206): see [First real link](real-link.md#first-real-link-quest-2--rtl8812au--openipc-air-unit-2026-09-26),
   steps 1-3.
