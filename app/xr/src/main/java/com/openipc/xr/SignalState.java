@@ -18,6 +18,9 @@ import java.util.Locale;
  *       {@link #RECOVERY_FRAMES} fresh frames, so the alert does not flicker at the edge of range.</li>
  *   <li>Without frames, the cause is named in priority order: no adapter, no wfb packets, packets that do not
  *       decrypt (wrong key), no frame yet since the video was attached, otherwise a stall.</li>
+ *   <li>Wrong key only after every packet has failed to decrypt for {@link #WRONG_KEY_NS}: a wrong key never
+ *       recovers, while one all-failing stats window right after an RTL replug did (2026-09-28, cause still open;
+ *       the native DecErrProbe logs it). Before that the stall is named as for any other missing video.</li>
  *   <li>"No packets" is read from the wfb-ng stats as they come: a window with {@code packets == 0}, or no stats for
  *       {@link #STATS_STALE_NS}. The native side owns the dead-link signal (it reports empty windows); this class
  *       does not guess it from repeated counters. Until the native side does that, a dead link shows as a stall.</li>
@@ -45,11 +48,14 @@ public final class SignalState {
     public static final int RECOVERY_FRAMES = 5;
     /** Stats older than this mean the link thread stopped reporting. */
     public static final long STATS_STALE_NS = 1_500_000_000L;
+    /** Packets must fail to decrypt this long, with none decrypting, before the key is blamed. */
+    public static final long WRONG_KEY_NS = 2_000_000_000L;
 
     private Kind kind = Kind.WAITING_FOR_VIDEO;
     private long attachNs;
     private long lastFrameNs;          // 0 = no frame since attach
     private int recoveryFrames;
+    private long allFailSinceNs = -1;  // every packet failing to decrypt since then; -1 = not now
     private boolean recovering;
     private String configError;        // non-null: the link cannot start at all (e.g. an invalid gs.key)
     private String message = message(Kind.WAITING_FOR_VIDEO, 0);
@@ -67,6 +73,7 @@ public final class SignalState {
         attachNs = nowNs;
         lastFrameNs = 0;
         recoveryFrames = 0;
+        allFailSinceNs = -1;
         recovering = false;
         kind = Kind.WAITING_FOR_VIDEO;
         message = message(kind, 0);
@@ -90,6 +97,9 @@ public final class SignalState {
             if (t > newest) newest = t;
         }
         lastFrameNs = newest;
+        boolean allFail = statsAgeNs <= STATS_STALE_NS && link.packets > 0 && link.decErr > 0 && link.decOk == 0;
+        if (!allFail) allFailSinceNs = -1;
+        else if (allFailSinceNs < 0) allFailSinceNs = nowNs;
 
         long stallNs = Math.max(MIN_STALL_NS, STALL_FRAMES * Math.max(0, framePeriodNs));
         boolean fresh = lastFrameNs != 0 && nowNs - lastFrameNs <= stallNs;
@@ -98,7 +108,7 @@ public final class SignalState {
             recoveryFrames = 0;
         } else if (!fresh) {
             recoveryFrames = 0;
-            kind = cause(adapterPresent, link, statsAgeNs);
+            kind = cause(nowNs, adapterPresent, link, statsAgeNs);
         }
         // fresh but still recovering: keep the previous non-OK kind until enough frames arrived
         recovering = fresh && kind != Kind.OK;
@@ -108,12 +118,12 @@ public final class SignalState {
         return kind;
     }
 
-    private Kind cause(boolean adapterPresent, Link link, long statsAgeNs) {
+    private Kind cause(long nowNs, boolean adapterPresent, Link link, long statsAgeNs) {
         if (configError != null) return Kind.CONFIG_ERROR;
         if (!adapterPresent) return Kind.NO_ADAPTER;
         boolean packets = statsAgeNs <= STATS_STALE_NS && link.packets > 0;
         if (!packets) return Kind.NO_PACKETS;
-        if (link.decErr > 0 && link.decOk == 0) return Kind.WRONG_KEY;
+        if (allFailSinceNs >= 0 && nowNs - allFailSinceNs >= WRONG_KEY_NS) return Kind.WRONG_KEY;
         return lastFrameNs == 0 ? Kind.WAITING_FOR_VIDEO : Kind.VIDEO_STALLED;
     }
 

@@ -99,9 +99,37 @@ public class SignalStateTest {
         assertEquals(Kind.NO_PACKETS, s.update(now, NONE, P, true, GOOD, 5_000 * MS));
     }
 
-    @Test public void packetsThatNeverDecryptAreAWrongKey() {
-        assertEquals(Kind.WRONG_KEY, advance(NONE, true, new Link(1200, 0, 30)));
+    private static final Link ALL_FAIL = new Link(145, 0, 145);   // as seen after an RTL replug, 2026-09-28
+
+    @Test public void packetsThatKeepFailingToDecryptAreAWrongKey() {
+        advance(null, true, GOOD);
+        Kind k = Kind.OK;
+        for (long t = 0; t <= SignalState.WRONG_KEY_NS + TICK; t += TICK) k = advance(NONE, true, ALL_FAIL);
+        assertEquals(Kind.WRONG_KEY, k);
         assertTrue(s.message().startsWith("WRONG KEY"));
+    }
+
+    @Test public void aWrongKeyFromTheStartIsNamedToo() {
+        Kind k = Kind.OK;
+        for (long t = 0; t <= SignalState.WRONG_KEY_NS + TICK; t += TICK) k = advance(NONE, true, ALL_FAIL);
+        assertEquals(Kind.WRONG_KEY, k);
+    }
+
+    @Test public void aShortAllFailingSpellIsNotAWrongKey() {
+        // the replug case: ~1 s of windows where every packet fails, then the video comes back
+        advance(null, true, GOOD);
+        for (int i = 0; i < 4; i++) assertNotEquals(Kind.WRONG_KEY, advance(NONE, true, ALL_FAIL));
+        assertEquals(Kind.VIDEO_STALLED, s.kind());
+        advance(null, true, GOOD);
+        for (int i = 0; i < 6; i++) advance(null, true, GOOD);
+        assertEquals(Kind.OK, s.kind());
+    }
+
+    @Test public void aGoodWindowRestartsTheWrongKeyClock() {
+        advance(null, true, GOOD);
+        for (int i = 0; i < 6; i++) advance(NONE, true, ALL_FAIL);     // 1.5 s
+        advance(NONE, true, new Link(100, 3, 97));                      // some packets decrypt
+        for (int i = 0; i < 6; i++) assertNotEquals(Kind.WRONG_KEY, advance(NONE, true, ALL_FAIL));
     }
 
     @Test public void noAdapterTakesPriorityWhenNoFramesArrive() {

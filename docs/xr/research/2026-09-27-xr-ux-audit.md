@@ -109,9 +109,27 @@ app tags plus `ActivityTaskManager` and `UsbHostManager`, and screenshots. Data:
 | XR session cycled (`video detached`) | yes | no | no |
 | picture back after the attach | ~11 s | **~1.2 s** | **~2.1 s** |
 
-Horizon asked nothing (no chooser in the log or on screen). A new small finding on replug 2: for ~1 s the headline read
-`WRONG KEY - check gs.key` before the picture came back, with the right key. It is under investigation (the wfb-ng
-session-key window after a link restart is suspected [SPECULATION until checked in code]).
+Horizon asked nothing (no chooser in the log or on screen).
+
+**New small finding on replug 2: a false `WRONG KEY` for ~1 s.** The headline read `WRONG KEY - check gs.key` before
+the picture came back, with the right key. The panel showed `pkt 145 … decerr 145`: every packet of one ~300 ms stats
+window failed to decrypt [PROVEN: screenshot 03:55:21]. SignalState named that a wrong key
+(`decErr > 0 && decOk == 0`, `SignalState.java`).
+- **The suspected session-key window is ruled out** [PROVEN: code]. The aggregators (and the session key) are made only
+  in the WfbngLink constructor and on a key import (`WfbngLink.cpp:74, :504`; `refreshKey` only from `VideoActivity`),
+  so a replug keeps the key.
+- **Cause: OPEN** [SPECULATION]. Candidates: the first frames after the RTL re-initialises are corrupted, or something
+  in devourer's RX path at start-up. wfb-ng's `WFB_ERR` is compiled out (`wfb_log.h`), so the log cannot say which
+  check failed.
+- **(a) Diagnostics, `1994f32`, permanent.** [DecErrProbe.h](../../../app/wfbngrtl8812/src/main/cpp/DecErrProbe.h)
+  attributes every video decrypt error to a data or a session packet. It logs `video decrypt errors: data N session M |
+  ok: … | T ms after link start` once per second while errors occur. Host gtests 23/23 (4 new). One replug with this
+  build should name the branch.
+- **(b) Display rule, the commit after `1994f32`, not a fix.** `WRONG_KEY` needs every packet failing for
+  `WRONG_KEY_NS` = 2 s (a wrong key never recovers). Before that the classifier names the stall as for any missing video.
+  JVM: `SignalStateTest` 21/21, with the new tests: the replug case (~1 s all-fail, then video) never shows `WRONG_KEY`;
+  2 s+ of all-fail still does (from OK and from the start); one window with good packets restarts the clock. 2 of these
+  fail against the old rule [PROVEN: run with the old condition swapped back].
 
 What changed:
 - `USB_DEVICE_ATTACHED` and its `usb_device_filter` moved from `.VideoActivity` to
