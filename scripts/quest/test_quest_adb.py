@@ -150,6 +150,21 @@ def test_step_prefs_types_the_step_value_and_keeps_extra_prefs():
     assert quest_adb.step_prefs("rx-diag-mode", "async", '{"rx-diag-mode": "spsc"}') == {"rx-diag-mode": "async"}
 
 
+def test_step_prefs_named_states_set_several_prefs_per_step():
+    """pref "@states": the step value names an entry of STATES (JSON), so one step can change several prefs (a 2x2
+    A/B); EXTRA_PREFS still applies and a state's prefs win over it; an unknown state name raises."""
+    states = '{"fif": {"feed_incomplete_frames": true, "request_idr_on_loss": false}, "idr": {"request_idr_on_loss": true}}'
+    assert quest_adb.step_prefs("@states", "fif", '{"x": 1}', states) == {
+        "x": 1, "feed_incomplete_frames": True, "request_idr_on_loss": False}
+    assert quest_adb.step_prefs("@states", "idr", '{"request_idr_on_loss": false}', states) == {"request_idr_on_loss": True}
+    try:
+        quest_adb.step_prefs("@states", "nope", "", states)
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("unknown state accepted")
+
+
 class FakeStop:
     """am force-stop returns at once, but the process lingers for `linger` pidof polls (it can still flush its prefs)."""
 

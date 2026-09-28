@@ -69,12 +69,16 @@ def set_prefs(flags):
                 + '    <boolean name="od_enabled" value="false" />' + NL + body + "</map>" + NL)
 
 
-def step_prefs(pref, value, extra_json):
+def step_prefs(pref, value, extra_json, states_json=""):
     """The prefs one pref_ab.sh step writes: EXTRA_PREFS (a JSON object, may be empty) plus `pref` = `value`, typed
     true/false -> boolean, digits -> int, else string. set_prefs drops every pref it is not given, so a setting that
-    must hold for the whole A/B (e.g. rx-diag-ring-ms) goes in EXTRA_PREFS."""
+    must hold for the whole A/B (e.g. rx-diag-ring-ms) goes in EXTRA_PREFS. With pref "@states", `value` names an
+    entry of STATES (a JSON object of state -> prefs), so one step sets several prefs."""
     import json
     prefs = json.loads(extra_json) if extra_json.strip() else {}
+    if pref == "@states":
+        prefs.update(json.loads(states_json)[value])
+        return prefs
     if value in ("true", "false"):
         typed = value == "true"
     elif value.isdigit():
