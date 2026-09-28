@@ -143,7 +143,7 @@ Loss after FEC · frames without a decoded mark (of ~1670) · Δ capture → dec
 | `m7b25f46` | 2.61 % · 93 · +9.4 ms | 2.27 % · 93 · +9.3 ms | 2.45 % · 77 · +9.7 ms | **link lost, 99.9 %** |
 | `m7b25f45` | 4.30 % · 212 · +7.5 ms | 4.23 % · 173 · +7.9 ms | 3.91 % · 172 · +7.9 ms | **link lost, 99.8 %** |
 
-- **Partial verdict: more power does not make 25 Mbit/s clean.** `m7b25f46` loses 2.3–2.6 % after FEC at 12, 17 and 20 dBm alike, and at 23 dBm MCS7 does not get through at all [PROVEN: the per-power CSVs above].
+- **Verdict: more power does not make 25 Mbit/s clean, at this position.** `m7b25f46` loses 2.3–2.6 % after FEC at 12, 17 and 20 dBm alike, and at 23 dBm MCS7 does not get through at all. Caveat: the headset sat on a weaker spot than in the morning grid (RSSI column 57–58 at 12 dBm vs 71–73), so this holds for this position; a fixed, agreed Quest position is needed for the twin [PROVEN: the per-power CSVs above].
   - MCS4 does improve with power: 16 Mbit/s at `m4b16f46` falls from 2.5 % (12 dBm) to 0.4–0.5 % (20–23 dBm). MCS7 does not [PROVEN: same].
   - At 23 dBm MCS7 fails while MCS2 and MCS4 in the same run are fine, and the air reported drop = 0. The likely cause is that the air unit's power amplifier distorts 64-QAM at full power (EVM), not the receiver [SPECULATION: no EVM or per-chain data in this trace; the per-chain counters were not yet installed].
   - FEC 4/5 (`m7b25f45`) is worse than 4/6 at every power level (3.9–4.3 % vs 2.3–2.6 %).
