@@ -112,6 +112,30 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **Switch up** to MCS2 only with margin above ~1600. The score moved ~45 points between 17 and 12 dBm and ~100 between 12 and 8 dBm. Hysteresis and time constants are checked in closed loop by the receiver's author and live by the adaptive-range test below [SPECULATION until then].
 - **Pending:** the user's picture-quality check at 2–4 Mbit/s.
 
+**Power bracket before persisting the boot TX power (2026-09-28 01:47–01:53, 480p167 REC: MCS2, FEC 4/8, 2 Mbit/s, receiver off, build `8bc1a3d6`).**
+- **Question.** Does loss rise above 20 dBm, for example because the Quest's receiver saturates at this distance?
+- **Method.** One 480 s trace. 12 steps of 30 s: `p12 p17 p23 p20 p17 p12 p20 p23 p12 p23 p17 p20`, each level N = 3, shuffled.
+  - Rises in ≤ 3 dB steps; the power was read back with `iw` after every step and equalled the request.
+  - Drift was fitted on the 17 dBm steps (+70 ppm).
+  - Offset Quest − air = 0.753 + 0.574 s. The air unit had rebooted, so the air − PC offset was −0.574 s, measured before the start.
+  - Data: [air log](data/air-bracket-2026-09-28-power.txt) · [latency/loss](data/measurements-2026-09-28-quest2-power-bracket.csv) · [link](data/link-2026-09-28-power-bracket.csv) · [Quest thermal](data/thermal-2026-09-28-power-bracket.csv).
+
+| TX power | RSSI (app column) | loss before FEC | loss after FEC | frames without a decoded mark | Δ capture → decoded vs 17 dBm | DPS current (12 V, one averaged read) |
+|---|---|---|---|---|---|---|
+| 12 dBm | 68.7 | 3.7 % | 0.02 % | 1 / 13334 | +0.01 ms | – |
+| 17 dBm | 74.0 | 3.6 % | 0.02 % | 0 / 13125 | 0 | 0.483 A |
+| 20 dBm | 78.0 | 3.6 % | 0.03 % | 0 / 13050 | +0.07 ms | 0.533 A |
+| 23 dBm | 81.0 | 3.2 % | 0 % | 0 / 13019 | −0.08 ms | 0.585 A |
+
+- **No saturation up to 23 dBm at this distance** [PROVEN: data, N = 3 per level].
+  - RSSI rises steadily (68.7 → 81.0) and stays below the scale's top: raw 65 of 80.
+  - Loss before FEC does not rise at 20 → 23 dBm; it is slightly lower (3.2 %).
+  - Latency is the same within ±0.1 ms.
+- **Air unit.** SoC 40–42 °C, no skip, no abort, no reset. Every step's readback matched. Current rises ~0.1 A (~1.2 W at 12 V) from 17 to 23 dBm.
+- **This geometry is easier than W2's.** 12 dBm already gives RSSI 68.7, which W2 on the balcony saw only at 17 dBm. So here the extra power buys margin, not less loss. What that margin is worth at range comes from W2: on the balcony, 17 dBm against 12 dBm cut the loss after FEC from 3.5 % to 1.1 % (1080p90, phase 1).
+- **Quest battery was 36–39 %,** charging, close to the 30 % stop rule.
+- **Regulatory note** [INFERRED: CEPT ERC Rec 70-03 Annex 1, SRD 5725–5875 MHz, 25 mW e.i.r.p.; not checked against the current national decision]. Channel 157 (5785 MHz) is in that band, so above ~14 dBm e.i.r.p. the unit is over the SRD limit in CEPT countries. Which power to run is the user's decision. See also the OpenIPC power-axis design §8.6.
+
 **Picture-quality stills at 2 / 4 / 8 Mbit/s (2026-09-27 21:28–21:35, build `b2249f15`, Quest on the balcony).**
 - **Method.** The user wanted to see the picture without the headset. [quality_shots.sh](../../scripts/quest/quality_shots.sh) takes an `adb screencap` of the compositor output (3664×1920, both eyes) and crops the left eye's video layer together with the stats overlay, so every still shows its own link loss, fps and Mbit/s. There are 3 stills per state, ~2–5 s apart.
 - **Air settings.** 17 dBm, MCS2, receiver stopped so the MCS stayed fixed. FEC 4/8 at 2 and 4 Mbit/s. FEC 4/6 at 8 Mbit/s, because 4/8 would need 16 Mbit/s on air against the ~11.7 available.
