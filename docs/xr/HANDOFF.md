@@ -29,8 +29,8 @@ Measure every method at the same position with the same tools (loss, decode fps,
   - Far-position test: needs the user's hands to move the headset or the air unit.
   - ESP32 G2G rig (photodiode total): **READY** (session latency-test-f0, 2026-09-29), not yet used on the Quest. Repo `c:/Users/vlad_/Documents/Arduino/latency_test/` (CLAUDE.md; skills `/g2g-latency`, `/g2g-calibrate`).
     - Port COM7 (CP210x 10C4:EA60), auto-detected by `~/.claude/skills/g2g-latency/scripts/find_rig_port.py`; COM5 is the DPS-150 and is refused.
-    - Wiring: LED on GPIO14, TEMT6000 SIG on GPIO32 (the floating wire behind the 50 Hz hum is fixed).
-    - Face-to-face self-test 25/25, avg **135 µs** (134–158): the rig offset to subtract [PROVEN: latency_test `tasks/diag-50hz-flicker-led-not-reaching-sensor-2026-09-29.md`, raw `tasks/raw-data/com7-fixed-2026-09-29-cmd3.csv`, commits e5da3b0 → 91d7353].
+    - Wiring: LED on GPIO14, TEMT6000 SIG on GPIO32, unchanged. *Correction 2026-09-29 (user, via latency-test-f0):* 5d5a47b said a floating wire had been fixed; nothing was rewired and no resistor was added, only the LED/sensor position and the ambient light changed. The cause of the earlier 0 DC + 50 Hz hum signature is unproven: likely an intermittent SIG/GND contact that closed when things were moved [SPECULATION]. If the hum comes back, wiggle SIG/GND during a cmd `4` free-run.
+    - Face-to-face self-test 25/25, avg **135 µs** (134–158): the rig offset to subtract. Versus the old 47 µs, the difference is probably alignment (max ~2800 vs 4095) [SPECULATION]; the self-test numbers are [PROVEN: latency_test `tasks/diag-50hz-flicker-led-not-reaching-sensor-2026-09-29.md`, raw `tasks/raw-data/com7-fixed-2026-09-29-cmd3.csv`, commits e5da3b0 → 9c4d41b].
     - Opening the port resets the board and a run is refused until calibration succeeds, so always `1` (calibrate) before `2` (run).
     - On the Quest: the LED in front of the air unit's camera, the TEMT6000 on a Quest lens under an opaque shield, and calibrate in the final position.
   - vmoded autostart after a reboot: needs the user's approval.
