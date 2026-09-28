@@ -71,7 +71,26 @@ the latency cost at that band.
 
 ## Results
 
-**Phase 2: MCS × bitrate × FEC at 640×480 @ 167 fps, 17 / 12 / 8 dBm (2026-09-27 17:36–18:01, Quest on the balcony, air unit indoors).**
+### Capture caveat: streamed logcat (2026-09-28)
+
+**Every run below from 2026-09-27 and 2026-09-28, except the T2 control, may be contaminated by the capture itself.**
+The uplink logger `quest_tx_log.sh` streamed `adb logcat` over adb-over-Wi-Fi during the run. So the Quest's internal
+Wi-Fi (5180 MHz, a few cm from the RTL8812AU) transmitted a burst right after every RTL uplink frame (14–51/s,
+depending on the run). pixelpilot-xr-36 found this as the likely cause of T4's "uplink doubles the loss"
+([uplink-t4-analysis.md](uplink-t4-analysis.md), hypothesis H1) [SPECULATION until U1 of that doc decides].
+- Affected, marked at their headings: phase 2 and 3b, the adaptive range test, the power bracket, the bitrate × MCS
+  grid, STBC, the 40 MHz grid, power × bitrate (incl. the MCS7 follow-up), and T4's uplink-ON steps [PROVEN: their
+  link CSVs carry `quest_tx_per_s` from `quest_tx_log.sh`]. Phase 1 recorded no TX log.
+- Clean: the T2 control (detached capture, `ab_detached.sh`). `quest_thermal_log.sh` also polls `dumpsys` over adb every
+  5 s during all runs, a much smaller and uncorrelated load.
+- **Nothing is retracted yet.** Absolute loss levels may be too high. A/B verdicts compare states that were all
+  captured the same way, so they may still hold, unless the contamination scales with the Quest's TX rate (which
+  itself varies with the state, as in T4).
+- From 2026-09-28 on, captures during a measurement are detached (`ab_detached.sh`, `stream_ab.sh`,
+  `pref_ab.sh` with `CAPTURE=detached`): nothing streams over adb. Next slot: [runbook](runbook-2026-09-28-u1-t6.md).
+
+
+**Phase 2: MCS × bitrate × FEC at 640×480 @ 167 fps, 17 / 12 / 8 dBm (2026-09-27 17:36–18:01, Quest on the balcony, air unit indoors).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Method.** One trace per power level ([ab_long.sh](../../scripts/quest/ab_long.sh)), 12 s steps, anchor `m1b2f46` between every state, each state N = 2 in two differently shuffled passes (N = 1 not used). A short extra run `p17b` added `m2b2f48` and `m2b3f46` at 17 dBm. Adaptive-link uplink live (~51 Quest TX/s in every step), W1 tunnel up. Build `cd5fa436`.
 - **Air unit.** Every run ended without ERR or reset, at 46–48 °C, and reverted to its pre-run state. `waybeam.json` was byte-identical to its backup after ~100 live bitrate sets.
 - **Quest.** Thermal status 0, CPU 54–56 °C (live HAL values), battery 96 %.
@@ -120,7 +139,7 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **Switch up** to MCS2 only with margin above ~1600. The score moved ~45 points between 17 and 12 dBm and ~100 between 12 and 8 dBm. Hysteresis and time constants are checked in closed loop by the receiver's author and live by the adaptive-range test below [SPECULATION until then].
 - **Pending:** the user's picture-quality check at 2–4 Mbit/s.
 
-**STBC on/off A/B: does STBC put the video on both air TX chains? (2026-09-28 11:45–11:48, O82b stage 4a.1, 480p167 race, `m2b2f48`, 12 dBm).**
+**STBC on/off A/B: does STBC put the video on both air TX chains? (2026-09-28 11:45–11:48, O82b stage 4a.1, 480p167 race, `m2b2f48`, 12 dBm).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Question.** In 1SS without STBC the RTL8822EU transmits on path A only (hal_dm.c:1488-1513). If STBC uses both chains, S1 should be clearly better than S0 (≳ 3 dB RSSI or clearly lower pre-FEC). If they are equal, the video goes out on path A either way.
 - **Method.** One 240 s trace ([ab_long.sh](../../scripts/quest/ab_long.sh)), air alink + vmoded stopped, 6 steps of 30 s in the order `S1 S0 S0 S1 S1 S0` (N = 3 per state, alternating). The air read back the radio after every step, and `readback=1` at the end. Quest on the balcony, same geometry as the bitrate grid. Offset Quest − air = −0.232 + 0.273 = +0.041 s. Air at 40 °C throughout.
 - **Data.** [air step log](data/air-stbc-2026-09-28.txt) · [latency/loss](data/measurements-2026-09-28-quest2-stbc.csv) · [link](data/link-2026-09-28-stbc.csv) · [Quest thermal](data/thermal-2026-09-28-stbc.csv).
@@ -136,7 +155,7 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
 - **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
-**T4: does the Quest's uplink cause the loss floor? And a T2 run that became a control (2026-09-28 19:33–19:43, link-25mbit audit, 1080p90 `m7b25f46`, 17 dBm, 20 MHz 157, STBC 1, air alink + vmoded off).**
+**T4: does the Quest's uplink cause the loss floor? And a T2 run that became a control (2026-09-28 19:33–19:43, link-25mbit audit, 1080p90 `m7b25f46`, 17 dBm, 20 MHz 157, STBC 1, air alink + vmoded off).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Question** (audit candidate 2, OpenIPC repo `repos/tasks/link-25mbit-audit-2026-09-28/`): are the Quest's 14–24 uplink frames/s (useless here, the air's alink is off) part of the 2–8 % burst-loss floor? The RTL8812AU both sends the uplink and receives the video.
 - **Method, T4.** The air held one 420 s `m7b25f46` step (air log from the coordinator: `inj` ≈ 3490/s, drop 0). The Quest toggled `adaptive_link_enabled` true/false in ABBA×2, 30 s per step, relaunching XR each step ([pref_ab.sh](../../scripts/quest/pref_ab.sh), its own trace). Analysis on the Quest clock, `--guard-s 10`, with [link_audit.py](../../scripts/quest-latch/link_audit.py) (`TRACE LOSS: none`) and [ab_link.py](../../scripts/quest-latch/ab_link.py). Before the slot the Quest's link had been dead since the air's reboots (no wfb thread); an XR restart brought it back.
 - **Method, T2 → control.** T2 was meant to move the Quest's own Wi-Fi from 5 GHz to 2.4 GHz. The switch failed: `cmd wifi set-connected-score 0` did not make the Quest leave `Zeul36` (5180 MHz). So the run is one 420 s air step of the same state with the uplink ON, the app running continuously (last relaunch ≥ 195 s earlier). The trace ran detached on the Quest ([ab_detached.sh](../../scripts/quest/ab_detached.sh)) so that it would survive adb dropping on a network change.
@@ -157,7 +176,7 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **Next, to decide it:** T4 again with long steps (≥ 120 s, ABBA) so that each state runs well past a relaunch; and the per-frame coincidence of losses with `TX DESC` (`link_audit.py --logcat`) in both states.
 - **Tool fix found here:** `link_audit.py` counted `received` over raw 16-bit RTP sequence numbers, so a step with more than 65536 packets (T2's 100 s windows) came out wrong (p_data 13.25 % instead of 3.89 %). It now unwraps first. Regression test: `test_audit_counts_more_than_65536_packets_in_one_step`. T4's 30 s steps (~25 000 packets) were unaffected.
 
-**Power × bitrate at 1080p90, 20 MHz: does more power make 25 Mbit/s clean? (2026-09-28 12:31–12:40).**
+**Power × bitrate at 1080p90, 20 MHz: does more power make 25 Mbit/s clean? (2026-09-28 12:31–12:40).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Question.** The gap the user found: high bitrate was only tested at 12 dBm, and power only at `m2b2` (where loss was already ~0).
 - **Method.** One 646 s trace ([ab_long.sh](../../scripts/quest/ab_long.sh); started as 900 s, stopped early after the air's `PWR_END` because of a PC restart). The air script ran the grid `A m4b16f46 m7b16f46 m7b25f46 m7b25f45 A` (A = `m2b4f46`, 22 s steps) at 20 → 12 → 23 → 17 dBm. Ramps ≤ 3 dB, `iw` read back per level, 20 MHz 157, STBC 1, alink + vmoded stopped. The air log shows drop = 0 at every point and every power level; air 46–51 °C. Offset Quest − air +0.014 s.
 - **Data.** [air log, full lines with tx= / inj=](data/air-pwr-x-bitrate-2026-09-28.txt) · per power: latency/loss [p20](data/measurements-2026-09-28-quest2-pwrx-p20.csv) · [p12](data/measurements-2026-09-28-quest2-pwrx-p12.csv) · [p23](data/measurements-2026-09-28-quest2-pwrx-p23.csv) · [p17](data/measurements-2026-09-28-quest2-pwrx-p17.csv); step files [p20](data/steps-2026-09-28-pwrx-p20.txt) · [p12](data/steps-2026-09-28-pwrx-p12.txt) · [p23](data/steps-2026-09-28-pwrx-p23.txt) · [p17](data/steps-2026-09-28-pwrx-p17.txt); [Quest thermal](data/thermal-2026-09-28-pwrx.csv).
@@ -204,7 +223,7 @@ Loss after FEC · frames without a decoded mark (of ~1670) · Δ capture → dec
   - `m7b25f46` is +15–16 ms decoded vs `m2b4f46` in this run, against +9–10 ms in the first run at the same position. The first packet of each frame starts ~6 ms later, which suggests more queueing on the air after its reboot [SPECULATION: not isolated; the air rebooted between the two runs].
   - **For the adaptive link:** no MCS7 row above 20 dBm, and more power is not a lever for MCS7 at all. For the high-bitrate goal the lever left is MCS4 with more power (16 Mbit/s at 0.4–0.5 % after FEC at 20–23 dBm, above) [INFERRED: both runs].
 
-**Does 40 MHz carry 16–25 Mbit/s cleanly? The same grid at 40 MHz (2026-09-28 12:09–12:15, O82b §5a, 1080p90 native, 12 dBm, STBC 1, build `53c4e5de` = 0badd95).**
+**Does 40 MHz carry 16–25 Mbit/s cleanly? The same grid at 40 MHz (2026-09-28 12:09–12:15, O82b §5a, 1080p90 native, 12 dBm, STBC 1, build `53c4e5de` = 0badd95).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Question.** The user's "25 Mbit clean?", at 40 MHz. These are the same points as the 20 MHz grid below, measured the same morning, so the 20 MHz runs are the twin. Background on the channel center and the uplink sub-channel: [40 MHz research](research/2026-09-28-ht40-channel-center.md).
 - **Method.** Two runs of `A m4b8f46 m7b16f46 m4b16f46 m7b25f46 A` (A = `m2b4f46`), 22 s steps, one trace each ([ab_long.sh](../../scripts/quest/ab_long.sh)), alink + vmoded stopped, air `RADIO="-B 40 …"`. The air grid script skipped `m7b25f46` in both runs (`SKIP_DROP`: it refuses a step above a bitrate where packets were already dropped).
   - (i) air `157 HT40+` (the correct primary), Quest ch157 BW40: devourer `ch = 157, offset = 1, bwmode = 1`.
@@ -229,7 +248,7 @@ Each cell: air TX packets/s · pre-FEC loss · loss after FEC · frames without 
   - Even at 4 Mbit/s, 40 MHz loses more before and after FEC. The RSSI column is 69–70 (i) and 66 (ii) against 71–73 at 20 MHz, as expected when the same power is spread over twice the bandwidth [INFERRED: −3 dB power density at 40 MHz; not isolated here].
 - **Caveat.** The 40 MHz points ran once each (N = 1 per state per configuration, two configurations). The gaps are large (tens of ms, 5–30× the loss), far outside the spread between the two 20 MHz passes, so the ranking is not in doubt. The exact 40 MHz values are.
 
-**How far the bitrate can go: bitrate × MCS bracket at 1080p90 native, 12 dBm (2026-09-28 11:25–11:40, the user's "at least 25 Mbit", plan §4 of [plan-2026-09-28-presets-quality-power-axis.md](plan-2026-09-28-presets-quality-power-axis.md)).**
+**How far the bitrate can go: bitrate × MCS bracket at 1080p90 native, 12 dBm (2026-09-28 11:25–11:40, the user's "at least 25 Mbit", plan §4 of [plan-2026-09-28-presets-quality-power-axis.md](plan-2026-09-28-presets-quality-power-axis.md)).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Method.**
   - The air unit was on 1920×1080@90 native (RAM json, no flash writes), 12 dBm, 20 MHz, receiver and `vmoded` stopped.
   - 2 passes of 17 steps × 22 s, one trace each: 12 points + anchor `m2b4f46` five times per pass. Offset Quest − air = 2.036 / 2.031 s.
@@ -269,7 +288,7 @@ Each cell is pass 1 / pass 2. "Undecoded" counts frames without a decoded mark (
 - **Caveat on "undecoded".** It counts frames whose decoded mark came more than 20 ms after their last packet. At `m7b25f46`, where p95 is 52 ms, part of those 49 are late decodes rather than lost frames.
 - **For alink rows m4/m7 with caps:** none of them is clean at this geometry, so their score thresholds must come from a closer or stronger link. That is plan §4's second geometry (Quest at ~1 m, with the user). Until then the rows stay `m1f46` ≤ 2000 and `m2f48` ≤ 4000.
 
-**Power bracket before persisting the boot TX power (2026-09-28 01:47–01:53, 480p167 REC: MCS2, FEC 4/8, 2 Mbit/s, receiver off, build `8bc1a3d6`).**
+**Power bracket before persisting the boot TX power (2026-09-28 01:47–01:53, 480p167 REC: MCS2, FEC 4/8, 2 Mbit/s, receiver off, build `8bc1a3d6`).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Question.** Does loss rise above 20 dBm, for example because the Quest's receiver saturates at this distance?
 - **Method.** One 480 s trace. 12 steps of 30 s: `p12 p17 p23 p20 p17 p12 p20 p23 p12 p23 p17 p20`, each level N = 3, shuffled.
   - Rises in ≤ 3 dB steps; the power was read back with `iw` after every step and equalled the request.
@@ -325,7 +344,7 @@ Each cell is pass 1 / pass 2. "Undecoded" counts frames without a decoded mark (
   - **`e720s`** (720p120 scaled in the VPE to 848×480, 122 fps, 2.83 ms decode, extra arm at 22:44) sees about what `c720` sees, much wider than `a480`. Stills `quality-2026-09-27-W3c_e720s-{1,2}.jpg`, same folder, same reason for keeping them local.
   - `b1472n` (RES_4 native) was dropped before the stills: its encoder ran at 0.48 fps. The latency side of W3c is the other session's result.
 
-**Adaptive range test: the adaptive link against a fixed setting (2026-09-27 19:01–19:18, 480p167, app build `b8b6dcc3` with the 4 Hz / FEC 1/3 uplink, air receiver `alink_air` using the two-state policy above: hold_down 2000 ms, stale 1500 ms).**
+**Adaptive range test: the adaptive link against a fixed setting (2026-09-27 19:01–19:18, 480p167, app build `b8b6dcc3` with the 4 Hz / FEC 1/3 uplink, air receiver `alink_air` using the two-state policy above: hold_down 2000 ms, stale 1500 ms).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Method.** One 1260 s trace. The air unit changed only the TX power: 17 12 8 12 17 12 8 12 17 dBm, 30 s steps, rises in ≤ 3 dB steps. Three phases ran back to back:
   - ADAPT1: receiver running;
   - CTRL: receiver stopped, fixed `m2b2f48`, which is what the air unit sends without the receiver;
@@ -353,7 +372,7 @@ Each cell is pass 1 / pass 2. "Undecoded" counts frames without a decoded mark (
 - **Uplink.** The Quest injected ~14 frames/s (4 reports/s × FEC 1/3, plus the tunnel's own), against ~51 before. The air unit received ~4.2 reports/s. 24 of 2073 datagrams (1.2 %) on the receiver's port were counted as bad. **Correction (2026-09-27, later):** they were not truncated reports. They were a TP-Link Kasa LAN discovery broadcast (`{"system":{"get_sysinfo":{}}}`, 29 B, from 192.168.100.55) that reached the receiver on eth0, because it binds 0.0.0.0:9999 ([troubleshooting](troubleshooting.md#truncated-29-byte-alink-reports-on-the-air-unit-2026-09-27-not-ours)). The app and the tunnel are cleared. All reports leave the app at 52–53 B [PROVEN: logcat]. The earlier [INFERRED] guess of "cut in the tunnel's framing" was wrong.
 - **IDR requests on/off at 8 dBm (on `m1f46`).** On: 0.35–0.45 % after FEC, 0–4 frames without a mark per step, capture → decoded 3.11–3.99 ms. Off: 0.23–0.51 %, 1–5 frames, 2.90–3.79 ms. **No difference in these metrics** [PROVEN: data, N = 4 each]. What IDR requests are for, recovering a corrupted picture sooner, is not something these per-frame metrics measure. The receiver counted 16 IDRs during the run.
 
-**Phase 3b: `m2b2f48` at 12 dBm, and adaptive link on/off (2026-09-27 18:04–18:20, 480p167, build `7b8baadb`).**
+**Phase 3b: `m2b2f48` at 12 dBm, and adaptive link on/off (2026-09-27 18:04–18:20, 480p167, build `7b8baadb`).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Data.** p12b [latency/loss](data/measurements-2026-09-27-quest2-w2-480-p12b.csv) · [link](data/link-2026-09-27-w2-480-p12b.csv) · [steps](data/steps-2026-09-27-w2-480-p12b.txt) · [thermal](data/thermal-2026-09-27-w2-480-p12b.csv); alink at 17 dBm [latency/loss](data/measurements-2026-09-27-quest2-w2-alink-p17.csv) · [link](data/link-2026-09-27-w2-alink-p17.csv) · [steps](data/steps-2026-09-27-w2-alink-p17.txt) · [thermal](data/thermal-2026-09-27-w2-alink-p17.csv); alink at 8 dBm [latency/loss](data/measurements-2026-09-27-quest2-w2-alink-p8.csv) · [link](data/link-2026-09-27-w2-alink-p8.csv) · [steps](data/steps-2026-09-27-w2-alink-p8.txt) · [thermal](data/thermal-2026-09-27-w2-alink-p8.csv).
 - **`m2b2f48` at 12 dBm (p12b, 9 steps, anchor `m1b2f46`).** It lost 0.24 % after FEC at +0.16 ms; `m2b2f46` lost 0.60 % at +0.79 ms. That makes `m2b2f48` the 12 dBm row of the policy (measured now, no longer inferred).
 - **Run-to-run spread.** In phase 2's p12 run, `m2b2f46` was −0.13 ms against the anchor; here it is +0.79 ms. Latency differences under ~1 ms between 2 Mbit/s states are not significant across separate traces.

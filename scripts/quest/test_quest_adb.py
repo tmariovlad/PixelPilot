@@ -138,6 +138,17 @@ def test_pref_xml_types():
     assert quest_adb.pref_xml("d", "x") == '    <string name="d">x</string>' + quest_adb.NL
 
 
+
+def test_step_prefs_types_the_step_value_and_keeps_extra_prefs():
+    """pref_ab.sh steps: true/false -> boolean, digits -> int, anything else -> string; EXTRA_PREFS (JSON) is written
+    in every step too, because set_prefs drops every pref it is not given."""
+    assert quest_adb.step_prefs("adaptive_link_enabled", "false", "") == {"adaptive_link_enabled": False}
+    assert quest_adb.step_prefs("rx-diag-ring-ms", "100", "") == {"rx-diag-ring-ms": 100}
+    assert quest_adb.step_prefs("rx-diag-mode", "spsc", '{"rx-diag-ring-ms": 100}') == {
+        "rx-diag-ring-ms": 100, "rx-diag-mode": "spsc"}
+    # the step's own pref wins over the same key in EXTRA_PREFS
+    assert quest_adb.step_prefs("rx-diag-mode", "async", '{"rx-diag-mode": "spsc"}') == {"rx-diag-mode": "async"}
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

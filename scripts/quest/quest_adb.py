@@ -69,6 +69,22 @@ def set_prefs(flags):
                 + '    <boolean name="od_enabled" value="false" />' + NL + body + "</map>" + NL)
 
 
+def step_prefs(pref, value, extra_json):
+    """The prefs one pref_ab.sh step writes: EXTRA_PREFS (a JSON object, may be empty) plus `pref` = `value`, typed
+    true/false -> boolean, digits -> int, else string. set_prefs drops every pref it is not given, so a setting that
+    must hold for the whole A/B (e.g. rx-diag-ring-ms) goes in EXTRA_PREFS."""
+    import json
+    prefs = json.loads(extra_json) if extra_json.strip() else {}
+    if value in ("true", "false"):
+        typed = value == "true"
+    elif value.isdigit():
+        typed = int(value)
+    else:
+        typed = value
+    prefs[pref] = typed
+    return prefs
+
+
 def backup_prefs(path):
     """Save the app's whole prefs file (the app must be stopped) before an A/B overwrites it with set_prefs.
 

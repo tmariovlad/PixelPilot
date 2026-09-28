@@ -141,6 +141,33 @@ def test_same_window_data_loss_absent_without_rtp():
     assert rows[0][2]["data_loss_pct"] is None
 
 
+def test_rx_diag_counters_per_step():
+    # RxDiag (T6) writes one sample per ~300 ms stats window: counts per window (-> per second) and ring levels
+    # (min_armed -> the lowest, cb_max_us -> the highest in the step window).
+    steps = [(0.0, "async"), (12 * S, "spsc")]
+    polls = [0.3 * k * S for k in range(0, 80)]
+    def per(a, b):
+        return [(t, a if t < 12 * S else b) for t in polls]
+    counters = {"ppxr_rx_crc_err": per(3, 0), "ppxr_usb_completions": per(300, 300), "ppxr_usb_empties": per(6, 0),
+                "ppxr_usb_dropped": per(0, 3), "ppxr_usb_min_armed": [(t, 8 - (int(t / S) % 3)) for t in polls],
+                "ppxr_usb_cb_max_us": [(t, 1000 + int(t / S) * 100) for t in polls]}
+    rows = per_step(counters, [], [{"t": 0.0}, {"t": 12.0}], steps, 24 * S, 2 * S)
+    r = {lab: row for _, lab, row in rows}
+    assert abs(r["async"]["rx_crc_per_s"] - 10.0) < 0.5, r["async"]["rx_crc_per_s"]
+    assert abs(r["async"]["usb_empties_per_s"] - 20.0) < 0.5
+    assert r["spsc"]["usb_empties_per_s"] == 0
+    assert abs(r["spsc"]["usb_dropped_per_s"] - 10.0) < 0.5
+    assert abs(r["async"]["usb_completions_per_s"] - 1000.0) < 20
+    assert r["async"]["usb_min_armed"] == 6
+    assert r["async"]["usb_cb_max_us"] == 1000 + 9 * 100      # window [2, 10) s
+    assert r["spsc"]["usb_cb_max_us"] == 1000 + 21 * 100      # window [14, 22) s
+
+
+def test_rx_diag_absent_gives_none():
+    rows = per_step({}, [], [{"t": 0.0}], [(0.0, "A")], 12 * S, 0)
+    assert rows[0][2]["usb_empties_per_s"] is None and rows[0][2]["usb_min_armed"] is None
+
+
 def test_quest_tx_rate_per_step_and_zero_when_off():
     steps = [(0.0, "on"), (12 * S, "off"), (24 * S, "on")]
     # 50 frames/s while "on" (0-12 s, 24-36 s), nothing while "off"

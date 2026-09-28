@@ -9,6 +9,10 @@ state, the radio and FEC picture plus temperatures, read in the same guarded ste
 - data_loss_pct ("dataFEC%"): the fraction of DATA packets missing before FEC, from Quest counters only, all in the
   same guarded window: (FEC repairs + RTP sequence gaps) / (RTP packets received + gaps). Use this one: it needs no
   air counter and no cross-device window (link-25mbit audit H5 §1.3, 2026-09-28).
+- crc/s, usbEmp/s, usbDrop/s, minArmed, cbMax us: the app's link-audit RX diagnostics (RxDiag.h, T6; only when the
+  rx-diag-* prefs are on): frames per second that failed FCS in the radio (keep_corrupted), and the devourer USB RX
+  ring per second: empties (host starvation) and dropped (host discards), plus the lowest armed-URB depth and the worst
+  inline consume in the window.
 - tx/s and pre-FEC loss: the air loop writes the cumulative wlan0 tx_packets on every step line
   ("<air epoch> <label> tx=<n> temp=<C>", END line too). tx/s = delta over the whole step on the air clock;
   pre_fec_loss = 1 - rx/s / tx/s. Anything else the air unit transmits on wlan0 counts as sent video, so this is an
@@ -35,6 +39,13 @@ from rtp_seq import seq_loss
 LEVEL_COUNTERS = ("ppxr_wfb_rssi", "ppxr_wfb_rssi_a", "ppxr_wfb_rssi_b", "ppxr_wfb_snr_a", "ppxr_wfb_snr_b")
 WFB_COUNTERS = ("ppxr_wfb_p_all", "ppxr_wfb_fec_rec", "ppxr_wfb_lost") + LEVEL_COUNTERS
 SNR_UNIT_DB = 0.5  # rxsnr in the RTL8812AU PHY status is s(8,1)
+# RxDiag (T6) trace counters, one sample per stats window: counts -> per second; ring levels -> min / max in the window.
+RX_DIAG_RATES = {"rx_crc_per_s": "ppxr_rx_crc_err", "rx_icv_per_s": "ppxr_rx_icv_err",
+                 "usb_completions_per_s": "ppxr_usb_completions", "usb_empties_per_s": "ppxr_usb_empties",
+                 "usb_dropped_per_s": "ppxr_usb_dropped"}
+RX_DIAG_MIN = {"usb_min_armed": "ppxr_usb_min_armed"}
+RX_DIAG_MAX = {"usb_cb_max_us": "ppxr_usb_cb_max_us"}
+RX_DIAG_COUNTERS = tuple(RX_DIAG_RATES.values()) + tuple(RX_DIAG_MIN.values()) + tuple(RX_DIAG_MAX.values())
 
 
 def read_step_fields(path):
@@ -106,6 +117,12 @@ def data_loss_pct(counters, a, b):
     return 100.0 * (fec + lost) / (len(seqs) + lost)
 
 
+def window_extreme(samples, a, b, pick):
+    """pick (min or max) of the values with a <= ts < b; None if empty."""
+    vals = [v for t, v in samples if a <= t < b]
+    return pick(vals) if vals else None
+
+
 def scaled(v, k):
     return None if v is None else v * k
 
@@ -135,6 +152,12 @@ def per_step(counters, thermal, fields, steps, end, guard):
         r["pre_fec_loss_pct"] = (100.0 * (1 - r["rx_per_s"] / r["tx_per_s"])
                                  if r["rx_per_s"] is not None and r["tx_per_s"] else None)
         r["data_loss_pct"] = data_loss_pct(counters, a, b)
+        for key, name in RX_DIAG_RATES.items():
+            r[key] = window_stats(counters.get(name, []), a, b, True)
+        for key, name in RX_DIAG_MIN.items():
+            r[key] = window_extreme(counters.get(name, []), a, b, min)
+        for key, name in RX_DIAG_MAX.items():
+            r[key] = window_extreme(counters.get(name, []), a, b, max)
         th = [row for t, row in thermal if a <= t < b]
         r["quest_status_max"] = max((x["thermal_status"] for x in th), default=None)
         r["quest_cpu_max_c"] = max((x["cpu_max_c"] for x in th), default=None)
@@ -170,6 +193,10 @@ def load(path, air_offset_s, steps_path, thermal_path, quest_tx_path=None):
                                            "on c.track_id=t.id where t.name='ppxr_rtp_seq' order by c.ts")]
     counters = drop_stale(counters, [t for t, _ in rtp])
     counters["rtp"] = rtp
+    for n in RX_DIAG_COUNTERS:  # per-window values that RxDiag resets itself: no stale repeats to drop
+        counters[n] = [(r.ts, r.value) for r in q(
+            "select c.ts, c.value from counter c join counter_track t on c.track_id=t.id "
+            f"where t.name='{n}' order by c.ts")]
     snap = q("select ts, clock_value from clock_snapshot where clock_name='REALTIME' order by ts limit 1")
     rt_off = snap[0].clock_value - snap[0].ts
     steps, end = read_steps(steps_path, air_offset_s, rt_off)
@@ -202,8 +229,10 @@ def main():
     rows = per_step(counters, thermal, fields, steps, end, a.guard_s * 1e9)
     keys = ["tx_per_s", "rx_per_s", "pre_fec_loss_pct", "fec_rec_per_s", "wfb_lost_per_s", "rssi",
             "rssi_a", "rssi_b", "snr_a_db", "snr_b_db", "quest_tx_per_s", "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt",
-            "data_loss_pct"]  # append only: older link CSVs keep their column order
-    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "rssi A", "rssi B", "snrA dB", "snrB dB", "Q tx/s", "air°C", "Q cpu°C", "Q st", "batt", "dataFEC%"]
+            "data_loss_pct", "rx_crc_per_s", "usb_empties_per_s", "usb_dropped_per_s", "usb_min_armed",
+            "usb_cb_max_us", "usb_completions_per_s", "rx_icv_per_s"]  # append only: older CSVs keep their order
+    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "rssi A", "rssi B", "snrA dB", "snrB dB", "Q tx/s", "air°C", "Q cpu°C", "Q st", "batt", "dataFEC%",
+             "crc/s", "usbEmp/s", "usbDrop/s", "minArmed", "cbMax us", "usbCpl/s", "icv/s"]
     def fmt(v):
         if v is None:
             return f"{'-':>9}"
