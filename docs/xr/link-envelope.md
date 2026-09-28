@@ -199,6 +199,41 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Frame fate 2026-09-29: where the missing frames at 1080p90 go, and the lever that keeps them
+
+Question (the user, via the coordinator): the exact source of the drop below 90 fps, proven rather than inferred.
+- **Method.** [frame_fate.py](../../scripts/quest-latch/frame_fate.py) (tests: [test_frame_fate.py](../../scripts/quest-latch/test_frame_fate.py), 6 cases, 5 mutants killed). It runs over the bitrate-ceiling trace (same steps, offset and guard as the section below).
+  - Every RTP timestamp the air sent in a step is one frame (90 kHz clock, 90 fps grid).
+  - Each frame gets one class: decoded / (a) hole (a packet missing inside the frame after FEC) / (a') edge (a sequence gap exactly between two frames) / (b) complete but not decoded / (c) never arrived.
+  - Decoded = matched one-to-one to a `ppxr_frame_ready` mark. Frames are 11 ms apart, so "a mark within 20 ms" alone would hand a dropped frame the next frame's mark.
+- **Data.** [frame-fate-2026-09-29-ceil.txt](data/frame-fate-2026-09-29-ceil.txt).
+
+| step (air drop 0) | decoded/s | (a) hole/s | (a') edge/s | (b) complete, not decoded/s | (c) never/s | measured decoded fps |
+|---|---|---|---|---|---|---|
+| A (recorder off/on), 6 × 40 s | 83.5–84.6 | 4.9–5.7 | 0.4–0.8 | 0.2–0.4 | 0 | 83.6–84.7 |
+| m7 FEC 8/10 25 / 30 Mbit/s | 85.5 / 83.4 | 4.2 / 5.7 | 0.6 / 0.9 | 0.1 / 0.4 | 0 | 85.6 / 83.5 |
+| m12 30 / 34 | 81.7 / 81.6 | 7.6 / 7.7 | 0.7 / 0.7 | 0.4 / 0.3 | 0 | 81.8 / 81.8 |
+| m13 38 | 73.5 | 15.6 | 1.0 | 0.3 | 0 | 73.6 |
+
+**Findings**
+- **The missing frames are the frames that lost a packet after FEC** [PROVEN: this table]. In every step with air drop 0, classes (a) + (a') hold 94–98 % of the frames missing from 90, and (c) is 0.
+- **No frame with a hole reaches the display** [PROVEN]. Measured decoded fps minus the decoded class is 0.0–0.1/s, so at most 0.1 marks/s are left unmatched, against 4–16 holes/s.
+- **Mechanism: the RTP depacketizer drops the whole NAL unit** [PROVEN: code + codec].
+  - The stream is H.264 [PROVEN: `"codec": "h264"` in the air's waybeam.json, read by the coordinator 2026-09-29]. A frame of ~26–30 packets is sent as FU-A fragments.
+  - A sequence gap sets `flagPacketHasGoneMissing` ([ParseRTP.cpp:73-81](../../app/videonative/src/main/cpp/parser/ParseRTP.cpp#L73-L81)).
+  - At the FU-A end, `forwardNALU()` runs only when the flag is clear (`:147-157`). The flag is reset at the next FU-A start or single NALU (`:99-104`, `:168-173`).
+  - `H26XParser` built the decoder with `feed_incomplete_frames = false` (upstream hard-coded).
+  - The H.265 FU path (`:312-316`) forwards unconditionally, so this applies to H.264 only.
+- **At saturation** (air drop > 0), (b) grows with (a'): 3–21/s. Those are mostly the other side of edges, frames whose tail was lost [INFERRED: (b) tracks (a') step by step; frame_fate cannot tell which side of an edge lost the packets].
+
+**Lever `feed_incomplete_frames`** (a SharedPreferences key set by `pref_ab.sh`, no menu entry; default false = upstream behaviour; "FIF" in the stats summary). It forwards the truncated NALU to MediaCodec instead of dropping it.
+- Plumbing: `LatencyExperiments` → `VideoPlayer.setDecoderLevers` → JNI `nativeSetFeedIncompleteFrames` → `RTPDecoder::setFeedIncompleteFrames` (atomic, applied live).
+- Host tests: `ParseRTP_test` FU-A with a missing middle fragment is dropped by default and forwarded truncated with the lever.
+- Build: APK md5 e75a4b26 (rollback a6ec585d).
+- **Not measured yet** [SPECULATION until the A/B]: whether the Qualcomm H.264 decoder shows a truncated slice as a partly smeared frame, drops it anyway, or propagates the damage to the frames that reference it until the next IDR. The planned A/B, the same air state with alink off and then on:
+  - `pref_ab.sh feed_incomplete_frames 90 false true true false false true true false`, detached capture;
+  - metrics: decoded fps (frame_fate), latency, decoder errors, and stills (quality_shots, local only).
+
 ### Bitrate ceiling 2026-09-29 00:21–00:37: the air recorder, and FEC 8/10 up to 50 Mbit/s (1SS m7, 2SS m12/m13)
 
 Question (the user): (1) was S3's 76–87 fps on the Quest caused by the air's recorder or by the link? (2) Where is the upper bitrate limit?

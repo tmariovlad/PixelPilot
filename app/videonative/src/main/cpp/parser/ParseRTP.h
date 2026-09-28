@@ -6,6 +6,7 @@
 #define LIVE_VIDEO_10MS_ANDROID_PARSERTP_H
 
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <functional>
@@ -37,6 +38,11 @@ class RTPDecoder
     // NALUs are passed on via the callback, one by one.
     // (Each time the callback is called, it contains exactly one NALU prefixed with the 0,0,0,1 start code)
     RTPDecoder(RTP_FRAME_DATA_CALLBACK cb, bool feed_incomplete_frames = false);
+
+    // Forward a NAL unit even when one of its RTP packets was lost (without the missing bytes) instead of dropping
+    // it. Off by default: a lost packet then drops the whole NAL unit, i.e. the frame (LatencyExperiments
+    // feed_incomplete_frames, docs/xr/link-envelope.md "frame fate"). Safe to call from another thread.
+    void setFeedIncompleteFrames(bool feed) { m_feed_incomplete_frames = feed; }
 
     // check if a packet is missing by using the rtp sequence number and
     // if the payload is dynamic (h264 or h265)
@@ -77,7 +83,7 @@ class RTPDecoder
     // std::shared_ptr<std::array<uint8_t,NALU_MAXLEN>> m_curr_nalu{};
     std::array<uint8_t, NALU_MAXLEN> m_curr_nalu;
     size_t                           m_nalu_data_length = 0;
-    bool                             m_feed_incomplete_frames;
+    std::atomic<bool>                m_feed_incomplete_frames;
     int                              m_total_n_fragments_for_current_fu = 0;
     // RTP marker bit of the packet being parsed; forwarded with every NALU it completes.
     bool                             m_current_packet_marker = false;

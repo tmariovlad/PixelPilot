@@ -371,6 +371,13 @@ extern "C"
         }
     }
 
+    JNI_METHOD(void, nativeSetFeedIncompleteFrames)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean feed)
+    {
+        VideoPlayer* p = native(nativeInstance);
+        if (p) p->setFeedIncompleteFrames(feed);
+    }
+
     JNI_METHOD(void, nativeSetTightReorder)
     (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean tight)
     {

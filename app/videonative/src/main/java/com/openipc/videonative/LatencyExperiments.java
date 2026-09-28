@@ -19,6 +19,8 @@ public final class LatencyExperiments {
     public static final String KEY_AU_AGGREGATION = "au_aggregation";
     /** RTP reorder hold after a lost packet: tight (2 packets / 3 ms) or upstream (5 / 20 ms); BufferedPacketQueue.h. */
     public static final String KEY_RTP_TIGHT_REORDER = "rtp_tight_reorder";
+    /** Forward a NAL unit that lost an RTP packet (truncated) instead of dropping it; ParseRTP.cpp. A/B lever. */
+    public static final String KEY_FEED_INCOMPLETE_FRAMES = "feed_incomplete_frames";
     /** Debug: bitmask over the individual decoder keys (DecoderLevers.h DecoderKey); -1 = all. */
     public static final String KEY_DEC_DEBUG_KEY_MASK = "dec_debug_key_mask";
     /** Debug: force a decoder component by name (e.g. "c2.qti.hevc.decoder"); "" = default. */
@@ -72,6 +74,7 @@ public final class LatencyExperiments {
     public final boolean decPreferLowLatencyComponent;
     public final boolean auAggregation;
     public final boolean rtpTightReorder;
+    public final boolean feedIncompleteFrames;
     public final int decDebugKeyMask;
     public final String decComponent;
     public final int xrRefreshHz;
@@ -102,6 +105,9 @@ public final class LatencyExperiments {
         // On the Quest's wfb-ng link (0 reorders in 22 traces) that made the frames after a loss ~9 ms late at ~2 %
         // loss (docs/xr/g2g-budget.md, "The Quest's parse time and the reorder hold"). On everywhere.
         rtpTightReorder = p.getBoolean(KEY_RTP_TIGHT_REORDER, true);
+        // At 1080p90 every frame that lost a packet after FEC is dropped whole before the decoder, so decoded fps
+        // falls below 90 (docs/xr/link-envelope.md, "Frame fate"). Feeding it truncated is unmeasured: off.
+        feedIncompleteFrames = p.getBoolean(KEY_FEED_INCOMPLETE_FRAMES, false);
         decDebugKeyMask = p.getInt(KEY_DEC_DEBUG_KEY_MASK, -1);
         decComponent = p.getString(KEY_DEC_COMPONENT, "");
         xrRefreshHz = validRefresh(p.getInt(KEY_XR_REFRESH_HZ, DEFAULT_REFRESH_HZ));
@@ -203,6 +209,7 @@ public final class LatencyExperiments {
         if (decPreferLowLatencyComponent) dec.append("LLC ");
         if (auAggregation) dec.append("AU ");
         if (!rtpTightReorder) dec.append("RQ20 ");
+        if (feedIncompleteFrames) dec.append("FIF ");
         String decoder = dec.length() == 0 ? "stock" : dec.toString().trim();
         StringBuilder xr = new StringBuilder();
         xr.append(xrRefreshHz).append("Hz ").append(xrLayerShape.prefValue());

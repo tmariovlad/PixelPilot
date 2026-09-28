@@ -34,6 +34,8 @@ class H26XParser
 
     void reset();
 
+    void setFeedIncompleteFrames(bool feed) { mDecodeRTP.setFeedIncompleteFrames(feed); }
+
   public:
     long nParsedNALUs               = 0;
     long nParsedKonfigurationFrames = 0;

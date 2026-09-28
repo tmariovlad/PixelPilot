@@ -76,6 +76,18 @@ public class LatencyExperimentsTest {
         assertTrue(off.summary(), off.summary().startsWith("LL RQ20 |"));
     }
 
+    // A frame with a lost RTP packet is dropped whole by the depacketizer (docs/xr/link-envelope.md, "frame fate").
+    // Feeding it incomplete is an A/B lever, off by default; it shows in the summary when on.
+    @Test public void feedIncompleteFramesIsOffByDefaultAndShowsWhenOn() {
+        assertFalse(LatencyExperiments.from(new MapPrefs()).feedIncompleteFrames);
+        assertFalse(LatencyExperiments.from(new MapPrefs(), true).feedIncompleteFrames);
+        LatencyExperiments on = LatencyExperiments.from(
+                new MapPrefs().put(LatencyExperiments.KEY_FEED_INCOMPLETE_FRAMES, true));
+        assertTrue(on.feedIncompleteFrames);
+        assertTrue(on.summary(), on.summary().contains("FIF"));
+        assertFalse(LatencyExperiments.from(new MapPrefs()).summary().contains("FIF"));
+    }
+
     @Test public void summaryListsOnlyEnabledLevers() {
         assertEquals("LL | 120Hz quad perf hints flip", LatencyExperiments.from(new MapPrefs()).summary());
         MapPrefs p = new MapPrefs().put(LatencyExperiments.KEY_LOW_LATENCY_DECODER, false)

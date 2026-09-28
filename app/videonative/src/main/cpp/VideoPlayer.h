@@ -63,6 +63,8 @@ class VideoPlayer
         mBufferedPacketQueueVideo.setBounds(tight ? kTightReorderBounds : kLegacyReorderBounds);
     }
 
+    void setFeedIncompleteFrames(bool feed) { mParser.setFeedIncompleteFrames(feed); }
+
     std::string getDecoderSummary() { return videoDecoder.getDecoderSummary(); }
     std::vector<int64_t> drainFrameReadyTimes() { return videoDecoder.drainFrameReadyTimes(); }
 

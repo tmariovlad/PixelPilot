@@ -78,3 +78,29 @@ TEST_F(ParseRtpTest, MarkerIsNotStickyAcrossPackets)
     EXPECT_TRUE(got[0].endOfAu);
     EXPECT_FALSE(got[1].endOfAu);
 }
+
+// A lost packet inside a fragmented NALU (FU-A). By default the depacketizer drops the whole NALU, so the frame never
+// reaches the decoder (2026-09-29: this is where the missing frames at 1080p90 go, docs/xr/link-envelope.md
+// "frame fate"). With feed-incomplete-frames on, the NALU is forwarded without the missing bytes.
+TEST_F(ParseRtpTest, H264FuAWithMissingFragmentIsDroppedByDefault)
+{
+    h264(false, {0x7C, 0x85, 0x88, 0x84});  // FU-A start, type 5
+    seq++;                                  // the middle fragment is lost
+    h264(true, {0x7C, 0x45, 0x33, 0x44});   // end, marker
+    EXPECT_TRUE(got.empty());
+    h264(false, {0x7C, 0x85, 0x99});         // the next NALU starts clean
+    h264(true, {0x7C, 0x45, 0x77});
+    ASSERT_EQ(1u, got.size());
+    EXPECT_EQ((Bytes{0, 0, 0, 1, 0x65, 0x99, 0x77}), got[0].nalu);
+}
+
+TEST_F(ParseRtpTest, H264FuAWithMissingFragmentIsForwardedTruncatedWhenFeedingIncompleteFrames)
+{
+    dec.setFeedIncompleteFrames(true);
+    h264(false, {0x7C, 0x85, 0x88, 0x84});  // FU-A start
+    seq++;                                  // lost middle fragment
+    h264(true, {0x7C, 0x45, 0x33, 0x44});   // end, marker
+    ASSERT_EQ(1u, got.size());
+    EXPECT_TRUE(got[0].endOfAu);
+    EXPECT_EQ((Bytes{0, 0, 0, 1, 0x65, 0x88, 0x84, 0x33, 0x44}), got[0].nalu);
+}
