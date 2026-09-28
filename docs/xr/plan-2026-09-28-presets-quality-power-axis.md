@@ -135,3 +135,78 @@ drift reference. Rises in ≤ 3 dB / 200 ms steps, as before.
 - Per level: RSSI, loss before and after FEC, frames without a decoded mark, capture → decoded.
 - **Saturation shows as:** loss before FEC rising at 20 → 23 dBm while RSSI still rises or flattens near the top of the
   scale (raw RSSI is clamped at 80, i.e. 100 on the app's column).
+
+## 4. How far the bitrate can go: bitrate × MCS bracket (user request "at least 25 Mbit", 2026-09-28)
+
+**Goal.** The real cap per MCS at the current distance, which becomes the future alink rows (m3/m4/m5 with caps; today
+m1f46 is capped at 2000 and m2f48 at 4000), and the latency cost of the frame size.
+
+**Fixed.** 12 dBm (the user's e.i.r.p. decision; never above it). 20 MHz, 1 stream, long GI, STBC + LDPC. Receiver
+`alink_air` off. Bitrate through waybeam's API, which after O114 writes to RAM, not flash. MCS through `set_radio` with
+all fields.
+
+**Mode: 1080p90 native (1920×1080, no VPE scaling).** A high bitrate only buys picture where there are many pixels per
+second to spend it on.
+
+| Mode | pixels/s | bits per pixel at 25 Mbit/s |
+|---|---|---|
+| 1080p90 | 187 M | 0.13 |
+| 720p120 | 110 M | 0.23 |
+| 480p167 | 51 M | 0.49 |
+
+- At 480p167, 8 Mbit/s already looked close to its ceiling in the stills [INFERRED], so 25 Mbit/s would be wasted.
+- 1080p90 is the only mode where 25 Mbit/s still improves the picture [INFERRED: H.264 needs ~0.1–0.2 bit/pixel for a
+  clean picture; not measured here].
+- The decoder handles it: 1.4–1.5 ms at 1080p90 [PROVEN: 2026-09-27 stills].
+- Balanced (720p120 native) is the second choice if 1080p90's latency (+~13 ms vs Race, W3) rules it out for use anyway.
+
+**Capacity, and which combinations are worth running.** On-air rate = bitrate × n/k. Injection carries ~60 % of the
+PHY rate [INFERRED: slot 2 measured ~97 % airtime at 12 Mbit/s on air, MCS2], i.e. ~11.7 / 23.4 / 39 Mbit/s at MCS2 /
+4 / 7.
+
+| bitrate | MCS2 (~11.7) | MCS4 (~23.4) | MCS7 (~39) |
+|---|---|---|---|
+| 4 | f46 (6), f48 (8) | f46 (6) | f46 (6) |
+| 8 | f46 (12, at the edge) | f46 (12), f48 (16) | f48 (16) |
+| 16 | not run: 24 on air > 11.7 [INFERRED] | f46 (24, at the edge) | f46 (24), f48 (32) |
+| 25 | not run: 37.5 > 11.7 [INFERRED] | not run: 37.5 > 23.4 [INFERRED] | **f45 (31)**, f46 (37.5, at the edge) |
+
+That gives 12 points. 25 Mbit/s fits only at MCS7, and only with light FEC (4/5).
+
+**The link, honestly.**
+- At 12 dBm here the Quest sees RSSI ~69, which is what the balcony saw at 17 dBm. There, MCS4 already lost ~15 % before
+  FEC and 3.6–7 % after it (W2 phase 2).
+- MCS7 needs clearly more SNR than MCS4. So at this distance and 12 dBm, MCS4/7 and therefore 16–25 Mbit/s will most
+  likely not hold [INFERRED from W2]. The run measures exactly that.
+- **Proposed second geometry (needs the user):** the same run with the Quest ~1 m from the air unit. It shows what the
+  chain itself can do (encoder at 25 Mbit/s, injection, decode, latency) apart from the link. Then the answer to
+  "how far can the bitrate go" has two parts: at this distance, and at best.
+
+**Order.**
+- The extremes first, as bracketing asks: m7b25f45 and m2b4f46 in the first steps, then the middle points.
+- Anchor A = `m2b4f46` every 4th step, for the drift fit.
+- 2 passes, shuffled differently (N = 2 per point), 20 s steps + 2 s guard. A pass is 12 points + 4 A ≈ 16 × 22 s ≈ 6 min.
+- One trace per pass: 1080p at 25 Mbit/s is ~2 300 packets/s, so a trace grows ~2× faster than at 480p/2 Mbit/s.
+- **Time:** 2 × 6 min + mode switch + decoder check + analysis setup ≈ 20 min on the devices per geometry.
+
+**Step log from the air.** One line per step, after the MCS, FEC and bitrate are set:
+`<air epoch> m<M>b<Mbit>f<kn> tx=<wlan0 tx_packets> temp=<C> enc_kbps=<waybeam's actual kbps> enc_fps=<fps> drop=<wfb_tx injection drops>`.
+- `enc_kbps` and `enc_fps` show whether the encoder itself reaches 25 Mbit/s at 1080p90.
+- `drop` shows whether the injection keeps up (air TX queue full).
+
+**Quest per step.**
+- `ab_segments.py`: loss after FEC, frames without a decoded mark, capture → decoded, spread, packets/frame. The
+  frame-size cost is Δ capture → decoded against 4 Mbit/s at the same MCS.
+- `ab_link.py`: loss before FEC, RSSI, rx/s against the air's tx/s.
+- Quest thermal and uplink.
+- Guardian paused, and restored after the run.
+
+**Output.**
+- The table of real caps per MCS: the highest bitrate with ≤ 0.1 % loss after FEC and no undecoded frames, plus its
+  latency cost against 4 Mbit/s.
+- New rows for alink proposed from it (m4/m7 with caps).
+- The results go into [link-envelope.md](link-envelope.md).
+
+**Safety.**
+- Air temperature stop as before (skip ≥ 60 °C, abort ≥ 70 °C).
+- `drop` rising means the air's TX queue is overflowing: skip the remaining points above that bitrate at that MCS.
