@@ -1,0 +1,12 @@
+# frame_fate.py on ab_grid25 (2026-09-28 23:50-23:59, above 25 Mbit/s), offset +1.2 s (approx.: Quest-PC 0.565 s + PC-air ~0.6 s; the 5 s guard covers the error), guard 5 s, fps 90
+# python3 scripts/quest-latch/frame_fate.py scripts/quest/out/ab_grid25.pftrace docs/xr/data/steps-2026-09-28-grid-above25.txt --air-offset-s 1.2 --guard-s 5
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 m7b25f46           86.0       3.8       0.4       0.2        0.0           86.0
+ 1 m7b30f46           61.3       7.9      14.9       6.3        0.0           62.2
+ 2 m7b25f810          85.2       4.5       0.6       0.1        0.0           85.2
+ 3 m7b30f810          84.7       4.9       0.5       0.3        0.0           84.7
+ 4 m12b25f46          83.7       5.7       0.9       0.2        0.0           83.8
+ 5 m12b30f46          81.7       7.7       0.8       0.3        0.0           81.8
+ 6 m12b35f46          50.0      13.1      16.9      10.3        0.0           51.2
+ 7 m13b35f46          72.7      15.7       1.3       0.7        0.0           72.8
+ 8 m13b40f46          32.7      19.7      25.0      13.0        0.0           36.1

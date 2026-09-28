@@ -1,0 +1,17 @@
+# ab_g56 (2026-09-29 00:51-01:06), steps docs/xr/data/steps-2026-09-29-g56.txt (air clock), --air-offset-s 1.284 (Quest-PC 0.535 + PC-air 0.749), --guard-s 4
+# python3 scripts/quest-latch/frame_fate.py scripts/quest/out/ab_g56.pftrace docs/xr/data/steps-2026-09-29-g56.txt --air-offset-s 1.284 --guard-s 4
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 m7b25f46           86.1       3.5       0.6       0.3        0.0           86.2
+ 1 m6b25f46           86.1       3.3       0.7       0.4        0.0           86.2
+ 2 m7b25f46           85.9       3.8       0.5       0.3        0.0           85.9
+ 3 m6b25f46           85.7       3.6       0.6       0.5        0.0           85.7
+ 4 m7b16f48           89.8       0.6       0.1       0.0        0.0           89.8
+ 5 m7b20f48           88.9       1.0       0.2       0.2        0.0           88.9
+ 6 m7b20f46           87.7       2.2       0.5       0.1        0.0           87.7
+ 7 m12b20f48          89.5       0.8       0.1       0.0        0.0           89.5
+ 8 m12b25f48          68.5       1.5      16.5       3.9        0.0           68.6
+ 9 m13b25f48          87.6       2.2       0.4       0.2        0.0           87.6
+10 m13b30f48          49.1       3.7      27.4      10.3        0.0           49.8
+11 m13b25f47          85.3       4.4       0.5       0.2        0.0           85.4
+12 m13b30f47          84.7       4.9       0.6       0.2        0.0           84.7
+13 m13b35f47          45.3       7.9      26.0      11.3        0.0           46.5

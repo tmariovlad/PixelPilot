@@ -199,6 +199,38 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### G5/G6 2026-09-29 00:51–01:06: which 1080p90 states reach ≥ 88 fps; MCS6 vs MCS7 long GI; FEC 4/8 at 20 Mbit/s; 2SS with stronger FEC
+
+Question (the user: "find all maximum limits"; B6: MCS6 or MCS7 at 25 Mbit/s): which states give ≥ 88 decoded fps at 1080p90 without a latency cost?
+- **Method.** Air: `g56_run.sh` (`bitrate_grid.sh` 48d0ccbc), 60 s steps, 17 dBm, ch157, alink off, TBTT fix on. The encoder ran at 90.0 fps in every step.
+  - G5 = 1SS STBC long GI;
+  - G6 = 2SS (`-S 0`) long GI.
+  - Quest: detached capture, `TRACE LOSS: none`, offset Quest − air +1.284 s, guard 4 s, latency vs `m7b25f46`'s drift line.
+- **Data.** [air log](data/air-g56-2026-09-29.txt) · [steps](data/steps-2026-09-29-g56.txt) · [link_audit](data/audit-2026-09-29-g56.txt) · [frame fate](data/frame-fate-2026-09-29-g56.txt) · [latency](data/latency-2026-09-29-g56.txt) · [link](data/link-2026-09-29-g56.txt).
+
+| step | air drop | pkt/s injected | decoded fps | post-FEC | Δlast / p95 (ms) | hole + edge /s | RSSI col |
+|---|---|---|---|---|---|---|---|
+| m7b25f46 (×2) | 0 | 3390 | 85.9–86.2 | 0.47 / 0.54 % | 0 / 5.0–5.3 | 4.1 / 4.3 | 74 |
+| m6b25f46 (×2) | 0 | 3390–3400 | 85.7–86.2 | 0.42 / 0.48 % | **+55 / 60–61** | 4.0 / 4.2 | 74 |
+| **m7b16f48** | 0 | 2930 | **89.8** | 0.13 % | −2.8 / 1.9 | 0.7 | 72 |
+| m7b20f48 | 0 | 3710 | 88.9 | 0.22 % | **+19.8 / 44.6** | 1.2 | 74 |
+| m7b20f46 | 0 | 2740 | 87.7 | 0.35 % | −3.3 / 1.8 | 2.7 | 74 |
+| **m12b20f48** (2SS) | 0 | 3650 | **89.5** | 0.13 % | −1.4 / 3.3 | 0.9 | 69 |
+| m12b25f48 | 4547 | 4360 | 68.6 | 3.72 % | +75 | 18.0 | 69 |
+| m13b25f48 | 0 | 4520 | 87.6 | 0.33 % | +0.1 / 5.5 | 2.6 | 69 |
+| m13b30f48 | 11799 | 5040 | 49.8 | 7.73 % | +63 | 31.1 | 69 |
+| m13b25f47 | 0 | 3950 | 85.4 | 0.64 % | −1.9 / 3.2 | 4.9 | 69 |
+| m13b30f47 | 0 | 4760 | 84.7 | 0.59 % | +1.9 / 7.9 | 5.5 | 69 |
+| m13b35f47 | 17015 | 5030 | 46.5 | 9.73 % | +59 | 33.9 | 69 |
+
+(pkt/s injected = the air's `inj` over the 60 s step.)
+
+- **≥ 88 fps without a latency cost: m7b16f48 (89.8 fps) and m12b20f48 (89.5 fps, 20 Mbit/s)** [PROVEN: this run, N = 1 each]. Both lose 0.13 % after FEC. The frames still missing are holes (frame_fate).
+- **MCS6 long GI is not an option at 25 Mbit/s** [PROVEN: ABAB, N = 2 per state]. It has the same loss and fps as MCS7 long GI but +55 ms, with no air drop. That is a full air TX queue [INFERRED: MCS6 long GI = 58.5 Mbit/s PHY at ~3400 pkt/s fills the airtime; R5's MCS6 *short* GI was only +0.7 ms].
+- **At MCS7 long GI the queue knee lies between ~3400 and ~3700 pkt/s** [INFERRED: m7b25f46 at 3390 pkt/s has no queueing; m7b20f48 at 3710 pkt/s queues +20 ms]. FEC 4/8 at 20 Mbit/s loses less than 4/6 (0.22 vs 0.35 %) but crosses the knee. The limit is packets per second on air (bitrate × n/k), not the bitrate alone, and the knee moves with the MCS: 2SS MCS13 carried 4760 pkt/s (m13b30f47) at +1.9 ms and dropped at ~5030 [PROVEN: this table].
+- **2SS without STBC** reads ~5 lower in the RSSI column (69 vs 74), yet m12b20f48 is the cleanest point of the run. 2SS is clean up to m13b30f47 (30 Mbit/s, +1.9 ms, 84.7 fps).
+- Every air drop (m12b25f48, m13b30f48, m13b35f47) is unusable (+59–75 ms, 47–69 fps). Their missing frames are mostly edges, whole packets dropped between frames. Frames that never arrived: 0 in every step.
+
 ### Frame fate 2026-09-29: where the missing frames at 1080p90 go, and the lever that keeps them
 
 Question (the user, via the coordinator): the exact source of the drop below 90 fps, proven rather than inferred.
