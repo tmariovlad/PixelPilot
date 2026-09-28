@@ -1,0 +1,7 @@
+1790586822.49 m2b4f46 tx=3087349 temp=44 enc_kbps=4015 enc_fps=90.0 drop=0 inj=12369
+1790586844.91 m4b8f46 tx=3101382 temp=44 enc_kbps=8033 enc_fps=90.0 drop=0 inj=23883
+1790586867.34 m7b16f46 tx=3128304 temp=46 enc_kbps=16072 enc_fps=90.0 drop=56 inj=45179
+1790586889.79 m4b16f46 tx=3177834 temp=46 enc_kbps=16079 enc_fps=90.0 drop=411 inj=44733
+1790586911.93 SKIP_DROP m7b25f46 ceiling=7:16000
+1790586912.30 m2b4f46 tx=3224998 temp=46 enc_kbps=4024 enc_fps=90.0 drop=0 inj=12342
+1790586934.70 END tx=3239006 temp=46 reverted=m2b4000f48 mcs=2 fec=4/8 br=4000

@@ -137,6 +137,12 @@ Build `53c4e5de` (`0badd95`). The air unit was run by the OpenIPC session; its p
   air unit's revert (157 at 20 MHz, alink and vmoded back): race 167 fps, 0 lost/s, tunnel RX moving again [PROVEN].
   Guardian restored.
 
+## Result under traffic (O82b §5a, 2026-09-28 12:09–12:15)
+
+The 1080p90 bitrate grid at 40 MHz, in both configurations (157 HT40+ and the 161 workaround), is worse than 20 MHz at
+every point. At 16 Mbit/s the air unit drops packets before injection and adds +45 to +191 ms. Measurements and
+verdict: [link-envelope.md, 40 MHz grid](../link-envelope.md).
+
 ## How the devourer part was committed (was open; option 1 chosen)
 
 devourer's origin is the upstream `https://github.com/openipc/devourer.git`, and the submodule is detached at `bb03774`.

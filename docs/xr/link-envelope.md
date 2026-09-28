@@ -128,6 +128,31 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
 - **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
+**Does 40 MHz carry 16–25 Mbit/s cleanly? The same grid at 40 MHz (2026-09-28 12:09–12:15, O82b §5a, 1080p90 native, 12 dBm, STBC 1, build `53c4e5de` = 0badd95).**
+- **Question.** The user's "25 Mbit clean?", at 40 MHz. These are the same points as the 20 MHz grid below, measured the same morning, so the 20 MHz runs are the twin. Background on the channel center and the uplink sub-channel: [40 MHz research](research/2026-09-28-ht40-channel-center.md).
+- **Method.** Two runs of `A m4b8f46 m7b16f46 m4b16f46 m7b25f46 A` (A = `m2b4f46`), 22 s steps, one trace each ([ab_long.sh](../../scripts/quest/ab_long.sh)), alink + vmoded stopped, air `RADIO="-B 40 …"`. The air grid script skipped `m7b25f46` in both runs (`SKIP_DROP`: it refuses a step above a bitrate where packets were already dropped).
+  - (i) air `157 HT40+` (the correct primary), Quest ch157 BW40: devourer `ch = 157, offset = 1, bwmode = 1`.
+  - (ii) air `161 80MHz` (the workaround, whose 20 MHz primary is 161), Quest ch161 BW40: devourer `ch = 161, offset = 2, bwmode = 1`.
+  - The Quest was switched with [set_bw.py](../../scripts/quest/set_bw.py) and restored afterwards (157, 20 MHz, `offset = 0, bwmode = 0`). Race decoded at 167 fps after the air's revert; Guardian restored.
+  - Offset Quest − air: +0.019 s (i), +0.021 s (ii). Air 44–46 °C, Quest CPU 53–55 °C, thermal status 0.
+- **Data.** Air step logs [(i)](data/air-bw40-2026-09-28-i-157ht40.txt) · [(ii)](data/air-bw40-2026-09-28-ii-161.txt); latency/loss [(i)](data/measurements-2026-09-28-quest2-bw40-i.csv) · [(ii)](data/measurements-2026-09-28-quest2-bw40-ii.csv); link [(i)](data/link-2026-09-28-bw40-i.csv) · [(ii)](data/link-2026-09-28-bw40-ii.csv); Quest thermal [(i)](data/thermal-2026-09-28-bw40-i.csv) · [(ii)](data/thermal-2026-09-28-bw40-ii.csv). 20 MHz twin: the grid CSVs in the next section.
+
+Each cell: air TX packets/s · pre-FEC loss · loss after FEC · frames without a decoded mark (of ~1665 per step) · Δ capture → decoded vs `m2b4f46` in the same trace. Air `drop` = packets the air unit discarded before injection (from its step log).
+
+| state | 20 MHz (grid pass1/pass2) | 40 MHz (i) 157 HT40+ | 40 MHz (ii) 161 |
+|---|---|---|---|
+| `m2b4f46` | 605–646 · 2.3–4.4 % · 0.03–0.31 % · 0–3 · 0 | 632 · 7.1 % · **1.1 %** · 10 (2 steps) · 0 | 626 · 4.2 % · 0.47 % · 4 (2 steps) · 0 |
+| `m4b8f46` | 1165–1170 · 4.4–5.4 % · 0.66–0.99 % · 1–2 · ≈ +0.7 ms | 1161 · 10.4 % · 3.7 % · 55 · **+24.8 ms** | 1200 · 6.4 % · 1.4 % · 23 · +5.5 ms |
+| `m7b16f46` | 2267–2277 · 3.1–4.3 % · 1.7 % · 14–15 · ≈ +3.2 ms | **1791, drop 1943** · 9.6 % · **22.7 %** · 568 · **+131 ms** | 2206, drop 56 · 6.8 % · 4.4 % · 112 · **+45 ms** |
+| `m4b16f46` | 2242–2249 · 3.7–4.3 % · 1.2–1.4 % · 16–18 · ≈ +8–10 ms | **1434, drop 5388** · 7.9 % · **36.1 %** · 947 · **+191 ms** | 2095, drop 411 · 3.7 % · 7.6 % · 170 · **+76 ms** |
+| `m7b25f46` | 3463–3495 · 2.6–4.2 % · 1.8 % · 49 · +9 to +20 ms | skipped (drop) | skipped (drop) |
+
+- **Verdict: 40 MHz is worse than 20 MHz at every point, in both configurations, so 25 Mbit/s is not clean at 40 MHz here. It is not even reached: 16 Mbit/s already drops on the air.** Keep 20 MHz [PROVEN: the three columns above, same geometry and day, 20 MHz pass1/pass2 air logs had drop = 0 at 16 Mbit/s].
+  - At 16 Mbit/s the air unit does not inject fast enough at 40 MHz. It sends 1434–1791 packets/s at HT40+ against ~2250 at 20 MHz, and packets/frame reaching the Quest fall from 16.4–16.6 (20 MHz) to 10.9–13.1. The queue in front of injection shows up as +131 to +191 ms [INFERRED: TX rate below the 20 MHz twin, drop > 0 and Δ growing with bitrate; issue #7, as degradation, not a total stall: the air's per-second TX logger never fell below 100 packets/s, per the coordinator].
+  - The workaround (ii) injects better than HT40+ (drop 56 / 411 vs 1943 / 5388) but still loses 4–8 % after FEC at 16 Mbit/s, with +45 / +76 ms.
+  - Even at 4 Mbit/s, 40 MHz loses more before and after FEC. The RSSI column is 69–70 (i) and 66 (ii) against 71–73 at 20 MHz, as expected when the same power is spread over twice the bandwidth [INFERRED: −3 dB power density at 40 MHz; not isolated here].
+- **Caveat.** The 40 MHz points ran once each (N = 1 per state per configuration, two configurations). The gaps are large (tens of ms, 5–30× the loss), far outside the spread between the two 20 MHz passes, so the ranking is not in doubt. The exact 40 MHz values are.
+
 **How far the bitrate can go: bitrate × MCS bracket at 1080p90 native, 12 dBm (2026-09-28 11:25–11:40, the user's "at least 25 Mbit", plan §4 of [plan-2026-09-28-presets-quality-power-axis.md](plan-2026-09-28-presets-quality-power-axis.md)).**
 - **Method.**
   - The air unit was on 1920×1080@90 native (RAM json, no flash writes), 12 dBm, 20 MHz, receiver and `vmoded` stopped.
