@@ -1,0 +1,35 @@
+# Above-25 Mbit grid 2026-09-28 23:03-23:13 (user: "o sa incerci si peste 25 mbit"). Air .132 ch157 20 MHz, 1080p90 (RAM),
+# 17 dBm, alink stopped, fix (a) live. bitrate_grid.sh 48d0ccbc (OpenIPC repos/tasks/bitrate-grid-2026-09-28), 60 s steps,
+# guard 2 s; wrapper hb_run.sh: G1 = 1SS STBC (RADIO "-B 20 -G long -S 1 -L 1 -N 1"), G2 = 2SS HT MCS 12/13 without STBC
+# (RADIO "-B 20 -G long -S 0 -L 1 -N 1"). Labels m<MCS>b<Mbit>f<k><n>; drop/inj = wfb_tx PKT sums (air side: packets the
+# air could not inject), enc_kbps/fps = waybeam's own encoder output. SKIP_DROP: the grid skips higher bitrates on an MCS once
+# a step drops > 50 — NOTE this key is per MCS, not per MCS+FEC, so m7b35f810/m7b40f810 were skipped because of m7b30f46's
+# drops, not tested. FINAL = race json 3d8a1456, 12 dBm, M2 long, FEC 4/8. find /overlay -newer stamp: empty.
+# This boot air-PC = -0.544 s. Quest: pixelpilot-xr-25 capture ab_grid25 (quest_minus_pc +564.6 ms).
+## hb_run.log
+SETUP epoch=1790628590
+PRE epoch=1790628613 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1  txp=17.00 ch=157
+G1 start epoch=1790628613
+G1 end epoch=1790628856
+G2 start epoch=1790628856
+G2 end epoch=1790629161
+FINAL epoch=1790629178 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  fec=k=4 n=8  txp=12.00 json=3d8a1456
+## grid_steps.txt
+1790628614.13 PRE m7b25000f46 tx=5034559 temp=46 verbose_lines=20 pkt_lines=1586 step=60s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790628614.53 m7b25f46 tx=5035972 temp=47 enc_kbps=25124 enc_fps=90.0 drop=0 inj=204249
+1790628675.05 m7b30f46 tx=5249502 temp=48 enc_kbps=30146 enc_fps=90.0 drop=6384 inj=234616
+1790628735.25 SKIP_DROP m7b35f46 ceiling=7:30000
+1790628735.64 m7b25f810 tx=5477802 temp=47 enc_kbps=25124 enc_fps=90.0 drop=0 inj=169939
+1790628796.16 m7b30f810 tx=5655257 temp=48 enc_kbps=30148 enc_fps=90.0 drop=0 inj=203671
+1790628856.36 SKIP_DROP m7b35f810 ceiling=7:30000
+1790628856.45 SKIP_DROP m7b40f810 ceiling=7:30000
+1790628856.81 END tx=5868863 temp=48 reverted=m7b25000f46 mcs=7 fec=4/6 br=25000
+1790628857.15 PRE m7b25000f46 tx=5869957 temp=47 verbose_lines=261 pkt_lines=1829 step=60s guard=2s radio="-B 20 -G long -S 0 -L 1 -N 1"
+1790628857.58 m12b25f46 tx=5871552 temp=47 enc_kbps=25126 enc_fps=90.0 drop=0 inj=203882
+1790628918.11 m12b30f46 tx=6084763 temp=48 enc_kbps=30172 enc_fps=90.0 drop=0 inj=244353
+1790628978.67 m12b35f46 tx=6339831 temp=48 enc_kbps=35189 enc_fps=90.0 drop=14448 inj=262513
+1790629038.94 SKIP_DROP m12b40f46 ceiling=12:35000
+1790629039.74 m13b35f46 tx=6601179 temp=47 enc_kbps=35132 enc_fps=90.0 drop=0 inj=283882
+1790629100.26 m13b40f46 tx=6897763 temp=48 enc_kbps=40260 enc_fps=90.0 drop=14384 inj=303100
+1790629160.51 SKIP_DROP m13b45f46 ceiling=13:40000
+1790629160.85 END tx=7202150 temp=47 reverted=m7b25000f46 mcs=7 fec=4/6 br=25000
