@@ -106,10 +106,14 @@ public class VmodeSessionTest {
     }
 
     @Test public void listIsRepeatedAsAKeepalive() {
+        // The first tick comes at the real clock (elapsedRealtime), long after the list sent at start: no second
+        // list then (seen on the headset 2026-09-28: list seq=1 and seq=2 half a second apart).
+        long t = 5_000_000;
         int before = air.sent.size();
-        s.tick(VmodeSession.LIST_KEEPALIVE_MS - 1, 0, 640, 480);
+        s.tick(t, 0, 640, 480);
+        s.tick(t + VmodeSession.LIST_KEEPALIVE_MS - 1, 0, 640, 480);
         assertEquals(before, air.sent.size());
-        s.tick(VmodeSession.LIST_KEEPALIVE_MS + 5, 0, 640, 480);
+        s.tick(t + VmodeSession.LIST_KEEPALIVE_MS, 0, 640, 480);
         assertEquals("VMODE1 list seq=" + air.seq, air.last());
     }
 

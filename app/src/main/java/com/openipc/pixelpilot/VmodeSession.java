@@ -34,6 +34,7 @@ final class VmodeSession implements VmodeClient.Listener {
     private int effectiveKbps;
     private long nowMs;
     private long lastListMs = Long.MIN_VALUE / 2;
+    private boolean ticked;          // the first list goes out before the first tick, i.e. before the clock is known
 
     VmodeSession(VmodeSender sender, Consumer<PresetCatalog> onCatalog) {
         this.sender = sender;
@@ -67,6 +68,10 @@ final class VmodeSession implements VmodeClient.Listener {
     /** Once per stats tick: frames decoded since the last tick and the current video size. */
     void tick(long nowMs, int frames, int w, int h) {
         this.nowMs = nowMs;
+        if (!ticked) {
+            ticked = true;
+            lastListMs = nowMs;      // count the keepalive from here, not from the unknown time of the first list
+        }
         if (!listing && nowMs - lastListMs >= LIST_KEEPALIVE_MS) list();
         String token = gate.onFrames(frames, w, h);
         if (token != null) send("commit", seq -> VmodeProtocol.commit(seq, token));

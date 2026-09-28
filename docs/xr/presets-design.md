@@ -1,6 +1,6 @@
 # Presets: switch the air unit's video mode and quality from the headset (design, 2026-09-27)
 
-Status: **approved 2026-09-27 (coordinator d2). App side implemented and tested against a fake air, not yet on the headset; air side (c8) pending.** See [Implementation (app side)](#implementation-app-side-2026-09-27). App side: this repo (PixelPilotXr). Air side: the OpenIPC project
+Status: **approved 2026-09-27 (coordinator d2). App side implemented; on the headset against a fake air 2/2 commits + 2/2 reverts (2026-09-28); real thumbsticks and the real air side (c8) pending.** See [Implementation (app side)](#implementation-app-side-2026-09-27). App side: this repo (PixelPilotXr). Air side: the OpenIPC project
 (session c8, writes on `.132` through session a61381). The message format follows c8's proposal. Air-side mechanics
 are marked as questions for c8 at the end.
 
@@ -261,3 +261,33 @@ Next, on the headset:
    with the menu driven by the debug broadcast. This checks the menu, the countdown, the commit and the revert on the
    headset. The real thumbsticks are checked with the user at the end, together with the RTL replug.
 2. After the air side exists, repeat on the tunnel, and measure picture gap, command → commit time, and Q2/Q4/Q6 cost.
+
+## On the headset against the fake air (2026-09-28)
+
+`preset_flow.py` × 4 on the Quest, build `c31ddd0f` (`672aaa6`). The menu was driven by the debug broadcast; the fake air
+ran on the PC (UDP 9998, reached without any firewall change). The real air unit was untouched and streamed Race
+throughout. Data: [fake-air logs](data/2026-09-28-preset-flow.txt).
+
+| Run | Target | Result | Timeline (s from the run start) |
+|---|---|---|---|
+| ok1 | `race-b` (640×480) | **PASS**: committed | apply 22.1 → pending 25.1 → commit 41.3. The link delivered no video for the first ~20 s after the app restart (NO SIGNAL), so the 30 frames took until 41 s |
+| ok2 | `race-b` | **PASS**: committed | apply 42.5 → pending 45.6 → commit 46.1 (0.5 s: 30 frames at 167 fps) |
+| fail1 | `wide` (never pending) | **PASS**: reverted | apply 41.9 → reverted 66.9 (= `revert_s` 25) |
+| fail2 | `wide` | **PASS**: reverted | apply 42.1 → reverted 67.1 |
+
+[PROVEN: data file; screenshots below.] A first fail1 attempt stopped before any request reached the fake. Its error
+was filtered out of the console, so the cause is not known. It left no trace on the headset, and the rerun above
+passed.
+
+What the headset showed ([commit run](img/presets-flow-commit.jpg), [revert run](img/presets-flow-revert.jpg)):
+- the menu `MODE < Race > 640x480@167 (active)` / `FOV 33x44 % G2G 26.7-32.0 ms` / `QUALITY ^ 2 Mbit v`;
+- on another mode the hint `hold stick 1 s: switch ~10-14 s, picture frozen ~4 s`;
+- then `SWITCHING TO Wide... 24 s`, then `Race-B ACTIVE` or `REVERTED TO Race: NO VIDEO`;
+- on the video line `Race-B 2.0 Mbit` [PROVEN: screenshots].
+
+Found and fixed: `list` went out twice at start (seq 1 and 2, ~0.4 s apart in every run). The keepalive timer started
+at 0 before the first stats tick. It now starts at the first tick (`VmodeSession.tick`, with a regression test that
+fails without the fix).
+
+Still open on the headset: the real thumbsticks (with the user, together with the RTL replug), and the real air
+receiver (c8, after its deploy).

@@ -1,0 +1,33 @@
+# preset_flow.py on the Quest against vmode_fake.py on the PC, 2026-09-28, build c31ddd0f (672aaa6).
+# Time in s from the start of each run. Air unit untouched; the fake changes no video.
+
+## ok1
+    1.88 VMODE1 list seq=1
+    2.36 VMODE1 list seq=2
+   22.12 VMODE1 apply seq=3 preset=race-b revert_s=25
+   25.14 phase applying -> pending (active race)
+   41.33 VMODE1 commit seq=4 token=114962
+
+## ok2
+    1.47 VMODE1 list seq=1
+    1.81 VMODE1 list seq=2
+   42.52 VMODE1 apply seq=3 preset=race-b revert_s=25
+   45.55 phase applying -> pending (active race)
+   46.08 VMODE1 commit seq=4 token=dbcf82
+
+## fail1
+    1.52 VMODE1 list seq=1
+    1.89 VMODE1 list seq=2
+   41.88 VMODE1 apply seq=3 preset=wide revert_s=25
+   62.08 VMODE1 list seq=4
+   66.92 phase applying -> reverted (active race)
+
+## fail2
+    1.47 VMODE1 list seq=1
+    1.86 VMODE1 list seq=2
+   42.06 VMODE1 apply seq=3 preset=wide revert_s=25
+   62.03 VMODE1 list seq=4
+   67.08 phase applying -> reverted (active race)
+
+## fail1, first attempt
+# aborted before any request reached the fake (empty log, no screenshots); the error was filtered out of the console, cause not captured. Rerun = fail1 above.
