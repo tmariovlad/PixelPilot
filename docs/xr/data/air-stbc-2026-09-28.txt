@@ -1,0 +1,14 @@
+1790585108.01 BEGIN list=[1 0 0 1 1 0] step=30s mcs=2 stbc0=1
+1790585108.03 S1 tx=2023148 temp=40
+1790585108.05 RADIO stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1
+1790585138.08 S0 tx=2041371 temp=40
+1790585138.10 RADIO stbc=0 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1
+1790585168.13 S0 tx=2059338 temp=40
+1790585168.15 RADIO stbc=0 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1
+1790585198.18 S1 tx=2077726 temp=40
+1790585198.20 RADIO stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1
+1790585228.22 S1 tx=2096053 temp=40
+1790585228.24 RADIO stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1
+1790585258.27 S0 tx=2114302 temp=40
+1790585258.29 RADIO stbc=0 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1
+1790585288.31 END tx=2132123 temp=40 readback=1

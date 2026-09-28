@@ -112,6 +112,22 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **Switch up** to MCS2 only with margin above ~1600. The score moved ~45 points between 17 and 12 dBm and ~100 between 12 and 8 dBm. Hysteresis and time constants are checked in closed loop by the receiver's author and live by the adaptive-range test below [SPECULATION until then].
 - **Pending:** the user's picture-quality check at 2–4 Mbit/s.
 
+**STBC on/off A/B: does STBC put the video on both air TX chains? (2026-09-28 11:45–11:48, O82b stage 4a.1, 480p167 race, `m2b2f48`, 12 dBm).**
+- **Question.** In 1SS without STBC the RTL8822EU transmits on path A only (hal_dm.c:1488-1513). If STBC uses both chains, S1 should be clearly better than S0 (≳ 3 dB RSSI or clearly lower pre-FEC). If they are equal, the video goes out on path A either way.
+- **Method.** One 240 s trace ([ab_long.sh](../../scripts/quest/ab_long.sh)), air alink + vmoded stopped, 6 steps of 30 s in the order `S1 S0 S0 S1 S1 S0` (N = 3 per state, alternating). The air read back the radio after every step, and `readback=1` at the end. Quest on the balcony, same geometry as the bitrate grid. Offset Quest − air = −0.232 + 0.273 = +0.041 s. Air at 40 °C throughout.
+- **Data.** [air step log](data/air-stbc-2026-09-28.txt) · [latency/loss](data/measurements-2026-09-28-quest2-stbc.csv) · [link](data/link-2026-09-28-stbc.csv) · [Quest thermal](data/thermal-2026-09-28-stbc.csv).
+
+| state | RSSI column (best chain) | pre-FEC | FEC rec/s | loss after FEC | undecoded | Δ decoded |
+|---|---|---|---|---|---|---|
+| S1 (STBC on), 3 steps | **69.0** (69.0 / 69.0 / 69.0) | **3.3 %** (3.1 / 3.9 / 2.9) | 7.0 | **0.00 %** | 0 | 0 (baseline) |
+| S0 (STBC off), 3 steps | 60.2 (59.8 / 61.5 / 59.4) | 5.4 % (5.3 / 5.8 / 5.0) | 12.8 | 0.18 % | 3 | +0.21 ms |
+
+- **Verdict: STBC is clearly better, so it uses both TX chains** [PROVEN: every S1 step beats every S0 step on RSSI, pre-FEC and loss after FEC, in an alternating order, [link CSV](data/link-2026-09-28-stbc.csv) + [measurements CSV](data/measurements-2026-09-28-quest2-stbc.csv)].
+  - The RSSI column rises by 8.8, which is about +7 dB raw (the column is 1.25 × raw) and +88 alink score points [INFERRED: from the score mapping, see the policy section below].
+  - Pre-FEC loss drops from 5.4 % to 3.3 % and FEC repairs from 12.8/s to 7.0/s. Loss after FEC goes from 0.18 % to 0.
+  - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
+- **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. The app cannot yet tell which Quest chain carries the signal, because it exports only the best-chain RSSI. The per-chain RSSI/SNR patch follows.
+
 **How far the bitrate can go: bitrate × MCS bracket at 1080p90 native, 12 dBm (2026-09-28 11:25–11:40, the user's "at least 25 Mbit", plan §4 of [plan-2026-09-28-presets-quality-power-axis.md](plan-2026-09-28-presets-quality-power-axis.md)).**
 - **Method.**
   - The air unit was on 1920×1080@90 native (RAM json, no flash writes), 12 dBm, 20 MHz, receiver and `vmoded` stopped.
