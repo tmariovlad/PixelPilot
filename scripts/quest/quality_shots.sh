@@ -3,7 +3,7 @@
 # Picture-quality stills of the XR app without wearing the headset: adb screencap of the compositor output (both eyes,
 # 3664x1920), cropped to the left eye's video layer plus the stats overlay under it (link loss/FEC, fps, Mbit/s), so
 # every still shows whether artifacts come from the encoder or from lost packets. Saves
-# quality-2026-09-27-<state>-<i>.jpg and prints "<Quest epoch> <file>" per shot, to match stills with air-side frames.
+# quality-<YYYY-MM-DD>-<state>-<i>.jpg and prints "<Quest epoch> <file>" per shot, to match stills with air-side frames.
 # The crop box fits the default layer layout (flat, 90 deg FOV); check one full frame first if the layout changed.
 . "$(dirname "$0")/quest_env.sh" || exit 1
 export MSYS_NO_PATHCONV=1
@@ -14,7 +14,7 @@ TMP="$QUEST_OUT/quality_shot_tmp"   # C:/ path: Windows python cannot open an MS
 for i in $(seq 1 "$N"); do
   t=$(qadb shell date +%s.%N | tr -d '\r')
   "$ADB_SH" -s "$QUEST" exec-out screencap -p > "$TMP.png"
-  OUT="$OUTDIR/quality-2026-09-27-$STATE-$i.jpg"
+  OUT="$OUTDIR/quality-$(date +%F)-$STATE-$i.jpg"
   python3 - "$TMP.png" "$(cygpath -m "$OUT" 2>/dev/null || echo "$OUT")" <<'EOF'
 import sys
 from PIL import Image
