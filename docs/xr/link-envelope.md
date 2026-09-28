@@ -173,6 +173,7 @@ Question (OpenIPC beacon-rhythm audit, B4 + the coordinator's R1 register read):
 - At 2 Mbit the gain in mean latency is small (≈ 0.1 ms), and the p95 drops by up to ~3 ms in the base steps with the largest teeth.
   - The pause count itself cannot separate the states here: at 167 fps × ~2 packets/frame the ordinary inter-frame gaps fall in the same 3–4.6 ms range (25–34 gaps/s everywhere). Only their phase lock differs.
   - At 25 Mbit (B4: +0.8 ms mean, +3.1 ms peak) the effect should be larger [INFERRED: more queue to drain after each pause; not measured here].
+- Caveat: the air's alink (`alink_air`, c7c62e56) was running during R6 (its boot state, as in normal flight). The states alternate, so it affects all of them alike.
 - Loss is ~0 in every state at this rate, so R6 says nothing about the loss floor. That is a separate question (the external co-channel transmitter in the audit's B1).
 - A persistent fix belongs on the air side (clear `EN_BCN_FUNCTION` / the hold after the AP phase). It is for the OpenIPC session to design; the runtime writes above are lost at reboot.
 
