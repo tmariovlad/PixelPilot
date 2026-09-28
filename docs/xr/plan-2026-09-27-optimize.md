@@ -158,7 +158,7 @@ backups in the table above are **no longer on the air unit**. They were moved to
 `5b437d83…` pre-alink). To use one of those reverts: copy the file from the PC to `/tmp/` on the air unit, check md5
 and size, then `cp /tmp/<name> /opt/linkmode/linkmode-air.sh`. The `waybeam.json.bak-pre-rec` / `-1080p90` backups
 stay on the air unit. **Once O114 stage (a) is deployed**, `/etc/waybeam.json` becomes a link to RAM. From then on,
-`cp <bak> /etc/waybeam.json` no longer persists across a reboot, and the revert is `wb_cfg.sh set_default <bak>`
+`cp <bak> /etc/waybeam.json` no longer persists across a reboot, and the revert is `/opt/vmode/wb_cfg.sh set_default <bak>`
 instead (details in the O114 deploy runbook, OpenIPC repo
 `repos/tasks/vmode-presets-2026-09-27/02-DEPLOY-RUNBOOK.md`).
 
