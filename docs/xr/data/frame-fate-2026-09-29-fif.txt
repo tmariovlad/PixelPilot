@@ -1,0 +1,11 @@
+# ab_fif (2026-09-29 01:30-01:43), pref_ab.sh fif feed_incomplete_frames 90 F T T F F T T F, APK e75a4b26, air m7b30f810 1080p90 17 dBm alink off; steps on the Quest clock (--air-offset-s 0), guard 10 s
+# python3 scripts/quest-latch/frame_fate.py scripts/quest/out/ab_fif.pftrace docs/xr/data/steps-2026-09-29-fif.txt --air-offset-s 0 --guard-s 10
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 false              84.1       5.6       0.5       0.3        0.0           84.1
+ 1 true               84.0       5.8       0.6       0.0        0.0           89.4
+ 2 true               83.6       6.1       0.7       0.0        0.0           89.2
+ 3 false              84.0       5.4       0.8       0.2        0.0           84.1
+ 4 false              82.3       6.9       0.8       0.5        0.0           82.4
+ 5 true               84.2       5.7       0.5       0.0        0.0           89.6
+ 6 true               84.1       5.7       0.6       0.0        0.0           89.5
+ 7 false              83.2       6.3       0.7       0.3        0.0           83.2

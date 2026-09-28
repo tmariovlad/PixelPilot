@@ -1,0 +1,12 @@
+# ab_fif (2026-09-29 01:30-01:43), pref_ab.sh fif feed_incomplete_frames 90 F T T F F T T F, APK e75a4b26, air m7b30f810 1080p90 17 dBm alink off; steps on the Quest clock (--air-offset-s 0), guard 10 s
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_fif.pftrace docs/xr/data/steps-2026-09-29-fif.txt --air-offset-s 0 --guard-s 10
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 false        197957  1403  4578  1405    3.00   0.70    9.6  349  115  133   42   42  18.3   18.2   2.5
+ 1 true         197727  1563  4660  1579    3.13   0.78    9.9  316  132  144   45   62  23.7   20.6   2.5
+ 2 true         197723  1648  4680  1647    3.17   0.83   10.7  379  121  154   36   71  25.5   18.5   2.5
+ 3 false        204106  1489  4890  1511    3.11   0.72    9.3  335  116  132   31   64  27.0   14.2   2.5
+ 4 false        198654  1850  4782  1813    3.29   0.92   11.7  412  141  172   40   73  25.9   18.2   2.6
+ 5 true         198233  1482  4678  1487    3.09   0.74    9.6  344  105  145   35   55  23.8   12.4   2.5
+ 6 true         198089  1499  4833  1502    3.17   0.75    9.7  357  100  136   29   67  27.9   14.3   2.5
+ 7 false        196345  1653  4598  1674    3.17   0.83   10.2  334  109  148   41   85  29.8   19.4   2.5

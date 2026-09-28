@@ -1,0 +1,20 @@
+# ab_fif (2026-09-29 01:30-01:43), pref_ab.sh fif feed_incomplete_frames 90 F T T F F T T F, APK e75a4b26, air m7b30f810 1080p90 17 dBm alink off; steps on the Quest clock (--air-offset-s 0), guard 10 s
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_fif.pftrace docs/xr/data/steps-2026-09-29-fif.txt --air-offset-s 0 --guard-s 10 --baseline false
+2206128 packets, 71490 frames, 110194 lost before the app; 62667 frames inside the steps
+clock drift fitted on 'false': +71 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 false         6405   90.4  30.91    9.98   -7.68    2.30    5.28     5.29    19.8   2.10    47
+ 1 true          6403   90.4  30.88    9.97   -7.68    2.28    5.19     4.73    22.1   2.33     2
+ 2 true          6412   90.4  30.84    9.93   -7.66    2.27    5.43     4.75    23.2   2.45     1
+ 3 false         6611   90.4  30.88    9.97   -7.68    2.29    5.23     5.26    20.4   2.22    46
+ 4 false         6450   90.4  30.80    9.97   -7.63    2.34    5.57     5.46    25.9   2.75    81
+ 5 true          6420   90.4  30.88    9.95   -7.67    2.28    5.12     4.71    20.9   2.21     1
+ 6 true          6418   90.4  30.87    9.96   -7.64    2.32    5.42     4.75    21.1   2.24     0
+ 7 false         6362   90.4  30.86    9.97   -7.64    2.33    5.33     5.39    23.5   2.46    57
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+false           25828   90.4  30.86    9.97   -7.66    2.31    5.33     5.35    22.4   2.38   231   +0.00     +0.00
+true            25653   90.4  30.87    9.95   -7.66    2.29    5.28     4.74    21.8   2.31     4   -0.03     -0.61

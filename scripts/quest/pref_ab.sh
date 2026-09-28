@@ -5,6 +5,8 @@
 #   APK_OLD=old.apk APK_NEW=new.apk pref_ab.sh alink adaptive_link_enabled 45 OLD:true NEW:true NEW:false OLD:true NEW:false NEW:true
 #   EXTRA_PREFS='{"rx-diag-ring-ms": 100}' pref_ab.sh rxmode rx-diag-mode 120 async spsc spsc async
 #   EXTRA_PREFS (JSON) is written in every step as well: the pref write keeps only gs.key and what it is given.
+#   Several prefs per step: pref @states and STATES (JSON, state -> prefs), e.g.
+#   STATES='{"00":{"feed_incomplete_frames":false,"request_idr_on_loss":false},"11":{...}}' pref_ab.sh ab2 @states 90 00 11 11 00
 #   START_AT=<PC epoch>: step k starts at START_AT + k*step_s by the clock (for a schedule shared with the air unit,
 #   e.g. a channel A/B where both ends must switch); the END line comes after the last step's slot.
 #   CAPTURE=detached: capture with ab_detached.sh (perfetto + logcat on the Quest, pulled at the end) instead of
@@ -51,7 +53,7 @@ for SPEC in "$@"; do
     [ -f "$APK" ] || { echo "no APK for tag $TAG (set $APK_VAR)"; break; }
     qadb install -r "$(cygpath -w "$APK")" | tail -1; CUR=$TAG
   fi
-  EXTRA_PREFS="${EXTRA_PREFS:-}" python3 -c "import os, quest_adb as q; q.set_prefs(q.step_prefs('$PREF', '$V', os.environ['EXTRA_PREFS']))"
+  EXTRA_PREFS="${EXTRA_PREFS:-}" STATES="${STATES:-}" python3 -c "import os, quest_adb as q; q.set_prefs(q.step_prefs('$PREF', '$V', os.environ['EXTRA_PREFS'], os.environ['STATES']))"
   echo "$(qadb shell date +%s.%N | tr -d '\r') $SPEC" | tee -a "$STEPS"
   quest_prox_close
   quest_start_xr >/dev/null

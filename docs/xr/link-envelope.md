@@ -262,9 +262,19 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
 - Plumbing: `LatencyExperiments` → `VideoPlayer.setDecoderLevers` → JNI `nativeSetFeedIncompleteFrames` → `RTPDecoder::setFeedIncompleteFrames` (atomic, applied live).
 - Host tests: `ParseRTP_test` FU-A with a missing middle fragment is dropped by default and forwarded truncated with the lever.
 - Build: APK md5 e75a4b26 (rollback a6ec585d).
-- **Not measured yet** [SPECULATION until the A/B]: whether the Qualcomm H.264 decoder shows a truncated slice as a partly smeared frame, drops it anyway, or propagates the damage to the frames that reference it until the next IDR. The planned A/B, the same air state with alink off and then on:
-  - `pref_ab.sh feed_incomplete_frames 90 false true true false false true true false`, detached capture;
-  - metrics: decoded fps (frame_fate), latency, decoder errors, and stills (quality_shots, local only).
+- **A/B 2026-09-29 01:30–01:43**:
+  - setup: air m7b30f810, 1080p90, 17 dBm, alink off; APK e75a4b26;
+  - run: `pref_ab.sh fif feed_incomplete_frames 90 false true true false false true true false`, detached, one XR relaunch per step, Quest clock, guard 10 s, `TRACE LOSS: none`;
+  - data: [steps](data/steps-2026-09-29-fif.txt) · [link_audit](data/audit-2026-09-29-fif.txt) · [frame fate](data/frame-fate-2026-09-29-fif.txt) · [latency](data/latency-2026-09-29-fif.txt).
+
+| state (4 × 90 s each, alternating) | decoded fps | post-FEC | last / p95 (ms, vs the off line) | decoder output (ms) | frames not decoded |
+|---|---|---|---|---|---|
+| off (upstream) | 82.4–84.1 | 0.70–0.92 % | 2.31 / 5.33 | 5.35 | 231 |
+| **on** | **89.2–89.6** | 0.74–0.83 % | 2.29 / 5.28 | 4.74 | 4 |
+
+- **With the lever on, the decoder outputs ~89.5 of 90 frames/s at the same loss and latency** [PROVEN: ABBA × 2, every "on" step 89.2–89.6 vs every "off" step 82.4–84.1]. The hole frames now reach MediaCodec, and it outputs them. frame_fate still counts them as class (a), because its decoded class excludes holes by construction; the measured column is the one that counts.
+- Decoder output comes ~0.6 ms earlier on average [INFERRED: mean of 4 steps each, 4.71–4.75 vs 5.26–5.46 ms; probably the frames after a hole no longer wait behind a decoder resync].
+- **Still unknown: what a truncated frame looks like** [SPECULATION]. A truncated slice either decodes with a smeared bottom part, which then propagates through the P frames until the next IDR (GOP 2 s), or it is concealed. More fps does not mean a better picture until stills or a viewer confirm it. Next: stills (quality_shots, local only), the user's own look, and the partner lever `request_idr_on_loss`.
 
 **Partner lever `request_idr_on_loss`** (pref, default false; "IDR" in the summary). The air's GOP is 2.0 s (`gopSize: 2.0` in the 1080p90 and race jsons, read by the coordinator). A lost or truncated frame therefore corrupts every frame that references it, up to 2 s, until the next key frame.
 - With the lever on, every RTP sequence gap asks waybeam for a key frame right away: HTTP `GET /request/idr` on the air's port 80 (waybeam `venc_api.c:3219` → `handle_idr`, with its own `idr_rate_limit`, per the coordinator), sent to 10.5.0.10 through the app's VPN tunnel.
