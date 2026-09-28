@@ -163,3 +163,31 @@ Decided:
 Still open:
 
 1. Which Display levers are worth offering live vs relaunch after a quick check on the headset (FOV/curved/flip should be live through `setLayout`).
+
+## 10. Implementation, phase 1 (2026-09-29, commit `0626ca9`, APK md5 88889d0f)
+
+Built in the `menu` worktree and cherry-picked onto `xr-native`. The APK also contains everything before it, including
+FRZ (`2df7979`) and the live codec switch (`573845f`).
+
+| Piece | File | Tests |
+|---|---|---|
+| Tree, data only | [MenuItem](../../app/xr/src/main/java/com/openipc/xr/menu/MenuItem.java), [ApplyClass](../../app/xr/src/main/java/com/openipc/xr/menu/ApplyClass.java), [MenuModel](../../app/xr/src/main/java/com/openipc/xr/menu/MenuModel.java), [MenuAction](../../app/xr/src/main/java/com/openipc/xr/menu/MenuAction.java) | — |
+| Right-stick state machine (§3) | [MenuNavigator](../../app/xr/src/main/java/com/openipc/xr/menu/MenuNavigator.java) | `MenuNavigatorTest` 13 (every row of §3; mutants "air applies on a click" and "a stats page idles out" killed) |
+| Lines, 56 columns | [MenuRenderer](../../app/xr/src/main/java/com/openipc/xr/menu/MenuRenderer.java), [MenuLine](../../app/xr/src/main/java/com/openipc/xr/menu/MenuLine.java) | `MenuRendererTest` 6 (found 2 display bugs: a cut edit value, a hold bar after the hold acted) |
+| Stats pages | [StatsPages](../../app/xr/src/main/java/com/openipc/xr/menu/StatsPages.java) over session 36's [StatsSnapshot](../../app/xr/src/main/java/com/openipc/xr/stats/StatsSnapshot.java) | `StatsPagesTest` 5 |
+| Cost column | [OptionCostLabels](../../app/xr/src/main/java/com/openipc/xr/menu/OptionCostLabels.java) over session dc's [OptionCosts](../../app/xr/src/main/java/com/openipc/xr/OptionCosts.java) | `OptionCostLabelsTest` 3 |
+| Geometry | [LayerLayout](../../app/xr/src/main/java/com/openipc/xr/LayerLayout.java): 0.9 m at 2 m, right of the video, right edge ≤ 47°, yawed to the eye | `LayerLayoutTest` +3 |
+| Native layer | `XrLayers`/`XrRuntime`/`xr_jni.cpp`: a 3rd quad (1024×640 swapchain), submitted only while open; `XrInput.cpp`: stick/click bound on the right hand only | checked on the headset |
+| What the menu offers | [XrMenuTree](../../app/src/main/java/com/openipc/pixelpilot/XrMenuTree.java) (pref keys from `LatencyExperiments`) | `XrMenuTest` 11 |
+| Values | [XrMenuModel](../../app/src/main/java/com/openipc/pixelpilot/XrMenuModel.java) (via `LatencyExperiments`, `PresetCatalog`, `PanelMode`) | in `XrMenuTest` |
+| What a line does | [XrMenuActions](../../app/src/main/java/com/openipc/pixelpilot/XrMenuActions.java): typed pref write, then live (`setDecoderLevers` + layout) or `recreate()`; air via `VmodeSession` | in `XrMenuTest` |
+| Drawing, wiring | [XrMenuSurfaceRenderer](../../app/src/main/java/com/openipc/pixelpilot/XrMenuSurfaceRenderer.java), [XrVideoActivity](../../app/src/main/java/com/openipc/pixelpilot/XrVideoActivity.java) (50 ms menu tick while open) | — |
+
+- Tests: all `:app`, `:app:xr` and `:app:videonative` JVM suites are green, and `assembleDebug` passes (2026-09-29).
+- Not yet on the headset: the first check waits until the user's FRZ check is done (one change at a time), then:
+  1. through `DebugInput` (open, browse every page, one live lever, one relaunch lever);
+  2. by hand with the user.
+- Known gaps in phase 1:
+  - the Stats pages show "-" until session 36's `StatsSource` implementation is attached (`XrVideoActivity.statsSource`);
+  - the Air page lines for radio/codec/channel stay greyed out until the air side (OpenIPC `03-DESIGN-menu-extension.md`) lists them;
+  - `PresetMenu` is no longer wired and will be removed after the headset check.
