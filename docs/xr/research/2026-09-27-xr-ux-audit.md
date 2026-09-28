@@ -29,7 +29,7 @@ Excluded on purpose, because they are already known and handled:
 | key validation | X24 | `8d7728e` | verified (32-byte key → SETUP, no crash) |
 | 4 link self-healing, USB attach/permission | X17, X14 (part X15) | `c27f8aa` (Java), `ac740e0` (native guard) | link restarts by itself after a replug, 3/3 ([hands-on checks](#hands-on-checks-with-the-user-2026-09-28)); no permission dialog appeared |
 | 3 telemetry + MAVLink lifecycle | X12 | `a6c28f2`, home fix `11cb1a7` | telemetry line verified with synthetic MAVLink; 2D↔XR restart weakly; home fix verified in the [final slot](#final-slot-on-the-headset-2026-09-27) |
-| X15 attach pulls XR to 2D | X15 | **confirmed 3/3** on the headset; the manifest trampoline is next | the pilot stayed in 2D after the 2nd replug ([hands-on checks](#hands-on-checks-with-the-user-2026-09-28)) |
+| X15 attach pulls XR to 2D | X15 | **confirmed 3/3** on the headset; fixed in code: `UsbAttachActivity` trampoline + `XrPresence` (commit after `754af76`), not yet on the headset | the pilot stayed in 2D after the 2nd replug ([hands-on checks](#hands-on-checks-with-the-user-2026-09-28)) |
 | XR start errors visible, levers re-applied, bandwidth fallback, loop back-off | X13, X04, X27, X25 | `a8b35de` | not yet |
 | minimal input in XR (panel detail / hide) | X01 | `3a37a88` | A and B verified on the headset; X/Y share the bindings, not pressed ([hands-on checks](#hands-on-checks-with-the-user-2026-09-28)) |
 | VPN null establish() / bind leak | X26 | fixed by session 2c6ae8 ("survives a null establish()") | - |
@@ -98,7 +98,20 @@ app tags plus `ActivityTaskManager` and `UsbHostManager`, and screenshots. Data:
 4. **Restore:** force-stop, then a clean XR start (03:45:50). Result: one link start, no `still in use`, 167 fps with 0
    lost, no VideoActivity instance, Guardian restored.
 
-**Next:** the X15 trampoline (Fix 4, optional part), now justified. `USB_DEVICE_ATTACHED` moves to a no-display activity.
+**Fix, in code (2026-09-28, not yet checked on the headset):**
+- `USB_DEVICE_ATTACHED` and its `usb_device_filter` moved from `.VideoActivity` to
+  [UsbAttachActivity](../../../app/src/main/java/com/openipc/pixelpilot/UsbAttachActivity.java), which has
+  `Theme.NoDisplay`, `noHistory` and its own task.
+- While [XrPresence](../../../app/src/main/java/com/openipc/pixelpilot/XrPresence.java) says XR is started (a count kept in
+  XrVideoActivity's onStart/onStop), the trampoline only finishes. Otherwise it forwards the intent to `VideoActivity`.
+- The packaged manifest shows the filter on `UsbAttachActivity` only [PROVEN: `aapt2 dump xmltree`].
+- Expected on the headset [INFERRED]:
+  - no 2D, no second link start;
+  - XR still pauses briefly while the trampoline runs (its onPause stops the adapters, and onResume starts them again);
+  - Horizon may ask once again which app opens the adapter, because the component that declares the filter changed.
+- Check: 2 replugs in XR, `physical_step.sh`; APK md5 `8bc1a3d6`.
+
+**Next (was):** the X15 trampoline (Fix 4, optional part), now justified. `USB_DEVICE_ATTACHED` moves to a no-display activity.
 It finishes at once when XR is in front, since XR's receiver already restarts the link; otherwise it opens
 `VideoActivity`. That also removes the second link start.
 

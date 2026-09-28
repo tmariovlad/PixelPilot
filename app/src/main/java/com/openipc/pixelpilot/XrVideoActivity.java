@@ -176,6 +176,18 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        XrPresence.onStart();   // a USB attach now leaves the adapter to this activity (UsbAttachActivity, X15)
+    }
+
+    @Override
+    protected void onStop() {
+        XrPresence.onStop();
+        super.onStop();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         if (xr == null) return;
