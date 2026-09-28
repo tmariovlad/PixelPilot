@@ -1,0 +1,35 @@
+# G5/G6 2026-09-29 00:51-01:06 (user: "fa toate testele sa descoperi toate limitele maxime"). Air .132 ch157 20 MHz,
+# 1080p90 (RAM), 17 dBm, alink stopped, fix (a) live. Wrapper g56_run.sh (= hb_run.sh with other step files; its log
+# markers still say "G1/G2" = G5/G6). bitrate_grid.sh 48d0ccbc, 60 s steps, guard 2 s, DROP_SKIP disabled.
+# G5 1SS STBC (-S 1 -G long): MCS6 vs MCS7 A/B at 25 Mbit f46 (B6's question), then MCS7 16/20 Mbit with FEC 4/8 and 4/6.
+# G6 2SS without STBC (-S 0): HT MCS12/13 with stronger FEC (4/8, 4/7) at 20-35 Mbit.
+# drop/inj = wfb_tx PKT sums (air side). FINAL: race json 3d8a1456, 12 dBm, M2 long, FEC 4/8. find /overlay: empty.
+# This boot air-PC = -0.749 s. Quest: pixelpilot-xr-25 capture ab_g56 (quest_minus_pc +534.9 ms).
+## g56_run.log
+stopped alink/vmoded pids=1412
+SETUP epoch=1790633396
+PRE epoch=1790633420 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1  txp=17.00 ch=157
+G1 start epoch=1790633500
+G1 end epoch=1790633925
+G2 start epoch=1790633925
+G2 end epoch=1790634352
+FINAL epoch=1790634363 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  fec=k=4 n=8  txp=12.00 json=3d8a1456
+## grid_steps.txt
+1790633501.13 PRE m7b25000f46 tx=359019 temp=48 verbose_lines=99 pkt_lines=157 step=60s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790633501.55 m7b25f46 tx=360605 temp=51 enc_kbps=25123 enc_fps=90.0 drop=0 inj=203399
+1790633562.11 m6b25f46 tx=573233 temp=51 enc_kbps=25122 enc_fps=90.0 drop=0 inj=203396
+1790633622.73 m7b25f46 tx=783310 temp=50 enc_kbps=25121 enc_fps=90.0 drop=0 inj=203463
+1790633683.26 m6b25f46 tx=995986 temp=51 enc_kbps=25161 enc_fps=90.0 drop=0 inj=204052
+1790633743.85 m7b16f48 tx=1206176 temp=48 enc_kbps=16082 enc_fps=90.0 drop=0 inj=175735
+1790633804.35 m7b20f48 tx=1389666 temp=50 enc_kbps=20099 enc_fps=90.0 drop=0 inj=222707
+1790633864.82 m7b20f46 tx=1618235 temp=48 enc_kbps=20096 enc_fps=90.0 drop=0 inj=164273
+1790633925.28 END tx=1789687 temp=48 reverted=m7b25000f46 mcs=7 fec=4/6 br=25000
+1790633926.16 PRE m7b25000f46 tx=1793003 temp=48 verbose_lines=522 pkt_lines=582 step=60s guard=2s radio="-B 20 -G long -S 0 -L 1 -N 1"
+1790633926.65 m12b20f48 tx=1794955 temp=48 enc_kbps=20096 enc_fps=90.0 drop=0 inj=218818
+1790633987.20 m12b25f48 tx=2023683 temp=48 enc_kbps=25092 enc_fps=90.0 drop=4547 inj=261578
+1790634048.99 m13b25f48 tx=2287780 temp=48 enc_kbps=25123 enc_fps=90.0 drop=0 inj=271163
+1790634109.64 m13b30f48 tx=2571628 temp=50 enc_kbps=30138 enc_fps=90.0 drop=11799 inj=302380
+1790634170.25 m13b25f47 tx=2876929 temp=48 enc_kbps=25100 enc_fps=90.0 drop=0 inj=237113
+1790634230.87 m13b30f47 tx=3124994 temp=48 enc_kbps=30156 enc_fps=90.0 drop=0 inj=285686
+1790634291.54 m13b35f47 tx=3424179 temp=50 enc_kbps=35157 enc_fps=90.0 drop=17015 inj=301862
+1790634352.08 END tx=3729026 temp=50 reverted=m7b25000f46 mcs=7 fec=4/6 br=25000
