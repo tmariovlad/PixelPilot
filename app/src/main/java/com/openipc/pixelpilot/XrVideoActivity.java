@@ -22,6 +22,7 @@ import com.openipc.xr.LayerLayout;
 import com.openipc.xr.DebugInput;
 import com.openipc.xr.PanelMode;
 import com.openipc.xr.PresetMenu;
+import com.openipc.xr.RefreshWatch;
 import com.openipc.xr.SignalState;
 import com.openipc.xr.XrBridge;
 
@@ -63,6 +64,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private volatile String udpFallback;   // non-null: no adapter, video may still arrive over Wi-Fi here
     // What the pilot is told about the video (NO SIGNAL / WRONG KEY / ...). UI thread only.
     private final SignalState signal = new SignalState();
+    private final RefreshWatch refreshWatch = new RefreshWatch();
     private boolean panelOverVideo;
     private final PanelMode panelMode = new PanelMode();   // controller-driven: detailed / compact / hidden. UI thread.        // the panel sits over the video while signal.needsAction(). UI thread.
     private volatile int videoW, videoH;
@@ -418,6 +420,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         XrBridge bridge = xr;
         if (bridge == null) return new String[0];
         XrBridge.Info info = bridge.info();
+        String refreshChange = refreshWatch.onSample(info.refreshHz, info.requestedHz);
+        if (refreshChange != null) Log.i(TAG, refreshChange);  // e.g. a silent thermal drop to 72 Hz
         DecodingInfo d = lastDecoding;
         WfbNGStats l = lastLink;
         return new String[]{
@@ -435,8 +439,9 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
                 linkStatus,
                 udpFallback == null ? "" : "no adapter: video accepted at " + udpFallback,
                 phase == null ? "" : phase.summaryLine(),
-                String.format(Locale.US, "XR %s Hz (req %.0f)  comp GPU %s ms  drop %s",
-                        num(info.refreshHz), info.requestedHz, num(info.compositorGpuMs), num(info.droppedFrames)),
+                String.format(Locale.US, "XR %s Hz (req %.0f)%s  comp GPU %s ms  drop %s",
+                        num(info.refreshHz), info.requestedHz, RefreshWatch.hudSuffix(info.refreshHz, info.requestedHz),
+                        num(info.compositorGpuMs), num(info.droppedFrames)),
                 "dec: " + videoPlayer.getDecoderSummary(),
                 "exp: " + experiments.summary(),
         };

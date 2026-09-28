@@ -370,6 +370,15 @@ void XrRuntime::pollEvents()
             mRuntimeExit = true;
             if (mListener) mListener(SessionEvent::Exiting);
         }
+        else if (event.type == XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB)
+        {
+            // Horizon OS may lower the rate by itself (thermal throttling to 72 Hz, docs/xr/display-latency.md).
+            const auto& rate = reinterpret_cast<const XrEventDataDisplayRefreshRateChangedFB&>(event);
+            XLOGI("display refresh rate changed %.0f -> %.0f Hz", rate.fromDisplayRefreshRate,
+                  rate.toDisplayRefreshRate);
+            std::lock_guard<std::mutex> lock(mMutex);
+            mInfo.refreshHz = rate.toDisplayRefreshRate;
+        }
         event = {XR_TYPE_EVENT_DATA_BUFFER};
     }
 }
@@ -513,6 +522,9 @@ void XrRuntime::applyRefreshRate()
         const XrResult r = pfnRequestRate(mSession, best);
         XLOGI("requested %.0f Hz -> %.0f Hz (result %d)", mCfg.refreshHz, best, r);
     }
+    // The request may apply later: a change after this point arrives as XrEventDataDisplayRefreshRateChangedFB.
+    float now = -1.f;
+    if (pfnGetRate && XR_SUCCEEDED(pfnGetRate(mSession, &now))) XLOGI("display refresh rate now %.0f Hz", now);
 }
 
 void XrRuntime::applyPerformanceHints()
