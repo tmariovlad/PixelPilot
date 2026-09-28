@@ -274,7 +274,12 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
 
 - **With the lever on, the decoder outputs ~89.5 of 90 frames/s at the same loss and latency** [PROVEN: ABBA × 2, every "on" step 89.2–89.6 vs every "off" step 82.4–84.1]. The hole frames now reach MediaCodec, and it outputs them. frame_fate still counts them as class (a), because its decoded class excludes holes by construction; the measured column is the one that counts.
 - Decoder output comes ~0.6 ms earlier on average [INFERRED: mean of 4 steps each, 4.71–4.75 vs 5.26–5.46 ms; probably the frames after a hole no longer wait behind a decoder resync].
-- **Still unknown: what a truncated frame looks like** [SPECULATION]. A truncated slice either decodes with a smeared bottom part, which then propagates through the P frames until the next IDR (GOP 2 s), or it is concealed. More fps does not mean a better picture until stills or a viewer confirm it. Next: stills (quality_shots, local only), the user's own look, and the partner lever `request_idr_on_loss`.
+- **What a truncated frame looks like: smears** [PROVEN 2026-09-29 ~01:57–02:00]:
+  - The user wore the headset with FIF on and walked around: "sunt multe mânjeli" (many smears).
+  - 10 stills (quality_shots, local only, `scripts/quest/out/quality_private/`) show blocky smear over large areas.
+  - Every still with a link had lost 3–16 packets per overlay interval. Walking costs far more loss than the fixed test position.
+  - The damage propagates through the P frames until the next IDR (GOP 2 s).
+  - **FIF alone is not usable: more fps, a worse picture.** It only makes sense with `request_idr_on_loss`, next below.
 
 **Partner lever `request_idr_on_loss`** (pref, default false; "IDR" in the summary). The air's GOP is 2.0 s (`gopSize: 2.0` in the 1080p90 and race jsons, read by the coordinator). A lost or truncated frame therefore corrupts every frame that references it, up to 2 s, until the next key frame.
 - With the lever on, every RTP sequence gap asks waybeam for a key frame right away: HTTP `GET /request/idr` on the air's port 80 (waybeam `venc_api.c:3219` → `handle_idr`, with its own `idr_rate_limit`, per the coordinator), sent to 10.5.0.10 through the app's VPN tunnel.

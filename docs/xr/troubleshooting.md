@@ -87,6 +87,10 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   - Details and data: [audit, hands-on checks](research/2026-09-27-xr-ux-audit.md#hands-on-checks-with-the-user-2026-09-28).
     **Fixed in `c9cc780`** (`UsbAttachActivity`, an attach trampoline that stays out of the way while XR runs) and verified
     on the headset 2/2: no 2D, one link, picture back 1.2 / 2.1 s after the attach (was ~11 s).
+- **A spontaneous USB drop while the user walked (2026-09-29, APK e75a4b26, which contains `c9cc780`): video back only ~23 s later.**
+  - The kernel logged `usb 1-1: USB disconnect` at Quest 1790636268.8, and the RTL re-enumerated 0.3 s later (0bda:8812, `UsbHostManager: USB device attached`) [PROVEN: logcat].
+  - The app did not crash (same pid). Its overlay showed NO ADAPTER, then NO SIGNAL (25.8 s); the link was back between 1790636291 and 636294 [PROVEN: quality_shots stills, local only].
+  - That is ~23 s from re-attach to video, vs 1.2–2.1 s after a deliberate replug with `c9cc780`. Cause not investigated [SPECULATION: the USB-C connector moving on the headset while walking; the slow re-open path unknown]. Check the adapter's cable and connector before walking tests.
 - **No video from a real OpenIPC air unit** (air unit in APFPV instead of wfb, `drone.key`/`gs.key` pair, link id 0
   vs 7669206): see [First real link](real-link.md#first-real-link-quest-2--rtl8812au--openipc-air-unit-2026-09-26),
   steps 1-3.
