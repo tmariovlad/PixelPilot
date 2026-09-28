@@ -28,6 +28,13 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   `adb shell setprop debug.oculus.guardian_pause 0` and `adb shell am broadcast -a com.oculus.vrpowermanager.automation_disable`.
   The property is lost on reboot. Sources and caveats: [research report 03](research/2026-09-26-quest2/03-system-tweaks-cfw-status.md)
   (Guardian / proximity rows). Rule of thumb for this repo: see [CLAUDE.md](../../CLAUDE.md) (Quest test hygiene).
+  - **The restore stops the link when the headset sits on the desk.** `automation_disable` hands the display back to
+    the real proximity sensor. With the headset unworn it logs "Headset unmounted", goes to sleep, and the XR app
+    loses focus and stops its wfb TX, so the uplink (alink reports, tunnel) stops. Seen 2026-09-28: restore at
+    1790582968, last report 968.245, `TxFrame: stopping main loop` 968.757, `mWakefulness=Asleep`; the air unit's
+    alink showed 0 reports [PROVEN: logcat -v epoch, `dumpsys power`; air counter read by the coordinator]. Before
+    restoring, ask whether anything on the air side still needs the Quest's uplink or video. If it does, leave
+    `prox_close` in place until that work ends. `prox_close` wakes the headset again.
 - **"Launch is blocked because: a Reprojected OS dialog is currently showing"**: a pending USB-permission dialog
   (`com.oculus.os.vrusb/UsbPermissionActivity`) blocks launching immersive apps. Answer or close the dialog in the
   headset, or `adb shell am force-stop com.oculus.os.vrusb` [PROVEN: seen on the device, 2026-09-26].
