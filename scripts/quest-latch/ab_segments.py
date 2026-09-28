@@ -23,6 +23,7 @@ Frame = namedtuple("Frame", "capture first last npkts ready")  # ns; capture = R
 
 RTP_HZ = 90000
 READY_MAX_NS = 20e6  # a decoded-frame mark more than 20 ms after the last packet belongs to another frame
+FRAME_MAX_SPAN_NS = 1e9  # a packet with a frame's RTP timestamp arriving later than this is a new frame (R5: a value repeated ~205 s later)
 
 
 def pct(v, p):
@@ -34,14 +35,19 @@ def frames_from_packets(pkts, ready):
     """pkts: [(arrival_ns, seq, rtp_ts)] in arrival order; ready: sorted decoded-frame mark times.
     Returns (frames, lost) with frames grouped by (unwrapped) RTP timestamp."""
     lost = seq_loss([p[1] for p in pkts])[0]
-    groups, base, prev = OrderedDict(), 0, None
+    groups, cur, base, prev = OrderedDict(), {}, 0, None
     for t, _, ts in pkts:
         if prev is not None and ts < prev and prev - ts > 1 << 31:
             base += 1 << 32
         prev = ts
-        groups.setdefault(base + ts, []).append(t)
+        key = cur.get(base + ts)
+        if key is None or t - groups[key][0] > FRAME_MAX_SPAN_NS:
+            key = (base + ts, len(groups))
+            cur[base + ts] = key
+            groups[key] = []
+        groups[key].append(t)
     frames = []
-    for ts, arr in groups.items():
+    for (ts, _), arr in groups.items():
         i = bisect_left(ready, arr[-1])
         r = ready[i] if i < len(ready) and ready[i] - arr[-1] < READY_MAX_NS else None
         frames.append(Frame(ts * 1e9 / RTP_HZ, arr[0], arr[-1], len(arr), r))

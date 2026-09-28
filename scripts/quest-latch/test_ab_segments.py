@@ -60,6 +60,18 @@ def test_frames_from_packets_groups_and_counts_loss():
     assert [(f.first, f.last, f.npkts, f.ready) for f in frames] == [(10, 11, 2, 15), (20, 21, 2, 30)]
 
 
+def test_a_repeated_rtp_timestamp_long_after_is_a_new_frame():
+    # R5 2026-09-28: the air's RTP timestamp repeated a value ~205 s later; grouping only by timestamp merged the two
+    # frames into one with a 205 s "spread". Packets with the same timestamp but far apart in time are two frames.
+    S = 1e9
+    pkts = [(0.000 * S, 1, 1000), (0.001 * S, 2, 1000), (0.011 * S, 3, 1900),
+            (205.0 * S, 4, 1000), (205.001 * S, 5, 1000)]
+    frames, lost = frames_from_packets(pkts, [])
+    assert len(frames) == 3, [(f.first, f.last) for f in frames]
+    assert max(f.last - f.first for f in frames) < 0.01 * S
+    assert lost == 0
+
+
 def test_fit_offset_finds_step_misalignment():
     frames, steps, end = synth()
     skewed = [(t - 0.73e9, lab) for t, lab in steps]  # the air step log is 0.73 s early vs the trace

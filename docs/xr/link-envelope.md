@@ -155,6 +155,34 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
 - **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
+### R7 + R5 2026-09-28 21:45–22:13 at 1080p90 25 Mbit/s, 17 dBm: the TBTT pause off at full rate; MCS6 short GI vs MCS7 long GI
+
+Same Quest position as R6 (RSSI column 74; raw A 59 / B 55 ≈ −51 / −55 dBm; SNR 17.1–17.5 dB on both chains in R5). Air: 1080p90, 25 Mbit/s, FEC 4/6, 17 dBm, 20 MHz 157, STBC 1, LDPC 1, alink stopped, drop = 0 in every step, the same `inj` per step. Quest: detached capture, `TRACE LOSS: none`. Analysis: [tu_pause.py](../../scripts/quest-latch/tu_pause.py), [link_audit.py](../../scripts/quest-latch/link_audit.py), [ab_segments.py](../../scripts/quest-latch/ab_segments.py).
+- **Data.** Air logs: [R5](data/air-r5-2026-09-28.txt) · [R7](data/air-r7-2026-09-28.txt). Steps: [R5](data/steps-2026-09-28-r5.txt) · [R7](data/steps-2026-09-28-r7.txt). tu_pause: [R5](data/tu-pause-2026-09-28-r5.txt) · [R7](data/tu-pause-2026-09-28-r7.txt). link_audit: [R5](data/audit-2026-09-28-r5.txt) · [R7](data/audit-2026-09-28-r7.txt). R5 latency: [measurements](data/measurements-2026-09-28-quest2-r5.csv), per chain: [link](data/link-2026-09-28-r5.csv).
+
+**R7: `EN_BCN_FUNCTION` (0x550 bit 3) on vs off, `m7b25f46`, 8 × 60 s, ABBA×2.** Latency is against the drift line of the "off" steps.
+
+| state | latency fold at 102.4 ms | Z(pause) | pauses/cycle | latency mean | latency p95 | p_data | post-FEC |
+|---|---|---|---|---|---|---|---|
+| on (3 steps; the first, just after the 1080p90 setup, is left out: p95 31 ms) | 3.08–3.21 ms | 322–333 | 1.14–1.20 | 2.68–2.74 ms | 6.42–6.46 ms | 2.88–3.09 % | 0.42–0.52 % |
+| off (4 steps) | 0.35–0.39 ms | 1.0–2.1 | 0.61–0.63 | 1.54–1.66 ms | 4.13–4.58 ms | 2.82–2.99 % | 0.40–0.51 % |
+
+- **At 25 Mbit/s, clearing `EN_BCN_FUNCTION` lowers frame-complete latency by ~1.1 ms mean (2.71 → 1.60 ms) and ~2.0 ms at p95 (6.44 → 4.40 ms), and removes the 102.4 ms teeth (~3.1 → ~0.36 ms). Loss is unchanged** [PROVEN: every off step beats every on step on fold, mean and p95; loss overlaps].
+  - This is larger than B4's estimate (+0.8 ms mean). With the pause present the video queue drains after every pause, and at 25 Mbit/s there is more to drain than at 2 Mbit/s (R6: ≈ 0.1 ms).
+  - The 0.61–0.63 "pauses"/cycle left in the off steps are ordinary inter-frame gaps (no phase lock).
+
+**R5: MCS7 long GI (`m7L`) vs MCS6 short GI (`m6S`), both 65 Mbit/s PHY, 8 × 120 s, ABBA×2** (TBTT pause on in both).
+
+| state | p_data | post-FEC | loss runs/s | RTP lost | latency mean | latency p95 | decoded |
+|---|---|---|---|---|---|---|---|
+| m7L | 2.93–2.97 % | 0.48–0.51 % | 4.5–4.7 | 1.87–1.96 % | 2.53–2.93 ms | 6.21–7.47 ms | 5.31–5.71 ms |
+| m6S | 2.61–2.74 % | 0.28–0.34 % | 2.8–3.3 | 1.10–1.32 % | 3.34–3.57 ms | 8.07–9.68 ms | 5.96–6.17 ms |
+
+- **m6S loses ~40 % less after FEC but is ~0.7 ms slower in mean latency and ~2 ms slower at p95** [PROVEN: every m6S step beats every m7L step on loss and is behind on latency].
+  - The PHY rate is the same, so the latency cost has no mechanism yet [SPECULATION: something on the air's TX path at short GI; worth a driver check].
+  - Neither is clean at 25 Mbit/s here (post > 0.1 %).
+- **Tool fix found here:** `ab_segments.frames_from_packets` merged packets that carried the same RTP timestamp ~205 s apart into one "frame" (10 of ~9944 frames in one step), which showed up as a fake +52 ms. A packet more than 1 s after its frame's first packet now starts a new frame. Regression test: `test_a_repeated_rtp_timestamp_long_after_is_a_new_frame`. Earlier results used short steps, where a 205 s repeat cannot fall inside one step's window.
+
 ### R6 2026-09-28 21:32: the air's 100 TU TX pause is the TBTT prohibit window
 
 Question (OpenIPC beacon-rhythm audit, B4 + the coordinator's R1 register read): does the air's ~3.7 ms TX pause every 102.4 ms come from the RTL8822EU's TBTT prohibit window? It would come from `EN_BCN_FUNCTION` left set from the AP phase at boot (0x550 = 0x18), with a hold of 0x64 × 32 µs (0x540 = 0x80006404).
