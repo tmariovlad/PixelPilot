@@ -4,7 +4,7 @@
 # the prefs change. "backup" saves the user's prefs file (out/opt_<label>.prefs-backup.xml); "step" writes
 # xr_refresh_hz (+ xr_fov_deg, default 90 so the LED image is as large as possible), relaunches XR and logs the app's
 # readback to out/opt_<label>.steps.txt; "restore" writes the backup back and relaunches XR.
-# The 25-sample rig runs themselves go over serial (COM5, skill /g2g-latency) between the steps.
+# The 25-sample rig runs themselves go over serial (skill /g2g-latency; port auto-detected by find_rig_port.py, CP210x 10C4:EA60 — never COM5, which is the DPS-150 powering the air unit) between the steps.
 . "$(dirname "$0")/quest_env.sh" || exit 1
 export MSYS_NO_PATHCONV=1
 cd "$QUEST_DIR" || exit 1
