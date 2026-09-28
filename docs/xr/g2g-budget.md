@@ -183,7 +183,7 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
   | BASE 1080p90 / 8 Mbit/s (2 traces) | ~2 % | **11.9–12.3 ms** | 2.6–2.8 ms | **+0.5…+0.7 ms** |
 
 - **Fix, in code (2026-09-27; measured on the device, below).** The bounds are named constants in one place, `kTightReorderBounds` {2 packets, 3 ms} and `kLegacyReorderBounds` {5, 20 ms} (`BufferedPacketQueue.h`). Video uses the tight bounds, selected by the experiment pref `rtp_tight_reorder` (default on; off = upstream, for the A/B). Audio keeps the upstream bounds. Host gtests: a single swap still comes out in order; a loss releases after 2 packets or 3 ms; a reorder 2+ packets deep is documented as a loss (delivered once, out of order, and the stream keeps flowing); the bounds can change while packets flow. 61/61 pass, and JVM `LatencyExperimentsTest` 18/18. Original proposal: on the wfb path, shorten the hold from 5 packets / 20 ms to 2 / 3 ms. A reorder after wfb-ng takes µs, and the one reorder ever seen was a single swap (`rtp_seq.py`). A gap would then cost at most ~1 packet, not ~5.
-  - **Estimate [INFERRED from the table]:** at REC loss, −0.0…−0.1 ms on the mean and −2…−3 ms on the frames after a loss. On a weak link (~2 % loss), −0.5…−0.7 ms on the mean and ~−9 ms on the frames after each loss, i.e. fewer stutters.
+  - **Estimate [INFERRED from the table]:** at REC loss, −0.0…−0.1 ms on the mean and −2…−3 ms on the frames after a loss. On a weak link (~2 % loss), −0.5…−0.7 ms on the mean and ~−9 ms on the frames after each loss, i.e. fewer stutters. *(Correction 2026-09-28: measured at 480p167, the gain is much smaller: −0.18 ms on the mean and ~−0.6 ms per frame after a loss at ~4 % loss; see below. The estimate came from the 1080p90 / 8 Mbit/s BASE traces.)*
   - **Risk:** a reorder deeper than 2 packets would become a lost packet (one broken frame), which is not seen on this path.
   - **Measured on the Quest (2026-09-27 22:33–22:41).** Air at 8 dBm, MCS2, FEC 4/8, 2000 kbit/s, 480p167, alink off; build abab1f13. One trace, `rtp_tight_reorder` off / on / on / off / off / on, 45 s per step, with an app restart and a 12 s guard at every switch. Analysed with [gap_hold.py](../../scripts/quest-latch/gap_hold.py) `--steps` [PROVEN: [data](data/rq-ab-2026-09-27.txt)]:
 
@@ -194,7 +194,20 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
 
     - **Frames after a loss arrive 1.4 ms sooner, and with the lever on they are no different from the rest.** The per-step ranges do not overlap.
     - The mean over all frames barely moves (−0.02 ms), because the loss at 8 dBm came out low: 0.12–0.98 % per step, falling over the run.
-    - The gain grows with loss. At ~2 % (the BASE traces) the upstream hold cost ~9 ms per affected frame and 0.5–0.7 ms on the mean [INFERRED from the table above, not re-measured with the lever].
+    - At ~2 % loss the BASE traces (1080p90, 8 Mbit/s) suggested ~9 ms per affected frame and 0.5–0.7 ms on the mean. **That extrapolation does not hold at 480p167** (next item).
+  - **Re-measured at higher loss (2026-09-28).** Three link states forced on the air (alink off, 480p167), each one trace of `rtp_tight_reorder` off / on / on / off / off / on, 45 s per step, 12 s guard; build 8bc1a3d6. [PROVEN: [data](data/rq-ab-2026-09-28.txt), `gap_hold.py --steps` with its per-step loss column]
+
+    | Air state | loss per step | frames after a loss: off → on | mean over all frames: off → on |
+    |---|---|---|---|
+    | L1 `m2b4f46`, 12 dBm | 0.00–0.09 % | 2.61 → 1.86 ms (n = 23 / 10) | 1.52 → 1.51 ms |
+    | L2 `m4b2f48`, 12 dBm | 0.03–0.11 % | 3.98 → 1.58 ms (n = 19 / 29) | 1.50 → 1.49 ms |
+    | **L3 `m4b2f44` (no FEC), 8 dBm** | **3.5–4.3 %** | **2.24–2.40 → 1.68–1.74 ms** | **2.04–2.10 → 1.83–1.94 ms** |
+
+    - **Loss did not come from power this time.** The W2 states gave 1.86 % (L1) and ~6 % (L2) at 12 dBm, but today only ~0.1 %, and MCS4 at 8 and 5 dBm lost ≤ 1 packet/s after FEC (`link_measure.sh`). FEC 4/8 recovered the ~2 % raw loss. Turning FEC off (4/4) produced the loss [PROVEN: probes in the data file]. The link was much stronger than in W2 [INFERRED: same power and MCS, far lower loss].
+    - **At ~4 % loss the fix moves the mean: −0.18 ms** (2.07 → 1.89 ms over ~22 000 frames per state). Every "on" step is below every "off" step, for the frames after a loss and for the mean over all frames.
+    - **Per affected frame the upstream hold costs much less at 480p167 / 2 Mbit/s** (~0.6 ms at 4 %, 0.8–2.4 ms at 0.1 %) than in the BASE traces (~9 ms). Across the four runs the "off" penalty was 1.4–2.4 ms at ≤ 1 % loss and 0.5–0.6 ms at 4 %. Why it shrinks with more loss is not established [SPECULATION: with gaps this frequent, the next gap's hold releases the previous one sooner].
+    - The frames not after a loss also get slower with loss (1.5 → 2.0 ms) in both states, so that part is not the hold.
+    - **Verdict:** keep `rtp_tight_reorder` on. It removes the hold in all 4 runs and never costs anything. At 480p167 the gain is small: ~1–2 ms on frames after a loss, −0.2 ms on the mean at 4 % loss.
     - The first attempt (`rq8dbm`) was discarded: the prefs writer did not land, see [troubleshooting](troubleshooting.md#the-app-the-adapter-and-the-link).
 
 ## Before / after: the original setup vs the recommended one (2026-09-27, final)

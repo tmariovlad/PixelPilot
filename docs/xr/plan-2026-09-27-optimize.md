@@ -171,7 +171,7 @@ anything running) and `wfb_tx.v25.bak`. They are in the OpenIPC repo under
   CPU1) gave 0 % slow frames in 5/5 runs, with p95 S_air −155 µs. It is active at **runtime** only and is lost on an
   air reboot. Persisting it is approved; it will be deployed together with the chosen mode.
 - **Reorder-hold fix** (`952a655`, pref `rtp_tight_reorder`, default ON). Frames after a loss went from 3.0 to
-  1.6 ms (−1.4 ms each) at 8 dBm [PROVEN].
+  1.6 ms (−1.4 ms each) at 8 dBm [PROVEN]. Re-measured 2026-09-28 at ~4 % loss (FEC off): −0.6 ms per frame after a loss, **−0.18 ms on the mean**; the 2 % → −0.5…−0.7 ms estimate from BASE does not hold at 480p167 ([g2g-budget](g2g-budget.md#the-quests-parse-time-and-the-reorder-hold-after-a-lost-packet-2026-09-27-code--existing-traces)).
 - **Quest "parse"** already contains the radio spread; it is not an extra hop.
 - **`write_prefs` bug** (ff19253 → fixed in 3cb6ea1). The prefs were not written from 18:16 to 22:34. No result that
   was used depends on it (audited by 22 and 8d).

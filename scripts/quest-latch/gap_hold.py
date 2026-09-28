@@ -10,7 +10,8 @@ Usage:
   python3 gap_hold.py out/mode_*.pftrace                         one line per trace
   python3 gap_hold.py trace.pftrace --steps out/steps_<label>.txt [--guard-s 12]
                                                                  one line per step of a pref_ab.sh run, plus the
-                                                                 per-value totals (Quest clock, as pref_ab logs it)
+                                                                 per-value totals, each with its packet loss
+                                                                 (Quest clock, as pref_ab logs it)
 """
 import argparse
 import statistics as st
@@ -41,6 +42,24 @@ def frame_delays(pkts, ready, hold_pkts=HOLD_PKTS):
         if k < len(ready) and ready[k] - last_t < READY_MAX_NS:
             out.append((last_t, (ready[k] - last_t) / 1e6, last_i in after))
     return out, gaps
+
+
+def packet_loss(pkts, window_of):
+    """Lost packets per window: {window: (received, lost)}, counting sequence gaps between consecutive arrivals
+    whose later packet falls in that window (window_of(arrival_ns) -> key or None)."""
+    out = {}
+    for i in range(1, len(pkts)):
+        w = window_of(pkts[i][0])
+        if w is None:
+            continue
+        step = ((pkts[i][1] - pkts[i - 1][1] + 0x8000) & 0xFFFF) - 0x8000
+        n, lost = out.get(w, (0, 0))
+        out[w] = (n + 1, lost + max(0, step - 1))
+    return out
+
+
+def loss_text(n, lost):
+    return f"loss {100 * lost / (n + lost):.2f} % ({lost}/{n + lost})" if n else "loss n/a"
 
 
 def summary(name, delays, gaps=None):
@@ -80,10 +99,15 @@ def main():
         if i is not None:
             per_step[i].append(f)
             per_value[steps[i][1].split(":")[-1]].append(f)
+    loss = packet_loss(pkts, lambda t: step_of(t, steps, end, guard))
+    per_value_loss = defaultdict(lambda: (0, 0))
     for i, (_, label) in enumerate(steps):
-        print(summary(f"step {i + 1} {label}", per_step[i]))
+        n, lost = loss.get(i, (0, 0))
+        v = label.split(":")[-1]
+        per_value_loss[v] = (per_value_loss[v][0] + n, per_value_loss[v][1] + lost)
+        print(summary(f"step {i + 1} {label}", per_step[i]) + " | " + loss_text(n, lost))
     for value, fs in sorted(per_value.items()):
-        print(summary(f"ALL {value}", fs))
+        print(summary(f"ALL {value}", fs) + " | " + loss_text(*per_value_loss[value]))
 
 
 if __name__ == "__main__":
