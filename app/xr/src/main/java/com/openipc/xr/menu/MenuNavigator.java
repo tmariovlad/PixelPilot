@@ -67,6 +67,15 @@ public final class MenuNavigator {
         return pageItem != null ? pageItem : stack.peek().folder;
     }
 
+    /** From the root to the page on screen (a stats page included). */
+    public List<MenuItem> path() {
+        List<MenuItem> out = new java.util.ArrayList<>();
+        java.util.Iterator<Level> it = stack.descendingIterator();
+        while (it.hasNext()) out.add(it.next().folder);
+        if (pageItem != null) out.add(pageItem);
+        return out;
+    }
+
     /** The highlighted line of the current folder (the page itself on a stats page). */
     public MenuItem highlighted() {
         if (pageItem != null) return pageItem;
@@ -86,9 +95,9 @@ public final class MenuNavigator {
         return hint;
     }
 
-    /** How far the current click hold is towards {@code totalMs}, 0..1 (0 when the click is up). */
+    /** How far the current click hold is towards {@code totalMs}, 0..1 (0 when the click is up or the hold already acted). */
     public double holdProgress(long nowMs, long totalMs) {
-        if (pressMs < 0) return 0;
+        if (pressMs < 0 || fired) return 0;
         return Math.min(1.0, (nowMs - pressMs) / (double) totalMs);
     }
 

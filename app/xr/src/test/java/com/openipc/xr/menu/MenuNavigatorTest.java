@@ -246,5 +246,8 @@ public class MenuNavigatorTest {
         assertEquals(0.5, nav.holdProgress(t, MenuNavigator.HOLD_OPEN_MS), 0.01);
         tick(INPUT_STICK_RELEASE);
         assertEquals(0.0, nav.holdProgress(t, MenuNavigator.HOLD_OPEN_MS), 0.0);
+        hold(1000);                                // opens: the hold has acted, so no bar
+        assertTrue(nav.isOpen());
+        assertEquals(0.0, nav.holdProgress(t, MenuNavigator.HOLD_APPLY_MS), 0.0);
     }
 }
