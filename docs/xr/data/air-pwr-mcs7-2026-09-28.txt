@@ -1,0 +1,37 @@
+1790598132 PWRX2_BEGIN
+1790598135 PWR p20 IW 20 temp=46
+1790598136.07 PRE m2b4000f48 tx=80989 temp=46 verbose_lines=59 pkt_lines=122 step=22s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790598136.46 m2b4f46 tx=81346 temp=46 enc_kbps=4015 enc_fps=90.0 drop=0 inj=12926
+1790598158.89 m7b16f46 tx=96038 temp=47 enc_kbps=16116 enc_fps=90.0 drop=0 inj=46087
+1790598181.37 m7b25f46 tx=148079 temp=48 enc_kbps=25077 enc_fps=90.0 drop=0 inj=70347
+1790598203.89 m2b4f46 tx=226731 temp=48 enc_kbps=4008 enc_fps=90.0 drop=0 inj=12524
+1790598226.29 END tx=240951 temp=48 reverted=m2b4000f48 mcs=2 fec=4/8 br=4000
+1790598228 PWR p22 IW 22 temp=48
+1790598229.07 PRE m2b4000f48 tx=243241 temp=48 verbose_lines=151 pkt_lines=215 step=22s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790598229.47 m2b4f46 tx=243599 temp=47 enc_kbps=4011 enc_fps=90.0 drop=0 inj=12461
+1790598251.90 m7b16f46 tx=257806 temp=48 enc_kbps=16066 enc_fps=90.0 drop=0 inj=45582
+1790598274.41 m7b25f46 tx=309534 temp=51 enc_kbps=25097 enc_fps=90.0 drop=0 inj=70381
+1790598296.98 m2b4f46 tx=388177 temp=48 enc_kbps=4014 enc_fps=90.0 drop=0 inj=12470
+1790598319.37 END tx=402305 temp=48 reverted=m2b4000f48 mcs=2 fec=4/8 br=4000
+1790598321 PWR p12 IW 12 temp=48
+1790598322.07 PRE m2b4000f48 tx=404547 temp=50 verbose_lines=244 pkt_lines=308 step=22s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790598322.46 m2b4f46 tx=404903 temp=48 enc_kbps=4018 enc_fps=90.0 drop=0 inj=12462
+1790598344.89 m7b16f46 tx=419080 temp=47 enc_kbps=16075 enc_fps=90.0 drop=0 inj=45225
+1790598367.35 m7b25f46 tx=470326 temp=48 enc_kbps=25162 enc_fps=90.0 drop=0 inj=70422
+1790598389.90 m2b4f46 tx=548925 temp=47 enc_kbps=4019 enc_fps=90.0 drop=0 inj=12581
+1790598412.29 END tx=563179 temp=47 reverted=m2b4000f48 mcs=2 fec=4/8 br=4000
+1790598415 PWR p21 IW 21 temp=47
+1790598416.07 PRE m2b4000f48 tx=566350 temp=47 verbose_lines=337 pkt_lines=402 step=22s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790598416.47 m2b4f46 tx=566718 temp=47 enc_kbps=4012 enc_fps=90.0 drop=0 inj=12466
+1790598438.90 m7b16f46 tx=580950 temp=48 enc_kbps=16067 enc_fps=90.0 drop=0 inj=45136
+1790598461.42 m7b25f46 tx=632060 temp=50 enc_kbps=25077 enc_fps=90.0 drop=0 inj=70308
+1790598483.96 m2b4f46 tx=710561 temp=48 enc_kbps=4008 enc_fps=90.0 drop=0 inj=12476
+1790598506.34 END tx=724703 temp=48 reverted=m2b4000f48 mcs=2 fec=4/8 br=4000
+1790598508 PWR p20 IW 20 temp=47
+1790598509.09 PRE m2b4000f48 tx=726984 temp=48 verbose_lines=429 pkt_lines=495 step=22s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790598509.48 m2b4f46 tx=727331 temp=47 enc_kbps=4014 enc_fps=90.0 drop=0 inj=12445
+1790598531.92 m7b16f46 tx=741464 temp=48 enc_kbps=16064 enc_fps=90.0 drop=0 inj=45422
+1790598554.43 m7b25f46 tx=793021 temp=50 enc_kbps=25087 enc_fps=90.0 drop=0 inj=70370
+1790598576.99 m2b4f46 tx=871610 temp=48 enc_kbps=4012 enc_fps=90.0 drop=0 inj=12457
+1790598599.38 END tx=885736 temp=48 reverted=m2b4000f48 mcs=2 fec=4/8 br=4000
+1790598599 PWR_END IW 12 temp=48
