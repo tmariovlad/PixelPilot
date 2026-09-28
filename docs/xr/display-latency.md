@@ -46,7 +46,7 @@ Estimate: **≈ 9–16 ms at 120 Hz, ≈ 13–24 ms at 72 Hz** [SPECULATION on L
 | # | Lever | Mechanism | Expected Δ at 120 Hz | Tag | Status |
 |---|---|---|---|---|---|
 | 1 | Run at 120 Hz, not 72 (and make sure it is really granted) | Shorter P shrinks L; W barely moves at 167 fps in | W: −0.4 ms mean / −1.5 ms p95 vs 72 Hz [PROVEN, slot T]; L: −2 to −7 ms [SPECULATION] | PROVEN (W) / SPECULATION (L) | Default already 120 and granted. **L: slot O decides.** |
-| 2 | Detect a silent thermal drop to 72 Hz | Handle `XrEventDataDisplayRefreshRateChangedFB`; log the read-back rate | Avoids a hidden regression after the latch (size = what slot O measures for 72 vs 120) | PROVEN mechanism | **Code done, not installed** (`ce885fb`): the event is logged (from → to), the rate read back after the request is logged, `RefreshWatch` logs every applied-rate change and marks the HUD line " BELOW REQUEST" (JVM test `RefreshWatchTest`, 5 cases) |
+| 2 | Detect a silent thermal drop to 72 Hz | Handle `XrEventDataDisplayRefreshRateChangedFB`; log the read-back rate | Avoids a hidden regression after the latch (size = what slot O measures for 72 vs 120) | PROVEN mechanism | **Done and verified on the headset** (`ce885fb`, APK `a6f1f2a5`, §4): the event is logged (from → to), the rate read back after the request is logged, `RefreshWatch` logs every applied-rate change and marks the HUD line " BELOW REQUEST" (JVM test `RefreshWatchTest`). The "(requested -1)" wording for a rate seen before the request is fixed in `4908857` (not installed yet). |
 | 3 | Phase-align the source to the latch (air-side phase lock) | W from its current mean to the safety margin | at most ~−2 to −2.5 ms mean at 167 fps (W is ~3 ms, not P/2 — slot T), and it needs the source at the display rate (fewer fps) | INFERRED | The only vendor technique that transfers: WiVRn's pacer aims "decoded" at a p99.5 margin + client margin before the headset uses the frame and moves the phase by 1/10 of the error per step [PROVEN: WiVRn `server/compositor/pacer.cpp` L65-69, L161, checked in a local clone]. Needs the air side (coordinator). |
 | 4 | Keep non-SYNCHRONOUS (mailbox) | No queue behind the latch | avoids +8.3 ms per queued buffer | PROVEN semantics | Already so |
 | 5 | Do not use `USE_TIMESTAMPS` for latency | Can only defer a buffer | 0 at best, +8.3 ms per deferral | INFERRED | Off by default |
@@ -58,9 +58,8 @@ Estimate: **≈ 9–16 ms at 120 Hz, ≈ 13–24 ms at 72 Hz** [SPECULATION on L
 Correctness finding, no latency effect expected: `XrRuntime.cpp:309` chains `XrAndroidSurfaceSwapchainCreateInfoFB`
 with `createFlags = 0`, which the spec forbids ("createFlags must not be 0") [PROVEN:
 <https://registry.khronos.org/OpenXR/specs/1.1/man/html/XrAndroidSurfaceSwapchainCreateInfoFB.html>]. Fix: chain the
-struct only when a flag is set. **Fixed in `5a483d3`, not installed yet.** No host harness exists for the native
-xr code, so the check is on the headset after the install: video shows, no swapchain-creation error in logcat, and a
-120 Hz trace (`refresh_bracket.sh` with one 120 step) still shows buffer-queue depth max 1 and ~3 ms decoded → latch.
+struct only when a flag is set. **Fixed in `5a483d3` and verified on the headset** (APK `a6f1f2a5`, §4): video
+attaches, no swapchain-creation error, and the mailbox is unchanged (buffer-queue depth max 1, decoded → latch ~3 ms).
 
 ## 4. Measurements
 
@@ -99,6 +98,24 @@ Raw per-step data: [data/display-latency-rb1.csv](data/display-latency-rb1.csv).
   [INFERRED].
 - The `TW pass interval` column is not a usable rate read-back: 4.18 / 4.59 / 6.56 / 9.45 / 4.18 / 4.61 ms across
   steps, inconsistent within the same rate [PROVEN: csv]. The latch rate and `dumpsys` are the read-backs to use.
+
+### Install check of `a6f1f2a5` (2026-09-28, Quest epoch 1790582866–1790582960)
+
+Build `a6f1f2a5231ace8ddf3b04f88a9601b3` = `c2a2043` + `ce885fb` (refresh-rate visibility) + `5a483d3` (createFlags);
+rollback copy of the previous `65deee8d` pulled from the headset first. Same air setup as slot T (REC, alink
+stopped; coordinator read-back at 1790582844).
+
+- **The event path works** [PROVEN: logcat 11:07:48–49, `scripts/quest/out/install_a6f1_logcat.txt`]: the runtime
+  starts the session at its own rate and reports `72 -> 90 Hz` before the app asks; then `requested 120 Hz -> 120 Hz
+  (result 0)`; the read-back right after the request still says `90 Hz` (the change is asynchronous); `display refresh
+  rate changed 90 -> 120 Hz` arrives 65 ms later. VrApi: `FPS=120/120`. So a read-back taken right after the
+  request is not the applied rate; the event is.
+- **The createFlags fix kept the mailbox** (`refresh_bracket.sh cf1 12 120 120`,
+  [data/display-latency-cf1-a6f1f2a5.csv](data/display-latency-cf1-a6f1f2a5.csv)) [PROVEN]: decoder 166.6 / 166.8 fps,
+  latched 114.1 / 113.0 per s, buffer-queue depth max 1, decoded → latch 3.07 / 2.70 / 6.51 and 3.05 / 2.67 /
+  6.48 ms (mean / p50 / p95), against 3.02 / 2.61 / 6.51 and 2.98 / 2.59 / 6.43 at 120 Hz in slot T on `65deee8d`.
+- Also checked for the coordinator's O114 (a) gate: the tunnel is up (the app sends 4 reports/s; the air unit's
+  `wfb-tun` rx counter rose 187 → 207 in 5 s, read by the coordinator).
 
 ### Slot O: ESP32/LDR on the lens (pending, needs the user)
 
