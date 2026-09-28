@@ -10,6 +10,7 @@ import android.view.WindowManager;
 
 import com.openipc.mavlink.MavlinkData;
 import com.openipc.pixelpilot.stats.StatsCollector;
+import com.openipc.pixelpilot.stats.StatsLine;
 import com.openipc.pixelpilot.stats.StatsWiring;
 import com.openipc.mavlink.MavlinkNative;
 import com.openipc.mavlink.MavlinkUpdate;
@@ -193,6 +194,10 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     /** The Stats pages' data (docs/xr/stats-backend.md): sidecar + decoded frames + link, a snapshot every 0.5 s. */
     private void startStats() {
         StatsCollector c = StatsWiring.create(() -> videoPlayer, () -> wfbLink, () -> xr);
+        // One PPXR_STATS line every 2 s while the Stats page is open, or always with the slot pref stats_log;
+        // capture it detached (scripts/quest/ab_detached.sh), parse with scripts/quest-latch/stats_log.py.
+        c.setLineSink(line -> Log.i(StatsLine.TAG, line));
+        c.setAlwaysLog(getSharedPreferences("general", MODE_PRIVATE).getBoolean("stats_log", false));
         try {
             c.start();
         } catch (java.net.SocketException e) {
@@ -288,6 +293,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             Log.w(TAG, "menu cost table unavailable: " + e.getMessage());
         }
         PageSource pages = new StatsPages(() -> {
+            StatsCollector c = statsCollector;
+            if (c != null) c.markViewed(System.nanoTime() / 1000);   // the page is on screen: log PPXR_STATS lines
             StatsSource src = statsSource;
             return src != null ? src.snapshot() : StatsSnapshot.EMPTY;
         });

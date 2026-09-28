@@ -17,6 +17,8 @@ import java.util.concurrent.TimeUnit;
 public final class StatsCollector implements StatsSource, AutoCloseable {
     public static final int TICK_MS = 500;   // the page refreshes at 2 Hz
     public static final long WINDOW_US = 2_000_000;
+    static final int LINE_EVERY_TICKS = 4;          // a StatsLine every 2 s
+    static final long VIEWED_FOR_US = 2_500_000;    // logging stays on this long after the page was last drawn
 
     /** What the collector pulls on each tick (VideoPlayer, WfbNgLink, XrBridge in the app; fakes in tests). */
     public interface Inputs {
@@ -38,6 +40,10 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
     private volatile float fpsDecoded = Float.NaN;
     private volatile StatsSnapshot snapshot = StatsSnapshot.EMPTY;
     private ScheduledExecutorService ticker;
+    private volatile java.util.function.Consumer<String> lineSink;
+    private volatile boolean alwaysLog;
+    private volatile long viewedUntilUs = Long.MIN_VALUE;
+    private int ticks;
 
     /** {@code sidecar} may be null (tests; no air): the air segments then stay unknown. */
     public StatsCollector(Inputs inputs, SidecarClient sidecar, long windowUs) {
@@ -71,6 +77,21 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
         fpsDecoded = fps;
     }
 
+    /** Where StatsLine records go (the activity: logcat, tag StatsLine.TAG). Null: none. */
+    public void setLineSink(java.util.function.Consumer<String> sink) {
+        lineSink = sink;
+    }
+
+    /** Log a StatsLine every 2 s regardless of the page (the slot pref), so normal flying stays quiet. */
+    public void setAlwaysLog(boolean on) {
+        alwaysLog = on;
+    }
+
+    /** The Stats page was just drawn: log for the next VIEWED_FOR_US. */
+    public void markViewed(long nowUs) {
+        viewedUntilUs = nowUs + VIEWED_FOR_US;
+    }
+
     /** One refresh; the ticker calls it every TICK_MS, tests call it directly. */
     synchronized void tick(long nowUs) {
         for (QuestFrame q : QuestFrame.unpack(inputs.drainFrameTimes())) latency.addQuest(q);
@@ -86,6 +107,10 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
         link.fill(b, nowUs);
         b.fpsDecoded(fpsDecoded).levers(idrOk.perSecond(), idrFailed.perSecond(), frozen.perSecond());
         snapshot = b.build();
+        java.util.function.Consumer<String> sink = lineSink;
+        if (++ticks % LINE_EVERY_TICKS == 0 && sink != null && (alwaysLog || nowUs < viewedUntilUs)) {
+            sink.accept(StatsLine.format(snapshot, nowUs / 1000));
+        }
     }
 
     @Override
