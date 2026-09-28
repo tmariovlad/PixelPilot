@@ -18,11 +18,16 @@ public final class RefreshWatch {
         if (appliedHz <= 0f) return null;  // not reported (yet)
         if (lastHz > 0f && Math.abs(appliedHz - lastHz) <= SAME_HZ) return null;
         String line = lastHz <= 0f
-                ? String.format(Locale.US, "XR refresh applied %.0f Hz (requested %.0f)", appliedHz, requestedHz)
-                : String.format(Locale.US, "XR refresh %.0f -> %.0f Hz (requested %.0f)%s", lastHz, appliedHz,
-                        requestedHz, hudSuffix(appliedHz, requestedHz));
+                ? String.format(Locale.US, "XR refresh applied %.0f Hz (%s)", appliedHz, request(requestedHz))
+                : String.format(Locale.US, "XR refresh %.0f -> %.0f Hz (%s)%s", lastHz, appliedHz,
+                        request(requestedHz), hudSuffix(appliedHz, requestedHz));
         lastHz = appliedHz;
         return line;
+    }
+
+    /** The runtime can report a rate before the app's request is made (it starts the session at its own default). */
+    private static String request(float requestedHz) {
+        return requestedHz > 0f ? String.format(Locale.US, "requested %.0f", requestedHz) : "not requested yet";
     }
 
     /** " BELOW REQUEST" when the runtime reports a rate under the requested one; "" otherwise or when unknown. */

@@ -24,6 +24,13 @@ public class RefreshWatchTest {
         assertEquals("XR refresh 72 -> 120 Hz (requested 120)", w.onSample(120f, 120f));
     }
 
+    @Test public void aRateSeenBeforeTheRequestSaysSo() {
+        // On the headset the runtime reports 90 Hz before the app's request is applied (logcat 2026-09-28 11:07:48).
+        RefreshWatch w = new RefreshWatch();
+        assertEquals("XR refresh applied 90 Hz (not requested yet)", w.onSample(90f, -1f));
+        assertEquals("XR refresh 90 -> 120 Hz (requested 120)", w.onSample(120f, 120f));
+    }
+
     @Test public void subHertzJitterIsNotAChange() {
         RefreshWatch w = new RefreshWatch();
         w.onSample(120f, 120f);
