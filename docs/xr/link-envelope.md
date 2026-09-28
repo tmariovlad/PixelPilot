@@ -199,6 +199,39 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Above 25 Mbit/s 2026-09-28 23:50–23:59: 1SS with FEC 8/10, and 2SS (HT MCS12/13) at 1080p90, 17 dBm, ch157
+
+Question (the user asked for more than 25 Mbit/s): can the link carry 30–40 Mbit/s, and does the Quest decode two spatial streams?
+- **Method.** Air: `bitrate_grid.sh` (48d0ccbc), 60 s steps, alink off, TBTT fix on.
+  - G1: 1SS with STBC (`-S 1`).
+  - G2: 2SS without STBC (`-S 0`; HT MCS12 = 2 × 16-QAM 3/4, 78 Mbit/s PHY; MCS13 = 2 × 64-QAM 2/3, 104 Mbit/s).
+  - The grid skips the higher bitrates of an MCS once a step drops more than 50 packets on the air. `enc_kbps` matched the request at every step (25–40 Mbit/s, 90 fps).
+  - Quest: detached capture, `TRACE LOSS: none`, latency against `m7b25f46`'s drift line.
+- **Data.** [air log](data/air-grid-above25-2026-09-28.txt) · [steps](data/steps-2026-09-28-grid-above25.txt) · [latency](data/measurements-2026-09-28-quest2-grid-above25.csv) · [link](data/link-2026-09-28-grid-above25.csv) · [link_audit](data/audit-2026-09-28-grid-above25.txt).
+
+| step | air drop | p_data | post-FEC | loss runs/s | latency last / p95 / decoded (ms) | raw A / B | SNR A / B |
+|---|---|---|---|---|---|---|---|
+| m7b25f46 | 0 | 3.03 % | 0.49 % | 4.7 | 1.55 / 4.16 / 4.33 | 59 / 55 | 19.0 / 19.4 |
+| m7b30f46 | 6384 | 9.46 % | 4.82 % | 31.6 | 72.0 / 80.2 / 76.1 | 59 / 55 | 19.0 / 19.5 |
+| m7b25f810 | 0 | 2.88 % | 0.65 % | 7.5 | −0.45 / 3.22 / 2.41 | 59 / 55 | 19.0 / 19.5 |
+| **m7b30f810** | 0 | 2.92 % | **0.62 %** | 8.2 | 3.53 / 10.16 / 6.40 | 59 / 55 | 19.0 / 19.5 |
+| **m12b25f46** (2SS) | 0 | 3.27 % | **0.73 %** | 7.6 | **0.40 / 3.25 / 3.45** | 55 / 51.5 | 18.5 / 19.0 |
+| m12b30f46 (2SS) | 0 | 3.39 % | 0.82 % | 10.1 | 15.7 / 41.6 / 18.9 | 55 / 51 | 18.5 / 19.0 |
+| m12b35f46 (2SS) | 14448 | 8.35 % | 8.75 % | 47.6 | 66.9 / 71.6 / 71.1 | 55 / 51 | 18.9 / 19.3 |
+| **m13b35f46** (2SS) | 0 | 3.89 % | **1.48 %** | 20.7 | 6.89 / 16.4 / 11.0 | 55 / 51.5 | 18.5 / 19.0 |
+| m13b40f46 (2SS) | 14384 | 7.05 % | 8.23 % | 69.3 | 57.7 / 59.8 / 64.7 | 55 / 51 | 18.5 / 19.0 |
+
+- **The Quest decodes 2SS** [PROVEN: m12/m13 steps complete at 90 fps with ~0.7–1.5 % loss after FEC]. This is the first 2SS run on this link. Per-chain RSSI reads ~4 dB lower than 1SS with STBC; SNR is the same.
+- **Above 25 Mbit/s, the best points at this position** [PROVEN: this run, N = 1 per step]:
+  - **m7b30f810** (30 Mbit/s, 1SS, FEC 8/10): 0.62 % after FEC, +2 ms mean, p95 10 ms;
+  - **m13b35f46** (35 Mbit/s, 2SS): 1.48 %, +5.3 ms, p95 16 ms.
+  - Neither is clean (> 0.1 % after FEC).
+- **m12b25f46 is the lowest-latency 25 Mbit/s point** (~1.2 ms below m7b25f46; a higher PHY rate) at 0.73 % after FEC.
+- **FEC 8/10 instead of 4/6 at 25 Mbit/s: −2 ms latency** (last −0.45 vs 1.55 ms; p95 3.2 vs 4.2 ms) for +0.16 points after FEC. At 30 Mbit/s it is what keeps the air from dropping (drop 0 vs 6384).
+- **Any step where the air drops is unusable** (+45–70 ms, 5–19 % RTP lost). m12b30f46 dropped nothing but already queued (+14 ms, p95 42 ms).
+- **Not tested** (the grid's skip rule is per MCS, not per FEC): m7b35/40f810, m12b30f810, m13b40f810. With FEC 8/10, some of the dropped points could fit.
+- Caveat: one run, N = 1 per point, no alternation. Treat the ranking between close points (m7b25f810 vs m7b30f810 vs m12b25f46) as provisional.
+
 ### R3' 2026-09-28 23:27–23:47: ch157 vs ch165 (outside the neighbour's 80 MHz) at 25 Mbit/s
 
 The same method as R3 below: a shared clock schedule, `m7b25f46`, 17 dBm, 1080p90, TBTT fix on, 8 × 150 s, order 157 165 165 157 157 165 165 157, the first 15 s after each switch excluded, `TRACE LOSS: none`. Air: drop 0 in every step, the same `inj` per step.
