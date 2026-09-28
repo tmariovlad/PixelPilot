@@ -194,8 +194,16 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                 __android_log_print(ANDROID_LOG_WARN, TAG, "stop requested for fd=%d before bring-up, aborting", fd);
                 return -1;
             }
+            const auto now_ms = [] {
+                return std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::steady_clock::now().time_since_epoch()).count();
+            };
+            {
+                std::lock_guard<std::mutex> lock(agg_mutex);
+                video_decrypt_probe.start(now_ms());
+            }
             auto packetProcessor =
-                [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8](const Packet &packet) {
+                [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8, now_ms](const Packet &packet) {
                     RxFrame frame(packet.Data);
                     if (!frame.IsValidWfbFrame()) {
                         return;
@@ -210,7 +218,14 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                         SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
                         SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
 
-                        video_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
+                        const uint8_t *payload = packet.Data.data() + sizeof(ieee80211_header);
+                        const auto counters = [this] {
+                            return DecErrProbe::Counters{video_aggregator->count_p_dec_err,
+                                                         video_aggregator->count_p_data,
+                                                         video_aggregator->count_p_session};
+                        };
+                        const DecErrProbe::Counters before = counters();
+                        video_aggregator->process_packet(payload,
                                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                                          0,
                                                          antenna,
@@ -220,6 +235,10 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                                                          0,
                                                          0,
                                                          NULL);
+                        const int64_t now = now_ms();
+                        video_decrypt_probe.record(payload[0], before, counters(), now);
+                        const std::string report = video_decrypt_probe.report(now);
+                        if (!report.empty()) __android_log_print(ANDROID_LOG_WARN, TAG, "%s", report.c_str());
                     } else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
                         mavlink_aggregator->process_packet(packet.Data.data() + sizeof(ieee80211_header),
                                                            packet.Data.size() - sizeof(ieee80211_header) - 4,

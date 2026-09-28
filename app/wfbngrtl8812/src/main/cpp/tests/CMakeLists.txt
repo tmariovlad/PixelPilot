@@ -44,3 +44,8 @@ add_executable(uplink_schedule_test UplinkSchedule_test.cpp)
 target_include_directories(uplink_schedule_test PRIVATE ${SRC})
 target_link_libraries(uplink_schedule_test GTest::gtest_main)
 gtest_discover_tests(uplink_schedule_test)
+
+add_executable(dec_err_probe_test DecErrProbe_test.cpp)
+target_include_directories(dec_err_probe_test PRIVATE ${SRC})
+target_link_libraries(dec_err_probe_test GTest::gtest_main)
+gtest_discover_tests(dec_err_probe_test)
