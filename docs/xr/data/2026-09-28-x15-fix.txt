@@ -1,0 +1,41 @@
+# X15 fix checked on the headset, 2026-09-28 03:52-03:56, build 8bc1a3d6 (c9cc780). Two RTL replugs (10 s out) in XR.
+# logcat of app tags + ActivityTaskManager + UsbHostManager, filtered to the events. Full log: scripts/quest/out/physical_x15-fix/logcat.txt (local).
+09-28 03:52:47.627 I/ActivityTaskManager( 1538): START u0 {flg=0x10000000 cmp=com.oculus.vrshell/.FocusPlaceholderActivity} with LAUNCH_SINGLE_INSTANCE from uid 10020 (BAL_ALLOW_ALLOWLISTED_COMPONENT) result code=0
+09-28 03:52:47.654 I/ActivityTaskManager( 1538): START u0 {flg=0x10810100 cmp=com.oculus.vrshell/.FocusPlaceholderActivity} with LAUNCH_SINGLE_INSTANCE from uid 10020 (realCallingUid=1000) (BAL_ALLOW_ALLOWLISTED_COMPONENT) result 
+09-28 03:52:47.693 I/ActivityTaskManager( 1538): Displayed com.oculus.vrshell/.FocusPlaceholderActivity for user 0: +45ms
+09-28 03:52:47.735 I/ActivityTaskManager( 1538): START u0 {act=android.intent.action.MAIN cat=[org.khronos.openxr.intent.category.IMMERSIVE_HMD] flg=0x10000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.XrVideoActivity} 
+09-28 03:52:47.813 I/ActivityTaskManager( 1538): START u0 {act=android.intent.action.MAIN cat=[org.khronos.openxr.intent.category.IMMERSIVE_HMD] flg=0x10010100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.XrVideoActivity} 
+09-28 03:52:48.329 I/pixelpilot(25160): usb devices attached: 1
+09-28 03:52:48.329 I/pixelpilot(25160):   /dev/bus/usb/001/002  0BDA:8812  Realtek 802.11n NIC  -> supported
+09-28 03:52:48.330 D/pixelpilot(25160): wfb-ng monitoring on /dev/bus/usb/001/002 using wifi channel 157
+09-28 03:52:48.331 D/pixelpilot(25160): wfb-ng thread on /dev/bus/usb/001/002 started.
+09-28 03:52:48.421 I/ActivityTaskManager( 1538): Displayed com.openipc.pixelpilot.xr/com.openipc.pixelpilot.XrVideoActivity for user 0: +614ms
+09-28 03:52:48.542 I/pixelpilot-xr(25160): video attached to the compositor surface
+09-28 03:53:54.367 D/UsbHostManager( 1538): Removed device at /dev/bus/usb/001/002: 802.11n NIC
+09-28 03:53:54.371 D/pixelpilot(25160): usb device detached: 3034/34834
+09-28 03:53:54.387 I/pixelpilot(25160): usb devices attached: 0
+09-28 03:53:54.450 D/pixelpilot(25160): usb_transfer thread should terminate
+09-28 03:53:54.470 D/pixelpilot(25160): libusb_release_interface: -4
+09-28 03:53:54.470 D/pixelpilot(25160): wfb-ng thread on /dev/bus/usb/001/002 done.
+09-28 03:54:04.127 D/UsbHostManager( 1538): Added device UsbDevice[mName=/dev/bus/usb/001/003,mVendorId=3034,mProductId=34834,mClass=0,mSubclass=0,mProtocol=0,mManufacturerName=Realtek,mProductName=802.11n NIC,mVersion=0.00,mSeria
+09-28 03:54:04.130 D/pixelpilot(25160): usb device attached: 3034/34834
+09-28 03:54:04.145 I/pixelpilot(25160): usb devices attached: 1
+09-28 03:54:04.145 I/pixelpilot(25160):   /dev/bus/usb/001/003  0BDA:8812  Realtek 802.11n NIC  -> supported
+09-28 03:54:04.146 D/pixelpilot(25160): wfb-ng monitoring on /dev/bus/usb/001/003 using wifi channel 157
+09-28 03:54:04.147 D/pixelpilot(25160): wfb-ng thread on /dev/bus/usb/001/003 started.
+09-28 03:54:04.150 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPL
+09-28 03:54:04.189 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11810100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPL
+09-28 03:55:10.964 D/UsbHostManager( 1538): Removed device at /dev/bus/usb/001/003: 802.11n NIC
+09-28 03:55:10.966 D/pixelpilot(25160): usb device detached: 3034/34834
+09-28 03:55:10.980 I/pixelpilot(25160): usb devices attached: 0
+09-28 03:55:10.990 D/pixelpilot(25160): usb_transfer thread should terminate
+09-28 03:55:11.010 D/pixelpilot(25160): libusb_release_interface: -4
+09-28 03:55:11.010 D/pixelpilot(25160): wfb-ng thread on /dev/bus/usb/001/003 done.
+09-28 03:55:19.894 D/UsbHostManager( 1538): Added device UsbDevice[mName=/dev/bus/usb/001/005,mVendorId=3034,mProductId=34834,mClass=0,mSubclass=0,mProtocol=0,mManufacturerName=Realtek,mProductName=802.11n NIC,mVersion=0.00,mSeria
+09-28 03:55:19.897 D/pixelpilot(25160): usb device attached: 3034/34834
+09-28 03:55:19.911 I/pixelpilot(25160): usb devices attached: 1
+09-28 03:55:19.911 I/pixelpilot(25160):   /dev/bus/usb/001/005  0BDA:8812  Realtek 802.11n NIC  -> supported
+09-28 03:55:19.911 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPL
+09-28 03:55:19.912 D/pixelpilot(25160): wfb-ng monitoring on /dev/bus/usb/001/005 using wifi channel 157
+09-28 03:55:19.914 D/pixelpilot(25160): wfb-ng thread on /dev/bus/usb/001/005 started.
+09-28 03:55:19.945 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11810100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPL

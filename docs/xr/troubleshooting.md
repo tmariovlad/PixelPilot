@@ -78,8 +78,8 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
   - Workaround until the fix: after a replug, relaunch PixelPilotXr from the Library, or force-stop it and start it
     again.
   - Details and data: [audit, hands-on checks](research/2026-09-27-xr-ux-audit.md#hands-on-checks-with-the-user-2026-09-28).
-    Fix: an attach trampoline that stays out of the way while XR runs. It is in code (`UsbAttachActivity`), not yet
-    checked on the headset.
+    **Fixed in `c9cc780`** (`UsbAttachActivity`, an attach trampoline that stays out of the way while XR runs) and verified
+    on the headset 2/2: no 2D, one link, picture back 1.2 / 2.1 s after the attach (was ~11 s).
 - **No video from a real OpenIPC air unit** (air unit in APFPV instead of wfb, `drone.key`/`gs.key` pair, link id 0
   vs 7669206): see [First real link](real-link.md#first-real-link-quest-2--rtl8812au--openipc-air-unit-2026-09-26),
   steps 1-3.
