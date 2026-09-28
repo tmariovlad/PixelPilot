@@ -2,6 +2,7 @@
 #define FPV_VR_WFBNG_LINK_H
 
 #include "DecErrProbe.h"
+#include "RxDiag.h"
 #include "FecChangeController.h"
 #include "SignalQualityCalculator.h"
 #include "TxFrame.h"
@@ -53,6 +54,18 @@ class WfbngLink {
     DecErrProbe video_decrypt_probe;   // guarded by agg_mutex, like the aggregator
     std::unique_ptr<AggregatorUDPv4> mavlink_aggregator;
     std::unique_ptr<AggregatorUDPv4> udp_aggregator;
+
+    // Link-audit RX diagnostics (T6), set from the app's rx-diag-* prefs before run(); all off by default, so the
+    // default RX path is unchanged. ring_ms > 0: devourer ring telemetry; keep_corrupted: FCS/ICV-failed frames
+    // reach the host and are counted, then dropped; rx_mode 0 = async (default), 1 = spsc-fat, 2 = reorder-pool.
+    struct RxDiagConfig {
+        int ring_ms = 0;
+        bool keep_corrupted = false;
+        int rx_mode = 0;
+        bool enabled() const { return ring_ms > 0 || keep_corrupted; }
+    };
+    RxDiagConfig rx_diag_cfg;
+    RxDiag rx_diag;
 
     void start_link_quality_thread(int fd);
 

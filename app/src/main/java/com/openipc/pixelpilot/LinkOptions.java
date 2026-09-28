@@ -3,10 +3,12 @@ package com.openipc.pixelpilot;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.openipc.wfbngrtl8812.RxDiagPrefs;
 import com.openipc.wfbngrtl8812.WfbNgLink;
 
 /**
- * Applies the user's link options (adaptive link, TX power, FEC, LDPC, STBC, FEC thresholds) from the
+ * Applies the user's link options (adaptive link, TX power, FEC, LDPC, STBC, FEC thresholds, uplink airtime, and the
+ * link-audit RX diagnostics of {@link RxDiagPrefs}) from the
  * "general" preferences to a {@link WfbNgLink}. Both the 2D and the XR activity own their own link, so both
  * call this; otherwise the XR link runs with the native defaults whatever the user chose in the menu.
  */
@@ -23,6 +25,7 @@ final class LinkOptions {
         applyFecThresholds(context, link);
         Uplink up = Uplink.from(prefs::getInt);
         link.setUplink(up.rateHz, up.fecK, up.fecN, up.mcs);
+        link.setRxDiagnostics(RxDiagPrefs.fromPrefs(prefs.getAll()));
     }
 
     static void applyFecThresholds(Context context, WfbNgLink link) {

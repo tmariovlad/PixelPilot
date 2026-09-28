@@ -3,6 +3,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
+#include <android/trace.h>
 #include <jni.h>
 
 #include "RxFrame.h"
@@ -176,6 +177,18 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
     // the heap fallback never triggers. Heap is the behavior every working
     // Android build has shipped.
     cfg.usb.rx_zerocopy = false;
+    // Link-audit diagnostics (T6, rx-diag-* prefs). Off by default.
+    if (rx_diag_cfg.ring_ms > 0) {
+        cfg.rx.ring_ms = rx_diag_cfg.ring_ms;
+        cfg.rx.on_ring = [this](const devourer::RxRingStats &s) { rx_diag.on_ring(s); };
+    }
+    cfg.rx.keep_corrupted = rx_diag_cfg.keep_corrupted;
+    if (rx_diag_cfg.rx_mode == 1 || rx_diag_cfg.rx_mode == 2) {
+        cfg.rx.rx_mode = rx_diag_cfg.rx_mode == 1 ? devourer::RxMode::SpscFat : devourer::RxMode::ReorderPool;
+        cfg.rx.pool_spare = 8;  // 16 buffers in flight or spare, as proposed in the audit (H2 test 4)
+    }
+    __android_log_print(ANDROID_LOG_INFO, TAG, "rx diag: ring_ms %d keep_corrupted %d rx_mode %d",
+                        rx_diag_cfg.ring_ms, rx_diag_cfg.keep_corrupted ? 1 : 0, rx_diag_cfg.rx_mode);
 
     // Everything that can throw (devourer's CreateRtlDevice, bring-up, the RX loop) runs guarded, and every way out
     // - normal end, early abort, exception - goes through the one release_link() below (audit X17).
@@ -206,6 +219,9 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             }
             auto packetProcessor =
                 [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8, now_ms](const Packet &packet) {
+                    if (rx_diag_cfg.keep_corrupted && !rx_diag.on_frame(packet.RxAtrib.crc_err, packet.RxAtrib.icv_err)) {
+                        return;  // a bad FCS/ICV: counted, never handed to wfb-ng (same as the chip dropping it)
+                    }
                     RxFrame frame(packet.Data);
                     if (!frame.IsValidWfbFrame()) {
                         return;
@@ -458,6 +474,13 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     native(wfbngLinkN)->stop(env, androidContext, fd);
 }
 
+// One system-trace counter; no cost unless a trace is recording (API 29+).
+static void trace_counter(const char *name, long long value) {
+    if (__builtin_available(android 29, *)) {
+        if (ATrace_isEnabled()) ATrace_setCounter(name, value);
+    }
+}
+
 float map_range(float value, float inputMin, float inputMax, float outputMin, float outputMax) {
     return outputMin + ((value - inputMin) * (outputMax - outputMin) / (inputMax - inputMin));
 }
@@ -477,6 +500,10 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
         std::lock_guard<std::mutex> lock(link->agg_mutex);
         video = take_window(*link->video_aggregator);
         if (link->udp_aggregator) tunnel = take_window(*link->udp_aggregator);
+    }
+    // Link-audit RX diagnostics (T6): same window, as trace counters next to WfbStatsTrace's ppxr_wfb_*.
+    if (link->rx_diag_cfg.enabled()) {
+        RxDiag::emit(link->rx_diag.take(), trace_counter);
     }
     if (tunnel.all || tunnel.lost) {
         __android_log_print(ANDROID_LOG_INFO,
@@ -725,6 +752,12 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     link->fec_recovered_to_3 = recTo3;
     link->fec_recovered_to_2 = recTo2;
     link->fec_recovered_to_1 = recTo1;
+}
+extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetRxDiag(
+    JNIEnv *env, jclass clazz, jlong nativeInstance, jint ringMs, jboolean keepCorrupted, jint rxMode) {
+    WfbngLink *link = reinterpret_cast<WfbngLink *>(nativeInstance);
+    if (!link) return;
+    link->rx_diag_cfg = WfbngLink::RxDiagConfig{ringMs, keepCorrupted == JNI_TRUE, rxMode};
 }
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetUplink(
     JNIEnv *env, jclass clazz, jlong nativeInstance, jint rateHz, jint fecK, jint fecN, jint mcs) {

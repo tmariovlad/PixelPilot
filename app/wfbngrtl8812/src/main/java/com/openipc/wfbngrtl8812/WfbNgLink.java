@@ -30,6 +30,12 @@ public class WfbNgLink implements WfbNGStatsChanged {
     public void setUplink(int rateHz, int fecK, int fecN, int mcs) {
         nativeSetUplink(nativeWfbngLink, rateHz, fecK, fecN, mcs);
     }
+    // Link-audit RX diagnostics (RxDiagPrefs); applies at the next link start.
+    public static native void nativeSetRxDiag(long nativeInstance, int ringMs, boolean keepCorrupted, int rxMode);
+
+    public void setRxDiagnostics(RxDiagPrefs d) {
+        nativeSetRxDiag(nativeWfbngLink, d.ringMs, d.keepCorrupted, d.rxMode);
+    }
     public static String TAG = "pixelpilot";
 
     // Load the native library on application startup.

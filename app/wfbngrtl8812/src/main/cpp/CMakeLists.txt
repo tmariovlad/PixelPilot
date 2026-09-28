@@ -119,6 +119,10 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
         ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/libusb1.0.so
         ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/libsodium.so
         ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/libpcap.a)
+# Newer-than-minSdk NDK APIs (ATrace_setCounter for the RxDiag counters) are weak and must sit behind
+# __builtin_available, as in videonative.
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE __ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__)
+target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Werror=unguarded-availability)
 
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -fno-omit-frame-pointer )
