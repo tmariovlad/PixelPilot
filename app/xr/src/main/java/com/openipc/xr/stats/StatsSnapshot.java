@@ -142,6 +142,12 @@ public final class StatsSnapshot {
             return this;
         }
 
+        /** decErr alone (it comes with the link stats, the decoder fps from elsewhere). */
+        public Builder decErr(int decErr) {
+            this.decErr = decErr;
+            return this;
+        }
+
         public Builder levers(double idrReqOkPerS, double idrReqFailedPerS, double frozenSlicesPerS) {
             this.idrReqOkPerS = idrReqOkPerS;
             this.idrReqFailedPerS = idrReqFailedPerS;
