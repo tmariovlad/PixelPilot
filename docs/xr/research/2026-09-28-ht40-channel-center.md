@@ -83,7 +83,27 @@ check on air where the uplink lands, before and after the change.
 **Air-unit coordination:** the air unit's 40 MHz primary (e.g. `iw … set channel 157 HT40+`) must be the same channel
 the Quest uses as primary. For 157 that means HT40+ on both ends.
 
-## Open: how to commit the devourer part
+## Implemented (2026-09-28, code only, not yet on the headset)
+
+The user chose option 1 (a fork). Everything is in code; the on-air check comes in O82b stage 1.
+- **Fork:** https://github.com/tmariovlad/devourer, branch `pixelpilot-xr` from `bb03774`, pushed only there. This
+  repo's `.gitmodules` points the submodule at the fork (`xr-native`).
+- **A, devourer `978b84a`:** `src/ChannelCenter.h`, a pure header-only table (`center_channel`, `ht40_offset`,
+  `center_80`/`center_40`). `rtw_get_center_ch` uses it, which removes the two old tables; `static_assert`s tie the
+  offsets to the HAL values.
+  - `tests/channel_center_selftest.cpp` (added to `CMakeLists.txt` as `channel_center`) checks the whole 5 GHz table
+    for 20/40/80, the offsets, and 2.4 GHz by offset.
+  - It was **red on the old map, extracted unchanged first**: 153, 161, 165–177, 2.4 GHz and all offsets failed.
+    It is **green** after the fix [PROVEN: WSL g++ run].
+- **C1, devourer `5e83556`:** the Jaguar1 TX path sets `TX_DESC.DATA_SC` with `tx_data_sc(channel width, frame width,
+  primary)`. A 20 MHz frame in 40 MHz goes on the primary: 2 for primary lower, 1 for upper, the same values
+  `phy_GetSecondaryChnl_8812` writes. Everything else stays 0 as before.
+- **B, this repo:** `WfbngLink.cpp` passes `ChannelOffset = ht40_offset(channel)` at 40 MHz (DONT_CARE at 20 MHz).
+- **The O82b case is a test** (the air unit on `157 80MHz` + `wfb_tx -B 40`, 40 MHz frames on 157/161, RX primary 157):
+  the Quest at 40 MHz on 157 gets offset lower (HT40+), center 159, and uplink DATA_SC 2, i.e. 157.
+- Tests: `channel_center` all checks passed (with `-Werror`); wfbng host tests 23/23; NDK build OK.
+
+## How the devourer part was committed (was open; option 1 chosen)
 
 devourer's origin is the upstream `https://github.com/openipc/devourer.git`, and the submodule is detached at `bb03774`.
 A fix must not be pushed upstream by us. Options, for the coordinator to choose:

@@ -75,3 +75,6 @@ in the "Results and deep dives" index of [docs/xr-quest.md](docs/xr-quest.md). T
 **Git**
 - Commit only the files you touched (`git add <files>`, never `git add -A`).
 - Never push to, or open a PR against, upstream OpenIPC. `origin` (the fork) only, and only when asked.
+- The **devourer submodule** comes from the fork `tmariovlad/devourer`, branch `pixelpilot-xr` (`.gitmodules`, since
+  2026-09-28). Commit devourer changes there and push only to that fork (the `fork` remote; the local `origin` push URL
+  is disabled on purpose). Never push to or open a PR against `openipc/devourer` unless the user asks.

@@ -10,6 +10,7 @@
 #include "LinkGuard.h"
 #include "StatsWindow.h"
 #include "TxFrame.h"
+#include "devourer/src/ChannelCenter.h"
 #include "devourer/src/RxPacket.h"
 #include "devourer/src/UsbDeviceLock.h"
 #include "libusb.h"
@@ -273,9 +274,13 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             // Jaguar3 (RTL8812EU/8822EU) this also starts the coex runtime thread
             // that sustained TX needs.
             auto bandWidth = (bw == 20 ? CHANNEL_WIDTH_20 : CHANNEL_WIDTH_40);
+            // At 40 MHz the primary must be explicit (it was DONT_CARE): it sets the RX primary and the sub-channel
+            // of the 20 MHz uplink. In 5 GHz the channel's pair fixes it, e.g. 157 = HT40+ (primary lower, center 159)
+            // (devourer ChannelCenter.h; docs/xr/research/2026-09-28-ht40-channel-center.md).
             current_device->InitWrite(SelectedChannel{
                 .Channel = static_cast<uint8_t>(wifiChannel),
-                .ChannelOffset = 0,
+                .ChannelOffset = bandWidth == CHANNEL_WIDTH_40 ? devourer::ht40_offset(wifiChannel)
+                                                               : devourer::kPrimeDontCare,
                 .ChannelWidth = bandWidth,
             });
 
