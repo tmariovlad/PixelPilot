@@ -35,7 +35,7 @@ home of all Quest work.
 - Scripts: [scripts/quest/README.md](scripts/quest/README.md) (Quest test scripts) ·
   [scripts/quest-latch/](scripts/quest-latch/) (Perfetto latch/transport analysis and the phase-lock stand-in:
   [compositor.pbtx](scripts/quest-latch/compositor.pbtx), [latch_analyze.py](scripts/quest-latch/latch_analyze.py),
-  [transport_analyze.py](scripts/quest-latch/transport_analyze.py), [rtp_seq.py](scripts/quest-latch/rtp_seq.py), [switch_gap.py](scripts/quest-latch/switch_gap.py), [calibrate_latch.py](scripts/quest-latch/calibrate_latch.py),
+  [transport_analyze.py](scripts/quest-latch/transport_analyze.py), [rtp_seq.py](scripts/quest-latch/rtp_seq.py), [switch_gap.py](scripts/quest-latch/switch_gap.py), [sidecar_log.py](scripts/quest-latch/sidecar_log.py) (waybeam per-frame encode timing from the air, no RTP needed), [calibrate_latch.py](scripts/quest-latch/calibrate_latch.py),
   [rtp_pace.py](scripts/quest-latch/rtp_pace.py), [test_rtp_pace.py](scripts/quest-latch/test_rtp_pace.py)).
 - Doc restructure log: [docs/xr/RESTRUCTURE-REPORT-2026-09-26.md](docs/xr/RESTRUCTURE-REPORT-2026-09-26.md).
 
