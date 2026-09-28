@@ -5,6 +5,8 @@
 #   APK_OLD=old.apk APK_NEW=new.apk pref_ab.sh alink adaptive_link_enabled 45 OLD:true NEW:true NEW:false OLD:true NEW:false NEW:true
 #   EXTRA_PREFS='{"rx-diag-ring-ms": 100}' pref_ab.sh rxmode rx-diag-mode 120 async spsc spsc async
 #   EXTRA_PREFS (JSON) is written in every step as well: the pref write keeps only gs.key and what it is given.
+#   START_AT=<PC epoch>: step k starts at START_AT + k*step_s by the clock (for a schedule shared with the air unit,
+#   e.g. a channel A/B where both ends must switch); the END line comes after the last step's slot.
 #   CAPTURE=detached: capture with ab_detached.sh (perfetto + logcat on the Quest, pulled at the end) instead of
 #   ab_long.sh, so nothing but the per-step prefs/relaunch commands goes over adb-over-Wi-Fi during the run.
 # In-trace A/B of an app boolean pref read at start-up (optionally across app builds): one long lean trace
@@ -19,6 +21,11 @@ LABEL=$1; PREF=$2; STEP=$3; shift 3
 [ -n "$LABEL" ] && [ -n "$PREF" ] && [ "$#" -ge 2 ] || { echo "usage: pref_ab.sh <label> <pref> <step_s> <[TAG:]value> ..."; exit 1; }
 STEPS="$QUEST_OUT/steps_$LABEL.txt"; mkdir -p "$QUEST_OUT"; : > "$STEPS"
 TOTAL=$(( (STEP + 12) * $# + 20 ))   # + install/relaunch time per step
+if [ -n "${START_AT:-}" ]; then
+  # Clock-scheduled steps: step k starts at START_AT + k * STEP (PC epoch), so another device (the air unit) can run
+  # the same schedule independently. STEP then includes the relaunch; the trace covers the whole schedule.
+  TOTAL=$(( START_AT + STEP * $# + 30 - $(date +%s) ))
+fi
 quest_prox_close
 if [ "${CAPTURE:-}" = detached ]; then
   # Nothing streams over adb during the run (docs/xr/uplink-t4-analysis.md); pulled after the last step.
@@ -30,7 +37,12 @@ else
 fi
 sleep 8   # let the trace start before the first step
 CUR=""
+K=0
 for SPEC in "$@"; do
+  if [ -n "${START_AT:-}" ]; then
+    WAIT=$(( START_AT + K * STEP - $(date +%s) )); [ "$WAIT" -gt 0 ] && sleep "$WAIT"
+  fi
+  K=$((K + 1))
   TAG=""; V=$SPEC
   case "$SPEC" in *:*) TAG=${SPEC%%:*}; V=${SPEC#*:} ;; esac
   qadb shell am force-stop "$PKG"
@@ -43,8 +55,11 @@ for SPEC in "$@"; do
   echo "$(qadb shell date +%s.%N | tr -d '\r') $SPEC" | tee -a "$STEPS"
   quest_prox_close
   quest_start_xr >/dev/null
-  sleep "$STEP"
+  if [ -z "${START_AT:-}" ]; then sleep "$STEP"; fi
 done
+if [ -n "${START_AT:-}" ]; then
+  WAIT=$(( START_AT + K * STEP - $(date +%s) )); [ "$WAIT" -gt 0 ] && sleep "$WAIT"
+fi
 echo "$(qadb shell date +%s.%N | tr -d '\r') END" | tee -a "$STEPS"
 if [ -n "$TRACE_PID" ]; then
   wait "$TRACE_PID"
