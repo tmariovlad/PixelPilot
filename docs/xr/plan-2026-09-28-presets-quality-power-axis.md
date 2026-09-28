@@ -115,3 +115,23 @@ These are the design's predictions, still to be confirmed or refuted.
 O110. Temperature stop as in W2.
 
 **Time:** ~40 min of steps, ~10 min for the dynamic arm, ~15 min of setup: about 65 min on the devices.
+
+## 3. Power bracket before persisting the boot TX power (coordinator's request, 2026-09-28)
+
+**Question.** Does loss rise above 20 dBm, for example because the Quest's receiver saturates at the bench distance?
+This has to be answered before the boot power is persisted.
+
+**Setup.** Air fixed on `m2b2f48` (REC), receiver `alink_air` stopped, 480p167. Power set by the coordinator with `iw`
+plus a readback. The 8822EU `thermal_state` is read at 12 dBm and after the 23 dBm steps.
+
+**Steps.** 12 × 30 s, each level N = 3, shuffled so that no run is monotonic. 17 dBm is spread over the trace and is the
+drift reference. Rises in ≤ 3 dB / 200 ms steps, as before.
+
+`p12 p17 p23 p20 p17 p12 p20 p23 p12 p23 p17 p20`, then back to 12 dBm.
+
+**Quest.**
+- One trace of 480 s, with `quest_thermal_log.sh` and `quest_tx_log.sh` alongside.
+- Analysis with `ab_segments.py` (baseline `p17`, 2 s guard) and `ab_link.py`, on the air's step log.
+- Per level: RSSI, loss before and after FEC, frames without a decoded mark, capture → decoded.
+- **Saturation shows as:** loss before FEC rising at 20 → 23 dBm while RSSI still rises or flattens near the top of the
+  scale (raw RSSI is clamped at 80, i.e. 100 on the app's column).
