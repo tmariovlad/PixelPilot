@@ -103,6 +103,40 @@ The user chose option 1 (a fork). Everything is in code; the on-air check comes 
   the Quest at 40 MHz on 157 gets offset lower (HT40+), center 159, and uplink DATA_SC 2, i.e. 157.
 - Tests: `channel_center` all checks passed (with `-Werror`); wfbng host tests 23/23; NDK build OK.
 
+## On air: O82b, Quest side (2026-09-28 11:53–12:03)
+
+Build `53c4e5de` (`0badd95`). The air unit was run by the OpenIPC session; its plan is OpenIPC
+`repos/tasks/o82b-40mhz-2ss-2026-09-28/00-PLAN-o82b-40mhz-2ss.md`. The width was switched through the prefs with
+[set_bw.py](../../../scripts/quest/set_bw.py). Data: [table](../data/2026-09-28-o82b-quest.txt).
+
+- **The fix is live** [PROVEN: devourer logcat]:
+  - ch157 at 40 MHz now logs `ch = 157, offset = 1, bwmode = 1` (it was offset 0 = DONT_CARE);
+  - ch161 at 40 MHz logs `offset = 2`.
+- **Stage 1** (air at 20 MHz on 157, Quest at 40 MHz on 157 HT40+): video 167 fps, 0 lost/s.
+  - **The 20 MHz uplink reached the air** (G-UP 4.2/s), so the uplink goes out on primary 157 as `tx_data_sc` intends
+    [PROVEN: G-UP counter on the air].
+- **Stage 2a** (air on native HT40+ 157, `-B 40` MCS1): video 166–170 fps, 0 lost/s, G-UP 3.8/s. The air saw no
+  injection hang at race load.
+- **Stage 2b** (air on `iw … 157 80MHz`, `cur_ch_offet=2`, `-B 40` at MCS1/2/3):
+  - video 167 fps and 0 lost/s at every MCS (fec_rec 14 / 16 / 21 per s);
+  - **but every 20 MHz frame stopped in both directions**: G-UP froze at the air, and the Quest's tun0 RX froze.
+    The 40 MHz video frames still passed.
+- **Cause, tested:** the Quest was moved to ch161 at 40 MHz (primary upper, same center 159). The uplink resumed on the
+  air (4.7/s), and the tunnel downlink reached the Quest again (+61 in 61 s) [PROVEN].
+  - So on `157 80MHz` the 8822EU's **20 MHz primary is 161**, not 157. That holds for its RX and for its own 20 MHz TX.
+  - On ch161 the video was 166 fps with 2 lost/s at SNR 23.8, against 0 lost at ~31 on 157. N = 1, cause not known
+    [SPECULATION].
+- **Consequence for 40 MHz with the air on 80 MHz:** the 20 MHz uplink (alink reports) and the tunnel only work if the
+  Quest's primary is the air's 20 MHz primary. Choices:
+  - the Quest on ch161 at 40 MHz;
+  - the air putting its 20 MHz primary on 157;
+  - the uplink at 40 MHz (C2).
+
+  The O82b owner decides. The Quest code now does exactly what its channel setting says [PROVEN above].
+- The Quest was restored to its original prefs (157, 20 MHz; devourer `ch = 157, offset = 0, bwmode = 0`). After the
+  air unit's revert (157 at 20 MHz, alink and vmoded back): race 167 fps, 0 lost/s, tunnel RX moving again [PROVEN].
+  Guardian restored.
+
 ## How the devourer part was committed (was open; option 1 chosen)
 
 devourer's origin is the upstream `https://github.com/openipc/devourer.git`, and the submodule is detached at `bb03774`.

@@ -1,0 +1,13 @@
+# O82b (40 MHz) Quest side, 2026-09-28 11:53-12:03, build 53c4e5de (0badd95: ChannelCenter + explicit HT40 offset + uplink DATA_SC).
+# G-RX = link_measure.sh on the Quest (decoded fps, FEC-recovered/s, lost/s, SNR). G-UP = wfb-tun rx on the air (OpenIPC session -68/b1).
+# Epochs are PC seconds (air ~= PC - 0.04). Air: MCS2 stbc1 ldpc1 FEC 4/8 12 dBm race 480p167 2 Mbit/s, alink + vmoded stopped.
+stage  air                               quest              window(PC)              fps  fec_rec/s lost/s SNR   G-UP (air)            quest tun0 rx
+s1     ch157 20 MHz                      ch157 BW40 HT40+   1790585686..747        167  9         0      31.6  +447 in ~110 s (4.2/s) PASS   +60/61 s
+2a     ch157 HT40+ 40 MHz, -B40 MCS1     ch157 BW40 HT40+   1790585795..816        166-170 23      0      30.5  3.8/s PASS             -
+2b-1   157 80MHz (cur_ch_offet=2) -B40 M1  ch157 BW40 HT40+ 1790585853..899        167  14        0      31.2  0 (frozen at 10005) FAIL  0 (frozen at 169)
+2b-2   157 80MHz -B40 MCS2               ch157 BW40 HT40+   1790585905..950 (switch at 909) 167 16 0      30.8  0 FAIL                 0
+2b-3   157 80MHz -B40 MCS3               ch157 BW40 HT40+   1790586006..055        167  21        0      30.5  0 FAIL                 0
+ch161  157 80MHz -B40 MCS3               ch161 BW40 HT40-   1790586076..137        166  23        2      23.8  4.7/s RESUMED          +61/61 s
+# devourer logcat: s1 "[set_channel_bwmode] ch = 157, offset = 1, bwmode = 1"; ch161 "ch = 161, offset = 2, bwmode = 1";
+# restore "ch = 157, offset = 0, bwmode = 0" (12:02:39).
+after  air reverted to 157 20 MHz + alink/vmoded ch157 BW20 (restored)  ..1790586230  167  8  0  31.3  climbing (air 10448+)  +13/15 s
