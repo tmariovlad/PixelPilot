@@ -1,5 +1,7 @@
 # Presets: switch the air unit's video mode and quality from the headset (design, 2026-09-27)
 
+Extended on 2026-09-29 by the full in-headset menu: [menu-design.md](menu-design.md). This page stays the reference for the MODE/QUALITY protocol and its safety rules.
+
 Status: **approved 2026-09-27 (coordinator d2). App side implemented; on the headset against a fake air 2/2 commits + 2/2 reverts (2026-09-28); real thumbsticks and the real air side (c8) pending.** See [Implementation (app side)](#implementation-app-side-2026-09-27). App side: this repo (PixelPilotXr). Air side: the OpenIPC project
 (session c8, writes on `.132` through session a61381). The message format follows c8's proposal. Air-side mechanics
 are marked as questions for c8 at the end.

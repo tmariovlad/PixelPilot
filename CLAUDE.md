@@ -25,6 +25,7 @@ home of all Quest work.
   - [docs/xr/troubleshooting.md](docs/xr/troubleshooting.md): build traps, Horizon OS quirks, adapter/link problems.
   - [docs/xr/transport-choice.md](docs/xr/transport-choice.md): why wfb-ng is the boot default, not APFPV; why APFPV through the RTL needs new code.
   - [docs/xr/presets-design.md](docs/xr/presets-design.md): design (for approval) of mode/quality presets switched from the headset, and the VMODE1 protocol to the air.
+  - [docs/xr/menu-design.md](docs/xr/menu-design.md): design (for approval, 2026-09-29) of the full in-headset menu, right thumbstick only: every option (stream/decoder/XR levers, air mode/quality/radio/codec/channel), Stats pages with per-segment G2G latency, the VMODE1 extensions it needs.
   - **[docs/xr/HANDOFF.md](docs/xr/HANDOFF.md): current state of air unit / Quest / GS and the open items — start here in a new session.**
   - [docs/xr/data/](docs/xr/data/): raw measurement CSVs (linked from the topic files).
 - Design: [spec](docs/superpowers/specs/2026-09-26-quest-openxr-viewer-design.md) ·
