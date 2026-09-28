@@ -71,6 +71,12 @@ public class VideoPlayer implements IVideoParamsChanged {
 
     public static native long[] nativeDrainFrameReadyTimes(long nativeInstance);
 
+    /** 4 longs per decoded frame: ssrc, RTP timestamp, complete ns, decoded ns (CLOCK_MONOTONIC). */
+    public static native long[] nativeDrainFrameTimes(long nativeInstance);
+
+    /** Cumulative: IDR requests ok, IDR requests failed, slices frozen until an IDR. */
+    public static native long[] nativeGetLeverCounters(long nativeInstance);
+
     public static native void nativeStartDvr(long nativeInstance, int fd, int fmp4_enabled);
 
     public static native void nativeStopDvr(long nativeInstance);
@@ -169,6 +175,16 @@ public class VideoPlayer implements IVideoParamsChanged {
      */
     public long[] drainFrameReadyTimes() {
         return nativeDrainFrameReadyTimes(nativeVideoPlayer);
+    }
+
+    /** Decoded frames since the last call, for the Stats page: see {@link #nativeDrainFrameTimes}. */
+    public long[] drainFrameTimes() {
+        return nativeDrainFrameTimes(nativeVideoPlayer);
+    }
+
+    /** See {@link #nativeGetLeverCounters}. */
+    public long[] leverCounters() {
+        return nativeGetLeverCounters(nativeVideoPlayer);
     }
 
     /** Codec name and the levers it accepted, e.g. "default video/hevc | LL PO". */

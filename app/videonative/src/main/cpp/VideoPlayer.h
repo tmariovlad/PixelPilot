@@ -75,6 +75,12 @@ class VideoPlayer
 
     std::string getDecoderSummary() { return videoDecoder.getDecoderSummary(); }
     std::vector<int64_t> drainFrameReadyTimes() { return videoDecoder.drainFrameReadyTimes(); }
+    // Decoded frames keyed by RTP (ssrc, ts) since the last call, for the Stats page (FrameTimeline.h).
+    std::vector<FrameTimes> drainFrameTimes() { return videoDecoder.drainFrameTimes(); }
+    // Cumulative lever counters for the Stats page: IDR requests sent ok / failed, slices frozen until an IDR.
+    uint32_t idrRequestsOk() const { return mIdrRequester.requestsOk(); }
+    uint32_t idrRequestsFailed() const { return mIdrRequester.requestsFailed(); }
+    uint32_t frozenSlices() const { return mFreezeUntilIdr.dropped(); }
 
     // Threads on the video latency path (receive/parse/feed and output release), for scheduling hints.
     std::vector<int> latencyCriticalThreadIds();

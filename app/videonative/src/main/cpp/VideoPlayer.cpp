@@ -475,6 +475,39 @@ extern "C"
         return out;
     }
 
+    // Decoded frames for the Stats page, 4 longs each: ssrc, RTP timestamp, complete ns, decoded ns (CLOCK_MONOTONIC).
+    JNI_METHOD(jlongArray, nativeDrainFrameTimes)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance)
+    {
+        VideoPlayer*                  p      = native(nativeInstance);
+        const std::vector<FrameTimes> frames = p ? p->drainFrameTimes() : std::vector<FrameTimes>{};
+        std::vector<jlong>            packed;
+        packed.reserve(frames.size() * 4);
+        for (const FrameTimes& f : frames)
+        {
+            packed.push_back(f.ssrc);
+            packed.push_back(f.ts);
+            packed.push_back(f.completeNs);
+            packed.push_back(f.decodedNs);
+        }
+        jlongArray out = env->NewLongArray(static_cast<jsize>(packed.size()));
+        if (!packed.empty()) env->SetLongArrayRegion(out, 0, static_cast<jsize>(packed.size()), packed.data());
+        return out;
+    }
+
+    // Cumulative counters: IDR requests ok, IDR requests failed, slices frozen until an IDR.
+    JNI_METHOD(jlongArray, nativeGetLeverCounters)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance)
+    {
+        VideoPlayer* p     = native(nativeInstance);
+        const jlong  v[3]  = {p ? static_cast<jlong>(p->idrRequestsOk()) : 0,
+                              p ? static_cast<jlong>(p->idrRequestsFailed()) : 0,
+                              p ? static_cast<jlong>(p->frozenSlices()) : 0};
+        jlongArray   out   = env->NewLongArray(3);
+        env->SetLongArrayRegion(out, 0, 3, v);
+        return out;
+    }
+
     JNI_METHOD(void, nativeSetVideoSurface)
     (JNIEnv* env, jclass jclass1, jlong videoPlayerN, jobject surface, jint index)
     {
