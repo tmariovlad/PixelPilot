@@ -192,12 +192,33 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
 - **Result** [PROVEN: scan]:
   - The only BSSs on 149–165 are two on **ch157**, both from one radio: `b0:8b:92:ee:10:b9` "**Staff - 5GHz**" and `b2:8b:92:9e:10:b9` (hidden SSID).
   - Both beacon every **100 TU = 102.4 ms** and arrive at −90/−91 dBm at the air.
-  - Channels **149, 153, 161 and 165 had no BSS**.
+  - Channels **149, 153, 161 and 165 had no BSS**. **Correction 2026-09-28 23:20:** "no BSS" is true for their primaries only. The neighbour's AP is VHT 80 MHz, center segment 155, primary 157 [PROVEN: [scan](data/air-scan-ch157-2026-09-28.txt), both BSSs], so its band covers 149/153/157/161 (5735–5815 MHz). Beacons go out only on 157, but its 80 MHz traffic also covers 161. **Only 165 (5815–5835 MHz) lies wholly outside it.**
   - The user's own networks are Zeul36 on ch36 and Zeul37 on ch48. The spare WiFiLink HD air unit was not seen.
 - **Reading** [INFERRED]:
   - A neighbour's AP beacons on our channel. That is the external 102.4 ms source of B1/B4 (~6–13 % of lost packets, 12–26 % of gaps).
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
-  - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears.
+  - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
+
+### R3 2026-09-28 22:58–23:18: ch157 vs ch161 at 25 Mbit/s (both inside the neighbour's 80 MHz)
+
+Question: does moving off the neighbour's primary channel remove the 102.4 ms loss lock?
+- **Method.**
+  - Air and Quest both switched channel on one clock schedule: [pref_ab.sh](../../scripts/quest/pref_ab.sh) with `START_AT` sets the Quest pref `wifi-channel` and relaunches; the air switches at the same PC epochs. 8 × 150 s, order 157 161 161 157 157 161 161 157.
+  - Air: `m7b25f46`, 17 dBm, 1080p90, alink stopped, **TBTT fix active (0x550 = 0x10)**, drop 7 only at the first switch, the same `inj` per step.
+  - Quest: detached capture, steps on the Quest clock, the first 15 s after each switch excluded, `TRACE LOSS: none`.
+- **Caveat found afterwards:** ch161 is **inside** the neighbour's VHT 80 MHz band (see the correction above). So R3 compares the neighbour's primary with another channel of the same neighbour, not with a clean channel. R3' (157 vs 165) repeats it against 165.
+- **Data.** [air log](data/air-r3-2026-09-28.txt) · [steps](data/steps-2026-09-28-r3.txt) · [link_audit](data/audit-2026-09-28-r3.txt) · [link](data/link-2026-09-28-r3.csv) · [loss lock per channel](data/coincidence-2026-09-28-r3.txt).
+
+| channel (steps) | p_data | post-FEC | loss runs/s | FEC repairs/s | raw A / B | SNR A / B dB | 9.766 Hz lock of losses |
+|---|---|---|---|---|---|---|---|
+| 157 (4 × 150 s) | 2.91–2.97 % | 0.42–0.47 % | 4.0–4.7 | 57.4–59.2 | 58–60 / 55 | 15.1–19.4 | **Z = 7.4 (not locked)** |
+| 161 (4 × 150 s) | 2.43–2.73 % | 0.42–0.56 % | 4.6–5.7 | 46.8–51.7 | 57 / 51 | 15.5–17.9 | **Z = 42.8 (locked)** |
+
+- **Before FEC 161 is better in every step** (p_data −0.2 to −0.5 points, ~10 fewer repairs/s), although its RSSI is 1–4 dB lower [PROVEN: ABBA×2]. **After FEC the two channels are equal** [PROVEN].
+- **With the TBTT fix on, ch157 no longer shows the 102.4 ms loss lock (Z = 7.4). ch161 does (Z = 42.8)** [PROVEN: coincidence file].
+  - Two readings, not separated yet [SPECULATION]. (a) Much of the strong lock seen in U1/T2' (Z 73–219, TBTT pause on) came from the air's own TBTT window rather than from the neighbour's beacons. (b) On 161 the neighbour's 80 MHz traffic that follows each beacon (or DTIM) lands on our channel.
+  - R3' (157 vs 165, TBTT fix on in both) separates them. On 165 the lock should be gone and loss lower, if the neighbour's traffic matters.
+- The Quest's prefs restore after R3 failed its read-back once (the app was likely still exiting), then succeeded after an explicit force-stop and was re-verified after the XR restart.
 
 ### R7 + R5 2026-09-28 21:45–22:13 at 1080p90 25 Mbit/s, 17 dBm: the TBTT pause off at full rate; MCS6 short GI vs MCS7 long GI
 
