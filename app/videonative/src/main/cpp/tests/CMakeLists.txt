@@ -95,3 +95,8 @@ add_executable(codec_switch_keyframes_test CodecSwitchKeyFrames_test.cpp)
 target_include_directories(codec_switch_keyframes_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(codec_switch_keyframes_test GTest::gtest_main)
 gtest_discover_tests(codec_switch_keyframes_test)
+
+add_executable(frame_timeline_test FrameTimeline_test.cpp)
+target_include_directories(frame_timeline_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(frame_timeline_test GTest::gtest_main)
+gtest_discover_tests(frame_timeline_test)
