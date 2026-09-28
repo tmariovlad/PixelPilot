@@ -10,9 +10,12 @@ do not check, so every run validates itself:
 3. Burst shape per step: lengths of the RTP sequence holes (runs), runs/s, the share of lost packets in runs >= 5,
    and the largest / p99 packet inter-arrival gap. Short runs with small gaps = sub-ms loss clusters; long runs with
    long gaps = a stall (USB, CPU, GC) or an outage.
-4. --logcat: timing of post-FEC losses from a live capture (T0 of the audit):
-       adb -s <quest> logcat -v epoch -s wfb-ng:I devourer:D | grep --line-buffered -E "PKT_LOST|TX DESC|block overrides"
-   gives the fraction of loss events within --window-ms after a Quest uplink frame (TX DESC) against a shifted
+4. --logcat: timing of post-FEC losses from a logcat capture (T0 of the audit). Capture it DETACHED, on the Quest,
+   and pull the file afterwards, as ab_detached.sh does:
+       adb -s <quest> shell logcat -T 1 -v epoch -s wfb-ng:I devourer:D -f /sdcard/<file>    (then adb pull)
+   Do NOT stream it live over adb-over-Wi-Fi: a streamed capture makes the Quest's internal Wi-Fi transmit after every
+   uplink frame, which is itself a suspected cause of the loss it measures (pixelpilot-xr docs/xr/uplink-t4-analysis.md).
+   Filter the pulled file for PKT_LOST / TX DESC / block overrides, or pass it whole. The analysis gives the fraction of loss events within --window-ms after a Quest uplink frame (TX DESC) against a shifted
    control, and the Rayleigh phase-locking Z of the loss times at candidate rates (1 Hz session key, 4 Hz uplink timer,
    9.77 Hz beacons, 72/90 Hz compositor/video). Z > ~13 (p < 1e-6) means the losses lock to that rate.
 
