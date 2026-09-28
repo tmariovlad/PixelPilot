@@ -151,6 +151,17 @@ The PC also keeps copies of what was deleted from the air unit to free `/overlay
 anything running) and `wfb_tx.v25.bak`. They are in the OpenIPC repo under
 `repos/tasks/hil-build/air-kernel-backups/linkmode/`, with md5 sums.
 
+**Correction 2026-09-28 (offload before O114).** The two `linkmode-air.sh.bak-2026-09-27-pre-rec` / `-pre-alink`
+backups in the table above are **no longer on the air unit**. They were moved to the PC with md5 checked before the
+`rm` (user-approved; `/overlay` 224K → 264K free [PROVEN: `df -k` on `.132`]). They now live in the OpenIPC repo under
+`repos/tasks/hil-build/air-kernel-backups/overlay-offload-2026-09-28/opt/linkmode/` (md5 `b8b60b83…` pre-rec,
+`5b437d83…` pre-alink). To use one of those reverts: copy the file from the PC to `/tmp/` on the air unit, check md5
+and size, then `cp /tmp/<name> /opt/linkmode/linkmode-air.sh`. The `waybeam.json.bak-pre-rec` / `-1080p90` backups
+stay on the air unit. **Once O114 stage (a) is deployed**, `/etc/waybeam.json` becomes a link to RAM. From then on,
+`cp <bak> /etc/waybeam.json` no longer persists across a reboot, and the revert is `wb_cfg.sh set_default <bak>`
+instead (details in the O114 deploy runbook, OpenIPC repo
+`repos/tasks/vmode-presets-2026-09-27/02-DEPLOY-RUNBOOK.md`).
+
 ## Evening session after the user returned (2026-09-27) and resume point
 
 - **Picture quality.** Real bitstream frames and Quest screenshots were captured at 480p with 2/4/8 Mbit/s and at
