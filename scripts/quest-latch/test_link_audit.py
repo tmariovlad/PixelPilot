@@ -90,6 +90,23 @@ def test_periodicity_finds_a_locked_rate_and_not_a_random_one():
     assert periodicity([1.0], freqs=(4.0,)) == [(4.0, 0.0)]
 
 
+
+def test_audit_counts_more_than_65536_packets_in_one_step():
+    # A 100 s step at ~3400 packets/s holds > 65536 packets: the 16-bit RTP sequence wraps, and counting distinct raw
+    # sequence numbers would cap "received" at 65536 (seen on the 2026-09-28 T2 trace).
+    from link_audit import audit_steps
+    S = 1e9
+    pkts, seq = [], 0
+    for k in range(70000):
+        seq += 1
+        if seq % 100 == 0:
+            continue                                   # one lost packet per 100
+        pkts.append((k / 1000 * S, seq & 0xFFFF))
+    rows = audit_steps({}, pkts, [(0.0, "A")], 70 * S, 0)
+    r = rows[0][2]
+    assert r["received"] == len(pkts), r["received"]
+    assert r["rtp_lost"] == 700 - 1, r["rtp_lost"]    # the last hole (seq 70000) lies past the last arrival
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

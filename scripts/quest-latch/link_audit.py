@@ -45,15 +45,22 @@ def p_data(fec_rec, wfb_lost, rtp_received, rtp_lost):
     return (fec_rec + wfb_lost) / expected if expected else None
 
 
-def loss_runs(seqs):
-    """Lengths of the holes in 16-bit RTP sequence numbers (arrival order), unwrapped the way rtp_seq.seq_loss does,
-    so a late packet fills its own hole and a 65535 -> 0 wrap is continuous."""
+def unwrap(seqs):
+    """16-bit RTP sequence numbers (arrival order) unwrapped the way rtp_seq.seq_loss does: each one against the
+    previous with a signed step, so a late packet fills its own hole and a 65535 -> 0 wrap is continuous."""
     if not seqs:
         return []
     useq = [seqs[0]]
     for a, b in zip(seqs, seqs[1:]):
         useq.append(useq[-1] + ((b - a + 0x8000) & 0xFFFF) - 0x8000)
-    got = sorted(set(useq))
+    return useq
+
+
+def loss_runs(seqs):
+    """Lengths of the holes in 16-bit RTP sequence numbers (arrival order), after unwrap()."""
+    if not seqs:
+        return []
+    got = sorted(set(unwrap(seqs)))
     return [b - a - 1 for a, b in zip(got, got[1:]) if b - a > 1]
 
 
@@ -121,7 +128,7 @@ def audit_steps(counters, pkts, steps, end, guard):
         mine = [p for p in pkts if a <= p[0] < b]
         seqs = [s for _, s in mine]
         runs = loss_runs(seqs)
-        received, lost = len(set(seqs)), sum(runs)
+        received, lost = len(set(unwrap(seqs))), sum(runs)   # unwrapped: a step can hold > 65536 packets
         fec = window_sum(counters.get("ppxr_wfb_fec_rec", []), a, b)
         wlost = window_sum(counters.get("ppxr_wfb_lost", []), a, b)
         r = run_summary(runs, (b - a) / 1e9)

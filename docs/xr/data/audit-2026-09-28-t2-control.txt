@@ -1,0 +1,5 @@
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 A_5g         227929  1878  7079  1855    3.89   0.82    8.6  327  191  206   82   39  11.9   14.9   2.4
+ 1 A_score0     139401  1000  4271  1006    3.76   0.71    7.7  168  117  117   45   13   6.7    8.1   2.3
+ 2 A_reset        9274    69   280    69    3.74   0.74    6.8    5   10    7    3    2  15.9    9.5   2.2

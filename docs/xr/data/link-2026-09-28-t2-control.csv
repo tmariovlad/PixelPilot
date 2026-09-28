@@ -1,0 +1,4 @@
+step,label,tx_per_s,rx_per_s,pre_fec_loss_pct,fec_rec_per_s,wfb_lost_per_s,rssi,rssi_a,rssi_b,snr_a_db,snr_b_db,quest_tx_per_s,air_c,quest_cpu_max_c,quest_status_max,quest_batt,data_loss_pct
+0,A_5g,,3386.398,,72.235,18.929,74.297,,,,,22.51,,,,,3.898
+1,A_score0,,3379.683,,71.183,16.767,74.755,,,,,22.35,,,,,3.754
+2,A_reset,,3552.0,,70.0,17.25,76.0,,,,,22.0,,,,,3.735

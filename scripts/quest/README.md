@@ -169,6 +169,7 @@ applied live (no RTP restart).
 | `air_tunnel.py` | ADB to the Quest while it is a client of the air unit's APFPV AP: SSH forward over the air unit's eth0 (`adb connect 127.0.0.1:5595`) |
 | `../quest-latch/switch_gap.py` | picture gap after a live air-unit mode switch, from one `ab_long.sh` trace: frozen / stream (air) / decoder (app) ms and decode ms after; offline test `test_switch_gap.py` |
 | `ab_long.sh` | capture for an in-trace A/B: long lean trace + Quest-minus-PC clock offset (analysis: `../quest-latch/ab_segments.py`) |
+| `ab_detached.sh` | `start <label> [s]` / `pull <label>`: the same lean trace, but perfetto runs detached on the Quest (`--background`) and the uplink `TX DESC` lines go to a logcat file on the Quest, so the capture survives adb dropping (Quest changing Wi-Fi network); `pull` writes `out/qtx_<label>.txt` in `quest_tx_log.sh` format |
 | `decode_watch.sh` | watch the running decoder for N s (decode ms, fps, decoder reconfigurations), e.g. after an air-unit restart |
 | `stop_crash_check.sh` | does the XR app survive repeated session stops (`relaunch` over the running instance / display `sleepwake`)? pid, SIGABRT, video re-attached per iteration |
 | `../quest-latch/hold_steps.py` | turn the air unit's hold log (`ab_loop.sh pwr/mark/set`, adaptive-link runs) into a step log (`<PHASE>_p<dBm>`, `IDR_ON/OFF`, END) for ab_segments/ab_link |
