@@ -1,0 +1,3 @@
+1790613630.21 PRE m7b25000f46 tx=3683794 temp=48 verbose_lines=1638 pkt_lines=1720 step=480s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790613820.78 ABORT_SIGNAL
+1790613821.14 END tx=4355796 temp=48 reverted=m7b25000f46 mcs=7 fec=4/6 br=25000
