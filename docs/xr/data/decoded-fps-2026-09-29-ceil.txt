@@ -1,0 +1,21 @@
+ 0 A_off          decoded_fps   84.2
+ 1 A_on           decoded_fps   84.7
+ 2 A_off          decoded_fps   83.6
+ 3 A_on           decoded_fps   84.2
+ 4 A_off          decoded_fps   84.0
+ 5 A_on           decoded_fps   84.5
+ 6 m7f810_25      decoded_fps   85.6
+ 7 m7f810_30      decoded_fps   83.5
+ 8 m7f810_32      decoded_fps   82.5
+ 9 m7f810_34      decoded_fps   71.6
+10 m7f810_36      decoded_fps   52.7
+11 m7f810_38      decoded_fps   37.1
+12 m7f810_40      decoded_fps   26.3
+13 m12f810_30     decoded_fps   81.8
+14 m12f810_34     decoded_fps   81.8
+15 m12f810_38     decoded_fps   73.8
+16 m12f810_42     decoded_fps   41.8
+17 m13f810_38     decoded_fps   73.6
+18 m13f810_42     decoded_fps   69.9
+19 m13f810_46     decoded_fps   48.6
+20 m13f810_50     decoded_fps   27.1

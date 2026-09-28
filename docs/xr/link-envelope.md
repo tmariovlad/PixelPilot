@@ -199,6 +199,50 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Bitrate ceiling 2026-09-29 00:21–00:37: the air recorder, and FEC 8/10 up to 50 Mbit/s (1SS m7, 2SS m12/m13)
+
+Question (the user): (1) was S3's 76–87 fps on the Quest caused by the air's recorder or by the link? (2) Where is the upper bitrate limit?
+- **Method.** One air run (`ceil_run.sh`), 1080p90, 17 dBm, ch157, alink off, TBTT fix on:
+  - A: `m7b30f810` fixed, 6 × 40 s, recorder off/on alternating;
+  - B: `bitrate_grid`, 45 s per step, no skip rule: 1SS m7 FEC 8/10 at 25–40 Mbit/s, 2SS m12 FEC 8/10 at 30–42, 2SS m13 FEC 8/10 at 38–50.
+  - The air log has encoder fps/kbps and drop per step.
+  - Quest: detached capture, `TRACE LOSS: none`, offset Quest − air +1.195 s, guard 4 s, latency vs A_off's drift line. Decoded fps = `ppxr_frame_ready` marks per second in the step window.
+- **Data.** [air log](data/air-ceil-2026-09-29.txt) · [steps](data/steps-2026-09-29-ceil.txt) · [decoded fps](data/decoded-fps-2026-09-29-ceil.txt) · [link_audit](data/audit-2026-09-29-ceil.txt) · [latency](data/measurements-2026-09-29-quest2-ceil.csv).
+
+**A: recorder off vs on at 30 Mbit/s (the air encoder ran at 90.0 fps and 30.15 Mbit/s with drop 0 in every step).**
+
+| state (steps) | decoded fps | post-FEC | latency last / p95 |
+|---|---|---|---|
+| recorder off (3 × 40 s) | 83.6–84.2 | 0.69–0.81 % | 2.23–2.39 / 4.91–5.18 ms |
+| recorder on (3 × 40 s) | 84.2–84.7 | 0.62–0.69 % | 3.29–3.38 / 5.94–6.21 ms |
+
+- **The recorder does not cost frames; it costs ~1 ms of latency** [PROVEN: alternating, every "on" step is ~1 ms later, fps and loss overlap].
+- **The ~84 fps is loss, not a decoder limit** [INFERRED]. A frame at this rate has ~26–30 packets, so ~0.7 % of packets lost after FEC leaves a hole in a sizable share of frames (~16 % if the losses were independent; fewer because they come in bursts). The decoder shows 167 fps at race. So "≥ 88 fps at 1080p90" needs post-FEC loss well under 0.1 %.
+
+**B: FEC 8/10 grid.**
+
+| step | air drop | decoded fps | p_data | post-FEC | loss runs/s | latency last / p95 (ms) |
+|---|---|---|---|---|---|---|
+| m7 25 | 0 | 85.6 | 3.00 % | 0.66 % | 6.9 | −0.49 / 3.33 |
+| **m7 30** | 0 | 83.5 | 3.18 % | 0.82 % | 9.1 | 2.94 / 8.02 |
+| m7 32 | 76 | 82.5 | 3.29 % | 0.88 % | 11.1 | 17.6 / 46.8 |
+| m7 34 | 2044 | 71.6 | 6.51 % | 2.68 % | 28.0 | 57.2 / 74.6 |
+| m7 36 / 38 / 40 | 7.9k–21.7k | 52.7 / 37.1 / 26.3 | 8.0–8.9 % | 6.95–14.9 % | 54–86 | 66–74 / 76–77 |
+| **m12 30** (2SS) | 0 | 81.8 | 3.10 % | 0.93 % | 11.5 | **1.01 / 4.37** |
+| m12 34 | 0 | 81.8 | 3.08 % | 0.87 % | 12.2 | 8.17 / 25.8 |
+| m12 38 | 150 | 73.8 | 6.93 % | 1.51 % | 26.5 | 51.5 / 63.2 |
+| m12 42 | 13.5k | 41.8 | 7.59 % | 9.51 % | 67.3 | 64.1 / 67.1 |
+| **m13 38** (2SS) | 0 | 73.6 | 3.74 % | 1.65 % | 23.6 | **2.50 / 5.36** |
+| m13 42 | 52 | 69.9 | 4.13 % | 1.90 % | 28.5 | 17.3 / 46.1 |
+| m13 46 / 50 | 6.5k / 20.8k | 48.6 / 27.1 | 6.4 / 6.3 % | 5.58 / 12.4 % | 62 / 91 | 49–54 / 56 |
+
+- **Ceiling at this position (air drop 0, latency not yet queueing)** [PROVEN: this run, N = 1 per point]:
+  - **1SS m7 FEC 8/10: 30 Mbit/s** (0.82 % after FEC, p95 8 ms);
+  - **2SS m12 FEC 8/10: 30 Mbit/s with the lowest latency of all** (last 1.0 ms, p95 4.4 ms, 0.93 %);
+  - **2SS m13 FEC 8/10: 38 Mbit/s** (p95 5.4 ms) but 1.65 % after FEC and ~74 decoded fps.
+- Latency climbs before the air starts dropping (m7 at 32, m12 at 34, m13 at 42 Mbit/s): the air's TX queue fills first [INFERRED]. At each MCS, the step after the ceiling is unusable.
+- None of these points is clean. At this position every rate above 25 Mbit/s loses 0.8–1.7 % after FEC, which the viewer sees as ~74–84 fps of whole frames instead of 90.
+
 ### Above 25 Mbit/s 2026-09-28 23:50–23:59: 1SS with FEC 8/10, and 2SS (HT MCS12/13) at 1080p90, 17 dBm, ch157
 
 Question (the user asked for more than 25 Mbit/s): can the link carry 30–40 Mbit/s, and does the Quest decode two spatial streams?
