@@ -8,6 +8,7 @@ mpandroidchartVersion = "3.1.0"
 mediapipe = "0.10.29"
 junit = "4.13.2"
 openxrLoader = "1.1.63"
+orgJson = "20180813"   # JVM tests only: the real org.json behind Android's stub (cached offline)
 
 [libraries]
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -17,6 +18,7 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 philjay-mpandroidchart = { module = "com.github.Philjay:mpandroidchart", version.ref = "mpandroidchartVersion" }
 mediapipe-tasks-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "mediapipe" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 openxr-loader = { group = "org.khronos.openxr", name = "openxr_loader_for_android", version.ref = "openxrLoader" }
 
 [plugins]
