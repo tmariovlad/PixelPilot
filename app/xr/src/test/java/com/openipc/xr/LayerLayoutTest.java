@@ -69,4 +69,26 @@ public class LayerLayoutTest {
         LayerLayout b = LayerLayout.compute(1280, 720, 60f, 2f, false, true, false);
         assertEquals(a.statsY, b.statsY, EPS);
     }
+    // The menu layer (docs/xr/menu-design.md §2): right of the video, never past MENU_EDGE_DEG, facing the eye.
+    @Test public void menuSitsRightOfTheVideoWithoutOverlapAtTheDefaultFov() {
+        LayerLayout l = LayerLayout.compute(1920, 1080, 60f, 2f, false, true);
+        float menuLeft = l.menuX - l.menuWidthM / 2f;
+        assertTrue("left edge " + menuLeft, menuLeft >= l.videoWidthM / 2f - EPS);
+        assertEquals(0f, l.menuY, EPS);
+        assertEquals((float) LayerLayout.MENU_IMAGE_H / LayerLayout.MENU_IMAGE_W, l.menuHeightM / l.menuWidthM, 1e-4f);
+    }
+
+    @Test public void menuRightEdgeStaysInsideTheViewAtAWideFov() {
+        for (boolean cyl : new boolean[]{false, true}) {
+            LayerLayout l = LayerLayout.compute(1920, 1080, 100f, 2f, cyl, true);
+            double edgeDeg = Math.toDegrees(Math.atan2(l.menuX + l.menuWidthM / 2f, -l.menuZ));
+            assertTrue("edge " + edgeDeg, edgeDeg <= LayerLayout.MENU_EDGE_DEG + 0.01);
+        }
+    }
+
+    @Test public void menuTurnsTowardTheEye() {
+        LayerLayout l = LayerLayout.compute(1920, 1080, 60f, 2f, false, true);
+        assertTrue(l.menuX > 0);
+        assertEquals(-Math.atan2(l.menuX, -l.menuZ), l.menuYawRad, 1e-4);
+    }
 }
