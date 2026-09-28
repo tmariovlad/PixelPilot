@@ -535,6 +535,21 @@ Each cell is pass 1 / pass 2. "Undecoded" counts frames without a decoded mark (
   - Higher power will come only adaptively, from the receiver's power axis (O115), when the link needs it.
   - Nothing was persisted: the air unit's boot default is unchanged (12 dBm).
 
+**Air vs Quest stills (2026-09-29 00:04–00:07, the user asked to see both).** Air .132 on ch157 with fix (a) live. Quest stills: [quality_shots.sh](../../scripts/quest/quality_shots.sh). Air stills: a waybeam recording converted with [air_frame.py](../../scripts/quest/air_frame.py).
+- **The air recorder had to be unblocked first.** `record/start?dir=/tmp` stopped at once with `stop_reason: disk_full`, 0 frames. waybeam refuses any directory with less than 50 MiB free: `RECORDER_MIN_FREE_BYTES`, `star6e_recorder.h:14` @ f8742fe, found by the OpenIPC session -40. The air has 92 MB of RAM, ~45 MB free in `/tmp`, and no SD card. A separate `tmpfs size=64m` at `/tmp/rec` works. It is runtime only and was unmounted afterwards [PROVEN: 2 s = 6.6 MB at 25 Mbit/s, 3 s = 11.7 MB at 30 Mbit/s].
+- **States** (60 s apart):
+  - S1: race 480p167, 2 Mbit/s, M2 FEC 4/8, 12 dBm;
+  - S2: 1080p90, 25 Mbit/s, M7 LGI, FEC 8/10, 17 dBm;
+  - S3: the same as S2 at 30 Mbit/s.
+  - Air frames exist for S2 (182 frames) and S3 (273 frames).
+- **Result** [INFERRED: visual comparison of a matched pair per state]:
+  - The Quest shows the same content as the air bitstream, with no link artefacts (no blocks, no smeared regions).
+  - The Quest crop is the left eye's square view, with a little more contrast from the display path.
+  - The room was dark (a lit screen and a desk), so the stills say nothing about sharpness. A lit or moving scene is needed for that.
+  - Overlays: S1 164 fps 2.2 Mbit/s lost 0; S2 84–89 fps 23–24.5 Mbit/s lost 3–14; S3 76–87 fps 26–29 Mbit/s lost 0–23.
+  - S3's lower fps may be real (30 Mbit/s f810 sits near the air's limit, see the grid) or a confound: the air recorder ran for 3 s just before the S3 stills, on an already loaded CPU [SPECULATION].
+- **The stills are not committed**: they show a person, and origin is a public fork. They are in the git-ignored `scripts/quest/out/quality_private/` (`quality-2026-09-29-S{1,2,3}-*.jpg`, `air-S{2,3}-1080p90-*.jpg` + `.ts`).
+
 **Picture-quality stills at 2 / 4 / 8 Mbit/s (2026-09-27 21:28–21:35, build `b2249f15`, Quest on the balcony).**
 - **Method.** The user wanted to see the picture without the headset. [quality_shots.sh](../../scripts/quest/quality_shots.sh) takes an `adb screencap` of the compositor output (3664×1920, both eyes) and crops the left eye's video layer together with the stats overlay, so every still shows its own link loss, fps and Mbit/s. There are 3 stills per state, ~2–5 s apart.
 - **Air settings.** 17 dBm, MCS2, receiver stopped so the MCS stayed fixed. FEC 4/8 at 2 and 4 Mbit/s. FEC 4/6 at 8 Mbit/s, because 4/8 would need 16 Mbit/s on air against the ~11.7 available.
