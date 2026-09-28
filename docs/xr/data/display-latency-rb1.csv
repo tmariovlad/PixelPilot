@@ -1,0 +1,7 @@
+trace,requested_hz,app_readback,vsync_period_ms,panel_hz,ready_to_latch_mean_ms,ready_to_latch_p50_ms,ready_to_latch_p95_ms,latch_to_vsync_mean_ms,tw_pass_interval_p50_ms,queued,latched,never_shown,decoder_fps,latch_fps,bq_depth_mean,bq_depth_max
+rb_rb1_1_120.pftrace,120,requested 120 Hz -> 120 Hz (result 0),,,3.02,2.61,6.51,,4.18,1442,986,456,166.6,114.4,0.59,1
+rb_rb1_2_72.pftrace,72,requested 72 Hz -> 72 Hz (result 0),,,3.47,2.97,8.09,,4.59,1449,620,829,166.6,71.3,0.7,1
+rb_rb1_3_90.pftrace,90,requested 90 Hz -> 90 Hz (result 0),,,3.38,3.26,7.75,,6.56,1448,769,679,166.6,88.5,0.65,1
+rb_rb1_4_72.pftrace,72,requested 72 Hz -> 72 Hz (result 0),,,3.38,3.03,7.95,,9.45,1448,619,829,166.6,71.2,0.7,1
+rb_rb1_5_120.pftrace,120,requested 120 Hz -> 120 Hz (result 0),,,2.98,2.59,6.43,,4.18,1448,987,461,166.9,114.1,0.59,1
+rb_rb1_6_90.pftrace,90,requested 90 Hz -> 90 Hz (result 0),,,3.37,3.17,8.13,,4.61,1449,767,682,166.6,88.3,0.65,1

@@ -159,10 +159,12 @@ The dated result sections that used to follow here were moved verbatim into topi
 - **[Real link](xr/real-link.md)** ([section](xr/real-link.md#first-real-link-quest-2--rtl8812au--openipc-air-unit-2026-09-26)): Quest 2 + RTL8812AU + OpenIPC air unit
   over wfb-ng (the air unit boots into APFPV; keys and link id 7669206 had to match). With `dec_picture_order` on,
   decode on the real stream drops from ~96 ms (the decoder held ~16 frames) to ~1.4 ms.
-- **[Decode → photon: refresh rate, latch, levers](xr/display-latency.md)** (2026-09-28, research done, slots T/O pending):
+- **[Decode → photon: refresh rate, latch, levers](xr/display-latency.md)** (2026-09-28, research + [slot T](xr/display-latency.md#slot-t-perfetto-refresh-bracket-done-2026-09-28-quest-epoch-17905821781790582340) done, optical slot O pending):
   no refresh rate above 120 Hz on Quest 2 (Quest 3 only, per Meta); 120 Hz can silently drop to 72 Hz under thermal
-  throttling and the app does not log it; the video BufferQueue is a mailbox (no queuing seen at 167 fps into 120 Hz),
-  so matching the air fps buys ~0; the transferable vendor trick is phase-locking the source (WiVRn pacer).
+  throttling and the app does not log it. **Measured 72/90/120 Hz (N = 2 each):** all granted; decoded → latch is ~3 ms
+  at every rate (3.0 at 120, 3.4 at 72; −0.4 ms mean / −1.5 ms p95), because with a 167 fps source into a mailbox the
+  wait is bounded by the source interval, not the refresh period; no queuing (depth max 1), so matching the air fps
+  buys nothing. Any 120 Hz gain is after the latch (slot O). The transferable vendor trick is phase-locking the source (WiVRn pacer).
   `createFlags = 0` on the surface swapchain violates the spec. Keywords: display refresh rate, 72/90/120 Hz, compositor
   latch, decode-to-photon, motion-to-photon, thermal throttle, Phase Sync, TimeWarp, USE_TIMESTAMPS, SYNCHRONOUS.
 - **[Phase-lock protocol](xr/phase-lock-protocol.md)**: the PPXR1 report (format, rate, reference points, destination over the wfb tunnel) and the reference PI controller, for an air-side implementation (AU-04); the source must run at the display rate (119.70 fps) for a lock.
