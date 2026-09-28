@@ -1,0 +1,15 @@
+# R5 air step log 2026-09-28 (beacon-rhythm B5, OpenIPC 9cf5603): MCS7+long GI (m7L) vs MCS6+short GI (m6S) at 25 Mbit.
+# Setup as slot 2: 1080p90 (RAM copy of /etc/waybeam.json.bak-1080p90-20260927), 25000 kbit/s, FEC 4/6, iw txpower fixed 17 dBm, 20 MHz STBC1 LDPC1, alink stopped. TBTT prohibit ON (boot state) throughout.
+# 8 x 120 s ABBA x2, get_radio readback per step. drop/inj = wfb_tx PKT sums over the step. END = race json 3d8a1456, 12 dBm, M2 long GI, FEC 4/8. find /overlay -newer stamp: empty.
+# Air-PC = -0.336 s (clk_off.py, same boot as R6). Quest capture: pixelpilot-xr-25 ab_r5 (quest_minus_pc +609.7 ms).
+stopped alink/vmoded pids=1409 (not restarted; the air is switched off after the slot)
+PRE epoch=1790621135 txpower=17.00 fec=k=4 n=6  br="bitrate":25000 temp=44
+STEP m7L epoch=1790621135 tx=575271 drop=0 inj=422239 temp=47 radio: stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1
+STEP m6S epoch=1790621255 tx=998529 drop=0 inj=422206 temp=48 radio: stbc=1 ldpc=1 short_gi=1 bandwidth=20 mcs_index=6 vht_mode=0 vht_nss=1
+STEP m6S epoch=1790621376 tx=1421733 drop=0 inj=422235 temp=48 radio: stbc=1 ldpc=1 short_gi=1 bandwidth=20 mcs_index=6 vht_mode=0 vht_nss=1
+STEP m7L epoch=1790621496 tx=1844861 drop=0 inj=422562 temp=48 radio: stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1
+STEP m7L epoch=1790621616 tx=2268375 drop=0 inj=421952 temp=48 radio: stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1
+STEP m6S epoch=1790621736 tx=2691222 drop=0 inj=422271 temp=48 radio: stbc=1 ldpc=1 short_gi=1 bandwidth=20 mcs_index=6 vht_mode=0 vht_nss=1
+STEP m6S epoch=1790621856 tx=3114502 drop=0 inj=426633 temp=48 radio: stbc=1 ldpc=1 short_gi=1 bandwidth=20 mcs_index=6 vht_mode=0 vht_nss=1
+STEP m7L epoch=1790621976 tx=3538516 drop=0 inj=423199 temp=48 radio: stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1
+END epoch=1790622108 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  txpower=12.00 temp=44 json=3d8a1456
