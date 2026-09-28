@@ -3,7 +3,7 @@ builds only), which feeds the same event path as the right thumbstick. No air ch
 
 Steps:
 1. Open the menu (click held 1.4 s).
-2. Stats > Summary page, then back.
+2. Stats > Summary, Latency and Link pages (screenshots for the plausibility check of docs/xr/stats-backend.md §5).
 3. Picture > Tight reorder toggled twice. PASS if the pref flips and flips back, with no relaunch (the same pid).
 4. Display > Timestamps toggled. PASS if the pref flips and the XR activity relaunches (a new pid); then toggled back.
 5. Close.
@@ -91,8 +91,16 @@ def main():
         open_menu()
         shot(out, "1-root")
         inp("right")                     # Stats folder
-        inp("right")                     # Summary page
+        inp("right", 1.5)                # Summary page (the stats refresh at 2 Hz)
         shot(out, "2-stats-summary")
+        inp("left")                      # back to the Stats folder, highlight on Summary
+        inp("down")                      # Latency
+        inp("right", 1.5)
+        shot(out, "2b-stats-latency")
+        inp("left")
+        inp("down")                      # Link
+        inp("right", 1.5)
+        shot(out, "2c-stats-link")
         moves("left", 2)                 # back to the root
         inp("down")                      # Picture
         inp("right")
