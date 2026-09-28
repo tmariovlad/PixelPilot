@@ -1,0 +1,27 @@
+# DecErrProbe on the headset, 2026-09-28 10:46-10:55, build 65deee8d (c2a2043). App start + RTL replugs in XR.
+# Air: REC fixed, alink OFF, MCS2 FEC 4/8 12 dBm 2000 kbit/s. logcat filtered to link starts, USB events and the probe.
+09-28 10:46:48.417 I/ActivityTaskManager( 1538): START u0 {act=android.intent.action.MAIN cat=[org.khronos.openxr.intent.category.IMMERSIVE_HMD] flg=0x10000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.XrVideoActivity} with LAUNCH_SINGLE_INSTANCE from uid 2000 (BAL_ALLOW_PERMISSION) result code=0
+09-28 10:46:48.498 I/ActivityTaskManager( 1538): START u0 {act=android.intent.action.MAIN cat=[org.khronos.openxr.intent.category.IMMERSIVE_HMD] flg=0x10010100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.XrVideoActivity} with LAUNCH_SINGLE_INSTANCE from uid 2000 (realCallingUid=1000) (BAL_ALLOW_PENDING_INTENT) result co
+09-28 10:46:49.525 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/005 started.
+09-28 10:46:51.613 W/pixelpilot(24183): video decrypt errors: data 1 session 0 other 0 | ok: data 0 session 0 | 1165 ms after link start (first error 1165, last 1165, first ok data -1)
+09-28 10:46:52.614 W/pixelpilot(24183): video decrypt errors: data 253 session 0 other 0 | ok: data 333 session 1 | 2166 ms after link start (first error 1165, last 1556, first ok data 1562)
+09-28 10:49:50.941 D/pixelpilot(24183): usb device detached: 3034/34834
+09-28 10:49:50.989 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/005 done.
+09-28 10:49:58.636 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/006 started.
+09-28 10:49:58.638 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+09-28 10:49:58.675 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11810100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+09-28 10:53:10.248 D/pixelpilot(24183): usb device detached: 3034/34834
+09-28 10:53:10.323 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/006 done.
+09-28 10:53:12.029 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+09-28 10:53:12.031 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/003 started.
+09-28 10:53:12.075 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11810100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+09-28 10:54:59.855 D/pixelpilot(24183): usb device detached: 3034/34834
+09-28 10:55:00.019 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/003 done.
+09-28 10:55:00.268 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+09-28 10:55:00.270 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/004 started.
+09-28 10:55:00.315 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11810100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+09-28 10:55:00.395 D/pixelpilot(24183): usb device detached: 3034/34834
+09-28 10:55:00.407 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/004 done.
+09-28 10:55:08.021 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11000000 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0
+09-28 10:55:08.025 D/pixelpilot(24183): wfb-ng thread on /dev/bus/usb/001/005 started.
+09-28 10:55:08.058 I/ActivityTaskManager( 1538): START u0 {act=android.hardware.usb.action.USB_DEVICE_ATTACHED flg=0x11810100 cmp=com.openipc.pixelpilot.xr/com.openipc.pixelpilot.UsbAttachActivity (has extras)} with LAUNCH_MULTIPLE from uid 1000 (BAL_ALLOW_ALLOWLISTED_UID) result code=0

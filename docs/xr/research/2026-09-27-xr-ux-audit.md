@@ -130,6 +130,18 @@ window failed to decrypt [PROVEN: screenshot 03:55:21]. SignalState named that a
   JVM: `SignalStateTest` 21/21, with the new tests: the replug case (~1 s all-fail, then video) never shows `WRONG_KEY`;
   2 s+ of all-fail still does (from OK and from the start); one window with good packets restarts the clock. 2 of these
   fail against the old rule [PROVEN: run with the old condition swapped back].
+- **The probe on the headset** (2026-09-28 10:46–10:55, build `65deee8d`, air REC fixed with alink off,
+  [data](../data/2026-09-28-decerr-probe.txt)) [PROVEN: logcat]:
+  - **At app start** (a new aggregator, so a zero session key):
+    `video decrypt errors: data 253 session 0 | ok: data 333 session 1`, first error 1165 ms and last 1556 ms after
+    the link started, first good data packet at 1562 ms.
+    Every data packet fails until the first session packet arrives, which the air sends every 1 s
+    (`SESSION_KEY_ANNOUNCE_MSEC`). That is expected wfb-ng behaviour, and the panel shows WAITING FOR VIDEO then.
+  - **After replugs:** 4 link starts (10:49:58, 10:53:12, 10:55:00 with a contact bounce 120 ms later, 10:55:08). Every
+    one had **0 decrypt errors** (no probe line in 30+ s after each). The trampoline took every attach.
+  - So the 145/145 window of 03:55:21 was **not reproduced in 4 re-attachments**. Its cause stays **OPEN**
+    [SPECULATION], and it happens more rarely than the first sighting suggested.
+  - The probe stays in the build, so the next occurrence names its branch. The 2 s rule stays as the safety net.
 
 What changed:
 - `USB_DEVICE_ATTACHED` and its `usb_device_filter` moved from `.VideoActivity` to
