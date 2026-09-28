@@ -199,6 +199,7 @@ Same Quest position as R6 (RSSI column 74; raw A 59 / B 55 ≈ −51 / −55 dBm
 - **At 25 Mbit/s, clearing `EN_BCN_FUNCTION` lowers frame-complete latency by ~1.1 ms mean (2.71 → 1.60 ms) and ~2.0 ms at p95 (6.44 → 4.40 ms), and removes the 102.4 ms teeth (~3.1 → ~0.36 ms). Loss is unchanged** [PROVEN: every off step beats every on step on fold, mean and p95; loss overlaps].
   - This is larger than B4's estimate (+0.8 ms mean). With the pause present the video queue drains after every pause, and at 25 Mbit/s there is more to drain than at 2 Mbit/s (R6: ≈ 0.1 ms).
   - The 0.61–0.63 "pauses"/cycle left in the off steps are ordinary inter-frame gaps (no phase lock).
+- **Update 2026-09-28 ~22:40: deployed persistently (fix (a), user-approved).** `/opt/linkmode/linkmode-air.sh` (md5 `0fd461b6`, base `47024327`) clears bit 3 of 0x550 after every switch to monitor, and logs the change to `/tmp/linkmode-bcn.log`. Checked on the device [PROVEN: coordinator's air session]: without a reboot, `bcn_off 0x550 0x18 -> 0x10`; after a reboot, the same line (so it catches the boot AP phase), with read_reg 0x550 = 0x10 and wfb, the tunnel and alink up. Its effect is R7 above. Proposal, diff and revert: OpenIPC repo `repos/tasks/link-25mbit-audit-2026-09-28/beacon-rhythm/fix-a/` (919c075, deploy record 3b00e81); air state in [HANDOFF](HANDOFF.md).
 
 **R5: MCS7 long GI (`m7L`) vs MCS6 short GI (`m6S`), both 65 Mbit/s PHY, 8 × 120 s, ABBA×2** (TBTT pause on in both).
 
@@ -209,6 +210,13 @@ Same Quest position as R6 (RSSI column 74; raw A 59 / B 55 ≈ −51 / −55 dBm
 
 - **m6S loses ~40 % less after FEC but is ~0.7 ms slower in mean latency and ~2 ms slower at p95** [PROVEN: every m6S step beats every m7L step on loss and is behind on latency].
   - The PHY rate is the same, so the latency cost has no mechanism yet [SPECULATION: something on the air's TX path at short GI; worth a driver check].
+  - **Update 2026-09-28 (OpenIPC B6, 6d1ad23, `beacon-rhythm/b6_packet_spacing_out.txt`):**
+    - "Same PHY" is not exact at 1428-byte packets. With LDPC + STBC, the TXTIME rules give MCS7 LGI 46 symbols = 184 µs and MCS6 SGI 50 symbols = 180 µs, so m6S should be 4 µs **shorter**.
+    - On the Quest, the median inter-packet spacing inside frame bursts is **~4 µs longer** with m6S: 275.6–276.2 vs 271.8–272.1 µs, in every step with no overlap. The frame spread is +0.12 ms [PROVEN: ab_r5.pftrace].
+    - Only ~0.12 ms of the ~0.75 ms comes from transmit time. The rest is queueing at the frame's first packet, because m6S runs closer to the ~96–97 % airtime ceiling [INFERRED].
+    - The 8822EU TX descriptor path is excluded: no rate fallback, and the radiotap flags pass unchanged [PROVEN: driver source].
+    - Why each packet takes longer with SGI is still open. The next test is MCS6 long GI, then a packet-size sweep and a second RX on .208.
+    - Decision unchanged: stay on m7L.
   - Neither is clean at 25 Mbit/s here (post > 0.1 %).
 - **Tool fix found here:** `ab_segments.frames_from_packets` merged packets that carried the same RTP timestamp ~205 s apart into one "frame" (10 of ~9944 frames in one step), which showed up as a fake +52 ms. A packet more than 1 s after its frame's first packet now starts a new frame. Regression test: `test_a_repeated_rtp_timestamp_long_after_is_a_new_frame`. No earlier result is affected: a scan of the 18 local traces behind this document's 2026-09-27/28 results (grids, pwrx, mcs7pwr, range, bracket, T4, T2, slot 2, R6, R7, phase 2/3b) found 0 such repeats; only R5 had them [PROVEN: scan run 2026-09-28 on `scripts/quest/out/ab_*.pftrace`].
 
@@ -233,6 +241,10 @@ Question (OpenIPC beacon-rhythm audit, B4 + the coordinator's R1 register read):
 - Caveat: the air's alink (`alink_air`, c7c62e56) was running during R6 (its boot state, as in normal flight). The states alternate, so it affects all of them alike.
 - Loss is ~0 in every state at this rate, so R6 says nothing about the loss floor. That is a separate question (the external co-channel transmitter in the audit's B1).
 - A persistent fix belongs on the air side (clear `EN_BCN_FUNCTION` / the hold after the AP phase). It is for the OpenIPC session to design; the runtime writes above are lost at reboot.
+  - **Done 2026-09-28 ~22:40:** fix (a), bcnoff chosen over hold0 (smaller fold, and it removes the unused function), is deployed. See the update under R7 above.
+  - R1, the coordinator's read-only register dump before R6 (OpenIPC beacon-rhythm synthesis §2):
+    - in monitor: 0x550 = 0x18, 0x551 = 0x10, 0x540 = 0x80006404, 0x554 = 0x64 (100 TU), TXPAUSE 0x522 = 0, TSF running;
+    - at boot, still in AP at 80 MHz: 0x550 = 0x38 and 0x540 = 0x80008004.
 
 ### Slot 2026-09-28 20:10: U1 streamed capture, T6 RX diagnostics, T2' Quest Wi-Fi off
 
