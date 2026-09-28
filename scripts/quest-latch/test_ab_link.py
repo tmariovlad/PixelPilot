@@ -117,6 +117,30 @@ def test_per_chain_levels_absent_in_old_traces():
     assert rows[0][2]["rssi_a"] is None and rows[0][2]["snr_b_db"] is None
 
 
+def test_same_window_data_loss_from_quest_counters_only():
+    # 12 s step, guard 2 s -> window [2, 10) s. 100 RTP packets/s with every 20th sequence number missing
+    # (5 % lost after FEC), FEC repairs 10/s. p_data = (fec_rec + lost) / (received + lost).
+    steps = [(0.0, "A")]
+    rtp, seq = [], 0
+    for k in range(1200):
+        seq += 1
+        if seq % 20 == 0:
+            continue                      # lost after FEC: a gap in the RTP sequence
+        rtp.append((k / 100 * S, seq & 0xFFFF))
+    fec = [(t * 0.3 * S, 3) for t in range(40)]          # 3 repairs per 0.3 s poll = 10/s
+    rows = per_step({"rtp": rtp, "ppxr_wfb_fec_rec": fec}, [], [{"t": 0.0}], steps, 12 * S, 2 * S)
+    r = rows[0][2]
+    received = sum(1 for t, _ in rtp if 2 * S <= t < 10 * S)
+    lost = 800 // 20                                        # 40 gaps inside the window
+    fec_in = sum(v for t, v in fec if 2 * S <= t < 10 * S)
+    assert abs(r["data_loss_pct"] - 100.0 * (fec_in + lost) / (received + lost)) < 0.3, r["data_loss_pct"]
+
+
+def test_same_window_data_loss_absent_without_rtp():
+    rows = per_step({"ppxr_wfb_fec_rec": [(1 * S, 3)]}, [], [{"t": 0.0}], [(0.0, "A")], 12 * S, 0)
+    assert rows[0][2]["data_loss_pct"] is None
+
+
 def test_quest_tx_rate_per_step_and_zero_when_off():
     steps = [(0.0, "on"), (12 * S, "off"), (24 * S, "on")]
     # 50 frames/s while "on" (0-12 s, 24-36 s), nothing while "off"

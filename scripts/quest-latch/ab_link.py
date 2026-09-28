@@ -6,10 +6,14 @@ state, the radio and FEC picture plus temperatures, read in the same guarded ste
 - rssi A/B, snr A/B: the per-receive-chain counters 'ppxr_wfb_rssi_a/_b', 'ppxr_wfb_snr_a/_b' (app builds from
   2026-09-28 on; '-' in older traces). RSSI in the adapter's raw units (1 unit = 1 dB), SNR converted to dB (raw
   rxsnr is 0.5 dB units). They show which Quest antenna carries the signal; 'rssi' is the mapped best chain.
+- data_loss_pct ("dataFEC%"): the fraction of DATA packets missing before FEC, from Quest counters only, all in the
+  same guarded window: (FEC repairs + RTP sequence gaps) / (RTP packets received + gaps). Use this one: it needs no
+  air counter and no cross-device window (link-25mbit audit H5 §1.3, 2026-09-28).
 - tx/s and pre-FEC loss: the air loop writes the cumulative wlan0 tx_packets on every step line
   ("<air epoch> <label> tx=<n> temp=<C>", END line too). tx/s = delta over the whole step on the air clock;
   pre_fec_loss = 1 - rx/s / tx/s. Anything else the air unit transmits on wlan0 counts as sent video, so this is an
-  upper bound [INFERRED].
+  upper bound [INFERRED]. It also divides a guarded Quest window by the air's whole step, which shifts it by up to
+  ±2 points after a bitrate change (audit H5 §1.3); kept for comparison with older CSVs, prefer data_loss_pct.
 - air_c: the air SoC temperature from the same step line. Quest thermal: --thermal CSV from quest_thermal_log.sh.
 
 - Q tx/s: the Quest RTL's uplink injections (adaptive link, tunnel) from --quest-tx (quest_tx_log.sh); ~0 when the
@@ -25,6 +29,7 @@ import statistics as st
 from collections import OrderedDict
 
 from ab_segments import read_steps, step_window
+from rtp_seq import seq_loss
 
 # Levels (averages over the last second), not counts: a stale repeat of one is dropped, not zeroed.
 LEVEL_COUNTERS = ("ppxr_wfb_rssi", "ppxr_wfb_rssi_a", "ppxr_wfb_rssi_b", "ppxr_wfb_snr_a", "ppxr_wfb_snr_b")
@@ -90,6 +95,17 @@ def window_stats(samples, a, b, per_second):
     return sum(vals) / ((b - a) / 1e9) if per_second else st.mean(vals)
 
 
+def data_loss_pct(counters, a, b):
+    """Share of data packets missing before FEC in [a, b): (FEC repairs + RTP gaps) / (RTP received + gaps).
+    counters["rtp"] = [(ts, rtp_seq)] in arrival order; None without RTP events in the window."""
+    seqs = [v for t, v in counters.get("rtp", []) if a <= t < b]
+    if not seqs:
+        return None
+    lost = seq_loss(seqs)[0]
+    fec = sum(v for t, v in counters.get("ppxr_wfb_fec_rec", []) if a <= t < b)
+    return 100.0 * (fec + lost) / (len(seqs) + lost)
+
+
 def scaled(v, k):
     return None if v is None else v * k
 
@@ -118,6 +134,7 @@ def per_step(counters, thermal, fields, steps, end, guard):
         }
         r["pre_fec_loss_pct"] = (100.0 * (1 - r["rx_per_s"] / r["tx_per_s"])
                                  if r["rx_per_s"] is not None and r["tx_per_s"] else None)
+        r["data_loss_pct"] = data_loss_pct(counters, a, b)
         th = [row for t, row in thermal if a <= t < b]
         r["quest_status_max"] = max((x["thermal_status"] for x in th), default=None)
         r["quest_cpu_max_c"] = max((x["cpu_max_c"] for x in th), default=None)
@@ -149,9 +166,10 @@ def load(path, air_offset_s, steps_path, thermal_path, quest_tx_path=None):
     counters = {n: [(r.ts, r.value) for r in q(
         "select c.ts, c.value from counter c join counter_track t on c.track_id=t.id "
         f"where t.name='{n}' order by c.ts")] for n in WFB_COUNTERS}
-    rtp_ts = [r.ts for r in q("select c.ts from counter c join counter_track t on c.track_id=t.id "
-                              "where t.name='ppxr_rtp_seq' order by c.ts")]
-    counters = drop_stale(counters, rtp_ts)
+    rtp = [(r.ts, int(r.value)) for r in q("select c.ts, c.value from counter c join counter_track t "
+                                           "on c.track_id=t.id where t.name='ppxr_rtp_seq' order by c.ts")]
+    counters = drop_stale(counters, [t for t, _ in rtp])
+    counters["rtp"] = rtp
     snap = q("select ts, clock_value from clock_snapshot where clock_name='REALTIME' order by ts limit 1")
     rt_off = snap[0].clock_value - snap[0].ts
     steps, end = read_steps(steps_path, air_offset_s, rt_off)
@@ -183,8 +201,9 @@ def main():
         print("no ppxr_wfb_* counters in the trace (app build without WfbStatsTrace?)")
     rows = per_step(counters, thermal, fields, steps, end, a.guard_s * 1e9)
     keys = ["tx_per_s", "rx_per_s", "pre_fec_loss_pct", "fec_rec_per_s", "wfb_lost_per_s", "rssi",
-            "rssi_a", "rssi_b", "snr_a_db", "snr_b_db", "quest_tx_per_s", "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt"]
-    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "rssi A", "rssi B", "snrA dB", "snrB dB", "Q tx/s", "air°C", "Q cpu°C", "Q st", "batt"]
+            "rssi_a", "rssi_b", "snr_a_db", "snr_b_db", "quest_tx_per_s", "air_c", "quest_cpu_max_c", "quest_status_max", "quest_batt",
+            "data_loss_pct"]  # append only: older link CSVs keep their column order
+    heads = ["tx/s", "rx/s", "preFEC%", "fec/s", "lost/s", "rssi", "rssi A", "rssi B", "snrA dB", "snrB dB", "Q tx/s", "air°C", "Q cpu°C", "Q st", "batt", "dataFEC%"]
     def fmt(v):
         if v is None:
             return f"{'-':>9}"
