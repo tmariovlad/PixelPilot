@@ -83,7 +83,7 @@ depending on the run). pixelpilot-xr-36 found this as the likely cause of T4's "
   link CSVs carry `quest_tx_per_s` from `quest_tx_log.sh`]. Phase 1 recorded no TX log.
 - Clean: the T2 control (detached capture, `ab_detached.sh`). `quest_thermal_log.sh` also polls `dumpsys` over adb every
   5 s during all runs, a much smaller and uncorrelated load.
-- **Nothing is retracted yet.** Absolute loss levels may be too high. A/B verdicts compare states that were all
+- **Confirmed by U1 (2026-09-28 20:10, [below](#slot-2026-09-28-2010-u1-streamed-capture-t6-rx-diagnostics-t2-quest-wi-fi-off)):** in the same run, steps with the streamed logger lost 1.51–1.84 % after FEC, steps without it 0.46–1.48 % (means 1.66 vs 0.90 %). So the absolute loss levels of the marked runs are inflated, by roughly the logger's share. Nothing is retracted. A/B verdicts compare states that were all
   captured the same way, so they may still hold, unless the contamination scales with the Quest's TX rate (which
   itself varies with the state, as in T4).
 - From 2026-09-28 on, captures during a measurement are detached (`ab_detached.sh`, `stream_ab.sh`,
@@ -155,6 +155,44 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
 - **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
+### Slot 2026-09-28 20:10: U1 streamed capture, T6 RX diagnostics, T2' Quest Wi-Fi off
+
+One slot (20:10–20:56), following [runbook-2026-09-28-u1-t6.md](runbook-2026-09-28-u1-t6.md). Air: 1080p90, `m7b25f46`, 17 dBm, 20 MHz 157, STBC 1, alink + vmoded off, drop = 0 in every step. Quest: T6 build `a6ec585d` (pixelpilot-xr `9439e39`, devourer `af0ae6d`), the Quest untouched on the desk. Every capture was detached (nothing streamed over adb except U1's deliberate "stream" steps), and every trace printed `TRACE LOSS: none`. Analysis on the Quest clock with [ab_link.py](../../scripts/quest-latch/ab_link.py) and [link_audit.py](../../scripts/quest-latch/link_audit.py).
+- **Data.**
+  - Air logs: [U1](data/air-u1-2026-09-28.txt) · [T6-a](data/air-t6a-2026-09-28.txt) · [T6-b](data/air-t6b-2026-09-28.txt) · [T2'](data/air-t2p-2026-09-28.txt).
+  - Steps: [U1](data/steps-2026-09-28-slot2-u1.txt) · [T6-a](data/steps-2026-09-28-slot2-rxmode.txt) · [T6-b](data/steps-2026-09-28-slot2-crc.txt) · [T2'](data/steps-2026-09-28-slot2-t2p.txt).
+  - link_audit: [U1](data/audit-2026-09-28-slot2-u1.txt) · [T6-a](data/audit-2026-09-28-slot2-rxmode.txt) · [T6-b](data/audit-2026-09-28-slot2-crc.txt) · [T2'](data/audit-2026-09-28-slot2-t2p.txt).
+  - Link: [U1](data/link-2026-09-28-slot2-u1.csv) · [T6-a](data/link-2026-09-28-slot2-rxmode.csv) · [T6-b](data/link-2026-09-28-slot2-crc.csv) · [T2'](data/link-2026-09-28-slot2-t2p.csv).
+  - Loss↔uplink coincidence and periodicity per state: [coincidence](data/coincidence-2026-09-28-slot2.txt).
+- **The link drifted during the slot:** the RSSI column fell from 74–76 (U1) to 60–67 (T6/T2'), with SNR 15.5–19.5 dB. Each test is an ABAB/ABBA inside one air step, so compare within a test only.
+
+| test · state (steps) | p_data | post-FEC | loss runs/s | extra |
+|---|---|---|---|---|
+| U1 · stream: `quest_tx_log.sh` streaming (4 × 120 s) | 4.67–5.04 % | **1.51–1.84 %** | 16–21 | losses within 30 ms after a Quest TX: 69.8 % (control 20.7 %); within 2 ms: 1.5 % (control 5.3 %) |
+| U1 · quiet (4 × 120 s) | 2.82–4.34 % | **0.46–1.48 %** | 5–13 | within 30 ms: 31.6 % (control 20.4 %) |
+| T6-a · async, ring telemetry on (2 × 120 s) | 3.81 / 4.81 % | 1.03 / 1.75 % | 10 / 16 | `minArmed` 7 of 8, `usbEmp/s` 0, `cbMax` 2.6–2.8 ms |
+| T6-a · spsc (2 × 120 s) | 4.47 / 5.49 % | 1.42 / 2.16 % | 13 / 20 | `minArmed` 7, `usbEmp/s` 0, `usbDrop/s` 0.2–0.3 |
+| T6-b · keep_corrupted off (2 × 90 s) | 4.82 / 4.49 % | 1.73 / 1.40 % | 16 / 15 | `crc/s` 0 |
+| T6-b · keep_corrupted on (2 × 90 s) | 4.60 / 4.25 % | 1.50 / 1.32 % | 15 / 13 | **`crc/s` 80 / 66**, `icv/s` 0 |
+| T2' · Quest Wi-Fi on (2 × 120 s) | 4.97 / 5.23 % | 1.84 / 1.75 % | 17 / 17 | 9.766 Hz lock Z = 102.5 |
+| T2' · Quest Wi-Fi off (2 × 120 s) | 6.08 / 4.02 % | 1.80 / 1.11 % | 20 / 11 | 9.766 Hz lock Z = 72.9 |
+
+- **U1: a streaming `adb logcat` over Wi-Fi costs video packets, and T4 was that artefact** [PROVEN: every stream step loses more than the quiet steps next to it, ABBA×2].
+  - The extra losses come 2–30 ms after each uplink frame, when the streamed log line goes out over the Quest's internal Wi-Fi, not within 2 ms. So it is not the RTL8812AU's own half-duplex TX [PROVEN: coincidence file].
+  - Consequence: the capture caveat above holds. T4's "uplink doubles the loss" is withdrawn as a finding about the uplink.
+- **T6-a: the USB RX ring is not the loss** [PROVEN: at least 7 of 8 URBs armed in every step, 0 empties, worst inline consume ≤ 3.1 ms, spsc no better than async]. Audit candidate 3 is excluded.
+- **T6-b: about half of the missing packets are RF bit errors** [INFERRED].
+  - With `keep_corrupted` on, 66–80 frames/s reach the MAC with a bad FCS [PROVEN: `crc/s`]. That is against ~150 packets/s missing (air ~3490/s, Quest ~3340/s).
+  - The other half are never seen at all (preamble / sync / AGC).
+  - SNR 16–19 dB is at the edge for 64-QAM 5/6 [SPECULATION: typical requirement, not measured here].
+  - Counting and dropping the corrupted frames left the other counters unchanged, as designed.
+- **A 102.4 ms rhythm in the losses (new)** [PROVEN: Rayleigh Z at 9.766 Hz = 73–219 in every state of U1 and T2'; the 4 Hz uplink grid is only 1–9]. The losses are phase-locked to the Wi-Fi beacon interval (1 TU × 100).
+- **T2': the Quest's own Wi-Fi is not that rhythm** [PROVEN within the ABAB: the lock stays with the internal Wi-Fi off, Z = 73, and loss is not consistently lower]. Remaining sources [SPECULATION]:
+  - a co-channel transmitter on 157 that EU scans do not show (the Quest's and the PC's scans see nothing on 5745–5825);
+  - periodic TU-grid activity in the air's RTL8822EU driver/firmware;
+  - the Quest RTL's own firmware.
+  - Deciders: a survey/sniff of ch157 from the GS with the air off (audit T3), and the loss phase against the air's timers.
+
 **T4: does the Quest's uplink cause the loss floor? And a T2 run that became a control (2026-09-28 19:33–19:43, link-25mbit audit, 1080p90 `m7b25f46`, 17 dBm, 20 MHz 157, STBC 1, air alink + vmoded off).** *[Streamed-capture caveat](#capture-caveat-streamed-logcat-2026-09-28).*
 - **Question** (audit candidate 2, OpenIPC repo `repos/tasks/link-25mbit-audit-2026-09-28/`): are the Quest's 14–24 uplink frames/s (useless here, the air's alink is off) part of the 2–8 % burst-loss floor? The RTL8812AU both sends the uplink and receives the video.
 - **Method, T4.** The air held one 420 s `m7b25f46` step (air log from the coordinator: `inj` ≈ 3490/s, drop 0). The Quest toggled `adaptive_link_enabled` true/false in ABBA×2, 30 s per step, relaunching XR each step ([pref_ab.sh](../../scripts/quest/pref_ab.sh), its own trace). Analysis on the Quest clock, `--guard-s 10`, with [link_audit.py](../../scripts/quest-latch/link_audit.py) (`TRACE LOSS: none`) and [ab_link.py](../../scripts/quest-latch/ab_link.py). Before the slot the Quest's link had been dead since the air's reboots (no wfb thread); an XR restart brought it back.
@@ -167,7 +205,7 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 | T4 · uplink OFF (4 × 30 s, relaunched) | 0.4 | 3.70–4.55 % | 0.71–0.98 % | 8–12 | 16–23 |
 | T2 control · uplink ON (3 windows, 14–108 s, continuous) | 22.0–22.5 | 3.74–3.89 % | 0.71–0.82 % | 7–9 | 17–19 |
 
-- **Within T4 the uplink doubles the loss** [PROVEN: every OFF step beats every ON step on p_data, post-FEC and runs, ABBA×2]. The ON steps' loss runs per second match the Quest's TX frames per second (24.6 vs 24.5, 26.7 vs 23.9).
+- **Withdrawn 2026-09-28 (U1, [slot 20:10](#slot-2026-09-28-2010-u1-streamed-capture-t6-rx-diagnostics-t2-quest-wi-fi-off)): the ON steps also streamed `quest_tx_log.sh`, and that stream, not the uplink, caused the extra loss.** Original line: **Within T4 the uplink doubles the loss** [PROVEN: every OFF step beats every ON step on p_data, post-FEC and runs, ABBA×2]. The ON steps' loss runs per second match the Quest's TX frames per second (24.6 vs 24.5, 26.7 vs 23.9).
 - **But the T2 control, 3 minutes later with the uplink ON, loses no more than T4's OFF steps** [PROVEN: table]. So "the uplink causes half the floor" is **not** established. The effect exists under some condition that T4's ON steps had and T2 did not.
   - It is not the time since relaunch: in T4's ON steps the loss stays at 43–53 lost/s from 5 s to 25 s after the relaunch, with no decay [PROVEN: 5 s bins of the timeline].
   - The RSSI column is 74–76 in both runs. The air state is the same.

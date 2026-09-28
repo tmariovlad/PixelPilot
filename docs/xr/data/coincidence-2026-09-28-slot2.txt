@@ -1,0 +1,54 @@
+== U1 stream, window 2 ms
+PKT_LOST events 8239, packets 17171; TX DESC 10616; block overrides 0
+post-FEC gap sizes: 1:3462, 2:2304, 3:1497, 4:637, 5:178, 6:75, 7:40, 8:25, 9:8, 10:6, 11:1, 12:3
+loss within 2 ms after a Quest TX: 1.5 % (control, TX shifted 50 ms: 5.3 %)
+Rayleigh Z @    1.000 Hz =      0.0
+Rayleigh Z @    4.000 Hz =      1.0
+Rayleigh Z @    9.766 Hz =     78.9  <- locked
+Rayleigh Z @   72.000 Hz =      1.1
+Rayleigh Z @   90.000 Hz =      0.7
+== U1 stream, window 30 ms
+PKT_LOST events 8239, packets 17171; TX DESC 10616; block overrides 0
+post-FEC gap sizes: 1:3462, 2:2304, 3:1497, 4:637, 5:178, 6:75, 7:40, 8:25, 9:8, 10:6, 11:1, 12:3
+loss within 30 ms after a Quest TX: 69.8 % (control, TX shifted 50 ms: 20.7 %)
+Rayleigh Z @    1.000 Hz =      0.0
+Rayleigh Z @    4.000 Hz =      1.0
+Rayleigh Z @    9.766 Hz =     78.9  <- locked
+Rayleigh Z @   72.000 Hz =      1.1
+Rayleigh Z @   90.000 Hz =      0.7
+== U1 quiet, window 2 ms
+PKT_LOST events 3803, packets 9242; TX DESC 9821; block overrides 0
+post-FEC gap sizes: 1:1205, 2:899, 3:1049, 4:432, 5:112, 6:38, 7:34, 8:19, 9:2, 10:5, 11:2, 12:1
+loss within 2 ms after a Quest TX: 2.6 % (control, TX shifted 50 ms: 1.8 %)
+Rayleigh Z @    1.000 Hz =      0.7
+Rayleigh Z @    4.000 Hz =      8.7
+Rayleigh Z @    9.766 Hz =    122.8  <- locked
+Rayleigh Z @   72.000 Hz =      1.0
+Rayleigh Z @   90.000 Hz =      1.2
+== U1 quiet, window 30 ms
+PKT_LOST events 3803, packets 9242; TX DESC 9821; block overrides 0
+post-FEC gap sizes: 1:1205, 2:899, 3:1049, 4:432, 5:112, 6:38, 7:34, 8:19, 9:2, 10:5, 11:2, 12:1
+loss within 30 ms after a Quest TX: 31.6 % (control, TX shifted 50 ms: 20.4 %)
+Rayleigh Z @    1.000 Hz =      0.7
+Rayleigh Z @    4.000 Hz =      8.7
+Rayleigh Z @    9.766 Hz =    122.8  <- locked
+Rayleigh Z @   72.000 Hz =      1.0
+Rayleigh Z @   90.000 Hz =      1.2
+== T2' wifi_on, window 30 ms
+PKT_LOST events 3412, packets 8430; TX DESC 4783; block overrides 0
+post-FEC gap sizes: 1:1035, 2:843, 3:966, 4:337, 5:98, 6:47, 7:40, 8:27, 9:7, 10:5, 11:2, 12:5
+loss within 30 ms after a Quest TX: 26.8 % (control, TX shifted 50 ms: 23.7 %)
+Rayleigh Z @    1.000 Hz =     10.1
+Rayleigh Z @    4.000 Hz =      2.4
+Rayleigh Z @    9.766 Hz =    102.5  <- locked
+Rayleigh Z @   72.000 Hz =      0.1
+Rayleigh Z @   90.000 Hz =      0.3
+== T2' wifi_off, window 30 ms
+PKT_LOST events 3080, packets 6853; TX DESC 4611; block overrides 0
+post-FEC gap sizes: 1:1152, 2:781, 3:745, 4:264, 5:61, 6:37, 7:22, 8:13, 9:2, 12:1, 13:1, 20:1
+loss within 30 ms after a Quest TX: 28.1 % (control, TX shifted 50 ms: 23.5 %)
+Rayleigh Z @    1.000 Hz =      2.9
+Rayleigh Z @    4.000 Hz =      4.3
+Rayleigh Z @    9.766 Hz =     72.9  <- locked
+Rayleigh Z @   72.000 Hz =      0.3
+Rayleigh Z @   90.000 Hz =      1.6

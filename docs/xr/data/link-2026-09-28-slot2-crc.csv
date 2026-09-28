@@ -1,0 +1,5 @@
+step,label,tx_per_s,rx_per_s,pre_fec_loss_pct,fec_rec_per_s,wfb_lost_per_s,rssi,rssi_a,rssi_b,snr_a_db,snr_b_db,quest_tx_per_s,air_c,quest_cpu_max_c,quest_status_max,quest_batt,data_loss_pct,rx_crc_per_s,usb_empties_per_s,usb_dropped_per_s,usb_min_armed,usb_cb_max_us,usb_completions_per_s,rx_icv_per_s
+0,false,,3328.769,,72.418,40.358,62.715,48.668,49.979,16.994,17.206,24.073,,,,,4.824,0.0,0.0,0.0,7.0,2494.0,3333.363,0.0
+1,true,,3337.63,,72.433,35.22,60.962,47.251,48.8,18.172,18.26,24.059,,,,,4.598,79.878,0.0,0.0,7.0,2700.0,3419.684,0.0
+2,true,,3354.794,,68.534,30.97,64.621,49.613,51.574,19.16,19.294,23.84,,,,,4.251,66.214,0.0,0.0,7.0,2485.0,3427.106,0.0
+3,false,,3355.497,,72.164,33.067,63.65,48.799,50.812,15.932,16.026,24.007,,,,,4.481,0.0,0.0,0.0,7.0,3131.0,3362.366,0.0

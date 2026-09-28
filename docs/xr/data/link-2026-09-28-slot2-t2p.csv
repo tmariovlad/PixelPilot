@@ -1,0 +1,5 @@
+step,label,tx_per_s,rx_per_s,pre_fec_loss_pct,fec_rec_per_s,wfb_lost_per_s,rssi,rssi_a,rssi_b,snr_a_db,snr_b_db,quest_tx_per_s,air_c,quest_cpu_max_c,quest_status_max,quest_batt,data_loss_pct,rx_crc_per_s,usb_empties_per_s,usb_dropped_per_s,usb_min_armed,usb_cb_max_us,usb_completions_per_s,rx_icv_per_s
+0,wifi_on,,3346.441,,73.237,43.073,64.033,50.353,50.506,16.189,16.229,23.966,,,,,4.964,0.0,0.0,0.0,7.0,2922.0,3350.31,0.0
+1,wifi_off,,3316.676,,100.54,42.399,65.596,51.701,50.919,16.26,16.334,23.538,,,,,6.079,0.0,0.0,0.0,7.0,2174.0,3321.894,0.0
+2,wifi_on,,3348.675,,81.69,41.28,64.515,51.105,50.251,16.573,16.611,23.854,,,,,5.23,0.0,0.0,0.0,7.0,2791.0,3351.384,0.0
+3,wifi_off,,3391.831,,68.309,26.188,66.108,52.877,50.123,16.237,16.266,22.55,,,,,4.017,0.0,0.0,0.0,7.0,2443.0,3396.179,0.0
