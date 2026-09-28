@@ -386,10 +386,10 @@ extern "C"
     }
 
     JNI_METHOD(void, nativeSetRequestIdrOnLoss)
-    (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean request)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean request, jint minIntervalMs)
     {
         VideoPlayer* p = native(nativeInstance);
-        if (p) p->setRequestIdrOnLoss(request);
+        if (p) p->setRequestIdrOnLoss(request, minIntervalMs);
     }
 
     JNI_METHOD(void, nativeSetFeedIncompleteFrames)

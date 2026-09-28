@@ -99,6 +99,13 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(new MapPrefs()).summary().contains("IDR"));
     }
 
+    // The key-frame request interval: -1 = IdrRequestPolicy's default (the one place that number lives).
+    @Test public void idrMinIntervalDefaultsToNativeAndCanBeSet() {
+        assertEquals(-1, LatencyExperiments.from(new MapPrefs()).idrMinIntervalMs);
+        assertEquals(1000, LatencyExperiments.from(
+                new MapPrefs().put(LatencyExperiments.KEY_IDR_MIN_INTERVAL_MS, 1000)).idrMinIntervalMs);
+    }
+
     @Test public void summaryListsOnlyEnabledLevers() {
         assertEquals("LL | 120Hz quad perf hints flip", LatencyExperiments.from(new MapPrefs()).summary());
         MapPrefs p = new MapPrefs().put(LatencyExperiments.KEY_LOW_LATENCY_DECODER, false)

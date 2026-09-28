@@ -32,6 +32,8 @@ class IdrRequester
     void setEnabled(bool enabled) { m_enabled = enabled; }
     // Called on this object's thread after each request, true = the air answered 200. Set before enabling.
     void setOnResult(std::function<void(bool)> cb) { m_on_result = std::move(cb); }
+    // Minimum time between requests; <= 0 keeps the current one. Safe from any thread.
+    void setMinIntervalMs(int ms);
     bool enabled() const { return m_enabled; }
 
     // A packet was lost; safe from any thread, returns at once.

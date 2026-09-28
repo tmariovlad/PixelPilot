@@ -22,8 +22,14 @@ class IdrRequestPolicy
 
     void sent(int64_t now_ms) { m_last_ms = now_ms; }
 
+    // A new interval for later requests; <= 0 keeps the current one.
+    void setIntervalMs(int ms)
+    {
+        if (ms > 0) m_interval_ms = ms;
+    }
+
   private:
-    const int m_interval_ms;
+    int       m_interval_ms;
     int64_t   m_last_ms = -1;
 };
 

@@ -41,6 +41,12 @@ IdrRequester::~IdrRequester()
     m_thread.join();
 }
 
+void IdrRequester::setMinIntervalMs(int ms)
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_policy.setIntervalMs(ms);
+}
+
 void IdrRequester::notifyLoss()
 {
     if (!m_enabled) return;

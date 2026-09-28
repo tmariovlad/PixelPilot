@@ -273,7 +273,8 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
   - `IdrRequester` runs the GET on its own thread, so the parser never blocks, with connect/reply timeout 300 ms;
   - `IdrRequestPolicy` allows at most one request per 200 ms; a loss inside that window is served at its end.
 - Trace counters `ppxr_idr_req_ok` / `ppxr_idr_req_failed`. Host tests: `IdrRequest_test` (a fake air on 127.0.0.1), `ParseRTP_test`; a mutant with no rate limit dies.
-- APK ff4a6817 (with FIF).
+- Pref `idr_min_interval_ms` (−1 = the 200 ms native default) sets a longer interval as a variant. Asked for by the coordinator: at ~96 % airtime, several IDRs per second could raise the bitrate and cause more holes (positive feedback), so the A/B also reads air drop and p95.
+- APK db7ff7a7 (with FIF).
 - **Unverified** [SPECULATION until a slot]: whether waybeam's httpd answers on the tunnel address; the first A/B checks `ppxr_idr_req_ok` > 0 and the air's `/api/v1/idr/stats`.
 
 ### Bitrate ceiling 2026-09-29 00:21–00:37: the air recorder, and FEC 8/10 up to 50 Mbit/s (1SS m7, 2SS m12/m13)

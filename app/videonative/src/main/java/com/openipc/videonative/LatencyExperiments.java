@@ -23,6 +23,8 @@ public final class LatencyExperiments {
     public static final String KEY_FEED_INCOMPLETE_FRAMES = "feed_incomplete_frames";
     /** Ask the air unit for a key frame (waybeam GET /request/idr) when an RTP packet is lost; IdrRequester.h. */
     public static final String KEY_REQUEST_IDR_ON_LOSS = "request_idr_on_loss";
+    /** Minimum time between key-frame requests; -1 = the native default (IdrRequestPolicy.h). */
+    public static final String KEY_IDR_MIN_INTERVAL_MS = "idr_min_interval_ms";
     /** Debug: bitmask over the individual decoder keys (DecoderLevers.h DecoderKey); -1 = all. */
     public static final String KEY_DEC_DEBUG_KEY_MASK = "dec_debug_key_mask";
     /** Debug: force a decoder component by name (e.g. "c2.qti.hevc.decoder"); "" = default. */
@@ -78,6 +80,7 @@ public final class LatencyExperiments {
     public final boolean rtpTightReorder;
     public final boolean feedIncompleteFrames;
     public final boolean requestIdrOnLoss;
+    public final int idrMinIntervalMs;
     public final int decDebugKeyMask;
     public final String decComponent;
     public final int xrRefreshHz;
@@ -115,6 +118,7 @@ public final class LatencyExperiments {
         // one at once is the partner lever of feedIncompleteFrames; it needs waybeam's HTTP port through the tunnel.
         // Unmeasured: off.
         requestIdrOnLoss = p.getBoolean(KEY_REQUEST_IDR_ON_LOSS, false);
+        idrMinIntervalMs = p.getInt(KEY_IDR_MIN_INTERVAL_MS, -1);
         decDebugKeyMask = p.getInt(KEY_DEC_DEBUG_KEY_MASK, -1);
         decComponent = p.getString(KEY_DEC_COMPONENT, "");
         xrRefreshHz = validRefresh(p.getInt(KEY_XR_REFRESH_HZ, DEFAULT_REFRESH_HZ));

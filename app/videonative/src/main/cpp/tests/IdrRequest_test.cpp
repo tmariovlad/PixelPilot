@@ -34,6 +34,16 @@ TEST(IdrRequestPolicy, DefaultIntervalIs200Ms)
     EXPECT_EQ(200, p.delayMs(0));
 }
 
+TEST(IdrRequestPolicy, IntervalCanBeChangedAndNonPositiveKeepsIt)
+{
+    IdrRequestPolicy p(200);
+    p.setIntervalMs(1000);
+    p.sent(0);
+    EXPECT_EQ(800, p.delayMs(200));
+    p.setIntervalMs(0);
+    EXPECT_EQ(800, p.delayMs(200));
+}
+
 namespace {
 using Clock = std::chrono::steady_clock;
 
@@ -170,4 +180,18 @@ TEST(IdrRequester, NotifyNeverBlocksAndAnUnreachableAirCountsAsFailed)
     sleepMs(500);
     EXPECT_GE(r.requestsFailed(), 1u);
     EXPECT_EQ(0u, r.requestsOk());
+}
+
+TEST(IdrRequester, ALongerIntervalSpacesTheRequests)
+{
+    FakeAir      air;
+    IdrRequester r("127.0.0.1", air.port, 200);
+    r.setMinIntervalMs(600);
+    r.setEnabled(true);
+    r.notifyLoss();
+    ASSERT_TRUE(air.waitFor(1, 1000));
+    r.notifyLoss();
+    ASSERT_TRUE(air.waitFor(2, 1500));
+    const auto gap = std::chrono::duration_cast<std::chrono::milliseconds>(air.times[1] - air.times[0]).count();
+    EXPECT_GE(gap, 570);
 }

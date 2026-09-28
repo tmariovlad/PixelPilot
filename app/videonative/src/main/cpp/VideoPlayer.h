@@ -65,7 +65,11 @@ class VideoPlayer
     }
 
     void setFeedIncompleteFrames(bool feed) { mParser.setFeedIncompleteFrames(feed); }
-    void setRequestIdrOnLoss(bool request) { mIdrRequester.setEnabled(request); }
+    void setRequestIdrOnLoss(bool request, int min_interval_ms)
+    {
+        mIdrRequester.setMinIntervalMs(min_interval_ms);
+        mIdrRequester.setEnabled(request);
+    }
 
     std::string getDecoderSummary() { return videoDecoder.getDecoderSummary(); }
     std::vector<int64_t> drainFrameReadyTimes() { return videoDecoder.drainFrameReadyTimes(); }
