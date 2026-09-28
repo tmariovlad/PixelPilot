@@ -1,0 +1,113 @@
+package com.openipc.pixelpilot.stats;
+
+import com.openipc.xr.stats.StatsSnapshot;
+import com.openipc.xr.stats.StatsSource;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * The Stats page's StatsSource: the air's RTP sidecar (SidecarClient → LatencyWindow), the Quest's decoded frames
+ * (VideoPlayer.drainFrameTimes), the wfb link stats and RX rate (LinkWindow), the decoder fps and the IDR / freeze
+ * lever counters, folded into a new StatsSnapshot every {@link #TICK_MS} over a {@code windowUs} window.
+ * The XR activity creates it when the link starts, feeds onLinkStats / onDecodedFps from its existing callbacks, and
+ * closes it when the link stops; snapshot() is a volatile read, safe from any thread.
+ */
+public final class StatsCollector implements StatsSource, AutoCloseable {
+    public static final int TICK_MS = 500;   // the page refreshes at 2 Hz
+    public static final long WINDOW_US = 2_000_000;
+
+    /** What the collector pulls on each tick (VideoPlayer, WfbNgLink, XrBridge in the app; fakes in tests). */
+    public interface Inputs {
+        long[] drainFrameTimes();     // VideoPlayer.drainFrameTimes()
+
+        long[] leverCounters();       // VideoPlayer.leverCounters(): IDR ok, IDR failed, frozen slices
+
+        int[] takeRxRate();           // WfbNgLink.takeRxRate(), or null without a link
+
+        DisplayEstimate display();    // from XrBridge.displayGrid(), or null
+    }
+
+    private final Inputs inputs;
+    private final SidecarClient sidecar;
+    private final ClockSync clock;
+    private final LatencyWindow latency;
+    private final LinkWindow link;
+    private final CounterRate idrOk, idrFailed, frozen;
+    private volatile float fpsDecoded = Float.NaN;
+    private volatile StatsSnapshot snapshot = StatsSnapshot.EMPTY;
+    private ScheduledExecutorService ticker;
+
+    /** {@code sidecar} may be null (tests; no air): the air segments then stay unknown. */
+    public StatsCollector(Inputs inputs, SidecarClient sidecar, long windowUs) {
+        this.inputs = inputs;
+        this.sidecar = sidecar;
+        this.clock = sidecar != null ? sidecar.clock() : new ClockSync(16);
+        latency = new LatencyWindow(windowUs);
+        link = new LinkWindow(windowUs);
+        idrOk = new CounterRate(windowUs);
+        idrFailed = new CounterRate(windowUs);
+        frozen = new CounterRate(windowUs);
+    }
+
+    ClockSync clock() {
+        return clock;
+    }
+
+    /** SidecarClient.Listener target. */
+    public void onSidecarFrame(SidecarProtocol.Frame f, long questRecvUs) {
+        latency.addAir(f, questRecvUs);
+    }
+
+    /** One wfb video stats window (from the activity's WfbNGStats callback: outgoing, fec_recovered, lost, ...). */
+    public void onLinkStats(long nowUs, long delivered, long fecRecovered, long lost, int decErr, int rssiARaw,
+                            int rssiBRaw, int snrARaw, int snrBRaw) {
+        link.addStats(nowUs, delivered, fecRecovered, lost, decErr, rssiARaw, rssiBRaw, snrARaw, snrBRaw);
+    }
+
+    /** DecodingInfo.currentFPS from the activity's decoding callback. */
+    public void onDecodedFps(float fps) {
+        fpsDecoded = fps;
+    }
+
+    /** One refresh; the ticker calls it every TICK_MS, tests call it directly. */
+    synchronized void tick(long nowUs) {
+        for (QuestFrame q : QuestFrame.unpack(inputs.drainFrameTimes())) latency.addQuest(q);
+        link.addRxRate(inputs.takeRxRate());
+        long[] levers = inputs.leverCounters();
+        if (levers != null && levers.length >= 3) {
+            idrOk.add(nowUs, levers[0]);
+            idrFailed.add(nowUs, levers[1]);
+            frozen.add(nowUs, levers[2]);
+        }
+        StatsSnapshot.Builder b = new StatsSnapshot.Builder();
+        latency.fill(b, nowUs, clock, inputs.display());
+        link.fill(b, nowUs);
+        b.fpsDecoded(fpsDecoded).levers(idrOk.perSecond(), idrFailed.perSecond(), frozen.perSecond());
+        snapshot = b.build();
+    }
+
+    @Override
+    public StatsSnapshot snapshot() {
+        return snapshot;
+    }
+
+    public synchronized void start() throws java.net.SocketException {
+        if (ticker != null) return;
+        if (sidecar != null) sidecar.start();
+        ticker = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "stats");
+            t.setDaemon(true);
+            return t;
+        });
+        ticker.scheduleWithFixedDelay(() -> tick(SidecarClient.nowUs()), TICK_MS, TICK_MS, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public synchronized void close() {
+        if (ticker != null) ticker.shutdownNow();
+        ticker = null;
+        if (sidecar != null) sidecar.close();
+    }
+}

@@ -142,6 +142,16 @@ public final class StatsSnapshot {
             return this;
         }
 
+        public Builder fpsDecoded(double fps) {
+            fpsDecoded = fps;
+            return this;
+        }
+
+        public Builder undecodedPerS(double perS) {
+            undecodedPerS = perS;
+            return this;
+        }
+
         /** decErr alone (it comes with the link stats, the decoder fps from elsewhere). */
         public Builder decErr(int decErr) {
             this.decErr = decErr;

@@ -47,6 +47,7 @@ public final class LatencyWindow {
 
     private final long windowUs;
     private final ArrayDeque<Air> airRecent = new ArrayDeque<>();
+    private final ArrayDeque<Long> questDecodedUs = new ArrayDeque<>();  // every decoded frame, matched or not
     private final Map<Long, Air> airPending = new HashMap<>();
     private final Map<Long, QuestFrame> questPending = new HashMap<>();
     private final ArrayDeque<Pair> matched = new ArrayDeque<>();
@@ -68,6 +69,7 @@ public final class LatencyWindow {
     }
 
     public synchronized void addQuest(QuestFrame q) {
+        questDecodedUs.addLast(q.decodedNs / 1000);
         Air a = airPending.remove(key(q.ssrc, q.rtpTs));
         if (a != null) matched.addLast(new Pair(a.f, q));
         else if (questPending.size() < MAX_PENDING) questPending.put(key(q.ssrc, q.rtpTs), q);
@@ -76,6 +78,7 @@ public final class LatencyWindow {
     private void prune(long nowUs) {
         long from = nowUs - windowUs;
         while (!airRecent.isEmpty() && airRecent.peekFirst().recvUs < from) airRecent.removeFirst();
+        while (!questDecodedUs.isEmpty() && questDecodedUs.peekFirst() < from) questDecodedUs.removeFirst();
         while (!matched.isEmpty() && matched.peekFirst().quest.decodedNs / 1000 < from) matched.removeFirst();
         airPending.values().removeIf(a -> a.recvUs < from);
         questPending.values().removeIf(q -> q.decodedNs / 1000 < from);
@@ -133,7 +136,9 @@ public final class LatencyWindow {
                 .total(Segment.of(total))
                 .matching(nPair, synced, synced ? clock.rttUs() / 1000.0 : Double.NaN,
                         newestRecv == Long.MIN_VALUE ? Double.NaN : ms(nowUs - newestRecv))
-                .air(median(kbit), median(pkts), kbit.isEmpty() ? Double.NaN : idrs / windowS, StatsSnapshot.NA);
+                .air(median(kbit), median(pkts), kbit.isEmpty() ? Double.NaN : idrs / windowS, StatsSnapshot.NA)
+                // frames the air sent that the Quest never decoded (lost, dropped or frozen), per second
+                .undecodedPerS(nAir == 0 ? Double.NaN : Math.max(0, nAir - questDecodedUs.size()) / windowS);
     }
 
     private static double median(List<Double> v) {

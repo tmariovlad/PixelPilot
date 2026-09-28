@@ -101,6 +101,24 @@ public class LatencyWindowTest {
         assertEquals(10.0, s.sidecarAgeMs, 1e-9);               // newest sidecar frame 10 ms ago
     }
 
+    @Test public void undecodedIsAirFramesMinusDecodedFramesPerSecond() {
+        LatencyWindow w = new LatencyWindow(2_000_000);
+        for (int i = 0; i < 10; i++) {
+            long sent = 1_000_000 + i * 6_000;
+            w.addAir(air(i, sent, 10, 1000, false), sent + 1_000);
+            if (i < 8) w.addQuest(quest(i, sent));   // 2 of the 10 never decoded
+        }
+        StatsSnapshot s = w.fill(new StatsSnapshot.Builder(), 1_100_000, syncedClock(), null).build();
+        assertEquals(1.0, s.undecodedPerS, 1e-9);   // 2 frames in a 2 s window
+    }
+
+    @Test public void withoutTheSidecarUndecodedIsUnknown() {
+        LatencyWindow w = new LatencyWindow(2_000_000);
+        w.addQuest(quest(1, 1_000_000));
+        StatsSnapshot s = w.fill(new StatsSnapshot.Builder(), 1_100_000, syncedClock(), null).build();
+        assertTrue(Double.isNaN(s.undecodedPerS));
+    }
+
     @Test public void aNewStreamWithTheSameTimestampIsNotMatchedAcrossSsrc() {
         LatencyWindow w = new LatencyWindow(2_000_000);
         w.addAir(air(1, 1_000_000, 10, 1000, false), 1_002_000);
