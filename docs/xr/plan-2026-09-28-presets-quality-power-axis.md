@@ -1,0 +1,117 @@
+# Test plans: preset picture quality, and the live check of alink's power axis (2026-09-28)
+
+Quest XR docs: [guide](../xr-quest.md) · [link envelope](link-envelope.md) · [presets design](presets-design.md) · run plan [plan-2026-09-27-optimize.md](plan-2026-09-27-optimize.md)
+
+Both plans are for the Quest side (session pixelpilot-xr-22). The air side runs in the OpenIPC project (-47 / 3a).
+Nothing here has been run yet. They are written so they can start as soon as the air presets (O114) and the power axis
+are deployed.
+
+## 1. Picture quality and latency per preset
+
+**Presets** ([presets-design.md](presets-design.md)): MODE Race / Balanced / Balanced-lite / Wide × QUALITY Q2 / Q4.
+That is 8 combinations. MODE restarts waybeam; QUALITY is live.
+
+**What already exists, and is not repeated:**
+- the latency between modes, W3c + e720s, in [g2g-budget.md](g2g-budget.md);
+- the field of view per mode, in [link-envelope.md](link-envelope.md) (W3c stills).
+
+This plan adds what the presets change: the picture at Q2 against Q4 in every mode, and the cost of Q4 in latency in
+every mode.
+
+**Scene.** Picture quality only shows with motion; on a static scene 2/4/8 Mbit/s looked alike. Yesterday the motion
+came from the TV, which showed people, so none of those stills could be committed.
+- **Ask the user for motion without people.** For example a moving pattern or scenery video on the TV, or a slowly
+  rotating object. Then the stills can go into the repo.
+- Otherwise every still stays in the git-ignored `scripts/quest/out/quality_private/`, as yesterday. Each one is
+  checked by eye before anything moves to `docs/xr/img/`.
+
+**Steps, per MODE** (4 blocks, air applies the preset, the app is not restarted):
+1. The air switches the MODE, which restarts waybeam, and sends `READY <mode>`.
+2. The Quest checks the decoder: `decode_watch.sh 6` must show a few ms and the mode's fps. After a resolution change
+   it once stuck at ~78 ms ([troubleshooting](troubleshooting.md)).
+3. **Latency, in one trace per MODE.** Q2 and Q4 are live, so one ~3 min trace covers Q2 Q4 Q4 Q2 Q2 Q4 (30 s steps).
+   The analysis is `ab_segments.py` + `ab_link.py` with the air's step log. Result: Δ capture → decoded, loss after
+   FEC and frames without a decoded mark for Q4 against Q2, per mode.
+   - This replaces the [INFERRED] +1.7 ms in the presets table with a measured value.
+4. **Stills,** after the trace has ended, so a screencap never loads the compositor during a measurement:
+   [quality_shots.sh](../../scripts/quest/quality_shots.sh), 2 stills at Q2 and 2 at Q4.
+   - The air records the same moments (waybeam `record`), for frame-exact bitstream frames.
+5. Next MODE.
+
+**Time:** about 4 × (15 s switch + 20 s settle + 3 min trace + 2 × 10 s stills) ≈ 17 min on the devices, plus the analysis.
+
+**Output:** a table MODE × QUALITY with Δ latency, loss and frames without a decoded mark, plus the committed stills.
+It goes into [link-envelope.md](link-envelope.md), next to yesterday's picture-quality section, and into the preset
+table in [presets-design.md](presets-design.md).
+
+**Air-side needs (-47 / 3a):**
+- a MODE switch without writing `/overlay` (the presets design makes `/etc/waybeam.json` a link to `/tmp`);
+- a live Q2/Q4 bitrate path;
+- a step log with one line per step, `<air epoch> <label> tx=<n> temp=<C>` (ab_loop's grid format), which
+  `ab_segments.py` reads directly.
+
+## 2. Live check of the adaptive power axis
+
+**The problem.** W2 emulated distance by lowering the air unit's TX power. With the power axis the loop owns that knob,
+so the emulation has to move somewhere else.
+
+**The options** (ranked in -47's design, `alink-power-axis-2026-09-28/00-DESIGN-power-axis.md` §8.1 in the OpenIPC
+project):
+- **(a)** an in-loop `pwr_offset_db`;
+- **(b)** SMA attenuators;
+- **(c)** a real distance walk;
+- **(d)** removing the antenna.
+
+**Recommendation: (a) as the proof, (c) once as the field check.**
+- **(a)** Every commanded power is applied as nominal + offset, with the offset ≤ 0; the loop reasons in nominal units.
+  - It is the W2 method, so every result is directly comparable to the W2 tables at the same Quest geometry: the
+    policy table and the range test.
+  - It is repeatable, can be bracketed (0 / −6 / −12 / −18 dB), and needs no hardware and no user.
+  - Its limit: the uplink reports are not attenuated. Air power does not affect report delivery, so the stale path is
+    not exercised.
+- **(b)** Attenuators test both directions. They are not in the inventory: 2× 10 dB + 2× 20 dB SMA, DC–6 GHz, ≥ 2 W.
+  Leakage limits them to ~10–20 dB.
+- **(c)** The real thing (fading, multipath, a body in the path), but it cannot be repeated or finely bracketed, and it
+  needs the user. It is worth one validation walk after (a) has passed.
+- **(d)** Uncalibrated, and it risks the power amplifier at 23 dBm. It is not recommended.
+
+**The run for (a),** following -47 §8.2, with the Quest side made concrete:
+
+**Arms and order:**
+- P = the proposed ladder;
+- F23 = always 23 dBm;
+- F12 = today (12 dBm, power axis off; only at offsets 0 and −6).
+- Offsets {0, −6, −12, −18}, 3 passes, shuffled.
+- Arms in ABC / CBA order within an offset. Steps of 60 s plus a 2 s guard.
+
+**Traces.** About 38 min of steps is too long for one trace: yesterday 20 min made 67 MB, and the ring buffer holds
+128 MB. So there is one trace per pass, ~13 min and ~45 MB each. Each trace is aligned by the air's step log and the
+air − PC offset measured before it.
+
+**Step log from the air.** One line per step, written after the arm and offset are set:
+`<air epoch> <ARM>_o<offset> tx=<n> temp=<C>`, for example `P_o-12`. Also the receiver's `DECIDE` / `CMD` lines, as in
+the range test.
+
+**Quest per step:**
+- `ab_segments.py`: loss after FEC, frames without a decoded mark, capture → decoded;
+- `ab_link.py`: loss before FEC, FEC repairs, RSSI, Quest thermal;
+- `quest_tx_log.sh`: uplink rate.
+
+**Air per step:** settled row and power, time on MCS1, power and MCS changes and reversals, DPS-150 current,
+`TEMP_R`.
+
+**Dynamic arm** (after pass 3): an offset square wave 0 ↔ −12, 15 s / 15 s × 6, plus a single −20 dB for 3 s.
+[ab_timeline.py](../../scripts/quest-latch/ab_timeline.py) gives the loss burst per second. The receiver log gives the
+attack latency (`DECIDE … pwr-attack` against the offset change).
+
+**What "the power axis helps" means:**
+- at −6 / −12 / −18, P loses clearly less than F12;
+- P comes close to F23 while spending less power at 0 / −6;
+- P has 0 reversals once settled.
+
+These are the design's predictions, still to be confirmed or refuted.
+
+**Safety:** max 23 dBm only after -47's bench checks (§8.3 readback, §8.5 saturation) and with the supply fix from
+O110. Temperature stop as in W2.
+
+**Time:** ~40 min of steps, ~10 min for the dynamic arm, ~15 min of setup: about 65 min on the devices.
