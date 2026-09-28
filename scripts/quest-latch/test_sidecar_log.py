@@ -41,5 +41,51 @@ class ParseFrame(unittest.TestCase):
         self.assertIsNone(f["ready_minus_capture_us"])
 
 
+class AbsoluteTimesAndSync(unittest.TestCase):
+    def test_absolute_air_times_are_kept(self):
+        f = sidecar_log.parse_frame(frame_bytes())
+        self.assertEqual(f["capture_us"], 1_990_000)
+        self.assertEqual(f["ready_us"], 2_000_000)
+        self.assertEqual(f["send_us"], 2_000_900)
+
+    def test_sync_request_and_response(self):
+        req = sidecar_log.sync_request(123_456_789)
+        self.assertEqual(struct.unpack(">IBBxxQ", req), (0x52545053, 1, 3, 123_456_789))
+        resp = struct.pack(">IBBxxQQQ", 0x52545053, 1, 4, 10, 20, 30)
+        self.assertEqual(sidecar_log.parse_sync_resp(resp), (10, 20, 30))
+        self.assertIsNone(sidecar_log.parse_sync_resp(resp[:31]))
+        self.assertIsNone(sidecar_log.parse_sync_resp(frame_bytes()))
+
+    def test_offset_is_air_minus_pc_ntp_style(self):
+        # air clock = pc clock + 5 s; 1 ms each way; 10 us turnaround on the air
+        off, rtt = sidecar_log.sync_offset(1_000_000, 6_001_000, 6_001_010, 1_002_010)
+        self.assertEqual(off, 5_000_000)
+        self.assertEqual(rtt, 2_000)
+
+    def test_best_sync_is_the_lowest_rtt_recent_sample(self):
+        s = sidecar_log.SyncBook(keep=2)
+        self.assertIsNone(s.best())
+        s.add(5_000_000, 3_000)
+        s.add(5_000_400, 800)
+        self.assertEqual(s.best(), (5_000_400, 800))
+        s.add(5_001_000, 2_000)          # the 3 ms sample ages out; 0.8 ms still wins
+        self.assertEqual(s.best(), (5_000_400, 800))
+        s.add(5_002_000, 1_500)          # now the 0.8 ms one is gone too
+        self.assertEqual(s.best(), (5_002_000, 1_500))
+
+    def test_row_keeps_the_old_columns_first_and_appends_the_new(self):
+        f = sidecar_log.parse_frame(frame_bytes())
+        old = sidecar_log.HEADER_OLD.split("	")
+        head = sidecar_log.HEADER.split("	")
+        self.assertEqual(head[:len(old)], old)
+        self.assertEqual(head[len(old):], ["capture_us", "ready_us", "send_us", "air_minus_pc_us", "sync_rtt_us"])
+        row = sidecar_log.format_row(1790634692.5, f, (5_000_000, 900)).split("	")
+        self.assertEqual(len(row), len(head))
+        self.assertEqual(row[1], "aabbccdd")
+        self.assertEqual(row[len(old):], ["1990000", "2000000", "2000900", "5000000", "900"])
+        no_sync = sidecar_log.format_row(1.0, f, None).split("	")
+        self.assertEqual(no_sync[-2:], ["", ""])
+
+
 if __name__ == "__main__":
     unittest.main()
