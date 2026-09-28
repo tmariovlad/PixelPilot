@@ -185,7 +185,7 @@ FRZ (`2df7979`) and the live codec switch (`573845f`).
 
 - Tests: all `:app`, `:app:xr` and `:app:videonative` JVM suites are green, and `assembleDebug` passes (2026-09-29).
 - Not yet on the headset: the first check waits until the user's FRZ check is done (one change at a time), then:
-  1. through `DebugInput` (open, browse every page, one live lever, one relaunch lever);
+  1. through `DebugInput` with [menu_check.py](../../scripts/quest/menu_check.py) (open, Stats page, one live lever with the same pid, one relaunch lever with a new pid, close; prefs restored exactly);
   2. by hand with the user.
 - Known gaps in phase 1:
   - the Stats pages show "-" until session 36's `StatsSource` implementation is attached (`XrVideoActivity.statsSource`);
