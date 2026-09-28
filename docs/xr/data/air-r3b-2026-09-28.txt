@@ -1,0 +1,24 @@
+# R3' air step log 2026-09-28: ch157 (neighbour AP, VHT 80 MHz seg1 155 covers 149-161) vs ch165 (5825, outside it).
+# Same script and setup as R3 (data/air-r3-2026-09-28.txt): 1080p90, 25000 kbit/s, FEC 4/6, 17 dBm, M7 long GI, 20 MHz,
+# alink stopped, fix (a) live (0x550 = 0x10). START = 1790625... see PRE; step k at air epoch START + k*150.
+# This boot: air-PC = -0.544 s (clk_off.py n=7). END: ch157, race json, 12 dBm, M2 long GI, FEC 4/8. find /overlay: empty.
+# Quest: pixelpilot-xr-25 pref_ab.sh START_AT=1790627260, capture ab_r3b (quest_minus_pc +575.2 ms).
+stopped alink/vmoded pids=1396
+PRE epoch=1790627075 start=1790627260 step=150 order="157 165 165 157 157 165 165 157" freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10 fec=k=4 n=6  br="bitrate":25000 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1  temp=42
+SET k=0 ch=157 epoch=1790627260 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=0 ch=157 epoch=1790627260 tx=680866 drop=0 inj=527738 temp=47 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+SET k=1 ch=165 epoch=1790627410 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=1 ch=165 epoch=1790627410 tx=1210419 drop=0 inj=528467 temp=47 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+SET k=2 ch=165 epoch=1790627560 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=2 ch=165 epoch=1790627560 tx=1740677 drop=0 inj=527615 temp=47 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+SET k=3 ch=157 epoch=1790627711 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=3 ch=157 epoch=1790627711 tx=2270160 drop=0 inj=527909 temp=48 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+SET k=4 ch=157 epoch=1790627860 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=4 ch=157 epoch=1790627860 tx=2796032 drop=0 inj=527698 temp=48 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+SET k=5 ch=165 epoch=1790628010 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=5 ch=165 epoch=1790628010 tx=3325676 drop=0 inj=528030 temp=48 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+SET k=6 ch=165 epoch=1790628160 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=6 ch=165 epoch=1790628160 tx=3855538 drop=0 inj=524820 temp=48 freq=165(5825 txp=17.00 rtw_read8(0x550)=0x10
+SET k=7 ch=157 epoch=1790628310 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=7 ch=157 epoch=1790628310 tx=4382333 drop=0 inj=528214 temp=48 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+END epoch=1790628472 freq=157(5785 txp=12.00 rtw_read8(0x550)=0x10 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  fec=k=4 n=8  temp=44 json=3d8a1456
