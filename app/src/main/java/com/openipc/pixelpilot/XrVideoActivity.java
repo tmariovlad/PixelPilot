@@ -9,6 +9,8 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import com.openipc.mavlink.MavlinkData;
+import com.openipc.pixelpilot.stats.StatsCollector;
+import com.openipc.pixelpilot.stats.StatsWiring;
 import com.openipc.mavlink.MavlinkNative;
 import com.openipc.mavlink.MavlinkUpdate;
 import com.openipc.videonative.DecodingInfo;
@@ -92,6 +94,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private boolean menuShown;
     /** The Stats pages' data (session 36's sidecar/link model); EMPTY until it is attached. */
     private volatile StatsSource statsSource;
+    private StatsCollector statsCollector;   // statsSource's implementation, fed from the callbacks below
     private final Runnable menuTick = new Runnable() {
         @Override
         public void run() {
@@ -184,6 +187,19 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         LinkOptions.apply(this, wfbLink);
         wfbLinkManager = new WfbLinkManager(this, this, wfbLink);
         startPresets();   // only with the wfb link: the air's receiver is at the tunnel end
+        startStats();     // likewise: the air's RTP sidecar is at the tunnel end
+    }
+
+    /** The Stats pages' data (docs/xr/stats-backend.md): sidecar + decoded frames + link, a snapshot every 0.5 s. */
+    private void startStats() {
+        StatsCollector c = StatsWiring.create(() -> videoPlayer, () -> wfbLink, () -> xr);
+        try {
+            c.start();
+        } catch (java.net.SocketException e) {
+            Log.e(TAG, "stats: sidecar socket failed, the air segments stay empty", e);
+        }
+        statsCollector = c;
+        statsSource = c;
     }
 
     /**
@@ -389,6 +405,9 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     protected void onDestroy() {
         destroying = true;
         ui.removeCallbacks(statsTick);
+        statsSource = null;
+        if (statsCollector != null) statsCollector.close();
+        statsCollector = null;
         ui.removeCallbacks(menuTick);
         menuSurface = null;
         if (vmodeClient != null) vmodeClient.close();
@@ -485,12 +504,19 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     @Override
     public void onDecodingInfoChanged(DecodingInfo decodingInfo) {
         lastDecoding = decodingInfo;
+        StatsCollector c = statsCollector;
+        if (c != null && decodingInfo != null) c.onDecodedFps(decodingInfo.currentFPS);
     }
 
     @Override
     public void onWfbNgStatsChanged(WfbNGStats data) {
         lastLinkNs = System.nanoTime();
         lastLink = data;
+        StatsCollector c = statsCollector;
+        if (c != null && data != null) {
+            c.onLinkStats(lastLinkNs / 1000, data.count_p_outgoing, data.count_p_fec_recovered, data.count_p_lost,
+                    data.count_p_dec_err, data.rssi_a, data.rssi_b, data.snr_a, data.snr_b);
+        }
     }
 
     @Override
