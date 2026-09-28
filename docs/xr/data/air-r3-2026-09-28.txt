@@ -1,0 +1,25 @@
+# R3 air step log 2026-09-28: ch157 (neighbour AP "Staff - 5GHz" beacons 100 TU, air scan c42da71) vs ch161 (no BSS).
+# Setup as R5/R7 m7L: 1080p90 (RAM), 25000 kbit/s, FEC 4/6, 17 dBm, M7 long GI, 20 MHz STBC1 LDPC1, alink stopped;
+# fix (a) live (0x550 = 0x10 throughout). Step k at air epoch START + k*150, START = 1790625480 (PC START_AT; the air
+# clock is 0.488 s behind the PC this boot, clk_off.py n=7). `iw dev wlan0 set freq <f> HT20` + 17 dBm re-asserted per
+# step, readback per step. END: ch157, race json 3d8a1456, 12 dBm, M2 long GI, FEC 4/8. find /overlay -newer stamp: empty.
+# Quest: pixelpilot-xr-25 pref_ab.sh START_AT=1790625480, pref wifi-channel, capture ab_r3 (quest_minus_pc +585.4 ms).
+stopped alink/vmoded pids=1780
+PRE epoch=1790625232 start=1790625480 step=150 order="157 161 161 157 157 161 161 157" freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10 fec=k=4 n=6  br="bitrate":25000 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1  temp=43
+SET k=0 ch=157 epoch=1790625480 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=0 ch=157 epoch=1790625480 tx=906126 drop=0 inj=531602 temp=47 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+SET k=1 ch=161 epoch=1790625630 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=1 ch=161 epoch=1790625630 tx=1436101 drop=7 inj=527925 temp=47 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+SET k=2 ch=161 epoch=1790625780 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=2 ch=161 epoch=1790625780 tx=1965638 drop=0 inj=527562 temp=47 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+SET k=3 ch=157 epoch=1790625931 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=3 ch=157 epoch=1790625931 tx=2495061 drop=0 inj=525425 temp=48 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+SET k=4 ch=157 epoch=1790626080 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=4 ch=157 epoch=1790626080 tx=3022184 drop=0 inj=527364 temp=48 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+SET k=5 ch=161 epoch=1790626230 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=5 ch=161 epoch=1790626230 tx=3551409 drop=0 inj=526914 temp=47 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+SET k=6 ch=161 epoch=1790626380 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=6 ch=161 epoch=1790626380 tx=4080144 drop=0 inj=524301 temp=48 freq=161(5805 txp=17.00 rtw_read8(0x550)=0x10
+SET k=7 ch=157 epoch=1790626530 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+STEP k=7 ch=157 epoch=1790626530 tx=4606186 drop=0 inj=531852 temp=48 freq=157(5785 txp=17.00 rtw_read8(0x550)=0x10
+END epoch=1790626698 freq=157(5785 txp=12.00 rtw_read8(0x550)=0x10 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  fec=k=4 n=8  temp=43 json=3d8a1456
