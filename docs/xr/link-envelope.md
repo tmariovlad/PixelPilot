@@ -592,6 +592,7 @@ Each cell is pass 1 / pass 2. "Undecoded" counts frames without a decoded mark (
   - The room was dark (a lit screen and a desk), so the stills say nothing about sharpness. A lit or moving scene is needed for that.
   - Overlays: S1 164 fps 2.2 Mbit/s lost 0; S2 84–89 fps 23–24.5 Mbit/s lost 3–14; S3 76–87 fps 26–29 Mbit/s lost 0–23.
   - S3's lower fps may be real (30 Mbit/s f810 sits near the air's limit, see the grid) or a confound: the air recorder ran for 3 s just before the S3 stills, on an already loaded CPU [SPECULATION].
+    - **Resolved 2026-09-29 (Bitrate ceiling, part A, below): not the recorder.** The air encoder gave 90.0 fps with the recorder on or off. The Quest decoded ~84 fps in both states. The missing frames are frames with a post-FEC hole: ~0.7 % packet loss across 26–30 packets per frame [PROVEN for the recorder, INFERRED for the frame arithmetic].
 - **The stills are not committed**: they show a person, and origin is a public fork. They are in the git-ignored `scripts/quest/out/quality_private/` (`quality-2026-09-29-S{1,2,3}-*.jpg`, `air-S{2,3}-1080p90-*.jpg` + `.ts`).
 
 **Picture-quality stills at 2 / 4 / 8 Mbit/s (2026-09-27 21:28–21:35, build `b2249f15`, Quest on the balcony).**
