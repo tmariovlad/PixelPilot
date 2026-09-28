@@ -1,0 +1,43 @@
+# Recorder A/B + upper bitrate limit 2026-09-29 00:21-00:37 (user: "separa cele 2 cauze; si vezi care e limita superioara la mbit").
+# Air .132 ch157 20 MHz, 1080p90 (RAM), 17 dBm, alink stopped, fix (a) live. Script: ceil_run.sh (scratchpad; recipe in
+# scripts/quest/air_frame.py for the tmpfs). This boot air-PC = -0.645 s. Quest: pixelpilot-xr-25 capture ab_ceil.
+# Part A: fixed m7b30f810; 6 x 40 s rec off/on ("on" = waybeam record in 5 s bursts into a 64 MiB tmpfs, deleted after
+# each burst). enc_* = waybeam's own [verbose] lines (fps/kbps it encoded), enc_fps_min = worst 1 s window.
+# Part B: bitrate_grid.sh 48d0ccbc, 45 s steps, guard 2 s, DROP_SKIP disabled (every step run). G3 = 1SS STBC m7 FEC 8/10;
+# G4 = 2SS without STBC (-S 0) HT MCS 12/13 FEC 8/10. drop/inj = wfb_tx PKT sums (air could not inject / injected).
+# FINAL: race json 3d8a1456, 12 dBm, M2 long, FEC 4/8, tmpfs unmounted. find /overlay -newer stamp: empty.
+## ceil_run.log
+stopped alink/vmoded pids=1397
+PRE epoch=1790630355 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1  fec=k=8 n=10  txp=17.00 verbose_lines=15
+A start epoch=1790630500
+A off epoch=1790630500 enc_kbps=30162 enc_fps=90.0 enc_fps_min=90 n=40 drop=0 inj=140375 rec_kB=0
+A on epoch=1790630540 enc_kbps=30149 enc_fps=90.0 enc_fps_min=90 n=41 drop=0 inj=143853 rec_kB=154944
+A off epoch=1790630581 enc_kbps=30147 enc_fps=90.0 enc_fps_min=90 n=40 drop=0 inj=140351 rec_kB=0
+A on epoch=1790630621 enc_kbps=30155 enc_fps=90.0 enc_fps_min=90 n=40 drop=0 inj=140588 rec_kB=154900
+A off epoch=1790630662 enc_kbps=30154 enc_fps=90.0 enc_fps_min=90 n=41 drop=0 inj=143734 rec_kB=0
+A on epoch=1790630702 enc_kbps=30160 enc_fps=90.0 enc_fps_min=90 n=40 drop=0 inj=140371 rec_kB=154656
+A end epoch=1790630743
+G3 start epoch=1790630743
+G3 end / G4 start epoch=1790631064
+G4 end epoch=1790631432
+FINAL epoch=1790631450 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1  fec=k=4 n=8  txp=12.00 json=3d8a1456 tmpfs=0
+## grid_steps.txt
+1790630744.12 PRE m7b30000f810 tx=1411497 temp=48 verbose_lines=401 pkt_lines=448 step=45s guard=2s radio="-B 20 -G long -S 1 -L 1 -N 1"
+1790630744.57 m7b25f810 tx=1412766 temp=48 enc_kbps=25127 enc_fps=90.0 drop=0 inj=125918
+1790630790.09 m7b30f810 tx=1546301 temp=47 enc_kbps=30186 enc_fps=90.0 drop=0 inj=151006
+1790630835.58 m7b32f810 tx=1706487 temp=48 enc_kbps=32184 enc_fps=90.0 drop=76 inj=164576
+1790630881.13 m7b34f810 tx=1876547 temp=48 enc_kbps=34200 enc_fps=90.0 drop=2044 inj=168218
+1790630926.67 m7b36f810 tx=2048421 temp=48 enc_kbps=36171 enc_fps=90.0 drop=7940 inj=170829
+1790630972.35 m7b38f810 tx=2220384 temp=48 enc_kbps=38262 enc_fps=90.0 drop=14244 inj=173058
+1790631018.82 m7b40f810 tx=2395187 temp=50 enc_kbps=40228 enc_fps=90.0 drop=21690 inj=173230
+1790631064.32 END tx=2565883 temp=48 reverted=m7b30000f810 mcs=7 fec=8/10 br=30000
+1790631065.18 PRE m7b30000f810 tx=2569008 temp=50 verbose_lines=720 pkt_lines=769 step=45s guard=2s radio="-B 20 -G long -S 0 -L 1 -N 1"
+1790631065.65 m12b30f810 tx=2570696 temp=47 enc_kbps=30171 enc_fps=90.0 drop=0 inj=151031
+1790631111.18 m12b34f810 tx=2731042 temp=47 enc_kbps=34193 enc_fps=90.0 drop=0 inj=170868
+1790631156.73 m12b38f810 tx=2911912 temp=48 enc_kbps=38286 enc_fps=90.0 drop=150 inj=190775
+1790631203.63 m12b42f810 tx=3112435 temp=47 enc_kbps=42222 enc_fps=90.0 drop=13495 inj=193163
+1790631250.57 m13b38f810 tx=3312962 temp=47 enc_kbps=38322 enc_fps=90.0 drop=0 inj=191093
+1790631296.11 m13b42f810 tx=3515155 temp=47 enc_kbps=42184 enc_fps=90.0 drop=52 inj=210022
+1790631341.63 m13b46f810 tx=3737017 temp=47 enc_kbps=46343 enc_fps=90.0 drop=6455 inj=227892
+1790631387.27 m13b50f810 tx=3966820 temp=48 enc_kbps=50307 enc_fps=90.0 drop=20814 inj=223638
+1790631432.79 END tx=4195059 temp=47 reverted=m7b30000f810 mcs=7 fec=8/10 br=30000
