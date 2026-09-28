@@ -128,7 +128,7 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
 - **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
-**Power × bitrate at 1080p90, 20 MHz: does more power make 25 Mbit/s clean? (2026-09-28 12:31–12:40, PARTIAL: latency/loss only, the link-side analysis follows).**
+**Power × bitrate at 1080p90, 20 MHz: does more power make 25 Mbit/s clean? (2026-09-28 12:31–12:40).**
 - **Question.** The gap the user found: high bitrate was only tested at 12 dBm, and power only at `m2b2` (where loss was already ~0).
 - **Method.** One 646 s trace ([ab_long.sh](../../scripts/quest/ab_long.sh); started as 900 s, stopped early after the air's `PWR_END` because of a PC restart). The air script ran the grid `A m4b16f46 m7b16f46 m7b25f46 m7b25f45 A` (A = `m2b4f46`, 22 s steps) at 20 → 12 → 23 → 17 dBm. Ramps ≤ 3 dB, `iw` read back per level, 20 MHz 157, STBC 1, alink + vmoded stopped. The air log shows drop = 0 at every point and every power level; air 46–51 °C. Offset Quest − air +0.014 s.
 - **Data.** [air log, full lines with tx= / inj=](data/air-pwr-x-bitrate-2026-09-28.txt) · per power: latency/loss [p20](data/measurements-2026-09-28-quest2-pwrx-p20.csv) · [p12](data/measurements-2026-09-28-quest2-pwrx-p12.csv) · [p23](data/measurements-2026-09-28-quest2-pwrx-p23.csv) · [p17](data/measurements-2026-09-28-quest2-pwrx-p17.csv); step files [p20](data/steps-2026-09-28-pwrx-p20.txt) · [p12](data/steps-2026-09-28-pwrx-p12.txt) · [p23](data/steps-2026-09-28-pwrx-p23.txt) · [p17](data/steps-2026-09-28-pwrx-p17.txt); [Quest thermal](data/thermal-2026-09-28-pwrx.csv).
@@ -147,7 +147,21 @@ Loss after FEC · frames without a decoded mark (of ~1670) · Δ capture → dec
   - MCS4 does improve with power: 16 Mbit/s at `m4b16f46` falls from 2.5 % (12 dBm) to 0.4–0.5 % (20–23 dBm). MCS7 does not [PROVEN: same].
   - At 23 dBm MCS7 fails while MCS2 and MCS4 in the same run are fine, and the air reported drop = 0. The likely cause is that the air unit's power amplifier distorts 64-QAM at full power (EVM), not the receiver [SPECULATION: no EVM or per-chain data in this trace; the per-chain counters were not yet installed].
   - FEC 4/5 (`m7b25f45`) is worse than 4/6 at every power level (3.9–4.3 % vs 2.3–2.6 %).
-- **Still to do after the restart:** the link side (`ab_link.py`: pre-FEC and RSSI per power, air TX rate from the full air log with `tx=`), and a 20 dBm twin at MCS7 with N ≥ 2 before any policy change.
+- **Link side** ([ab_link.py](../../scripts/quest-latch/ab_link.py) on the same trace, air TX rate from the full air log; link CSVs [p20](data/link-2026-09-28-pwrx-p20.csv) · [p12](data/link-2026-09-28-pwrx-p12.csv) · [p23](data/link-2026-09-28-pwrx-p23.csv) · [p17](data/link-2026-09-28-pwrx-p17.csv)). Each cell: air TX packets/s → Quest RX packets/s · pre-FEC loss. RSSI column per power (mean over the run's steps).
+
+| state | 12 dBm (RSSI 57–58) | 17 dBm (RSSI 64–65) | 20 dBm (RSSI 67–68) | 23 dBm (RSSI 69–71) |
+|---|---|---|---|---|
+| `m2b4f46` | 637 → 599 · 5.9 % | 642 → 613 · 4.6 % | 638 → 614 · 3.7 % | 638 → 610 · 4.5 % |
+| `m4b16f46` | 2297 → 2155 · 6.2 % | 2284 → 2157 · 5.6 % | 2296 → 2224 · 3.2 % | 2284 → 2217 · 2.9 % |
+| `m7b16f46` | 2300 → 2132 · 7.3 % | 2278 → 2157 · 5.3 % | 2300 → 2164 · 5.9 % | **2290 → 3 · 99.9 %** |
+| `m7b25f46` | 3535 → 3263 · 7.7 % | 3534 → 3276 · 7.3 % | 3534 → 3322 · 6.0 % | **3542 → 4 · 99.9 %** |
+| `m7b25f45` | 2914 → 2731 · 6.3 % | 2899 → 2720 · 6.2 % | 2913 → 2733 · 6.2 % | **2900 → 4 · 99.9 %** |
+
+  - The air injected every step at the full rate, 23 dBm included, so the MCS7 loss at 23 dBm happens on the air or between the antennas, not in the air unit's queue [PROVEN: air TX rate 2290–3542 packets/s with drop = 0 against Quest RX 3–4 packets/s].
+  - The Quest is far from saturation at 23 dBm: the RSSI column is ~70, about −54 dBm (column = 1.25 × the `gain_trsw` byte, and phydm reads that byte as dBm + 110), and MCS2/MCS4 in the same run lose less than at 12 dBm. That points to the air unit's transmitter at full power: 64-QAM needs a clean constellation (EVM), which a power amplifier driven at its limit cannot give, while QPSK/16-QAM tolerate it [INFERRED: the modulation dependence plus drop = 0 and a receiver level far from saturation; no EVM measured].
+  - MCS7 pre-FEC loss barely moves between 12 and 20 dBm (7.3–7.7 % → 5.9–6.0 %), whereas MCS4 halves (6.2 % → 3.2 %). Below 23 dBm, MCS7's loss is not mainly a lack of signal either [INFERRED: same table].
+  - **This is not a same-geometry twin of the morning grid.** Its 12 dBm RSSI column is 57–58, the morning grid's was 71–73 at the same power, so the headset sat elsewhere (it had been moved to the desk). Compare powers within this run, not against the morning [PROVEN: the two link CSVs' `rssi` columns].
+- **Still open:** a 20 dBm MCS7 twin with N ≥ 2 before any policy change, and a power step between 20 and 23 dBm (21–22) to find where MCS7 breaks. The air unit is off between slots (coordinator rule), so both wait for a slot.
 
 **Does 40 MHz carry 16–25 Mbit/s cleanly? The same grid at 40 MHz (2026-09-28 12:09–12:15, O82b §5a, 1080p90 native, 12 dBm, STBC 1, build `53c4e5de` = 0badd95).**
 - **Question.** The user's "25 Mbit clean?", at 40 MHz. These are the same points as the 20 MHz grid below, measured the same morning, so the 20 MHz runs are the twin. Background on the channel center and the uplink sub-channel: [40 MHz research](research/2026-09-28-ht40-channel-center.md).
