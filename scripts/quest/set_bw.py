@@ -20,7 +20,8 @@ CH = re.compile(r'\s*<int name="wifi-channel" value="\d+" />')
 
 def main():
     what, backup = sys.argv[1], sys.argv[2]
-    q.adb("shell", "am", "force-stop", env.PKG)
+    if not q.force_stop():
+        sys.exit("the app did not stop; not touching its prefs")
     if not os.path.exists(backup):
         q.backup_prefs(backup)
     if what == "restore":

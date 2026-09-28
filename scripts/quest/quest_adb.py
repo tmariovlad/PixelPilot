@@ -102,6 +102,19 @@ def restore_prefs(path):
         write_prefs(f.read())
 
 
+def force_stop(tries=20, step_s=0.25):
+    """Stop the app and wait (up to tries x step_s) until its process is gone. `am force-stop` returns before the
+    process has exited, and an exiting app can still flush its prefs over a write made right after (seen twice on
+    2026-09-28: set_bw.py restore lost its write). Returns False if the process is still there after the wait."""
+    adb("shell", "am", "force-stop", env.PKG)
+    for i in range(tries):
+        if not adb("shell", "pidof", env.PKG).strip():
+            return True
+        if i + 1 < tries:
+            _sleep(step_s)
+    return False
+
+
 def prox_close():
     """Tell the power manager the headset is worn, so the XR session stays FOCUSED."""
     adb("shell", "am", "broadcast", "-a", "com.oculus.vrpowermanager.prox_close")

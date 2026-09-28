@@ -149,6 +149,36 @@ def test_step_prefs_types_the_step_value_and_keeps_extra_prefs():
     # the step's own pref wins over the same key in EXTRA_PREFS
     assert quest_adb.step_prefs("rx-diag-mode", "async", '{"rx-diag-mode": "spsc"}') == {"rx-diag-mode": "async"}
 
+
+class FakeStop:
+    """am force-stop returns at once, but the process lingers for `linger` pidof polls (it can still flush its prefs)."""
+
+    def __init__(self, linger):
+        self.linger, self.calls, self.sleeps = linger, [], []
+
+    def __call__(self, *a, inp=None):
+        self.calls.append(a)
+        if "pidof" in a:
+            if self.linger > 0:
+                self.linger -= 1
+                return "1234"
+            return ""
+        return ""
+
+
+def test_force_stop_waits_until_the_process_is_gone():
+    """R3/R3' 2026-09-28: a prefs write right after `am force-stop` was overwritten by the exiting app. force_stop()
+    returns only once pidof is empty."""
+    fake = FakeStop(linger=2)
+    assert with_fake(fake, quest_adb.force_stop) is True
+    assert sum(1 for c in fake.calls if "pidof" in c) == 3
+    assert len(fake.sleeps) == 2
+
+
+def test_force_stop_gives_up_after_its_timeout():
+    fake = FakeStop(linger=100)
+    assert with_fake(fake, lambda: quest_adb.force_stop(tries=4)) is False
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

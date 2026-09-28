@@ -199,6 +199,27 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### R3' 2026-09-28 23:27–23:47: ch157 vs ch165 (outside the neighbour's 80 MHz) at 25 Mbit/s
+
+The same method as R3 below: a shared clock schedule, `m7b25f46`, 17 dBm, 1080p90, TBTT fix on, 8 × 150 s, order 157 165 165 157 157 165 165 157, the first 15 s after each switch excluded, `TRACE LOSS: none`. Air: drop 0 in every step, the same `inj` per step.
+- **Data.** [air log](data/air-r3b-2026-09-28.txt) · [steps](data/steps-2026-09-28-r3b.txt) · [link_audit](data/audit-2026-09-28-r3b.txt) · [link](data/link-2026-09-28-r3b.csv) · [loss lock per channel](data/coincidence-2026-09-28-r3b.txt) · [tu_pause R3 + R3'](data/tu-pause-2026-09-28-r3-r3b.txt).
+
+| channel (steps) | p_data | post-FEC | loss runs/s | FEC repairs/s | raw A / B | SNR A / B dB | 9.766 Hz lock of losses |
+|---|---|---|---|---|---|---|---|
+| 157 (4 × 150 s) | 2.92–3.00 % | 0.41–0.50 % | 4.2–4.8 | 57.8–58.7 | 59 / 55 | 16.5–19.5 | **Z = 2.0 (not locked)** |
+| 165 (4 × 150 s) | 2.58–2.74 % | 0.50–0.55 % | 5.4–6.0 | 48.8–51.3 | 52.6–53.0 / 51–52 | 17.0–21.0 | **Z = 70.9 (locked)** |
+
+- **Moving to a channel outside the neighbour's band does not lower the loss after FEC** [PROVEN: ABBA×2]. 165, like 161, repairs ~15 % fewer packets before FEC (p_data 2.58–2.74 % vs 2.92–3.00 %), yet loses as much or slightly more after it, in more runs per second. Its RSSI is ~6 dB (A) / ~4 dB (B) lower than 157.
+- **The 102.4 ms loss lock is absent on 157 and present on 165 (Z = 70.9) and 161 (Z = 42.8, R3)** [PROVEN: coincidence files]. That is the reverse of "the neighbour's beacons on 157 cause it".
+  - It is not the air's TX pause: with the TBTT fix on, no step on any channel shows the pause (Z(pause) ≤ 3.3, latency fold ≤ 0.35 ms) [PROVEN: tu_pause file].
+  - Its source is **unknown** [SPECULATION]. Candidates:
+    - another beaconing transmitter near 161/165 that the air's scan could not see from where the air sits;
+    - on 157, the air's CCA hearing the neighbour's beacons and deferring (so no collision), which it cannot do on other channels;
+    - something tied to the Quest's RTL on those channels.
+  - A scan from the Quest's position, or from the GS on 161/165, would help.
+- **Consequence:** stay on 157. None of the three channels gives lower loss after FEC, and 157 has the strongest signal here.
+- The Quest's prefs restore after R3' failed its read-back again. The cause is a race: `am force-stop` returns before the app has exited, and the exiting app flushed its prefs over our write. `quest_adb.force_stop()` now waits until `pidof` is empty. It is used by `set_bw.py` and `pref_ab.sh` (tests `test_force_stop_*`), but not yet verified live.
+
 ### R3 2026-09-28 22:58–23:18: ch157 vs ch161 at 25 Mbit/s (both inside the neighbour's 80 MHz)
 
 Question: does moving off the neighbour's primary channel remove the 102.4 ms loss lock?

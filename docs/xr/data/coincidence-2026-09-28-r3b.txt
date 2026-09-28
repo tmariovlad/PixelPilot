@@ -1,0 +1,18 @@
+== ch157 (first 15 s after each switch and last 5 s excluded), window 30 ms
+PKT_LOST events 2323, packets 5676; TX DESC 11041; block overrides 0
+post-FEC gap sizes: 1:736, 2:501, 3:637, 4:313, 5:76, 6:38, 7:9, 8:13
+loss within 30 ms after a Quest TX: 36.1 % (control, TX shifted 50 ms: 16.4 %)
+Rayleigh Z @    1.000 Hz =      7.8
+Rayleigh Z @    4.000 Hz =      0.2
+Rayleigh Z @    9.766 Hz =      2.0
+Rayleigh Z @   72.000 Hz =      1.1
+Rayleigh Z @   90.000 Hz =      0.5
+== ch165 (first 15 s after each switch and last 5 s excluded), window 30 ms
+PKT_LOST events 2984, packets 6456; TX DESC 11421; block overrides 0
+post-FEC gap sizes: 1:1073, 2:753, 3:922, 4:166, 5:31, 6:17, 7:8, 8:7, 9:2, 10:4, 20:1
+loss within 30 ms after a Quest TX: 32.5 % (control, TX shifted 50 ms: 18.1 %)
+Rayleigh Z @    1.000 Hz =      6.6
+Rayleigh Z @    4.000 Hz =      0.8
+Rayleigh Z @    9.766 Hz =     70.9  <- locked
+Rayleigh Z @   72.000 Hz =      2.6
+Rayleigh Z @   90.000 Hz =      2.4

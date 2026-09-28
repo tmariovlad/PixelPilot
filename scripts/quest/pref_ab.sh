@@ -45,7 +45,7 @@ for SPEC in "$@"; do
   K=$((K + 1))
   TAG=""; V=$SPEC
   case "$SPEC" in *:*) TAG=${SPEC%%:*}; V=${SPEC#*:} ;; esac
-  qadb shell am force-stop "$PKG"
+  python3 -c "import quest_adb as q; q.force_stop()"   # waits until the process is gone (prefs race)
   if [ -n "$TAG" ] && [ "$TAG" != "$CUR" ]; then
     APK_VAR="APK_$TAG"; APK=${!APK_VAR}
     [ -f "$APK" ] || { echo "no APK for tag $TAG (set $APK_VAR)"; break; }
