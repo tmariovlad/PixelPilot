@@ -17,7 +17,7 @@ class ParseFrame(unittest.TestCase):
         self.assertEqual(f["rtp_ts"], 123456)
         self.assertEqual(f["frame_id"], 7)
         self.assertEqual(f["seq_count"], 26)
-        self.assertEqual(f["ready_minus_capture_us"], 10_000)   # includes the air's MONO-RAW offset
+        self.assertEqual(f["ready_minus_capture_us"], 10_000)   # encode path (all CLOCK_MONOTONIC on 13b85893)
         self.assertEqual(f["send_minus_ready_us"], 900)
         self.assertIsNone(f["size"])
 

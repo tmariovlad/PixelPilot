@@ -5,9 +5,11 @@ Usage: python3 sidecar_log.py <air_ip> <seconds> <out.tsv> [port=5602]
 waybeam (f8742fe) listens on `outgoing.sidecarPort` and stays silent until it receives MSG_SUBSCRIBE; from then on it
 sends one 52-byte MSG_FRAME per encoded frame to the subscriber (include/rtp_sidecar.h). The subscription expires after
 5 s, so we re-subscribe every 2 s. Columns: PC receive time, frame id, RTP timestamp, packets, frame_ready - capture
-(encode path; capture is CLOCK_MONOTONIC and frame_ready CLOCK_MONOTONIC_RAW, so the value carries the air's constant
-MONO-RAW offset: compare codecs within one boot, not absolute), last send - frame_ready (packetise + send), and the
-optional encoder trailer (frame size, type, QP).
+(encode path), last send - frame_ready (packetise + send), and the optional encoder trailer (frame size, type, QP).
+Clocks: the header comments say frame_ready/last_pkt_send are CLOCK_MONOTONIC_RAW, but on the air's build (13b85893 =
+f8742fe) every sidecar timestamp is CLOCK_MONOTONIC (timing.c:8, star6e_video.c:138-161, rtp_sidecar.c:183-184/236;
+pixelpilot-xr-36, 2026-09-29), so frame_ready - capture is the encode path without a clock offset [PROVEN in code, not
+yet checked live].
 """
 import socket
 import struct
