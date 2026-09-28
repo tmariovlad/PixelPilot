@@ -181,7 +181,7 @@ Same Quest position as R6 (RSSI column 74; raw A 59 / B 55 ≈ −51 / −55 dBm
 - **m6S loses ~40 % less after FEC but is ~0.7 ms slower in mean latency and ~2 ms slower at p95** [PROVEN: every m6S step beats every m7L step on loss and is behind on latency].
   - The PHY rate is the same, so the latency cost has no mechanism yet [SPECULATION: something on the air's TX path at short GI; worth a driver check].
   - Neither is clean at 25 Mbit/s here (post > 0.1 %).
-- **Tool fix found here:** `ab_segments.frames_from_packets` merged packets that carried the same RTP timestamp ~205 s apart into one "frame" (10 of ~9944 frames in one step), which showed up as a fake +52 ms. A packet more than 1 s after its frame's first packet now starts a new frame. Regression test: `test_a_repeated_rtp_timestamp_long_after_is_a_new_frame`. Earlier results used short steps, where a 205 s repeat cannot fall inside one step's window.
+- **Tool fix found here:** `ab_segments.frames_from_packets` merged packets that carried the same RTP timestamp ~205 s apart into one "frame" (10 of ~9944 frames in one step), which showed up as a fake +52 ms. A packet more than 1 s after its frame's first packet now starts a new frame. Regression test: `test_a_repeated_rtp_timestamp_long_after_is_a_new_frame`. No earlier result is affected: a scan of the 18 local traces behind this document's 2026-09-27/28 results (grids, pwrx, mcs7pwr, range, bracket, T4, T2, slot 2, R6, R7, phase 2/3b) found 0 such repeats; only R5 had them [PROVEN: scan run 2026-09-28 on `scripts/quest/out/ab_*.pftrace`].
 
 ### R6 2026-09-28 21:32: the air's 100 TU TX pause is the TBTT prohibit window
 
