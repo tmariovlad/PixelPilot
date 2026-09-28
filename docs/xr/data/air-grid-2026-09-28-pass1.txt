@@ -1,0 +1,19 @@
+1790583956.06 PRE m2b4000f48 tx=657076 temp=47 verbose_lines=78 pkt_lines=1183 step=22s guard=2s
+1790583956.45 m2b4f46 tx=657428 temp=46 enc_kbps=4023 enc_fps=90.0 drop=0 inj=12698
+1790583978.86 m7b25f45 tx=671777 temp=47 enc_kbps=25202 enc_fps=90.0 drop=0 inj=59025
+1790584001.30 m2b4f48 tx=737458 temp=47 enc_kbps=4013 enc_fps=90.0 drop=0 inj=16995
+1790584023.71 m4b16f46 tx=756644 temp=47 enc_kbps=16046 enc_fps=90.0 drop=0 inj=45190
+1790584046.15 m2b4f46 tx=806946 temp=47 enc_kbps=4011 enc_fps=90.0 drop=0 inj=12750
+1790584068.56 m7b4f46 tx=821382 temp=46 enc_kbps=4012 enc_fps=90.0 drop=0 inj=12758
+1790584090.97 m2b8f46 tx=836073 temp=47 enc_kbps=8033 enc_fps=90.0 drop=0 inj=23191
+1790584113.40 m7b16f48 tx=862423 temp=47 enc_kbps=16046 enc_fps=90.0 drop=0 inj=60226
+1790584135.84 m2b4f46 tx=929349 temp=47 enc_kbps=4007 enc_fps=90.0 drop=0 inj=12696
+1790584158.25 m4b8f46 tx=943794 temp=46 enc_kbps=8037 enc_fps=90.0 drop=0 inj=23210
+1790584180.67 m7b25f46 tx=970015 temp=47 enc_kbps=25200 enc_fps=90.0 drop=0 inj=70579
+1790584203.13 m4b4f46 tx=1048510 temp=47 enc_kbps=4012 enc_fps=90.0 drop=0 inj=12730
+1790584225.55 m2b4f46 tx=1062934 temp=46 enc_kbps=4007 enc_fps=90.0 drop=0 inj=12705
+1790584247.97 m7b8f48 tx=1077409 temp=47 enc_kbps=8039 enc_fps=90.0 drop=0 inj=31532
+1790584270.40 m4b8f48 tx=1112985 temp=46 enc_kbps=8025 enc_fps=90.0 drop=0 inj=31406
+1790584292.82 m7b16f46 tx=1148278 temp=47 enc_kbps=16036 enc_fps=90.0 drop=0 inj=45676
+1790584315.27 m2b4f46 tx=1199161 temp=47 enc_kbps=4017 enc_fps=90.0 drop=0 inj=12475
+1790584337.65 END tx=1213279 temp=47 reverted=m2b4000f48 mcs=2 fec=4/8 br=4000

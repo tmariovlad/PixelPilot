@@ -112,6 +112,46 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
 - **Switch up** to MCS2 only with margin above ~1600. The score moved ~45 points between 17 and 12 dBm and ~100 between 12 and 8 dBm. Hysteresis and time constants are checked in closed loop by the receiver's author and live by the adaptive-range test below [SPECULATION until then].
 - **Pending:** the user's picture-quality check at 2–4 Mbit/s.
 
+**How far the bitrate can go: bitrate × MCS bracket at 1080p90 native, 12 dBm (2026-09-28 11:25–11:40, the user's "at least 25 Mbit", plan §4 of [plan-2026-09-28-presets-quality-power-axis.md](plan-2026-09-28-presets-quality-power-axis.md)).**
+- **Method.**
+  - The air unit was on 1920×1080@90 native (RAM json, no flash writes), 12 dBm, 20 MHz, receiver and `vmoded` stopped.
+  - 2 passes of 17 steps × 22 s, one trace each: 12 points + anchor `m2b4f46` five times per pass. Offset Quest − air = 2.036 / 2.031 s.
+  - The air logged the encoder's own rate and fps and the injection drops per step.
+  - Data: air logs [pass 1](data/air-grid-2026-09-28-pass1.txt) · [pass 2](data/air-grid-2026-09-28-pass2.txt); per step [pass 1](data/measurements-2026-09-28-quest2-bitrate-grid-pass1.csv) · [pass 2](data/measurements-2026-09-28-quest2-bitrate-grid-pass2.csv); link [pass 1](data/link-2026-09-28-bitrate-grid-pass1.csv) · [pass 2](data/link-2026-09-28-bitrate-grid-pass2.csv); Quest thermal [pass 1](data/thermal-2026-09-28-bitrate-grid-pass1.csv) · [pass 2](data/thermal-2026-09-28-bitrate-grid-pass2.csv).
+- **The chain itself carries 25 Mbit/s** [PROVEN: air log].
+  - The encoder ran 90.0 fps at every step and 25 100–25 200 kbit/s when asked for 25 Mbit/s.
+  - wfb_tx dropped nothing, and the injected packet counts match bitrate × n/k: the air unit really sent everything, 37.5 Mbit/s on air at MCS7 included.
+  - So the earlier "~60 % of the PHY rate" estimate was too conservative for the transmit side. It does show up in latency (below).
+  - The Quest decoded 90 fps throughout. Air 46–47 °C, Quest thermal status 0.
+
+Each cell is pass 1 / pass 2. "Undecoded" counts frames without a decoded mark (of ~1 665 per step). Δ capture → decoded is against the anchor `m2b4f46`.
+
+| point (Mbit/s on air) | loss after FEC | undecoded frames | Δ capture → decoded | loss before FEC |
+|---|---|---|---|---|
+| `m2b4f46` anchor (6) | 0.06 / 0.14 % | 2 / 4 (of ~8 300) | 0 | 3.0 / 3.5 % |
+| **`m2b4f48` (8)** | **0.03 / 0.00 %** | **0 / 0** | +1.6 / +1.2 ms | 2.0 / 1.4 % |
+| `m2b8f46` (12) | 0.21 / 0.27 % | 2 / 3 | +4.6 / +4.5 ms | 4.5 / 2.7 % |
+| `m4b4f46` (6) | 0.64 / 0.58 % | 2 / 2 | −1.8 / −2.0 ms | 4.8 / 5.0 % |
+| `m4b8f46` (12) | 0.98 / 0.65 % | 2 / 1 | +0.7 / +0.6 ms | 5.4 / 4.4 % |
+| `m4b8f48` (16) | 0.39 / 0.27 % | 1 / 2 | +1.9 / +2.1 ms | 4.5 / 4.1 % |
+| `m4b16f46` (24) | 1.39 / 1.24 % | 16 / 18 | +7.9 / +9.7 ms | 4.3 / 3.7 % |
+| `m7b4f46` (6) | 0.92 / 0.99 % | 3 / 4 | −2.4 / −2.3 ms | 4.8 / 5.4 % |
+| `m7b8f48` (16) | 0.55 / 0.57 % | 1 / 3 | 0.0 / +0.2 ms | 5.4 / 6.2 % |
+| `m7b16f46` (24) | 1.75 / 1.68 % | 14 / 15 | +3.1 / +3.3 ms | 3.1 / 4.3 % |
+| `m7b16f48` (32) | 0.51 / 0.67 % | 3 / 5 | +5.2 / +5.3 ms | 3.9 / 4.0 % |
+| `m7b25f45` (31) | 3.12 / 2.57 % | 114 / 65 | +6.9 / +6.8 ms | 3.0 / 4.0 % |
+| `m7b25f46` (37.5) | 1.75 / 1.77 % | 49 / 49 | +8.6 / **+19.6 ms** (p95 52 ms) | 4.2 / 2.6 % |
+
+**Verdict: 25 Mbit/s works end to end, but at this distance and 12 dBm it is not clean.** It loses 1.8–3.1 % of packets after FEC and leaves 3–7 % of frames undecoded, for +7 ms, or more when the air's queue grows.
+- **Clean (≤ 0.1 % after FEC, no undecoded frames): only MCS2 at 4 Mbit/s with FEC 4/8.** That confirms today's alink row `m2f48` capped at 4000.
+- **MCS4 and MCS7 lose 0.3–1 % even at 4–8 Mbit/s.** Their loss before FEC (4–6 %) is not much above MCS2's (1.4–4.5 %), but what FEC misses grows with the packet rate and with less parity. **FEC 4/8 always beats 4/6 at the same point.** The best of the faster points are `m4b8f48` (0.27–0.39 %, 1–2 undecoded, +2 ms) and `m7b16f48` (0.5–0.7 %, 3–5, +5 ms) [PROVEN: N = 2].
+- **The frame-size cost.**
+  - A faster MCS makes the same bitrate faster: 4 Mbit/s is 2.3 ms faster on MCS7 than on MCS2.
+  - A higher bitrate makes it slower: up to +7 ms at 25 Mbit/s.
+  - At 37.5 Mbit/s on air (MCS7, FEC 4/6) the air's queue builds. Latency varied from +8.6 to +19.6 ms between passes, with p95 52 ms [INFERRED: packets/frame and spread were unchanged, so the delay is queueing before injection].
+- **Caveat on "undecoded".** It counts frames whose decoded mark came more than 20 ms after their last packet. At `m7b25f46`, where p95 is 52 ms, part of those 49 are late decodes rather than lost frames.
+- **For alink rows m4/m7 with caps:** none of them is clean at this geometry, so their score thresholds must come from a closer or stronger link. That is plan §4's second geometry (Quest at ~1 m, with the user). Until then the rows stay `m1f46` ≤ 2000 and `m2f48` ≤ 4000.
+
 **Power bracket before persisting the boot TX power (2026-09-28 01:47–01:53, 480p167 REC: MCS2, FEC 4/8, 2 Mbit/s, receiver off, build `8bc1a3d6`).**
 - **Question.** Does loss rise above 20 dBm, for example because the Quest's receiver saturates at this distance?
 - **Method.** One 480 s trace. 12 steps of 30 s: `p12 p17 p23 p20 p17 p12 p20 p23 p12 p23 p17 p20`, each level N = 3, shuffled.
