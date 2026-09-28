@@ -235,6 +235,8 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                     if (frame.MatchesChannelID(video_channel_id_be8)) {
                         SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
                         SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
+                        video_rx_rate.add(packet.RxAtrib.data_rate, packet.RxAtrib.bw, packet.RxAtrib.stbc,
+                                          packet.RxAtrib.ldpc, packet.RxAtrib.sgi);
 
                         const uint8_t *payload = packet.Data.data() + sizeof(ieee80211_header);
                         const auto counters = [this] {
@@ -717,6 +719,19 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
             link->start_link_quality_thread(link->current_fd);
         }
     }
+}
+
+// The video packets' most frequent RX rate since the last call, as {rate code, bw, stbc, ldpc, sgi, packets at that
+// rate, packets in the window} (RxRateHistogram.h); decoded into MCS/NSS by the app (stats.RxRate).
+extern "C" JNIEXPORT jintArray JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeTakeRxRate(JNIEnv *env,
+                                                                                                jclass clazz,
+                                                                                                jlong wfbngLinkN) {
+    const RxRateHistogram::Top t = native(wfbngLinkN)->video_rx_rate.take();
+    const jint v[7] = {t.rateCode, t.bw, t.stbc, t.ldpc, t.sgi, static_cast<jint>(t.packets),
+                       static_cast<jint>(t.total)};
+    jintArray out = env->NewIntArray(7);
+    env->SetIntArrayRegion(out, 0, 7, v);
+    return out;
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetUseFec(JNIEnv *env,

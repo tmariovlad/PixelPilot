@@ -3,6 +3,7 @@
 
 #include "DecErrProbe.h"
 #include "RxDiag.h"
+#include "RxRateHistogram.h"
 #include "FecChangeController.h"
 #include "SignalQualityCalculator.h"
 #include "TxFrame.h"
@@ -52,6 +53,7 @@ class WfbngLink {
     std::mutex agg_mutex;
     std::unique_ptr<AggregatorUDPv4> video_aggregator;
     DecErrProbe video_decrypt_probe;   // guarded by agg_mutex, like the aggregator
+    RxRateHistogram video_rx_rate;     // RX rate of the video packets per stats window (Stats page)
     std::unique_ptr<AggregatorUDPv4> mavlink_aggregator;
     std::unique_ptr<AggregatorUDPv4> udp_aggregator;
 

@@ -59,3 +59,8 @@ add_executable(rx_diag_test RxDiag_test.cpp)
 target_include_directories(rx_diag_test PRIVATE ${SRC})
 target_link_libraries(rx_diag_test GTest::gtest_main)
 gtest_discover_tests(rx_diag_test)
+
+add_executable(rx_rate_histogram_test RxRateHistogram_test.cpp)
+target_include_directories(rx_rate_histogram_test PRIVATE ${SRC})
+target_link_libraries(rx_rate_histogram_test GTest::gtest_main)
+gtest_discover_tests(rx_rate_histogram_test)
