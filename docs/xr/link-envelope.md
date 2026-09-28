@@ -155,6 +155,27 @@ For more picture at a good margin, `m2b3f46` (0.29 %) and `m2b4f46` (0.47 %, +0.
   - The latency cost of turning STBC off is +0.21 ms decoded, from the extra FEC recovery [INFERRED: packets/frame unchanged, 1.79 vs 1.81].
 - **Consequence.** Keep STBC on (it is the current default, [HANDOFF](HANDOFF.md)). Without STBC, 1SS video leaves on path A only [INFERRED: code path above plus this gap]. At the time of this test the app exported only the best-chain RSSI, so the trace cannot tell which Quest chain carried the signal. Since then the app writes `ppxr_wfb_rssi_a/_b` and `ppxr_wfb_snr_a/_b` per receive chain, and [ab_link.py](../../scripts/quest-latch/ab_link.py) shows them as `rssi A/B` and `snrA/B dB`. They are tested on the host, not yet on the headset.
 
+### R6 2026-09-28 21:32: the air's 100 TU TX pause is the TBTT prohibit window
+
+Question (OpenIPC beacon-rhythm audit, B4 + the coordinator's R1 register read): does the air's ~3.7 ms TX pause every 102.4 ms come from the RTL8822EU's TBTT prohibit window? It would come from `EN_BCN_FUNCTION` left set from the AP phase at boot (0x550 = 0x18), with a hold of 0x64 × 32 µs (0x540 = 0x80006404).
+- **Method.** Air race 480p167 2 Mbit, 12 dBm, 157/20. Runtime register writes on the air, each read back, 9 × 60 s: base / hold0 (0x541 → 0) / base / hold0 / base / bcnoff (0x550 → 0x10) / base / bcnoff / base; reverted at the end.
+  - Quest: detached capture ([ab_detached.sh](../../scripts/quest/ab_detached.sh)), nothing streaming, `TRACE LOSS: none`. Offset Quest − air = +0.616 + 0.336 = +0.952 s.
+  - Analysis: [tu_pause.py](../../scripts/quest-latch/tu_pause.py) (new, tested). It uses B4's pause definition (arrival gap 3–4.6 ms with no sequence number missing), fits the phase per step (it moved at the air reboot), and folds the frame latency at 102.4 ms.
+- **Data.** [air log](data/air-r6-2026-09-28.txt) · [steps](data/steps-2026-09-28-r6.txt) · [tu_pause output](data/tu-pause-2026-09-28-r6.txt) · [link_audit](data/audit-2026-09-28-r6.txt).
+
+| state (steps) | latency fold at 102.4 ms (max − min of 16 phase bins) | latency p95 | latency mean | Z(pause) at 102.4 ms | loss |
+|---|---|---|---|---|---|
+| base (5 × 60 s) | **1.07–1.54 ms** | 3.39–6.11 ms | 1.11–1.32 ms | 1.0–8.0 | 0–10 pkts |
+| hold0 (2 × 60 s) | **0.27–0.38 ms** | 3.26–3.65 ms | 1.05–1.14 ms | 0.3 | 0 |
+| bcnoff (2 × 60 s) | **0.22–0.23 ms** | 3.20–3.24 ms | 1.08–1.14 ms | 0.4–0.8 | 0–3 |
+
+- **Both register changes remove the 102.4 ms latency teeth** [PROVEN: every base step's fold is ≥ 1.07 ms, every hold0/bcnoff step's is ≤ 0.38 ms, alternating order]. So the TBTT prohibit window, armed by the leftover `EN_BCN_FUNCTION`, is the air's periodic TX pause.
+- At 2 Mbit the gain in mean latency is small (≈ 0.1 ms), and the p95 drops by up to ~3 ms in the base steps with the largest teeth.
+  - The pause count itself cannot separate the states here: at 167 fps × ~2 packets/frame the ordinary inter-frame gaps fall in the same 3–4.6 ms range (25–34 gaps/s everywhere). Only their phase lock differs.
+  - At 25 Mbit (B4: +0.8 ms mean, +3.1 ms peak) the effect should be larger [INFERRED: more queue to drain after each pause; not measured here].
+- Loss is ~0 in every state at this rate, so R6 says nothing about the loss floor. That is a separate question (the external co-channel transmitter in the audit's B1).
+- A persistent fix belongs on the air side (clear `EN_BCN_FUNCTION` / the hold after the AP phase). It is for the OpenIPC session to design; the runtime writes above are lost at reboot.
+
 ### Slot 2026-09-28 20:10: U1 streamed capture, T6 RX diagnostics, T2' Quest Wi-Fi off
 
 One slot (20:10–20:56), following [runbook-2026-09-28-u1-t6.md](runbook-2026-09-28-u1-t6.md). Air: 1080p90, `m7b25f46`, 17 dBm, 20 MHz 157, STBC 1, alink + vmoded off, drop = 0 in every step. Quest: T6 build `a6ec585d` (pixelpilot-xr `9439e39`, devourer `af0ae6d`), the Quest untouched on the desk. Every capture was detached (nothing streamed over adb except U1's deliberate "stream" steps), and every trace printed `TRACE LOSS: none`. Analysis on the Quest clock with [ab_link.py](../../scripts/quest-latch/ab_link.py) and [link_audit.py](../../scripts/quest-latch/link_audit.py).
