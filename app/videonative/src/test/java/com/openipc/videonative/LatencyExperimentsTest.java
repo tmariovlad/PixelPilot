@@ -88,6 +88,17 @@ public class LatencyExperimentsTest {
         assertFalse(LatencyExperiments.from(new MapPrefs()).summary().contains("FIF"));
     }
 
+    // Ask the air for a key frame on a lost RTP packet (IdrRequester.h): off by default, "IDR" in the summary when on.
+    @Test public void requestIdrOnLossIsOffByDefaultAndShowsWhenOn() {
+        assertFalse(LatencyExperiments.from(new MapPrefs()).requestIdrOnLoss);
+        assertFalse(LatencyExperiments.from(new MapPrefs(), true).requestIdrOnLoss);
+        LatencyExperiments on = LatencyExperiments.from(
+                new MapPrefs().put(LatencyExperiments.KEY_REQUEST_IDR_ON_LOSS, true));
+        assertTrue(on.requestIdrOnLoss);
+        assertTrue(on.summary(), on.summary().contains("IDR"));
+        assertFalse(LatencyExperiments.from(new MapPrefs()).summary().contains("IDR"));
+    }
+
     @Test public void summaryListsOnlyEnabledLevers() {
         assertEquals("LL | 120Hz quad perf hints flip", LatencyExperiments.from(new MapPrefs()).summary());
         MapPrefs p = new MapPrefs().put(LatencyExperiments.KEY_LOW_LATENCY_DECODER, false)

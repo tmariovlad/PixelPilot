@@ -60,6 +60,8 @@ public class VideoPlayer implements IVideoParamsChanged {
 
     public static native void nativeSetFeedIncompleteFrames(long nativeInstance, boolean feed);
 
+    public static native void nativeSetRequestIdrOnLoss(long nativeInstance, boolean request);
+
     public static native String nativeGetDecoderSummary(long nativeInstance);
 
     public static native int[] nativeGetLatencyCriticalThreadIds(long nativeInstance);
@@ -149,6 +151,7 @@ public class VideoPlayer implements IVideoParamsChanged {
                 e.decPreferLowLatencyComponent, e.auAggregation, e.decDebugKeyMask, e.decComponent);
         nativeSetTightReorder(nativeVideoPlayer, e.rtpTightReorder);
         nativeSetFeedIncompleteFrames(nativeVideoPlayer, e.feedIncompleteFrames);
+        nativeSetRequestIdrOnLoss(nativeVideoPlayer, e.requestIdrOnLoss);
     }
 
     /** Kernel thread ids on the video latency path (receive/feed, output release); may be empty. */

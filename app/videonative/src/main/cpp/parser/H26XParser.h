@@ -35,6 +35,7 @@ class H26XParser
     void reset();
 
     void setFeedIncompleteFrames(bool feed) { mDecodeRTP.setFeedIncompleteFrames(feed); }
+    void setOnPacketLoss(std::function<void(int)> cb) { mDecodeRTP.setOnPacketLoss(std::move(cb)); }
 
   public:
     long nParsedNALUs               = 0;

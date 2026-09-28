@@ -44,6 +44,10 @@ class RTPDecoder
     // feed_incomplete_frames, docs/xr/link-envelope.md "frame fate"). Safe to call from another thread.
     void setFeedIncompleteFrames(bool feed) { m_feed_incomplete_frames = feed; }
 
+    // Called on the parsing thread at every RTP sequence gap, with the number of packets lost (IdrRequester asks the
+    // air for a key frame). Set before parsing starts.
+    void setOnPacketLoss(std::function<void(int)> cb) { m_on_packet_loss = std::move(cb); }
+
     // check if a packet is missing by using the rtp sequence number and
     // if the payload is dynamic (h264 or h265)
     // Returns false if payload is wrong
@@ -84,6 +88,7 @@ class RTPDecoder
     std::array<uint8_t, NALU_MAXLEN> m_curr_nalu;
     size_t                           m_nalu_data_length = 0;
     std::atomic<bool>                m_feed_incomplete_frames;
+    std::function<void(int)>         m_on_packet_loss;
     int                              m_total_n_fragments_for_current_fu = 0;
     // RTP marker bit of the packet being parsed; forwarded with every NALU it completes.
     bool                             m_current_packet_marker = false;

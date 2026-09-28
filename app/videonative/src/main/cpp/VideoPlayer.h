@@ -15,6 +15,7 @@
 #include "BufferedPacketQueue.h"
 #include "UdpReceiver.h"
 #include "UdsReceiver.h"
+#include "IdrRequester.h"
 #include "VideoDecoder.h"
 #include "minimp4.h"
 #include "parser/H26XParser.h"
@@ -64,6 +65,7 @@ class VideoPlayer
     }
 
     void setFeedIncompleteFrames(bool feed) { mParser.setFeedIncompleteFrames(feed); }
+    void setRequestIdrOnLoss(bool request) { mIdrRequester.setEnabled(request); }
 
     std::string getDecoderSummary() { return videoDecoder.getDecoderSummary(); }
     std::vector<int64_t> drainFrameReadyTimes() { return videoDecoder.drainFrameReadyTimes(); }
@@ -88,6 +90,8 @@ class VideoPlayer
     };
     const std::string   GROUND_RECORDING_DIRECTORY;
     JavaVM*             javaVm = nullptr;
+    // Declared before mParser: the parser's loss callback uses it, so it must outlive the parser.
+    IdrRequester        mIdrRequester;
     H26XParser          mParser;
     // Video starts tight like LatencyExperiments' default and follows setTightReorder.
     BufferedPacketQueue mBufferedPacketQueueVideo{kTightReorderBounds};

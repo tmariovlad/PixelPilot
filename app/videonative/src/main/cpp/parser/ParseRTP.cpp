@@ -79,6 +79,7 @@ bool RTPDecoder::validateRTPPacket(const rtp_header_t& rtp_header)
             m_n_gaps++;
             const auto gap_size = seqNr - (int) lastSequenceNumber;
             m_n_lost_packets += gap_size;
+            if (m_on_packet_loss) m_on_packet_loss((seqNr - lastSequenceNumber - 1 + (UINT16_MAX + 1)) % (UINT16_MAX + 1));
             // Feed it anyways (buggy / hacky)
             if (m_feed_incomplete_frames)
             {

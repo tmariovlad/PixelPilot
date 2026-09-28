@@ -41,6 +41,21 @@ struct ParseRtpTest : ::testing::Test
 };
 }  // namespace
 
+// A sequence gap is reported once, with the number of packets lost (IdrRequester asks the air for a key frame).
+TEST_F(ParseRtpTest, PacketLossIsReportedOncePerGapWithItsSize)
+{
+    std::vector<int> losses;
+    dec.setOnPacketLoss([&](int n) { losses.push_back(n); });
+    h264(true, {0x65, 0x88, 0x84, 0x00});
+    h264(true, {0x41, 0x9a, 0x00, 0x01});
+    EXPECT_TRUE(losses.empty());
+    seq += 2;   // packets seq and seq+1 lost
+    h264(true, {0x41, 0x9a, 0x00, 0x02});
+    h264(true, {0x41, 0x9a, 0x00, 0x03});
+    ASSERT_EQ(1u, losses.size());
+    EXPECT_EQ(2, losses[0]);
+}
+
 TEST_F(ParseRtpTest, H264SingleNaluCarriesMarker)
 {
     h264(false, {0x67, 0x42, 0x00, 0x1f});  // SPS, no marker

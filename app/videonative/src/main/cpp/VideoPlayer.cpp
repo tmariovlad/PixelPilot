@@ -5,6 +5,7 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include <jni.h>
+#include <atomic>
 #include <fstream>
 #include "AndroidThreadPrioValues.hpp"
 #include "helper/NDKHelper.hpp"
@@ -12,10 +13,23 @@
 
 #define TAG "pixelpilot"
 
+// Key-frame requests to the air unit (IdrRequester), as counters for a system trace: ok and failed so far.
+static void traceIdrRequest(bool ok)
+{
+    static std::atomic<int32_t> nOk{0}, nFailed{0};
+    const int32_t n = ok ? ++nOk : ++nFailed;
+    if (__builtin_available(android 29, *))
+    {
+        if (ATrace_isEnabled()) ATrace_setCounter(ok ? "ppxr_idr_req_ok" : "ppxr_idr_req_failed", n);
+    }
+}
+
 VideoPlayer::VideoPlayer(JNIEnv* env, jobject context)
     : mParser{std::bind(&VideoPlayer::onNewNALU, this, std::placeholders::_1)}, videoDecoder(env)
 {
     env->GetJavaVM(&javaVm);
+    mIdrRequester.setOnResult(traceIdrRequest);
+    mParser.setOnPacketLoss([this](int) { mIdrRequester.notifyLoss(); });
     videoDecoder.registerOnDecoderRatioChangedCallback(
         [this](const VideoRatio ratio)
         {
@@ -369,6 +383,13 @@ extern "C"
             }
             p->setDecoderLevers(l);
         }
+    }
+
+    JNI_METHOD(void, nativeSetRequestIdrOnLoss)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance, jboolean request)
+    {
+        VideoPlayer* p = native(nativeInstance);
+        if (p) p->setRequestIdrOnLoss(request);
     }
 
     JNI_METHOD(void, nativeSetFeedIncompleteFrames)

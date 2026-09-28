@@ -238,7 +238,7 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
   - Every RTP timestamp the air sent in a step is one frame (90 kHz clock, 90 fps grid).
   - Each frame gets one class: decoded / (a) hole (a packet missing inside the frame after FEC) / (a') edge (a sequence gap exactly between two frames) / (b) complete but not decoded / (c) never arrived.
   - Decoded = matched one-to-one to a `ppxr_frame_ready` mark. Frames are 11 ms apart, so "a mark within 20 ms" alone would hand a dropped frame the next frame's mark.
-- **Data.** [frame-fate-2026-09-29-ceil.txt](data/frame-fate-2026-09-29-ceil.txt).
+- **Data.** [frame-fate-2026-09-29-ceil.txt](data/frame-fate-2026-09-29-ceil.txt). The same pattern holds on the above-25 grid ([frame-fate-2026-09-28-grid-above25.txt](data/frame-fate-2026-09-28-grid-above25.txt): clean steps are ≥ 90 % (a)/(a'), (c) = 0) and on G5/G6 ([frame-fate-2026-09-29-g56.txt](data/frame-fate-2026-09-29-g56.txt)).
 
 | step (air drop 0) | decoded/s | (a) hole/s | (a') edge/s | (b) complete, not decoded/s | (c) never/s | measured decoded fps |
 |---|---|---|---|---|---|---|
@@ -265,6 +265,16 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
 - **Not measured yet** [SPECULATION until the A/B]: whether the Qualcomm H.264 decoder shows a truncated slice as a partly smeared frame, drops it anyway, or propagates the damage to the frames that reference it until the next IDR. The planned A/B, the same air state with alink off and then on:
   - `pref_ab.sh feed_incomplete_frames 90 false true true false false true true false`, detached capture;
   - metrics: decoded fps (frame_fate), latency, decoder errors, and stills (quality_shots, local only).
+
+**Partner lever `request_idr_on_loss`** (pref, default false; "IDR" in the summary). The air's GOP is 2.0 s (`gopSize: 2.0` in the 1080p90 and race jsons, read by the coordinator). A lost or truncated frame therefore corrupts every frame that references it, up to 2 s, until the next key frame.
+- With the lever on, every RTP sequence gap asks waybeam for a key frame right away: HTTP `GET /request/idr` on the air's port 80 (waybeam `venc_api.c:3219` → `handle_idr`, with its own `idr_rate_limit`, per the coordinator), sent to 10.5.0.10 through the app's VPN tunnel.
+- Code:
+  - `RTPDecoder::setOnPacketLoss` fires once per gap with the packets lost;
+  - `IdrRequester` runs the GET on its own thread, so the parser never blocks, with connect/reply timeout 300 ms;
+  - `IdrRequestPolicy` allows at most one request per 200 ms; a loss inside that window is served at its end.
+- Trace counters `ppxr_idr_req_ok` / `ppxr_idr_req_failed`. Host tests: `IdrRequest_test` (a fake air on 127.0.0.1), `ParseRTP_test`; a mutant with no rate limit dies.
+- APK ff4a6817 (with FIF).
+- **Unverified** [SPECULATION until a slot]: whether waybeam's httpd answers on the tunnel address; the first A/B checks `ppxr_idr_req_ok` > 0 and the air's `/api/v1/idr/stats`.
 
 ### Bitrate ceiling 2026-09-29 00:21–00:37: the air recorder, and FEC 8/10 up to 50 Mbit/s (1SS m7, 2SS m12/m13)
 

@@ -21,6 +21,8 @@ public final class LatencyExperiments {
     public static final String KEY_RTP_TIGHT_REORDER = "rtp_tight_reorder";
     /** Forward a NAL unit that lost an RTP packet (truncated) instead of dropping it; ParseRTP.cpp. A/B lever. */
     public static final String KEY_FEED_INCOMPLETE_FRAMES = "feed_incomplete_frames";
+    /** Ask the air unit for a key frame (waybeam GET /request/idr) when an RTP packet is lost; IdrRequester.h. */
+    public static final String KEY_REQUEST_IDR_ON_LOSS = "request_idr_on_loss";
     /** Debug: bitmask over the individual decoder keys (DecoderLevers.h DecoderKey); -1 = all. */
     public static final String KEY_DEC_DEBUG_KEY_MASK = "dec_debug_key_mask";
     /** Debug: force a decoder component by name (e.g. "c2.qti.hevc.decoder"); "" = default. */
@@ -75,6 +77,7 @@ public final class LatencyExperiments {
     public final boolean auAggregation;
     public final boolean rtpTightReorder;
     public final boolean feedIncompleteFrames;
+    public final boolean requestIdrOnLoss;
     public final int decDebugKeyMask;
     public final String decComponent;
     public final int xrRefreshHz;
@@ -108,6 +111,10 @@ public final class LatencyExperiments {
         // At 1080p90 every frame that lost a packet after FEC is dropped whole before the decoder, so decoded fps
         // falls below 90 (docs/xr/link-envelope.md, "Frame fate"). Feeding it truncated is unmeasured: off.
         feedIncompleteFrames = p.getBoolean(KEY_FEED_INCOMPLETE_FRAMES, false);
+        // With a 2 s GOP a frame lost (or fed incomplete) corrupts the picture until the next key frame. Asking for
+        // one at once is the partner lever of feedIncompleteFrames; it needs waybeam's HTTP port through the tunnel.
+        // Unmeasured: off.
+        requestIdrOnLoss = p.getBoolean(KEY_REQUEST_IDR_ON_LOSS, false);
         decDebugKeyMask = p.getInt(KEY_DEC_DEBUG_KEY_MASK, -1);
         decComponent = p.getString(KEY_DEC_COMPONENT, "");
         xrRefreshHz = validRefresh(p.getInt(KEY_XR_REFRESH_HZ, DEFAULT_REFRESH_HZ));
@@ -210,6 +217,7 @@ public final class LatencyExperiments {
         if (auAggregation) dec.append("AU ");
         if (!rtpTightReorder) dec.append("RQ20 ");
         if (feedIncompleteFrames) dec.append("FIF ");
+        if (requestIdrOnLoss) dec.append("IDR ");
         String decoder = dec.length() == 0 ? "stock" : dec.toString().trim();
         StringBuilder xr = new StringBuilder();
         xr.append(xrRefreshHz).append("Hz ").append(xrLayerShape.prefValue());
