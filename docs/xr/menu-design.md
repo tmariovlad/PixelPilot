@@ -1,6 +1,6 @@
 # In-headset menu: every option and every stat, right thumbstick only (design, 2026-09-29)
 
-Status: **design for approval** (coordinator 66, the user). It extends the preset menu of [presets-design.md](presets-design.md)
+Status: **approved 2026-09-29 (coordinator 66: "go phase 1"), phase 1 in progress.** It extends the preset menu of [presets-design.md](presets-design.md)
 (MODE/QUALITY over VMODE1), which stays valid for the air protocol and its safety rules. Code map this design builds on:
 [tasks/menu-infra-map-2026-09-29.md](../../tasks/menu-infra-map-2026-09-29.md) (file:line for every "today" below).
 
@@ -153,9 +153,13 @@ Tests: JVM for tree/navigator/renderer; `vmode_fake.py` + `test_vmode_fake.py` e
 channel two-phase; on the headset with the user: every page opened by hand, one live lever, one relaunch lever, one mode
 switch and one forced revert.
 
-## 9. Open points
+## 9. Decisions (coordinator 66, 2026-09-29) and open points
 
-1. Menu layer position: to the right of the video (proposed) or over its lower third? It must not hide the picture while the pilot watches the stats.
-2. Whether the left stick should mirror the right one for left-handed use (the user said right only).
-3. The HD mode (`1080p90 native, 16–20 Mbit, 1SS STBC m7 f48`, tentative) is an air preset, so it comes from the air's `list` with its own measured G2G.
-4. Which Display levers are worth offering live vs relaunch after a quick check on the headset (FOV/curved/flip should be live through `setLayout`).
+Decided:
+1. The menu sits **to the right of the video** by default, never over its lower third, so it does not cover the picture while flying. The position can become a Display option later.
+2. **No left-stick mirroring** (the user: right stick only).
+3. HD comes from the air's `list` once the air side exists. Until then it shows greyed out as `needs air`.
+
+Still open:
+
+1. Which Display levers are worth offering live vs relaunch after a quick check on the headset (FOV/curved/flip should be live through `setLayout`).
