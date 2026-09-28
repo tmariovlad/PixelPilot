@@ -210,3 +210,13 @@ That gives 12 points. 25 Mbit/s fits only at MCS7, and only with light FEC (4/5)
 **Safety.**
 - Air temperature stop as before (skip ≥ 60 °C, abort ≥ 70 °C).
 - `drop` rising means the air's TX queue is overflowing: skip the remaining points above that bitrate at that MCS.
+
+**Step lists (A = `m2b4f46`, 12 points per pass; the extremes come early).**
+- Pass 1: `A m7b25f45 m2b4f48 m4b16f46 A m7b4f46 m2b8f46 m7b16f48 A m4b8f46 m7b25f46 m4b4f46 A m7b8f48 m4b8f48 m7b16f46 A`
+- Pass 2: `A m7b25f46 m4b4f46 m7b16f46 A m2b8f46 m7b8f48 m4b16f46 A m2b4f48 m7b25f45 m4b8f48 A m7b16f48 m4b8f46 m7b4f46 A`
+- Order inside a switch, as in W2: raise capacity before load (MCS, then FEC, then bitrate); lower load before capacity.
+
+**Where the extra fields can come from** (pointers for the air script):
+- `enc_fps` / `enc_kbps`: waybeam's own verbose line in `/tmp/waybeam.log` (`[verbose] <s> | 166 fps | 8899 kbps | …`)
+  [PROVEN: read on 2026-09-26, waybeam at 640×480].
+- `drop`: wfb_tx's injection statistics ("tx …/2s, drop 0" as reported by the OpenIPC session on 2026-09-27).
