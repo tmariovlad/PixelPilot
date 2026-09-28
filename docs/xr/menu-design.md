@@ -188,6 +188,6 @@ FRZ (`2df7979`) and the live codec switch (`573845f`).
   1. through `DebugInput` with [menu_check.py](../../scripts/quest/menu_check.py) (open, Stats page, one live lever with the same pid, one relaunch lever with a new pid, close; prefs restored exactly);
   2. by hand with the user.
 - Known gaps in phase 1:
-  - the Stats pages show "-" until session 36's `StatsSource` implementation is attached (`XrVideoActivity.statsSource`);
+  - ~~the Stats pages show "-" until session 36's `StatsSource` is attached~~ **resolved 2026-09-29**: `StatsCollector` is wired in `5849e1e`. Where each number comes from: [stats-backend.md](stats-backend.md). The headset build is now `be14f55` (APK md5 d56708ec), which contains the menu and the live Stats pages;
   - the Air page lines for radio/codec/channel stay greyed out until the air side (OpenIPC `03-DESIGN-menu-extension.md`) lists them;
   - `PresetMenu` is no longer wired and will be removed after the headset check.
