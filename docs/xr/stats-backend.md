@@ -73,3 +73,19 @@ completes; the frame completes at its last slice.
    latch wait ~3 ms ([display-latency.md](display-latency.md) slot T); the link segment compared with
    [g2g-budget.md](g2g-budget.md).
 4. MCS / RSSI against the air's configured MCS and the HUD's RSSI column.
+
+## 6. Recording what the page shows, and joining a PC sidecar capture
+
+- **PPXR_STATS lines.** While a Stats page is on screen (and for 2.5 s after), or always with the `general` pref
+  `stats_log = true` (for slots), the app logs one line every 2 s with tag `PPXR_STATS`: fixed-order `k=v` pairs, unknown
+  values `-`, `t` = the Quest's CLOCK_MONOTONIC ms (`app/.../stats/StatsLine.java` is the one definition of the keys).
+  Capture it **detached** ([ab_detached.sh](../../scripts/quest/ab_detached.sh) now includes the tag; a streamed adb
+  logcat over the Quest's Wi-Fi disturbs the link it measures, see [uplink-t4-analysis.md](uplink-t4-analysis.md)), then
+  `python3 scripts/quest-latch/stats_log.py <logcat file> out.tsv` ([stats_log.py](../../scripts/quest-latch/stats_log.py),
+  test `test_stats_log.py`).
+- **PC-side sidecar with absolute times.** [sidecar_log.py](../../scripts/quest-latch/sidecar_log.py) now also writes the
+  absolute air `capture_us` / `ready_us` / `send_us` (air CLOCK_MONOTONIC) and, from a SYNC exchange at the start and every
+  10 s, `air_minus_pc_us` + `sync_rtt_us` (lowest RTT of the last 6). With ab_detached's `quest_minus_pc_ms`, an air time
+  maps to the Quest's wall clock as `air − air_minus_pc_us + quest_minus_pc_ms·1000`, so a PC capture joins a Quest trace
+  of the same window. The first 10 columns are unchanged. (A capture made with the old script, e.g.
+  `scripts/quest/out/sidecar_probe_1080p90_h264_30M.tsv`, has only the deltas and cannot be joined.)
