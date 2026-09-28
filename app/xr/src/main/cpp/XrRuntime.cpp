@@ -302,11 +302,14 @@ jobject XrRuntime::createSurface(JNIEnv* env, int w, int h, bool useTimestamps, 
 {
     XrSwapchainCreateInfo                 info{XR_TYPE_SWAPCHAIN_CREATE_INFO};
     XrAndroidSurfaceSwapchainCreateInfoFB fbInfo{XR_TYPE_ANDROID_SURFACE_SWAPCHAIN_CREATE_INFO_FB};
-    if (enabled(XR_FB_ANDROID_SURFACE_SWAPCHAIN_CREATE_EXTENSION_NAME))
+    // Never SYNCHRONOUS: the default BufferQueue replaces the pending buffer (mailbox), which is
+    // what keeps a late frame from queueing behind an older one (measured: depth max 1 at 72/90/120 Hz,
+    // docs/xr/display-latency.md). The spec forbids createFlags == 0, so with no flag the FB struct is left out.
+    const XrAndroidSurfaceSwapchainFlagsFB flags =
+        useTimestamps ? XR_ANDROID_SURFACE_SWAPCHAIN_USE_TIMESTAMPS_BIT_FB : 0;
+    if (flags != 0 && enabled(XR_FB_ANDROID_SURFACE_SWAPCHAIN_CREATE_EXTENSION_NAME))
     {
-        // Never SYNCHRONOUS: the default BufferQueue replaces the pending buffer (mailbox), which is
-        // what keeps a late frame from queueing behind an older one.
-        fbInfo.createFlags = useTimestamps ? XR_ANDROID_SURFACE_SWAPCHAIN_USE_TIMESTAMPS_BIT_FB : 0;
+        fbInfo.createFlags = flags;
         info.next          = &fbInfo;
     }
     info.usageFlags = XR_SWAPCHAIN_USAGE_SAMPLED_BIT | XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
