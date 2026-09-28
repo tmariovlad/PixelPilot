@@ -49,3 +49,8 @@ add_executable(dec_err_probe_test DecErrProbe_test.cpp)
 target_include_directories(dec_err_probe_test PRIVATE ${SRC})
 target_link_libraries(dec_err_probe_test GTest::gtest_main)
 gtest_discover_tests(dec_err_probe_test)
+
+add_executable(signal_quality_test SignalQualityCalculator_test.cpp ${SRC}/SignalQualityCalculator.cpp)
+target_include_directories(signal_quality_test PRIVATE ${LOG_SHIM} ${SRC})
+target_link_libraries(signal_quality_test GTest::gtest_main)
+gtest_discover_tests(signal_quality_test)

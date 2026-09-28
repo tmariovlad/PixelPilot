@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <cxxabi.h>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <initializer_list>
@@ -491,7 +492,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     if (jcStats == nullptr) {
         return;
     }
-    jmethodID jcStatsConstructor = env->GetMethodID(jcStats, "<init>", "(IIIIIIIII)V");
+    jmethodID jcStatsConstructor = env->GetMethodID(jcStats, "<init>", "(IIIIIIIIIIIII)V");
     if (jcStatsConstructor == nullptr) {
         return;
     }
@@ -510,7 +511,11 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
                                 (jint)video.bad,
                                 (jint)video.override_,
                                 (jint)video.outgoing,
-                                (jint)avg_rssi_int);
+                                (jint)avg_rssi_int,
+                                (jint)lround(quality.rssi_chains.ant1),
+                                (jint)lround(quality.rssi_chains.ant2),
+                                (jint)lround(quality.snr_chains.ant1),
+                                (jint)lround(quality.snr_chains.ant2));
     if (stats == nullptr) {
         return;
     }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <mutex>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -12,12 +13,20 @@ static const char *TAG = "SignalQualityCalculator";
 
 class SignalQualityCalculator {
   public:
+    // Average per receive chain (path A / path B) over the last second, in the device's raw units.
+    struct ChainAverages {
+        float ant1;
+        float ant2;
+    };
+
     struct SignalQuality {
         int lost_last_second;
         int recovered_last_second;
         int quality;
         float snr;
         std::string idr_code;
+        ChainAverages rssi_chains;
+        ChainAverages snr_chains;
     };
 
     SignalQualityCalculator() = default;
@@ -29,7 +38,7 @@ class SignalQualityCalculator {
 
     void add_fec_data(uint32_t p_all, uint32_t p_recovered, uint32_t p_lost);
 
-    template <class T> float get_avg(const T &array) {
+    template <class T> ChainAverages get_chain_avgs(const T &array) {
         std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
         // Remove old entries
@@ -47,11 +56,9 @@ class SignalQualityCalculator {
             sum1 /= count;
             sum2 /= count;
         }
-
-        // We'll take the maximum of the two average RSSI values
-        float avg = std::max(sum1, sum2);
-        return avg;
+        return {sum1, sum2};
     }
+
 
     SignalQuality calculate_signal_quality();
 

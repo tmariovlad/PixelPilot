@@ -79,9 +79,11 @@ SignalQualityCalculator::SignalQuality SignalQualityCalculator::calculate_signal
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
 
     // Get fresh averages over the last second
-    float avg_rssi = get_avg(m_rssis);
+    ret.rssi_chains = get_chain_avgs(m_rssis);
+    ret.snr_chains = get_chain_avgs(m_snrs);
+    float avg_rssi = std::max(ret.rssi_chains.ant1, ret.rssi_chains.ant2);
 
-    float avg_snr = get_avg(m_snrs);
+    float avg_snr = std::max(ret.snr_chains.ant1, ret.snr_chains.ant2);
 
     //    __android_log_print(ANDROID_LOG_DEBUG, TAG, "avg_rssi: %f", avg_rssi);
 
