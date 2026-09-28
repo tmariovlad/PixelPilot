@@ -27,7 +27,12 @@ Measure every method at the same position with the same tools (loss, decode fps,
   - H.264 vs H.265 slot, bc's plan ([decoder-levers](decoder-levers.md#live-h264--h265-switch-without-an-app-restart-2026-09-29-code-device-check-pending)); needs APK 55360de7 installed first.
   - Packet-size grid (payload 1400 → ≤ 3900 B, wlan0 MTU 4032) (`c:/xampp/htdocs/openipc-low-latency-and-others-video/repos/tasks/link-25mbit-audit-2026-09-28/packet-size/00-INDEX-packet-size.md`).
   - Far-position test: needs the user's hands to move the headset or the air unit.
-  - ESP32 G2G rig (photodiode total, another session).
+  - ESP32 G2G rig (photodiode total): **READY** (session latency-test-f0, 2026-09-29), not yet used on the Quest. Repo `c:/Users/vlad_/Documents/Arduino/latency_test/` (CLAUDE.md; skills `/g2g-latency`, `/g2g-calibrate`).
+    - Port COM7 (CP210x 10C4:EA60), auto-detected by `~/.claude/skills/g2g-latency/scripts/find_rig_port.py`; COM5 is the DPS-150 and is refused.
+    - Wiring: LED on GPIO14, TEMT6000 SIG on GPIO32 (the floating wire behind the 50 Hz hum is fixed).
+    - Face-to-face self-test 25/25, avg **135 µs** (134–158): the rig offset to subtract [PROVEN: latency_test `tasks/diag-50hz-flicker-led-not-reaching-sensor-2026-09-29.md`, raw `tasks/raw-data/com7-fixed-2026-09-29-cmd3.csv`, commits e5da3b0 → 91d7353].
+    - Opening the port resets the board and a run is refused until calibration succeeds, so always `1` (calibrate) before `2` (run).
+    - On the Quest: the LED in front of the air unit's camera, the TEMT6000 on a Quest lens under an opaque shield, and calibrate in the final position.
   - vmoded autostart after a reboot: needs the user's approval.
 0. **High bitrate (≥16–25 Mbit/s clean): hardware limit NOT proven (2026-09-28).** The user asked for an audit. A 5-agent audit is in the OpenIPC repo `repos/tasks/link-25mbit-audit-2026-09-28/` (synthesis `00-INDEX-link-25mbit-audit.md`, runbook `T4-T5-RUNBOOK.md`, todo O117). Results in [link-envelope.md](link-envelope.md):
    - **T5:** proven on the unit that `iw … txpower fixed` sends MCS7 at the same TXAGC index as MCS0. The by-rate table is off/flat, which causes the MCS7 cliff above 20 dBm. The fix is a per-row power cap (O115 §12).
