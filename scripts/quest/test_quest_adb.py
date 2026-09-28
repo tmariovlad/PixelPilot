@@ -101,6 +101,43 @@ def test_lost_write_raises():
     assert raises(FakeAdb(lose_write=True))
 
 
+USER_XML = quest_adb.PREFS_HEADER + '    <string name="gs.key">K</string>\n    <int name="xr_fov_deg_x" value="3" />\n</map>\n'
+
+
+def test_backup_then_restore_round_trips_the_users_file():
+    import os
+    import tempfile
+    fake = FakeAdb(crlf=True)
+    fake.files[quest_adb.PREFS_FILE] = USER_XML
+    path = os.path.join(tempfile.mkdtemp(), "b.xml")
+    with_fake(fake, lambda: quest_adb.backup_prefs(path))
+    fake.files[quest_adb.PREFS_FILE] = XML  # an A/B step overwrote it
+    with_fake(fake, lambda: quest_adb.restore_prefs(path))
+    assert fake.files[quest_adb.PREFS_FILE] == USER_XML
+
+
+def test_backup_without_gs_key_raises_and_writes_nothing():
+    import os
+    import tempfile
+    fake = FakeAdb()  # empty prefs file: e.g. run-as failed
+    path = os.path.join(tempfile.mkdtemp(), "b.xml")
+    try:
+        with_fake(fake, lambda: quest_adb.backup_prefs(path))
+        raised = False
+    except RuntimeError:
+        raised = True
+    assert raised
+    assert not os.path.exists(path)
+
+
+def test_pref_xml_types():
+    """A float pref (e.g. xr_fov_deg) must be written as <float>: SharedPreferences.getFloat on an <int> throws."""
+    assert quest_adb.pref_xml("a", True) == '    <boolean name="a" value="true" />' + quest_adb.NL
+    assert quest_adb.pref_xml("b", 120) == '    <int name="b" value="120" />' + quest_adb.NL
+    assert quest_adb.pref_xml("c", 90.0) == '    <float name="c" value="90.0" />' + quest_adb.NL
+    assert quest_adb.pref_xml("d", "x") == '    <string name="d">x</string>' + quest_adb.NL
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

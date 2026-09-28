@@ -29,6 +29,8 @@ def pref_xml(k, v):
         return '    <string name="%s">%s</string>%s' % (k, v, NL)
     if isinstance(v, bool):
         return '    <boolean name="%s" value="%s" />%s' % (k, "true" if v else "false", NL)
+    if isinstance(v, float):
+        return '    <float name="%s" value="%r" />%s' % (k, v, NL)
     return '    <int name="%s" value="%d" />%s' % (k, v, NL)
 
 
@@ -65,6 +67,23 @@ def set_prefs(flags):
     body = "".join(pref_xml(k, v) for k, v in flags.items())
     write_prefs(PREFS_HEADER + "    " + key + NL
                 + '    <boolean name="od_enabled" value="false" />' + NL + body + "</map>" + NL)
+
+
+def backup_prefs(path):
+    """Save the app's whole prefs file (the app must be stopped) before an A/B overwrites it with set_prefs.
+
+    Raises, writing nothing, if the read has no gs.key: a failed run-as read must never become the "backup"."""
+    xml = adb("shell", "run-as", env.PKG, "cat", PREFS_FILE).replace(chr(13), "")
+    if '<string name="gs.key">' not in xml:
+        raise RuntimeError("prefs backup read has no gs.key; nothing saved")
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(xml)
+
+
+def restore_prefs(path):
+    """Write back a file saved by backup_prefs (checked by write_prefs' read-back)."""
+    with open(path, encoding="utf-8", newline="") as f:
+        write_prefs(f.read())
 
 
 def prox_close():
