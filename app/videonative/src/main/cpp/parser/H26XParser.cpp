@@ -16,7 +16,8 @@ H26XParser::H26XParser(NALU_DATA_CALLBACK onNewNALU)
           std::placeholders::_1,
           std::placeholders::_2,
           std::placeholders::_3,
-          std::placeholders::_4))
+          std::placeholders::_4,
+          std::placeholders::_5))
 {
 }
 
@@ -54,9 +55,10 @@ void H26XParser::onNewNaluDataExtracted(
     const std::chrono::steady_clock::time_point creation_time,
     const uint8_t*                              nalu_data,
     const int                                   nalu_data_size,
-    const bool                                  end_of_access_unit)
+    const bool                                  end_of_access_unit,
+    const RtpTag&                               tag)
 {
-    NALU nalu(nalu_data, nalu_data_size, IS_H265, creation_time, end_of_access_unit);
+    NALU nalu(nalu_data, nalu_data_size, IS_H265, creation_time, end_of_access_unit, tag);
     newNaluExtracted(nalu);
 }
 

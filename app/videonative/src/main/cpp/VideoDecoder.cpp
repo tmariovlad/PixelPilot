@@ -69,6 +69,7 @@ void VideoDecoder::releaseDecoder(int idx)
     MLOGD << "Set decoder.codec null idx: " << idx;
     mKeyFrameFinder.reset();
     mAssembler.reset();
+    if (idx == 0) mTimeline.reset();   // inputs queued to this decoder never come out
     decoder.configured[idx] = false;
     if (mCheckOutputThread[idx]->joinable())
     {
@@ -137,16 +138,18 @@ void VideoDecoder::interpretNALU(const NALU& nalu)
         if (mAuAggregationActive)
         {
             mAssembler.push(
-                au::classify(nalu.getData(), nalu.getSize(), IS_H265, nalu.endOfAccessUnit, nalu.creationTime),
-                [this](const uint8_t* d, size_t n, std::chrono::steady_clock::time_point t, bool cfg)
-                { feedBoth(d, n, t, IS_H265 && cfg); });
+                au::classify(
+                    nalu.getData(), nalu.getSize(), IS_H265, nalu.endOfAccessUnit, nalu.creationTime, nalu.rtpTag),
+                [this](const uint8_t* d, size_t n, std::chrono::steady_clock::time_point t, bool cfg, const RtpTag& tag)
+                { feedBoth(d, n, t, IS_H265 && cfg, tag); });
         }
         else
         {
             feedBoth(nalu.getData(),
                      nalu.getSize(),
                      nalu.creationTime,
-                     IS_H265 && (nalu.isSPS() || nalu.isPPS() || nalu.isVPS()));
+                     IS_H265 && (nalu.isSPS() || nalu.isPPS() || nalu.isVPS()),
+                     nalu.rtpTag);
         }
         decodingInfo.nNALUSFeeded++;
         // manually feeding AUDs doesn't seem to change anything for high latency streams
@@ -269,15 +272,22 @@ bool VideoDecoder::configureAndStart(int idx, const DecoderLevers& levers)
     return true;
 }
 
-void VideoDecoder::feedBoth(
-    const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime, bool codecConfig)
+void VideoDecoder::feedBoth(const uint8_t*                        data,
+                            size_t                                size,
+                            std::chrono::steady_clock::time_point creationTime,
+                            bool                                  codecConfig,
+                            const RtpTag&                         tag)
 {
-    feedDecoder(data, size, creationTime, codecConfig, 0);
-    feedDecoder(data, size, creationTime, codecConfig, 1);
+    feedDecoder(data, size, creationTime, codecConfig, 0, tag);
+    feedDecoder(data, size, creationTime, codecConfig, 1, tag);
 }
 
-void VideoDecoder::feedDecoder(
-    const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime, bool codecConfig, int idx)
+void VideoDecoder::feedDecoder(const uint8_t*                        data,
+                               size_t                                size,
+                               std::chrono::steady_clock::time_point creationTime,
+                               bool                                  codecConfig,
+                               int                                   idx,
+                               const RtpTag&                         tag)
 {
     if (!decoder.codec[idx]) return;
     const auto now          = std::chrono::steady_clock::now();
@@ -311,6 +321,7 @@ void VideoDecoder::feedDecoder(
                 (uint64_t) duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
             AMediaCodec_queueInputBuffer(
                 decoder.codec[idx], (size_t) index, 0, size, presentationTimeUS, flag);
+            if (idx == 0 && !codecConfig) mTimeline.onQueued(static_cast<int64_t>(presentationTimeUS), tag);
             waitForInputB.add(steady_clock::now() - now);
             parsingTime.add(deltaParsing);
             return;
@@ -366,7 +377,9 @@ void VideoDecoder::checkOutputLoop(int idx)
             {
                 timespec ready{};
                 clock_gettime(CLOCK_MONOTONIC, &ready);
-                mFrameReady.add(static_cast<int64_t>(ready.tv_sec) * 1000000000LL + ready.tv_nsec);
+                const int64_t readyNs = static_cast<int64_t>(ready.tv_sec) * 1000000000LL + ready.tv_nsec;
+                mFrameReady.add(readyNs);
+                mTimeline.onDecoded(info.presentationTimeUs, readyNs);
                 if (ATrace_isEnabled())  // marks the phase meter's frame-ready time in a system trace
                 {
                     ATrace_beginSection("ppxr_frame_ready");

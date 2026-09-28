@@ -17,6 +17,7 @@
 #include "AccessUnitAssembler.h"
 #include "DecoderLevers.h"
 #include "FrameTimeLog.h"
+#include "FrameTimeline.h"
 #include "CodecSwitch.h"
 #include "DecoderRecovery.h"
 #include "NALU/KeyFrameFinder.hpp"
@@ -106,6 +107,9 @@ class VideoDecoder
     // CLOCK_MONOTONIC ns at which decoder 0 handed frames to the surface since the last call.
     std::vector<int64_t> drainFrameReadyTimes() { return mFrameReady.drain(); }
 
+    // Decoder 0's frames since the last call, keyed by RTP (ssrc, timestamp), for the Stats page (FrameTimeline.h).
+    std::vector<FrameTimes> drainFrameTimes() { return mTimeline.drain(); }
+
     // Codec name + the levers the running decoder actually accepted, plus how whole access units
     // were closed and how many inputs did not fit, so a measurement can be interpreted.
     std::string getDecoderSummary()
@@ -139,10 +143,10 @@ class VideoDecoder
 
     // Wait for an input buffer and queue one buffer: a single NALU or a whole access unit
     void feedDecoder(const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime,
-                     bool codecConfig, int idx);
+                     bool codecConfig, int idx, const RtpTag& tag);
 
     void feedBoth(const uint8_t* data, size_t size, std::chrono::steady_clock::time_point creationTime,
-                  bool codecConfig);
+                  bool codecConfig, const RtpTag& tag);
 
     // Runs until EOS arrives at output buffer or decoder is stopped
     void checkOutputLoop(int idx);
@@ -166,6 +170,7 @@ class VideoDecoder
     DecoderRecovery       mRecovery;     // rebuild decisions after decoder failures (audit X23)
     CodecSwitch           mCodec;        // H.264 <-> H.265 switches of the incoming stream: rebuild the decoders
     FrameTimeLog          mFrameReady;    // decoder 0 output-release times, for the XR phase meter
+    FrameTimeline         mTimeline;      // decoder 0 frames keyed by RTP (ssrc, ts), for the Stats page
     // Holds the AMediaCodec instance, as well as the state (configured or not configured)
     Decoder      decoder{};
     DecodingInfo decodingInfo;

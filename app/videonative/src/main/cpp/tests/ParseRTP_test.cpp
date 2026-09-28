@@ -9,8 +9,9 @@ using Bytes = std::vector<uint8_t>;
 
 struct Got
 {
-    Bytes nalu;
-    bool  endOfAu;
+    Bytes  nalu;
+    bool   endOfAu;
+    RtpTag tag;
 };
 
 Bytes rtp(uint16_t seq, bool marker, const Bytes& payload)
@@ -24,8 +25,8 @@ Bytes rtp(uint16_t seq, bool marker, const Bytes& payload)
 struct ParseRtpTest : ::testing::Test
 {
     std::vector<Got> got;
-    RTPDecoder       dec{[this](std::chrono::steady_clock::time_point, const uint8_t* d, int n, bool eau)
-                   { got.push_back({Bytes(d, d + n), eau}); }};
+    RTPDecoder       dec{[this](std::chrono::steady_clock::time_point, const uint8_t* d, int n, bool eau,
+                          const RtpTag& tag) { got.push_back({Bytes(d, d + n), eau, tag}); }};
     uint16_t         seq = 100;
 
     void h264(bool marker, const Bytes& payload)
@@ -118,4 +119,18 @@ TEST_F(ParseRtpTest, H264FuAWithMissingFragmentIsForwardedTruncatedWhenFeedingIn
     ASSERT_EQ(1u, got.size());
     EXPECT_TRUE(got[0].endOfAu);
     EXPECT_EQ((Bytes{0, 0, 0, 1, 0x65, 0x88, 0x84, 0x33, 0x44}), got[0].nalu);
+}
+
+// The forwarded NALU carries the RTP identity of the packet that completed it (ssrc 2, timestamp 1 in rtp()) and the
+// CLOCK_MONOTONIC time it was complete, for the Stats page's match with the air's RTP sidecar (FrameTimeline.h).
+TEST_F(ParseRtpTest, ForwardedNaluCarriesItsRtpTag)
+{
+    timespec before{};
+    clock_gettime(CLOCK_MONOTONIC, &before);
+    h264(true, {0x65, 0x88, 0x84, 0x00});
+    ASSERT_EQ(1u, got.size());
+    EXPECT_TRUE(got[0].tag.valid);
+    EXPECT_EQ(2u, got[0].tag.ssrc);
+    EXPECT_EQ(1u, got[0].tag.ts);
+    EXPECT_GE(got[0].tag.completeNs, static_cast<int64_t>(before.tv_sec) * 1000000000LL + before.tv_nsec);
 }

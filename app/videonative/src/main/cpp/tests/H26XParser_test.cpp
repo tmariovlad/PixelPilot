@@ -10,8 +10,9 @@ using Bytes = std::vector<uint8_t>;
 
 struct Out
 {
-    Bytes nalu;
-    bool  h265;
+    Bytes  nalu;
+    bool   h265;
+    RtpTag tag;
 };
 
 Bytes rtp(uint8_t payloadType, uint16_t seq, bool marker, const Bytes& payload)
@@ -26,7 +27,7 @@ struct H26XParserTest : ::testing::Test
 {
     std::vector<Out> out;
     H26XParser       parser{[this](const NALU& n)
-                      { out.push_back({Bytes(n.getData(), n.getData() + n.getSize()), n.IS_H265_PACKET}); }};
+                      { out.push_back({Bytes(n.getData(), n.getData() + n.getSize()), n.IS_H265_PACKET, n.rtpTag}); }};
     uint16_t         seq = 500;
 
     void send(uint8_t pt, bool marker, const Bytes& payload)
@@ -70,4 +71,14 @@ TEST_F(H26XParserTest, FragmentsOfOneCodecAreStillAssembled)
     ASSERT_EQ(1u, out.size());
     EXPECT_TRUE(out[0].h265);
     EXPECT_EQ(Bytes({0, 0, 0, 1, 0x02, 0x01, 0x01, 0x02, 0x03, 0x04}), out[0].nalu);
+}
+
+// The NALU handed to the decoder carries its RTP tag (ssrc 2, timestamp 1 in rtp()).
+TEST_F(H26XParserTest, NalusCarryTheirRtpTag)
+{
+    send(96, true, {0x65, 0x88, 0x84, 0x00});
+    ASSERT_EQ(1u, out.size());
+    EXPECT_TRUE(out[0].tag.valid);
+    EXPECT_EQ(2u, out[0].tag.ssrc);
+    EXPECT_EQ(1u, out[0].tag.ts);
 }

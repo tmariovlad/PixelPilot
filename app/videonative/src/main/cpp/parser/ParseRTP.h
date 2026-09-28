@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <functional>
 #include "RTP.hpp"
+#include "../RtpTag.h"
 
 /*********************************************
  ** Parses a stream of rtp h264 / h265 data into NALUs.
@@ -29,7 +30,8 @@ typedef std::function<void(
     const std::chrono::steady_clock::time_point creation_time,
     const uint8_t*                              nalu_data,
     const int                                   nalu_data_size,
-    const bool                                  end_of_access_unit)>
+    const bool                                  end_of_access_unit,
+    const RtpTag&                               tag)>
     RTP_FRAME_DATA_CALLBACK;
 
 class RTPDecoder
@@ -92,6 +94,9 @@ class RTPDecoder
     int                              m_total_n_fragments_for_current_fu = 0;
     // RTP marker bit of the packet being parsed; forwarded with every NALU it completes.
     bool                             m_current_packet_marker = false;
+    // RTP SSRC and timestamp of the packet being parsed; forwarded as the RtpTag of every NALU it completes.
+    uint32_t                         m_current_ssrc = 0;
+    uint32_t                         m_current_ts   = 0;
 
   private:
     // TDOD: What shall we do if a start, middle or end of fu-a is missing ?

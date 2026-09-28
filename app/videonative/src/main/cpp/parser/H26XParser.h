@@ -52,7 +52,8 @@ class H26XParser
         const std::chrono::steady_clock::time_point creation_time,
         const uint8_t*                              nalu_data,
         const int                                   nalu_data_size,
-        const bool                                  end_of_access_unit);
+        const bool                                  end_of_access_unit,
+        const RtpTag&                               tag);
 
     const NALU_DATA_CALLBACK              onNewNALU;
     std::chrono::steady_clock::time_point lastFrameLimitFPS       = std::chrono::steady_clock::now();

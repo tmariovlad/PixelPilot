@@ -23,18 +23,25 @@ struct Out
     Bytes              data;
     Clock::time_point  t;
     bool               cfg;
+    RtpTag             tag;
 };
+
+RtpTag tag(uint32_t ts, int64_t completeNs)
+{
+    return RtpTag{0xABCD, ts, completeNs, true};
+}
 
 struct Fixture : ::testing::Test
 {
     AccessUnitAssembler asmb;
     std::vector<Out>    out;
-    AccessUnitAssembler::Emit emit = [this](const uint8_t* d, size_t n, Clock::time_point t, bool cfg)
-    { out.push_back({Bytes(d, d + n), t, cfg}); };
+    AccessUnitAssembler::Emit emit = [this](const uint8_t* d, size_t n, Clock::time_point t, bool cfg,
+                                            const RtpTag& tg) { out.push_back({Bytes(d, d + n), t, cfg, tg}); };
 
-    void push(const Bytes& b, bool h265Stream, bool marker, Clock::time_point t = Clock::time_point{})
+    void push(const Bytes& b, bool h265Stream, bool marker, Clock::time_point t = Clock::time_point{},
+              const RtpTag& tg = RtpTag{})
     {
-        asmb.push(au::classify(b.data(), b.size(), h265Stream, marker, t), emit);
+        asmb.push(au::classify(b.data(), b.size(), h265Stream, marker, t, tg), emit);
     }
 };
 
@@ -141,8 +148,8 @@ TEST_F(Fixture, OversizeNaluPassesThroughAlone)
 {
     AccessUnitAssembler small(8);
     std::vector<Out> o;
-    AccessUnitAssembler::Emit e = [&o](const uint8_t* d, size_t n, Clock::time_point t, bool c)
-    { o.push_back({Bytes(d, d + n), t, c}); };
+    AccessUnitAssembler::Emit e = [&o](const uint8_t* d, size_t n, Clock::time_point t, bool c, const RtpTag& tg)
+    { o.push_back({Bytes(d, d + n), t, c, tg}); };
     auto big = h265(1, true);  // 8 bytes, not larger than 8
     Bytes huge = big;
     huge.push_back(0x33);      // 9 bytes > 8
@@ -206,11 +213,42 @@ TEST_F(Fixture, StatsCountMarkerAndNextPictureCloses)
 TEST_F(Fixture, StatsCountOversizePassThrough)
 {
     AccessUnitAssembler small(8);
-    AccessUnitAssembler::Emit ignore = [](const uint8_t*, size_t, Clock::time_point, bool) {};
+    AccessUnitAssembler::Emit ignore = [](const uint8_t*, size_t, Clock::time_point, bool, const RtpTag&) {};
     Bytes huge = h265(1, true);
     huge.push_back(0x33);
     small.push(au::classify(huge.data(), huge.size(), true, false, {}), ignore);
     EXPECT_EQ(1u, small.stats().passedThroughOversize);
+}
+
+// The Stats page matches decoded frames to the air's RTP sidecar by RTP timestamp (FrameTimeline.h): an assembled
+// picture carries its NALUs' RTP tag, completed at its last NALU.
+TEST_F(Fixture, AnAssembledPictureCarriesTheTagOfItsLastNalu)
+{
+    push(h264(1, true), false, false, {}, tag(900, 10));
+    push(h264(1, false), false, true, {}, tag(900, 20));
+    ASSERT_EQ(1u, out.size());
+    EXPECT_TRUE(out[0].tag.valid);
+    EXPECT_EQ(900u, out[0].tag.ts);
+    EXPECT_EQ(20, out[0].tag.completeNs);
+}
+
+// A lost marker: the picture is closed by the next picture's first slice, while that slice's packet is being parsed.
+// It must keep its own tag, not take the next picture's.
+TEST_F(Fixture, APictureClosedByTheNextOneKeepsItsOwnTag)
+{
+    push(h264(1, true), false, false, {}, tag(900, 10));
+    push(h264(1, true), false, false, {}, tag(1800, 30));
+    ASSERT_EQ(1u, out.size());
+    EXPECT_EQ(900u, out[0].tag.ts);
+    EXPECT_EQ(10, out[0].tag.completeNs);
+}
+
+TEST_F(Fixture, ConfigNalusAndPassThroughsCarryTheirOwnTag)
+{
+    push(h264(7, false), false, false, {}, tag(900, 5));   // SPS
+    ASSERT_EQ(1u, out.size());
+    EXPECT_TRUE(out[0].cfg);
+    EXPECT_EQ(900u, out[0].tag.ts);
 }
 
 TEST(AuHelpers, StatsSummaryIsCompact)

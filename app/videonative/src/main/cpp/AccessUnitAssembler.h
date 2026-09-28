@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "RtpTag.h"
+
 // What the assembler needs to know about one Annex-B NALU (start code included).
 struct NaluInfo
 {
@@ -20,6 +22,7 @@ struct NaluInfo
     bool                                  isFirstSlice = false;
     bool                                  endOfAu      = false;  // RTP marker of the packet that completed it
     std::chrono::steady_clock::time_point creationTime{};
+    RtpTag                                tag{};  // RTP identity, for the Stats page (RtpTag.h)
 };
 
 // Pure bit-level helpers, no allocation, host-testable.
@@ -49,14 +52,19 @@ inline bool isFirstSliceOfPicture(const uint8_t* d, size_t n, bool h265)
     return (d[sc + hdr] & 0x80) != 0;
 }
 
-inline NaluInfo classify(
-    const uint8_t* d, size_t n, bool h265, bool endOfAu, std::chrono::steady_clock::time_point t)
+inline NaluInfo classify(const uint8_t*                        d,
+                         size_t                                n,
+                         bool                                  h265,
+                         bool                                  endOfAu,
+                         std::chrono::steady_clock::time_point t,
+                         const RtpTag&                         tag = RtpTag{})
 {
     NaluInfo i;
     i.data         = d;
     i.size         = n;
     i.endOfAu      = endOfAu;
     i.creationTime = t;
+    i.tag          = tag;
     const int type = nalType(d, n, h265);
     if (h265)
     {
@@ -84,7 +92,11 @@ class AccessUnitAssembler
 {
   public:
     using Emit = std::function<void(
-        const uint8_t* data, size_t size, std::chrono::steady_clock::time_point firstNaluTime, bool isConfig)>;
+        const uint8_t*                        data,
+        size_t                                size,
+        std::chrono::steady_clock::time_point firstNaluTime,
+        bool                                  isConfig,
+        const RtpTag&                         tag)>;  // an AU: the tag of its latest NALU
 
     // Largest access unit handed to the decoder; the decoder's input buffers are sized to it
     // (max-input-size, DecoderLevers.h) so an assembled picture is never dropped as too big.
@@ -106,7 +118,7 @@ class AccessUnitAssembler
         if (n.isConfig)
         {
             close(emit, mClosedByNextPicture);
-            emit(n.data, n.size, n.creationTime, true);
+            emit(n.data, n.size, n.creationTime, true, n.tag);
             return;
         }
         if (n.isAud || (n.isVcl && n.isFirstSlice && mHasVcl))
@@ -120,7 +132,7 @@ class AccessUnitAssembler
         if (n.size > mMaxBytes)
         {
             ++mPassedThroughOversize;
-            emit(n.data, n.size, n.creationTime, false);
+            emit(n.data, n.size, n.creationTime, false, n.tag);
             return;
         }
         if (mBuf.empty())
@@ -128,6 +140,7 @@ class AccessUnitAssembler
             mFirstTime = n.creationTime;
         }
         mBuf.insert(mBuf.end(), n.data, n.data + n.size);
+        mTag = n.tag;   // closed-by-next-picture happens before this, so the AU keeps its own picture's tag
         mHasVcl = mHasVcl || n.isVcl;
         // The marker may sit on a trailing non-VCL NALU (suffix SEI, filler): close as soon as the
         // AU holds a slice, otherwise the picture would wait for the next one.
@@ -151,7 +164,7 @@ class AccessUnitAssembler
     {
         if (!mBuf.empty())
         {
-            emit(mBuf.data(), mBuf.size(), mFirstTime, false);
+            emit(mBuf.data(), mBuf.size(), mFirstTime, false, mTag);
         }
         reset();
     }
@@ -182,6 +195,7 @@ class AccessUnitAssembler
     std::vector<uint8_t>                  mBuf;
     bool                                  mHasVcl = false;
     std::chrono::steady_clock::time_point mFirstTime{};
+    RtpTag                                mTag{};
 };
 
 // One line for the stats panel / logs.

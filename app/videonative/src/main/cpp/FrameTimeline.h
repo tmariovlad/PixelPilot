@@ -7,15 +7,7 @@
 #include <mutex>
 #include <vector>
 
-// The RTP identity of a decoder input, and when the NALU(s) it holds were complete on the Quest (CLOCK_MONOTONIC ns:
-// the last RTP packet of the NALU handed to the parser, after the reorder queue). valid == false: not from RTP.
-struct RtpTag
-{
-    uint32_t ssrc       = 0;
-    uint32_t ts         = 0;
-    int64_t  completeNs = 0;
-    bool     valid      = false;
-};
+#include "RtpTag.h"
 
 // One decoded frame, keyed like the air's RTP sidecar by (ssrc, RTP timestamp), for the Stats page's per-segment
 // latency (app stats.LatencyWindow).

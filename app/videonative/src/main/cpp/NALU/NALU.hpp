@@ -22,6 +22,7 @@
 #include <variant>
 #include <vector>
 
+#include "../RtpTag.h"
 #include "NALUnitType.hpp"
 
 // dependency could be easily removed again
@@ -45,12 +46,14 @@ class NALU
         size_t                                      data_len1,
         const bool                                  IS_H265_PACKET1  = false,
         const std::chrono::steady_clock::time_point creationTime     = std::chrono::steady_clock::now(),
-        const bool                                  endOfAccessUnit1 = false)
+        const bool                                  endOfAccessUnit1 = false,
+        const RtpTag&                               rtpTag1          = RtpTag{})
         : m_data(data1),
           m_data_len(data_len1),
           IS_H265_PACKET(IS_H265_PACKET1),
           creationTime{creationTime},
-          endOfAccessUnit(endOfAccessUnit1)
+          endOfAccessUnit(endOfAccessUnit1),
+          rtpTag(rtpTag1)
     {
         assert(hasValidPrefix());
         assert(getSize() >= getMinimumNaluSize(IS_H265_PACKET1));
@@ -76,6 +79,8 @@ class NALU
     const std::chrono::steady_clock::time_point creationTime;
     // RTP marker bit of the packet that completed this NALU: set on the last NALU of an access unit.
     const bool endOfAccessUnit;
+    // RTP identity + completion time, for matching the decoded frame to the air's RTP sidecar (RtpTag.h).
+    const RtpTag rtpTag;
 
   public:
     // returns true if starts with 0001, false otherwise
@@ -329,7 +334,7 @@ class NALUBuffer
     {
         m_data = std::make_shared<std::vector<uint8_t>>(nalu.getData(), nalu.getData() + nalu.getSize());
         m_nalu = std::make_unique<NALU>(
-            m_data->data(), m_data->size(), nalu.IS_H265_PACKET, nalu.creationTime, nalu.endOfAccessUnit);
+            m_data->data(), m_data->size(), nalu.IS_H265_PACKET, nalu.creationTime, nalu.endOfAccessUnit, nalu.rtpTag);
     }
 
     NALUBuffer(const NALUBuffer&) = delete;
