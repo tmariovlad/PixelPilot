@@ -1,0 +1,26 @@
+# Air log: rmem A/B, 2026-09-29 (/tmp/rmem_ab.sh md5 a888ab05 on air .132, DWELL=60)
+# Question: do the video wfb_tx input drops (UDP port 5600 receive-queue overflow = PKT field 6 = /proc/net/snmp
+# RcvbufErrors; OpenIPC O1-wfbtx-drop-field.md) go away with a bigger socket buffer? wfb_tx sets no SO_RCVBUF, so it
+# gets net.core.rmem_default (196608). Bracket ABCCBA: 196608 / 524288 / 2097152. At each step start the VIDEO wfb_tx
+# (radio port 0) is restarted with -M 7 -k 4 -n 8 (~2 s gap, new session key); the tunnel wfb_tx (port 32) stays.
+# 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, 17 dBm, alink/vmoded stopped. Air clock = PC - 0.749 s.
+# rcvbuf_err = /proc/net/snmp Udp RcvbufErrors (system-wide; 129182 at PRE, all from before this run).
+#
+# RESULT: drop = 0 and rcvbuf_err_d = 0 in EVERY step, including both 196608 baseline steps. The lever cannot be judged
+# from this run (no drops at all). The drops of the FEC span run (51/375 s, 74-384 per 60 s) came from the old
+# long-running wfb_tx pid 1369 and stopped on their own at air uptime 9929 s, before any restart
+# (air-fec-span-2026-09-29.txt). Cause still open.
+PRE epoch=1790643496 start=1790643498 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=1369 idr="honored":8,"dropped":0 rcvbuf_err=129182 temp=42
+SET rmem196608 epoch=1790643500 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=2355 idr="honored":8,"dropped":0 rcvbuf_err=129182
+STEP rmem196608 epoch=1790643500 drop=0 inj=173930 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=2906 rcvbuf_err_d=0 temp=44 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=2355 idr="honored":32,"dropped":1
+SET rmem524288 epoch=1790643560 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=2784 idr="honored":33,"dropped":2 rcvbuf_err=129182
+STEP rmem524288 epoch=1790643560 drop=0 inj=173978 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=3154 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=2784 idr="honored":61,"dropped":5
+SET rmem2097152 epoch=1790643620 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=2097152/2097152 vpid=3221 idr="honored":65,"dropped":5 rcvbuf_err=129182
+STEP rmem2097152 epoch=1790643620 drop=0 inj=173737 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=3084 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=2097152/2097152 vpid=3221 idr="honored":84,"dropped":8
+SET rmem2097152 epoch=1790643680 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=2097152/2097152 vpid=3653 idr="honored":85,"dropped":8 rcvbuf_err=129182
+STEP rmem2097152 epoch=1790643680 drop=0 inj=173600 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=2541 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=2097152/2097152 vpid=3653 idr="honored":123,"dropped":11
+SET rmem524288 epoch=1790643740 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=4083 idr="honored":126,"dropped":11 rcvbuf_err=129182
+STEP rmem524288 epoch=1790643740 drop=0 inj=173792 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=3007 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=4083 idr="honored":156,"dropped":15
+SET rmem196608 epoch=1790643800 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=752 idr="honored":159,"dropped":15 rcvbuf_err=129182
+STEP rmem196608 epoch=1790643800 drop=0 inj=173577 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=3231 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=752 idr="honored":184,"dropped":18
+END epoch=1790643871 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608/196608 vpid=1190 idr="honored":1,"dropped":0 json=3d8a1456 temp=43
