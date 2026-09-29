@@ -20,6 +20,7 @@ home of all Quest work.
   - [docs/xr/phase-lock-protocol.md](docs/xr/phase-lock-protocol.md): the PPXR1 report and the reference controller (contract for an air-side phase lock).
   - [docs/xr/display-latency.md](docs/xr/display-latency.md): decode → photon on Quest 2 (refresh rate 72/90/120, compositor latch, thermal drop, levers ranked; research reports + refresh bracket).
   - [docs/xr/stats-backend.md](docs/xr/stats-backend.md): data behind the menu's Stats pages (per-segment latency via the waybeam RTP sidecar + clock sync, RX rate, RSSI dBm, loss).
+  - [docs/xr/fec-block-probe.md](docs/xr/fec-block-probe.md): PPXR_FECBLK, one line per unrecoverable video FEC block (fragment bitmap, RSSI, span, outage gap, bad FCS) and fec_blocks.py.
   - [docs/xr/health-logging.md](docs/xr/health-logging.md): the app's own health log (PPXR_EVENT per event: stalls/HOLD with cause, freezes, IDR failures, headset asleep, adapter unplugged, loss bursts; PPXR_HEALTH every 10 s; files/ppxr_health.log) and health_log.py.
   - [docs/xr/real-link.md](docs/xr/real-link.md): first real link (Quest 2 + RTL8812AU + OpenIPC air unit): setup, keys, link id, picture order.
   - [docs/xr/g2g-budget.md](docs/xr/g2g-budget.md): G2G budget per branch on the real link.

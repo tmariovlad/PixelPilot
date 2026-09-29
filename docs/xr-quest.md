@@ -184,6 +184,11 @@ The dated result sections that used to follow here were moved verbatim into topi
   N = 2 each): APFPV through the Quest's own Wi-Fi has 0 vs 1–7 RTP losses, jitter p95 1.4–2.2 vs 9.0–12.8 ms, a frame on the air
   in ~0.13 vs ~7.8 ms (wfb MCS2). Boot default still wfb (range and higher wfb MCS untested); APFPV through the RTL needs devourer station mode
   ([station mode](xr/station-mode.md): the W0 hardware-ACK gate is GO; [scope](xr/research/2026-09-27-devourer-station-scope.md)).
+- **[Unrecoverable FEC blocks (PPXR_FECBLK)](xr/fec-block-probe.md)** (2026-09-29, built + host-tested, not yet on the
+  headset): one line per video FEC block wfb-ng gave up on (mirrors its Aggregator: flush / ring), with the fragment
+  bitmap, per-fragment RSSI, span, the longest inter-frame gap (the outage) and bad-FCS frames around it
+  (keep_corrupted); fec_blocks.py classifies outages vs bad FCS vs scattered loss. Keywords: FEC block, outage, loss
+  burst, bad FCS, keep_corrupted, bloc FEC pierdut.
 - **[Health logging](xr/health-logging.md)** (2026-09-29, built + JVM/host-tested, not yet on the headset): the app logs
   what the pilot would otherwise have to tell us: PPXR_EVENT per event (SIGNAL_LOST/OK with the SignalState kind and
   cause freeze/decoder/no_packets, FREEZE, IDR_FAILED with reason, SESSION_INACTIVE = headset asleep, ADAPTER_GONE,
