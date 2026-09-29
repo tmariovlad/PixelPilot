@@ -1,0 +1,51 @@
+# ab_cause (2026-09-29 04:46-04:51 local), APK cd960b31 (PPXR_RTPHOLE + PPXR_FECBLK), keep_corrupted on, IDR only; steps docs/xr/data/steps-2026-09-29-cause.txt (PC clock, air ~= PC); Quest-PC 1467.9 ms; air wfbtx.log = scripts/quest/out/slot_watch/cause/wfbtx.log (monotonic ms; air_minus_pc_ms = -(uptime->epoch base) - 70, base bracketed .73 / .97 / 1.22).
+# python3 scripts/quest-latch/rtp_holes.py scripts/quest/out/qtx_cause.raw.txt --air-log scripts/quest/out/slot_watch/cause/wfbtx.log --quest-minus-pc-ms 1467.9 --air-minus-pc-ms -1790633249800   (base 1790633249.730)
+holes: 182
+holes_by_class: {'post_fec': 129, 'pre_fec': 48, 'unknown': 5}
+missing: 4158
+missing_pre_fec: 463
+missing_post_fec: 352
+missing_unknown: 3343
+pre_fec_share: 0.5680981595092025
+gap_by_class: {'pre_fec': {2: 5, 1: 7, 4: 3, 3: 5, '5+': 28}, 'post_fec': {4: 47, 3: 18, 2: 25, 1: 35, '5+': 4}, 'unknown': {'5+': 5}}
+suppressed: 0
+air_drop_share[pre_fec]: {'covered': 48, 'share': 0.7708333333333334, 'shift_mean': 0.020371618248976698, 'shift_p95': 0.08333333333333333, 'shift_max': 1.0, 'p_value': 0.006479716852708957}
+air_drop_share[post_fec]: {'covered': 129, 'share': 0.07751937984496124, 'shift_mean': 0.02039049472134147, 'shift_p95': 0.10077519379844961, 'shift_max': 1.0, 'p_value': 0.05820854887013341}
+air_drop_share[mixed]: {'covered': 0, 'share': None, 'shift_mean': None, 'shift_p95': None, 'shift_max': None, 'p_value': None}
+air_drop_share[unknown]: {'covered': 5, 'share': 0.2, 'shift_mean': 0.020387160009801012, 'shift_p95': 0.2, 'shift_max': 1.0, 'p_value': 0.057119520827661314}
+# python3 scripts/quest-latch/rtp_holes.py scripts/quest/out/qtx_cause.raw.txt --air-log scripts/quest/out/slot_watch/cause/wfbtx.log --quest-minus-pc-ms 1467.9 --air-minus-pc-ms -1790633250040   (base 1790633249.970)
+holes: 182
+holes_by_class: {'post_fec': 129, 'pre_fec': 48, 'unknown': 5}
+missing: 4158
+missing_pre_fec: 463
+missing_post_fec: 352
+missing_unknown: 3343
+pre_fec_share: 0.5680981595092025
+gap_by_class: {'pre_fec': {2: 5, 1: 7, 4: 3, 3: 5, '5+': 28}, 'post_fec': {4: 47, 3: 18, 2: 25, 1: 35, '5+': 4}, 'unknown': {'5+': 5}}
+suppressed: 0
+air_drop_share[pre_fec]: {'covered': 48, 'share': 0.8333333333333334, 'shift_mean': 0.020369916596331653, 'shift_p95': 0.08333333333333333, 'shift_max': 1.0, 'p_value': 0.0051728832017424444}
+air_drop_share[post_fec]: {'covered': 129, 'share': 0.09302325581395349, 'shift_mean': 0.020390072605956655, 'shift_p95': 0.10077519379844961, 'shift_max': 1.0, 'p_value': 0.05251837734821672}
+air_drop_share[mixed]: {'covered': 0, 'share': None, 'shift_mean': None, 'shift_p95': None, 'shift_max': None, 'p_value': None}
+air_drop_share[unknown]: {'covered': 5, 'share': 0.0, 'shift_mean': 0.020392605298265167, 'shift_p95': 0.2, 'shift_max': 1.0, 'p_value': 1.0}
+# python3 scripts/quest-latch/rtp_holes.py scripts/quest/out/qtx_cause.raw.txt --air-log scripts/quest/out/slot_watch/cause/wfbtx.log --quest-minus-pc-ms 1467.9 --air-minus-pc-ms -1790633250290   (base 1790633250.220)
+holes: 182
+holes_by_class: {'post_fec': 129, 'pre_fec': 48, 'unknown': 5}
+missing: 4158
+missing_pre_fec: 463
+missing_post_fec: 352
+missing_unknown: 3343
+pre_fec_share: 0.5680981595092025
+gap_by_class: {'pre_fec': {2: 5, 1: 7, 4: 3, 3: 5, '5+': 28}, 'post_fec': {4: 47, 3: 18, 2: 25, 1: 35, '5+': 4}, 'unknown': {'5+': 5}}
+suppressed: 0
+air_drop_share[pre_fec]: {'covered': 48, 'share': 0.6666666666666666, 'shift_mean': 0.02037445433671846, 'shift_p95': 0.08333333333333333, 'shift_max': 1.0, 'p_value': 0.008222161720664306}
+air_drop_share[post_fec]: {'covered': 129, 'share': 0.10077519379844961, 'shift_mean': 0.020389861548264245, 'shift_p95': 0.10077519379844961, 'shift_max': 1.0, 'p_value': 0.05096651238769399}
+air_drop_share[mixed]: {'covered': 0, 'share': None, 'shift_mean': None, 'shift_p95': None, 'shift_max': None, 'p_value': None}
+air_drop_share[unknown]: {'covered': 5, 'share': 0.0, 'shift_mean': 0.020392605298265167, 'shift_p95': 0.2, 'shift_max': 1.0, 'p_value': 1.0}
+# per step (tsv = rtp_holes --tsv at base .97, docs/xr/data/rtp-holes-2026-09-29-cause.tsv):
+# python3 scripts/quest-latch/tsv_steps.py docs/xr/data/rtp-holes-2026-09-29-cause.tsv scripts/quest/out/qtx_cause.raw.txt docs/xr/data/steps-2026-09-29-cause.txt --quest-minus-pc-ms 1467.9 --column class --weight gap
+per step: rows per minute by class; in brackets the gap sum per minute
+                    s          post_fec           pre_fec (gap sum)
+ 0 rmem196608      50     28.8 (  82.8)     13.2 ( 135.6)
+ 1 rmem1048576     50     24.0 (  67.2)      0.0 (   0.0)
+ 2 rmem196608      50     24.0 (  68.4)     19.2 ( 174.0)
+ 3 rmem1048576     50     20.4 (  58.8)      0.0 (   0.0)

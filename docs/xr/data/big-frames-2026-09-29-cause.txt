@@ -1,0 +1,11 @@
+# ab_cause, steps docs/xr/data/steps-2026-09-29-cause.txt, --air-offset-s 1.5379 (Quest-PC 1.4679 + PC-air 0.07), --guard-s 5. 04:46-04:51 local; cause run = rmem 192 KB vs 1 MB (ABAB, 60 s), G2G rig flashing; APK cd960b31 (PPXR_FECBLK + PPXR_RTPHOLE), prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted (FRZ and FIF off). 1080p90 16M MCS7 k4/n8 17 dBm. The logcat was stopped at PC 1790646271 by an early pull (after the last step); the trace was pulled again complete.
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_cause.pftrace docs/xr/data/steps-2026-09-29-cause.txt --air-offset-s 1.5379 --guard-s 5 --baseline rmem196608
+big = npkts >= 33 (p98 of the frames in the steps); ms above the 'rmem196608' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 rmem196608       93    57  38.47  39.32  67.52  86.46 |   4340   4.47  22.95
+ 1 rmem1048576      86    52  35.10  33.98  57.15  61.22 |   4362   4.09  18.51
+ 2 rmem196608       93    53  33.64  36.00  56.60  64.41 |   4361   4.80  24.12
+ 3 rmem1048576      92    56  38.09  40.12  61.57  75.37 |   4342   4.28  20.01
+per state
+rmem196608         186    55  36.06  37.19  60.90  86.46 |   8701   4.63  23.66
+rmem1048576        178    54  36.64  35.80  59.92  75.37 |   8704   4.19  19.26

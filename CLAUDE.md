@@ -46,7 +46,8 @@ home of all Quest work.
   [loss_bursts.py](scripts/quest-latch/loss_bursts.py) (post-FEC loss runs: length, ms, 102.4 ms beacon lock),
   [rtp_holes.py](scripts/quest-latch/rtp_holes.py) (each RTP hole: pre-FEC air input vs post-FEC radio, with a circular time-shift control; air log via [air_drops.py](scripts/quest-latch/air_drops.py)),
   [drop_seconds.py](scripts/quest-latch/drop_seconds.py) (radio post-FEC loss and IDR requests/frames in the air's input-drop seconds vs the rest, and per step),
-  [big_frames.py](scripts/quest-latch/big_frames.py) (latency of the largest frames, e.g. scene changes / IDR, apart from the rest)).
+  [big_frames.py](scripts/quest-latch/big_frames.py) (latency of the largest frames, e.g. scene changes / IDR, apart from the rest)),
+  [tsv_steps.py](scripts/quest-latch/tsv_steps.py) (rows of a probe TSV, e.g. rtp_holes / fec_blocks --tsv, per air step and class)).
 - Doc restructure log: [docs/xr/RESTRUCTURE-REPORT-2026-09-26.md](docs/xr/RESTRUCTURE-REPORT-2026-09-26.md).
 
 New results go into the matching `docs/xr/` topic file (raw data into `docs/xr/data/`), with a one-line summary

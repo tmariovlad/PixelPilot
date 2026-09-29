@@ -73,7 +73,9 @@ the line cap failed 1 test, and requiring > k instead of ≥ k failed 4. Python 
 `test_air_drops.py` (7: intervals, time mapping, the circular-shift control). The per-second line budget is shared
 with PPXR_RTPHOLE (`LineRateLimiter.h`); the FECBLK suite stayed green after the refactor.
 
-## 5. Headset check (to do)
+## 5. Headset check (done 2026-09-29, cause run)
+
+First run on the headset (APK cd960b31, `keep_corrupted` on, 192 KB vs 1 MB air input buffer as positive/negative control): pre-FEC holes only at 192 KB and 67–83 % in the air's drop intervals vs 2 % for rotations; at 1 MB ~20–24 unrecoverable blocks/min remain, 68 % with bad-FCS frames around them at −26 dBm, only 7 of 114 a gap with no frame at all. Results: [link-envelope.md, cause run](link-envelope.md#cause-run-2026-09-29-04460451-with-the-air-input-fixed-1-mb-what-remains-is-the-radio-mostly-frames-that-arrive-corrupted). The original instructions:
 
 Install the build; run a slot with `keep_corrupted` on (so `fcs` is known) and a detached capture
 (`ab_detached.sh`), at the geometry that shows the ~1/s outages; `fec_blocks.py` on the capture, next to the air's TX

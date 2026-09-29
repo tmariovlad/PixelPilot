@@ -199,6 +199,36 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Cause run 2026-09-29 04:46–04:51: with the air input fixed (1 MB), what remains is the radio, mostly frames that arrive corrupted
+
+The same A/B as below, used as positive and negative controls for the new probes: 192 KB (known air input overflow) vs 1 MB (none), ABAB 60 s, 1080p90 16 Mbit/s MCS7 FEC 4/8 17 dBm, rig flashing. Quest APK cd960b31 (pixelpilot-xr-36's `4bb16ef`: PPXR_RTPHOLE splits every RTP hole into lost before FEC (never entered wfb_tx) or after it (radio); PPXR_FECBLK logs every unrecoverable FEC block), `keep_corrupted` on (bad-FCS frames reach the host and are counted), IDR only.
+- **Method.** Steps on the PC clock (air ≈ PC), last step closed at +60 s (1790646242), guard 5 s at both ends. Quest−PC 1467.9 ms. The air's `wfbtx.log` joins through its monotonic clock, with the uptime→epoch base bracketed .73 / .97 / 1.22. Per-step splits with [tsv_steps.py](../../scripts/quest-latch/tsv_steps.py) (tested). My early pull stopped the on-Quest logcat at PC 1790646271, after the last step; the trace was pulled again complete.
+- **Data.** [air log](data/air-cause-2026-09-29.txt) · [steps](data/steps-2026-09-29-cause.txt) · [RTP holes pre/post-FEC + air join](data/rtp-holes-2026-09-29-cause.txt) ([tsv](data/rtp-holes-2026-09-29-cause.tsv)) · [FEC blocks](data/fec-blocks-2026-09-29-cause.txt) ([tsv](data/fec-blocks-2026-09-29-cause.tsv)) · [link_audit](data/audit-2026-09-29-cause.txt) · [latency](data/latency-2026-09-29-cause.txt) · [flash frames](data/big-frames-2026-09-29-cause.txt) · [drop seconds](data/drop-seconds-2026-09-29-cause.txt) · [frame fate](data/frame-fate-2026-09-29-cause.txt) · [bursts](data/loss-bursts-2026-09-29-cause.txt).
+- **Air** [PROVEN: air log]: 192 KB dropped 152 and 145 packets per 60 s, 1 MB 0 and 0. Over all four rig runs: 192 KB overflowed in 4 of 4 steps, 512 KB 1 of 5, 1 MB 0 of 5, 2 MB 0 of 2.
+
+| per minute (N = 2, A then A') | holes lost before FEC (packets) | holes lost after FEC (packets) | RTP holes | unrecoverable FEC blocks | of which with bad-FCS frames |
+|---|---|---|---|---|---|
+| 192 KB | 13.2 / 19.2 (136 / 174) | 28.8 / 24.0 (83 / 68) | 0.25 / 0.27 % | 24.0 / 21.6 | 18.0 / 10.8 |
+| 1 MB | **0 / 0** (0 / 0) | 24.0 / 20.4 (67 / 59) | 0.08 / 0.07 % | 22.8 / 19.2 | 13.2 / 18.0 |
+
+- **The probe separates the two causes, and the controls behave** [PROVEN: [rtp-holes](data/rtp-holes-2026-09-29-cause.txt)].
+  - Holes lost before FEC exist only at 192 KB, and 67–83 % of them fall in the air's drop intervals, against 2 % for the same drop series rotated in time (p ≈ 0.005–0.008 over the clock bracket).
+  - At 1 MB there are none. The air input is fixed.
+- **What remains at 1 MB is the radio: ~20–24 unrecoverable FEC blocks per minute (~1 lost packet/s, 0.07–0.08 %), the same rate as at 192 KB** [PROVEN: post-FEC holes and blocks per step above].
+  - Lost-after-FEC holes fall in the air-drop intervals 7.8–10 % of the time vs 2 % for the rotations (rotation p95 10 %, p ≈ 0.05). This is a weak link to the flash seconds.
+  - PKT_LOST per drop vs clean second is 2.03 vs 1.38/s here. Across three runs the ratio was 1.13–1.47×, each alone n.s., but always the same sign. So the radio loses slightly more in scene-change seconds [INFERRED]. One candidate mechanism is the air injecting a burst back-to-back [SPECULATION].
+- **Most unrecoverable blocks come with corrupted frames, not silence** [PROVEN: [fec-blocks](data/fec-blocks-2026-09-29-cause.txt), 114 blocks]:
+  - 77 (68 %) had bad-FCS frames in the 10 ms before the block's flush (32 of them also with a ≥ 2 ms gap);
+  - only 7 were a ≥ 2 ms gap with no frame at all;
+  - 30 neither.
+  - RSSI was −26 dBm (headset close to the air), so this is not weak signal. Corruption at a strong signal points to interference or multipath, or to the receiver's own front end [SPECULATION; the neighbour's AP on ch157 is one known interferer, [see above](#external-1024-ms-transmitter-identified-2026-09-28-2247-a-neighbours-ap-on-ch157)].
+  - Lost positions: tail (7–10/min) and head (5–8/min) of the block more than the middle (2–6/min), the same in both states.
+- **Latency: 1 MB costs nothing against 192 KB here** [PROVEN: [latency](data/latency-2026-09-29-cause.txt), [flash frames](data/big-frames-2026-09-29-cause.txt)]:
+  - Δlast −0.46 ms; last95 24.4 vs 28.3 ms (192 KB's holes delay its frames);
+  - flash frames p95 59.9 vs 60.9 ms, max 75 vs 86 ms.
+  - The +~4 ms p95 that 1 MB showed against 512 KB in the run below does not reproduce against 192 KB. N = 2–3 per comparison, so treat the p95 cost of 1 MB as unresolved and small.
+- **Next for the residual loss:** a channel without the neighbour's BSS (165 was tested in R3', below) with the probes on, and the per-frame corruption rate (`ppxr_rx_*` bad-FCS per window) against the Quest's own uplink TX.
+
 ### rmem 512 KB vs 1 MB with the G2G rig flashing 2026-09-29 04:27–04:33: the same flash-frame tail; 1 MB adds ~4 ms p95 to every frame and never overflowed
 
 The user chose "1 MB, tested first" for a persistent `rmem_default`, so this is the A/B against the 512 KB of the run below: ABABAB 524288 / 1048576, 60 s each, 1080p90 16 Mbit/s MCS7 FEC 4/8, 17 dBm, rig flashing throughout (latency-test-0d, 12 runs from PC 1790645240).

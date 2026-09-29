@@ -1,0 +1,27 @@
+# ab_cause (2026-09-29 04:46-04:51 local), APK cd960b31 (PPXR_RTPHOLE + PPXR_FECBLK), keep_corrupted on, IDR only; steps docs/xr/data/steps-2026-09-29-cause.txt (PC clock, air ~= PC); Quest-PC 1467.9 ms; air wfbtx.log = scripts/quest/out/slot_watch/cause/wfbtx.log (monotonic ms; air_minus_pc_ms = -(uptime->epoch base) - 70, base bracketed .73 / .97 / 1.22).
+# python3 scripts/quest-latch/fec_blocks.py scripts/quest/out/qtx_cause.raw.txt --tsv docs/xr/data/fec-blocks-2026-09-29-cause.tsv
+blocks: 114
+per_min: 20.82914618771811
+outage: 39
+with_fcs: 77
+fcs_known: 114
+where: {'middle': 21, 'head': 34, 'tail': 46, 'head+tail': 4, 'scattered': 9}
+reason: {'flush': 114}
+gap_max_us_p50: 1824
+gap_max_us_p95: 4177
+rssi_a_dbm_mean: -25.988304093567248
+suppressed: 0
+# python3 scripts/quest-latch/tsv_steps.py docs/xr/data/fec-blocks-2026-09-29-cause.tsv scripts/quest/out/qtx_cause.raw.txt docs/xr/data/steps-2026-09-29-cause.txt --quest-minus-pc-ms 1467.9 --column where
+per step: rows per minute by where
+                    s              head         head+tail            middle         scattered              tail
+ 0 rmem196608      50      7.2               1.2               4.8               2.4               8.4         
+ 1 rmem1048576     50      8.4               0.0               3.6               3.6               7.2         
+ 2 rmem196608      50      4.8               1.2               6.0               1.2               8.4         
+ 3 rmem1048576     50      7.2               0.0               2.4               0.0               9.6         
+# python3 scripts/quest-latch/tsv_steps.py docs/xr/data/fec-blocks-2026-09-29-cause.tsv scripts/quest/out/qtx_cause.raw.txt docs/xr/data/steps-2026-09-29-cause.txt --quest-minus-pc-ms 1467.9 --column fcs
+per step: rows per minute by fcs
+                    s                 0                 1                 2
+ 0 rmem196608      50      6.0              15.6               2.4         
+ 1 rmem1048576     50      9.6              13.2               0.0         
+ 2 rmem196608      50     10.8               9.6               1.2         
+ 3 rmem1048576     50      1.2              14.4               3.6         
