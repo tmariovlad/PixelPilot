@@ -330,7 +330,11 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
   - connect timeout 1 s (was 300 ms), reply timeout 0.5 s;
   - a result per request (ok / refused / connect_timeout / reply_timeout / http_status / error), with trace counters `ppxr_idr_req_<reason>`, a `IdrRequester` warn log line, and `leverCounters()` indices 5..10;
   - host tests 107/107.
-  - Before/after capture pending. Fix 3 (HOLD vs VIDEO STALLED) comes next.
+  - **Fix 3 done** (`21dac5d` on xr-native, APK e952483c):
+    - `SignalState.Kind.HOLD` applies while freeze_until_idr holds and packets arrive;
+    - the headline reads "HOLD - WAITING FOR KEYFRAME (x.x s)" and is no alarm;
+    - no packets still reads NO SIGNAL, and a hold that outlasts the 1 s freeze timeout becomes VIDEO STALLED.
+  - Before/after capture pending (after the MCS4 redo).
 - The user's decision (2026-09-29): none of FRZ / IDR-only / FIF+IDR as they stand ("Avatar/Caddx/HDZero don't suffer this"). The target is ~0 residual loss at short range, plus intra-refresh on the air (OpenIPC researching); with gradual refresh, FIF becomes the right policy.
 
 
