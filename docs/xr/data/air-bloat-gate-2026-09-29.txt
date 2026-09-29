@@ -1,0 +1,19 @@
+# Air log: bufferbloat gate, 2026-09-29 23:02-23:10 (/tmp/rmem_sat.sh md5 33d6c886 on air .132, boot channel 165)
+# Question (latency-test-0d): with the video wfb_tx input buffer at 1 MB, does a link that cannot carry the encoder rate
+# build a standing queue (the image falls seconds behind) instead of dropping? Setup at MCS7 (clean, rig calibration),
+# then each step relaunches the video wfb_tx at MCS4 with the step's rmem: 1080p90 16 Mbit, FEC 4/8 = over the MCS4
+# capacity (m4b16f48 overflowed in the HD sweep). ABAB 192K / 1M, 120 s each. ch165, 17 dBm, alink/vmoded stopped.
+# ESP32 G2G rig on the Quest lens (latency-test-0d), Quest capture ab_bloat (pixelpilot-xr-25, IDR-on-loss OFF).
+# RESULT (air side): sustained overload in every step: 192K dropped 7777 / 8170 packets per 120 s (88 / 87 s with drops),
+# 1M dropped 5053 / 6497 (55 / 74 s): the 1 MB buffer fills and then drops too, a little less. Injection never failed.
+# Whether the image falls behind (the latency drift within the step) is on the rig / Quest side.
+PRE epoch=1790710768 start=1790710900 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/524288 vpid=1348 idr="honored":1,"dropped":0 rcvbuf_err=271 temp=42
+SET rmem196608 epoch=1790710902 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=3497 idr="honored":1,"dropped":0 rcvbuf_err=1379
+STEP rmem196608 epoch=1790710902 drop=7777 inj=341880 drop_secs=88 ant_drop=0 sendmsg_lat_max_us=18250 rcvbuf_err_d=7736 temp=51 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=3497 idr="honored":1,"dropped":0
+SET rmem1048576 epoch=1790711024 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=333 idr="honored":1,"dropped":0 rcvbuf_err=9291
+STEP rmem1048576 epoch=1790711024 drop=5053 inj=345633 drop_secs=55 ant_drop=0 sendmsg_lat_max_us=19957 rcvbuf_err_d=5089 temp=51 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=333 idr="honored":1,"dropped":0
+SET rmem196608 epoch=1790711147 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=983 idr="honored":1,"dropped":0 rcvbuf_err=14601
+STEP rmem196608 epoch=1790711147 drop=8170 inj=341911 drop_secs=87 ant_drop=0 sendmsg_lat_max_us=23613 rcvbuf_err_d=8149 temp=51 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=983 idr="honored":1,"dropped":0
+SET rmem1048576 epoch=1790711269 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=1623 idr="honored":1,"dropped":0 rcvbuf_err=22840
+STEP rmem1048576 epoch=1790711269 drop=6497 inj=345494 drop_secs=74 ant_drop=0 sendmsg_lat_max_us=20034 rcvbuf_err_d=6554 temp=51 mcs_index=4 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=1623 idr="honored":1,"dropped":0
+END epoch=1790711403 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608/196608 vpid=2264 idr= json=3d8a1456 temp=47
