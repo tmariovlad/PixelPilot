@@ -385,12 +385,9 @@ def air_health_parser():
 
 
 def air_health_record(line):
-    """parse_air_health.parse_line; a missing boot (NA or empty, which the parser keeps as text) becomes None, so it
-    never counts as a boot of its own. The parser keeps boot= as text since OpenIPC 2eb1567."""
-    rec = air_health_parser().parse_line(line)
-    if rec is not None and rec.get("boot") in ("", "NA"):
-        rec["boot"] = None
-    return rec
+    """One air_health line -> parse_air_health.parse_line's record, or None. Since OpenIPC 5650729 boot/code/level
+    stay text, and NA or empty is None (both cases are pinned by test_the_boot_id_stays_a_string...)."""
+    return air_health_parser().parse_line(line)
 
 
 def _air_pc(rec, anchor):

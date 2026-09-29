@@ -53,9 +53,8 @@ chain of shells. No waybeam `set`, no register access. `--air-source` picks what
     `read_reg` users race.
   - The lines are parsed by -40's [parse_air_health.py](../../../openipc-low-latency-and-others-video/repos/tasks/air-health-2026-09-29/parse_air_health.py)
     (`parse_line`, `AH_KEYS`, `EV_KEYS`, `summarize`: the one parser of the format), found through `AIR_HEALTH_DIR`
-    in `quest_env.py`. The parser keeps `boot` as text since OpenIPC `2eb1567`: before that, an all-digit prefix such
-    as `00123456` became a number, found here. A `boot=NA` or empty boot is mapped to "no boot", so it never counts as
-    a boot of its own.
+    in `quest_env.py`. Since OpenIPC `2eb1567` / `5650729` the parser keeps `boot` as text (before, an all-digit
+    prefix such as `00123456` became a number, found here), and a `boot=NA` or empty boot is None.
   - Each line is placed on PC time by its own uptime: mid-call − (the poll's uptime − the line's uptime), to about
     10 ms, with no clock offset needed.
   - The first poll is only a baseline: its last AH line, and no replay of older events.
