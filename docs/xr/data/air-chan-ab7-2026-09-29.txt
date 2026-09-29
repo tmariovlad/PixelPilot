@@ -1,0 +1,17 @@
+# Air log: channel A/B in the operational HD state, 2026-09-29 21:43-21:58 (/tmp/chan_ab7.sh md5 eeb31619, air .132)
+# ch157 (inside the neighbour's VHT80 149-161) vs ch165 (outside), ABBA 180 s on pixelpilot-xr-25's shared schedule.
+# 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, FEC 4/8, 17 dBm, video wfb_tx input buffer 1 MB, alink/vmoded
+# stopped, headset ~1 m, rig off. Switches with `linkmode-air.sh chan <n>`. Clock this boot: PC - air ~ +0.85 s.
+# RESULT (air side): drop 0 / ant_drop 0 everywhere. IDR requests honored per 180 s step (the Quest asks on loss):
+# see the idr= deltas between SET and STEP lines (157: 113 -> 239 = 126; 165: 239 -> 303 = 64; ...).
+PRE epoch=1790707012 ch=157 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":5,"dropped":0 temp=44
+SET ch157 epoch=1790707199 ch=157 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":113,"dropped":6
+STEP ch157 epoch=1790707199 drop=0 inj=548300 ant_drop=0 temp=50 ch=157 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":239,"dropped":23
+CHAN -> 165 took=0s verdict=AIR_STATE=wfb FREQ=5825 CH=165 BCN=0x10
+SET ch165 epoch=1790707379 ch=165 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":239,"dropped":23
+STEP ch165 epoch=1790707379 drop=0 inj=546788 ant_drop=0 temp=51 ch=165 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":303,"dropped":29
+SET ch165 epoch=1790707559 ch=165 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":303,"dropped":29
+STEP ch165 epoch=1790707559 drop=0 inj=544995 ant_drop=0 temp=50 ch=165 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":350,"dropped":31
+CHAN -> 157 took=0s verdict=AIR_STATE=wfb FREQ=5785 CH=157 BCN=0x10
+SET ch157 epoch=1790707739 ch=157 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":350,"dropped":31
+STEP ch157 epoch=1790707739 drop=0 inj=547227 ant_drop=0 temp=51 ch=157 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=3066 idr="honored":492,"dropped":42
