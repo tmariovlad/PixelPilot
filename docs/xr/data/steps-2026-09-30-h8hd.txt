@@ -1,0 +1,10 @@
+# ab_h8hd steps (AIR clock, the coordinator's plan): hd entered from h8 (720p120 8M MCS7) vs from race, ABAB; waybeam restarts take 14-20 s after each switch (guard 20 s).
+1790718420 h8_a
+1790718490 hd_from_h8_1
+1790718580 race_a
+1790718650 hd_from_race_1
+1790718740 h8_b
+1790718810 hd_from_h8_2
+1790718900 race_b
+1790718970 hd_from_race_2
+1790719060 END

@@ -1,0 +1,9 @@
+# ab_hdfresh (2026-09-30 ~00:34-00:43 local): hd by live switch from race vs hd after an XR relaunch (relaunch at PC 1790717801 / 1790718101, logged in scripts/quest/out/relaunch_hdfresh.txt); steps docs/xr/data/steps-2026-09-30-hdfresh.txt (air, plan epochs; guard 20 s for the waybeam restart); Quest-PC +104.3 ms, PC-air -0.139 s -> Quest-air -0.0347 s. The rig (latency-test) read ~45 ms first light in all four hd states.
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_hdfresh.raw.txt docs/xr/data/steps-2026-09-30-hdfresh.txt --quest-minus-air-s -0.0347 --guard-s 20 --keys enc50,snd50,lnk50,dec50,dsp50,tot50,tot95,fps,mcs,rssiA
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   enc50   snd50   lnk50   dec50   dsp50   tot50   tot95     fps     mcs   rssiA
+ 0 hd_live1       30     6.5     0.3    12.7     2.3     4.0    26.6    40.9    90.0     7.0   -25.0
+ 1 hd_fresh1      30     6.5     0.3    11.9     2.3     4.1    26.0    35.8    91.0     7.0   -25.0
+ 2 race           30     1.9     0.1     3.7     1.5     4.1    11.9    17.0   166.0     2.0   -24.0
+ 3 hd_live2       30     6.5     0.3    10.8     2.3     4.1    24.5    33.7    90.5     7.0   -25.0
+ 4 hd_fresh2      30     6.5     0.3    12.7     2.3     4.1    26.4    37.7    91.0     7.0   -25.0

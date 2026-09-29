@@ -199,6 +199,34 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Rig slot 2026-09-30 00:10–01:00: HD at 71 ms first light did not reproduce; the Quest's encode→latch was ~26 ms in every HD state
+
+The [G2G audit](research/2026-09-29-g2g-40ms-audit.md) §5 part A: the four modes (race, b2 = 720p120 2 Mbit MCS2, h8 = 720p120 8 Mbit MCS7, hd = 1080p90 16 Mbit MCS7), all at 17 dBm, FEC 4/8, ch165, with the rig (latency-test-0d) measuring optical first light on the Quest's lens.
+- **Quest side.** APK c8986061. Prefs = the user's baseline + `stats_log`, IDR-on-loss off. Headset ~1 m (RSSI −23…−25 dBm). Guardian pause and prox_close for the slot.
+- **Clocks.** Fresh air boot, PC−air −0.139 s (AIR_STATUS, err 0.68 s). Guards of 5 s (Part A, at the air's SET epochs) and 20 s (the others; a waybeam restart takes 14–20 s).
+- **The headset's view.** [stats_steps.py](../../scripts/quest-latch/stats_steps.py) medians of the PPXR_STATS segments ([stats-backend](stats-backend.md)): enc = air encode, lnk = the link incl. FEC, dec = decode, dsp = decode → compositor latch, tot = their sum.
+- **Data.** [steps Part A](data/steps-2026-09-30-modes.txt) · [segments Part A](data/segments-2026-09-30-modes.txt) · [steps hdfresh](data/steps-2026-09-30-hdfresh.txt) · [segments hdfresh](data/segments-2026-09-30-hdfresh.txt) · [steps h8→hd](data/steps-2026-09-30-h8hd.txt) · [segments h8→hd](data/segments-2026-09-30-h8hd.txt).
+
+| test | hd state | lens first light (rig) | Quest enc · lnk · dec · dsp → tot50 (ms) |
+|---|---|---|---|
+| Part A (ABCDDCBA ~100 s, live switches, no relaunch) | hd after h8, twice | **71.4** (pooled) | 6.6 · 13.2/12.9 · 2.3 · 4.1 → **26.9 / 26.9** |
+| hdfresh | hd after a live switch from race (×2) | ~45 | 6.5 · 12.7/10.8 · 2.3 · 4.0–4.1 → 26.6 / 24.5 |
+| hdfresh | hd after an XR relaunch (×2) | ~45 | 6.5 · 11.9/12.7 · 2.3 · 4.1 → 26.0 / 26.4 |
+| h8→hd ABAB | hd from h8 (×2) / from race (×2) | 45–47 | 6.5 · 12.9–13.4 · 2.3 · 4.1–4.2 → 26.8–27.5 |
+| reference: last night (pwbr, same air settings) | hd | 44–46 | 6.5 · 12.0–14.4 · 2.3 · 4.0–4.2 → 25.6–28.3 |
+
+- **The decoder is not the cause** [PROVEN].
+  - No `DECODER_REBUILD` events all run: the decoder was created at 640×480 and adapted in place to 720p and 1080p.
+  - At 1080p it decodes in 2.3 ms and hands to the latch in 4.1 ms, the same after live switches as after a fresh launch.
+  - An XR relaunch changes nothing: hdfresh, 4 runs, rig ~45 ms, Quest 24.5–26.6 ms.
+- **The Quest's encode → latch was ~26 ms in every hd state**, including Part A's hd where the lens read 71 ms. So Part A's extra ~25 ms lies **before the air's VENC**, in sensor → VIF/ISP/VPE, which neither `enc` (the VENC time only) nor the link measures [INFERRED]. It did not come back in hdfresh or h8→hd (hd from h8 or from race, 45–47 ms), so it is an intermittent air-side state.
+- **An air-side 60 fps episode in Part A** [PROVEN: the Quest's stats]:
+  - In the first h8 step (air 716840) the Quest decoded 113–120 fps for 58 s. Then, from air ~716900, 59–61 fps with no switch, the same frame size (60–70 kB, 6–7 packets per frame) and no holes, while `tot50` rose 15.8 → 21.3 ms.
+  - The air's waybeam watchdog logged a 2:1 phase DEGRADAT (Fps_1s 59.61) at air 716921 (coordinator).
+  - The second h8 step and both h8 steps of h8→hd held 118–120 fps.
+  - Part A's hd followed that episode [INFERRED as the candidate trigger; the watchdog saw no DEGRADAT during that hd].
+- Part C (channel and APK A/B) and the -A gate follow in the same slot; see the next sections when written.
+
 ### Bufferbloat gate 2026-09-29 22:39–22:50: over capacity, the 1 MB input buffer holds a standing queue of +210–240 ms
 
 Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change bursts) build a standing queue when the offered rate exceeds the link's capacity? The air ran MCS4 at 16 Mbit/s FEC 4/8, which it cannot carry, alternating the buffer 192 KB / 1 MB / 192 KB / 1 MB, 120 s each, with a relaunch per step. ch165; the G2G rig flashing on the Quest lens (optical first light by latency-test).
@@ -215,9 +243,9 @@ Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change b
 
 - **Over capacity the 1 MB buffer adds a standing queue of ~210–240 ms** [PROVEN: N = 2 per state, alternating].
   - In the first 1 MB step it builds within ~10–20 s (142 → 273 ms), then stays at ~200–290 ms. The second 1 MB step starts already full (255 ms).
-  - At 192 KB the latency stays at ~12 ms above the line.
+  - At 192 KB the latency stays at ~12 ms above the line. *Correction 2026-09-30: "the line" is the 192 KB state's own p5 drift line, so this is not ~12 ms above clean. 192 KB holds its own standing queue too (~60 ms of socket + ~65–74 ms downstream at this overload), see the review below.*
   - It is a queue, not an RTP clock artefact [INFERRED]: the level ramps inside step 1, and both 192 KB steps sit at the same level (2.09 / 12.5 ms first / last), so the timestamp base did not jump between steps.
-  - ~0.25 s is half the coordinator's estimate (1 MB = 8 Mbit at ~16 Mbit/s of video ≈ 0.5 s) [SPECULATION].
+  - ~0.25 s is half the coordinator's estimate (1 MB = 8 Mbit at ~16 Mbit/s of video ≈ 0.5 s) [SPECULATION]. *Resolved 2026-09-30 by the review below: the truesize candidate holds (~469 packets in 1 MB), drained at ~1460 data pkt/s; the predicted 261 ms gap matches the 252 ms measured.*
     - One candidate: the kernel charges each queued packet's buffer overhead (skb truesize, ~2× a 1.4 KB payload) against rmem, so a "1 MB" socket holds ~0.5 MB of video.
     - Another: a drain rate above the video rate.
     - `/proc/net/udp` rx_queue on the air during an overload would settle it.

@@ -1,0 +1,26 @@
+# ab_modes (2026-09-30 ~00:12-00:31 local): mode probe + Part A, steps docs/xr/data/steps-2026-09-30-modes.txt (air SET epochs); Quest-PC +107.6 ms, PC-air -0.139 s (slot_watch AIR_STATUS 00:32, err 0.68) -> Quest-air -0.031 s; guard 5 s; APK c8986061, baseline prefs + stats_log, IDR off; XR never relaunched (live mode switches only). PPXR_STATS segment medians per step (ms): enc = air encode, snd = air send, lnk = link incl. FEC, dec = decode, dsp = decode -> compositor latch, tot = the sum (stats-backend.md).
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_modes.raw.txt docs/xr/data/steps-2026-09-30-modes.txt --quest-minus-air-s -0.031 --keys enc50,snd50,lnk50,dec50,dsp50,tot50,tot95,fps,mcs,rssiA
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   enc50   snd50   lnk50   dec50   dsp50   tot50   tot95     fps     mcs   rssiA
+ 0 p_race         18     1.9     0.1     3.9     1.5     4.1    12.1    17.4   165.0     2.0   -23.0
+ 1 p_b2           10     3.4     0.1     3.7     1.9     3.2    13.2    19.9   118.0     2.0   -23.0
+ 2 p_h8           28     3.5     0.2     4.9     1.7     4.3    15.3    19.3   119.0     7.0   -23.0
+ 3 p_hd            7     6.5     0.3    12.6     2.3     3.8    26.6    31.8    90.0     7.0   -24.0
+ 4 p_race_end     64     1.9     0.1     3.9     1.4     4.1    12.3    17.1   167.0     2.0   -28.0
+ 5 A_race         42     1.9     0.1     4.0     1.5     4.1    12.2    17.4   167.0     2.0   -24.0
+ 6 B_b2           38     3.4     0.1     3.9     1.9     4.0    14.6    19.7   120.0     2.0   -24.0
+ 7 C_h8           55     3.5     0.2     5.2     1.8     4.0    15.8    19.8    61.0     7.0   -24.0
+ 8 D_hd           35     6.6     0.3    13.2     2.3     4.1    26.9    38.4    90.0     7.0   -25.0
+ 9 D_hd           51     6.6     0.3    12.9     2.3     4.1    26.9    33.6    91.0     7.0   -25.0
+10 C_h8           38     3.5     0.2     5.4     1.8     4.5    15.8    19.4   120.0     7.0   -24.0
+11 B_b2           52     3.4     0.1     3.5     1.9     4.2    13.9    19.0   120.0     2.0   -24.0
+12 A_race         48     1.9     0.1     3.9     1.5     4.1    12.2    17.1   167.0     2.0   -24.0
+# reference, last night's HD at the same air settings (pwbr, 1080p90 16M MCS7 FEC 4/8, ~1 m, XR relaunched once at the slot start):
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_pwbr.raw.txt docs/xr/data/steps-2026-09-29-pwbr.txt --quest-minus-air-s -0.0972 --keys enc50,snd50,lnk50,dec50,dsp50,tot50,tot95,fps,mcs,rssiA
+                   n   enc50   snd50   lnk50   dec50   dsp50   tot50   tot95     fps     mcs   rssiA
+ 0 txp1           25     6.5     0.3    13.6     2.3     4.1    27.1    31.8    91.0     7.0   -39.0
+ 1 txp9           26     6.5     0.3    13.5     2.3     4.1    26.9    31.5    91.0     7.0   -33.0
+ 2 txp17          24     6.5     0.3    12.9     2.3     4.2    26.4    31.2    91.0     7.0   -25.0
+ 3 txp17          25     6.5     0.3    12.0     2.4     4.0    25.6    32.5    91.0     7.0   -25.0
+ 4 txp9           25     6.5     0.3    12.8     2.4     4.2    26.5    31.2    91.0     7.0   -35.0
+ 5 txp1           25     6.5     0.3    14.4     2.3     4.1    28.3    33.0    91.0     7.0   -42.0

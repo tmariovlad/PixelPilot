@@ -1,0 +1,15 @@
+# ab_modes steps (AIR clock, fresh boot) = the air's SET epochs (waybeam restarts took 14-20 s after the planned times, so steps start at SET; pixelpilot-xr-66). Mode probe then Part A of the audit's section 5 (ABCDDCBA ~100 s). All 17 dBm, FEC 4/8, ch165. race = boot mode; b2 = 720p120 2 Mbit MCS2; h8 = 720p120 8 Mbit MCS7; hd = 1080p90 16 Mbit MCS7. Every mode switch restarts the encoder (new RTP timestamp base): compare latency within a step, not across modes on one drift line.
+1790716356 p_race
+1790716401 p_b2
+1790716432 p_h8
+1790716497 p_hd
+1790716522 p_race_end
+1790716660 A_race
+1790716754 B_b2
+1790716840 C_h8
+1790716960 D_hd
+1790717040 D_hd
+1790717154 C_h8
+1790717240 B_b2
+1790717354 A_race
+1790717460 END

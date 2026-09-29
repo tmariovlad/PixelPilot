@@ -1,0 +1,7 @@
+# ab_hdfresh steps (AIR clock, the coordinator's plan; waybeam restarts take 14-20 s after a mode switch, so use guard >= 20 s): hd reached by a live switch from race vs hd after an XR relaunch (air unchanged).
+1790717700 hd_live1
+1790717800 hd_fresh1
+1790717900 race
+1790718000 hd_live2
+1790718100 hd_fresh2
+1790718200 END
