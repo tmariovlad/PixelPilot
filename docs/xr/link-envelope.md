@@ -301,7 +301,7 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
 | FIF alone | `feed_incomplete_frames` | "sunt multe mânjeli" (many smears) | 10 stills: blocky smear over large areas, lost 3–16 per overlay interval |
 | FIF + IDR | + `request_idr_on_loss` | "mai bine, dispar mai repede mânjelile" (better, the smears clear faster) | air idr/stats +11 honoured / +4 coalesced in 10 s |
 | IDR alone (HD: air m12b20f48, then m7b16f48) | `request_idr_on_loss` | "even on HD I still see corruption now and then" | expected: the hole frame is dropped, the P frames after it decode against the last good frame until the IDR (~0.1–0.3 s) [INFERRED] |
-| IDR + freeze | + `freeze_until_idr` | *pending* (APK 0c012b37) | |
+| IDR + freeze (air 1080p90 16 Mbit/s m7 FEC 4/8, 17 dBm; headset still, display kept on) | + `freeze_until_idr` | *pending* (APK 0c012b37) | 12 stills graded by a subagent (fixed rubric; [report](../../tasks/quality-grade-2026-09-29-frz.md)): artefacts 9.0 / overall 7.0, no link damage in any still, vs FIF alone 5.9 / 4.1 (4 of 6 working-link stills damaged). Indicative only [INFERRED]: 16 vs 30 Mbit/s, still vs walking, and the FRZ stills show no overlay, so their loss is unknown. A fair A/B needs the same bitrate and scene, overlay visible, alternated ≥ 2× per mode |
 
 **Lever `freeze_until_idr`** (pref, default false; "FRZ" in the summary; [FreezeUntilIdr.h](../../app/videonative/src/main/cpp/FreezeUntilIdr.h)):
 - After a lost packet, drop every non-key slice (H.264 types 1–4; H.265 VCL 0–9) until the next key slice (H.264 IDR 5; H.265 IRAP 16–21), or until a 1 s timeout. Parameter sets and SEI pass.
