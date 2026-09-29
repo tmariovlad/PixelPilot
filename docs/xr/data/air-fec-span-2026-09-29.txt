@@ -1,0 +1,80 @@
+# Air log: FEC span test, 2026-09-29 (/tmp/fec_span.log on air .132, script fec_span.sh, DWELL=60)
+# 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, 17 dBm, alink/vmoded stopped. Same ratio 1/2, longer blocks:
+# 4/8 (~2.7 ms) / 8/16 (~5.4 ms) / 12/24 (~8 ms) at ~2950 pkt/s, ABC CBA, 60 s each (cut from 90 s to fit the
+# Quest capture ab_fecspan of pixelpilot-xr-25). Air clock = PC - 0.749 s this boot.
+# drop/inj = sum of the video wfb_tx PKT line fields 6 (dropped) and 4 (injected) over the step, from /tmp/wfbtx.log.
+PRE epoch=1790642830 start=1790642833 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":6,"dropped":1 txpk=23987629 temp=43
+SET fec4/8 epoch=1790642833 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":6,"dropped":1 txpk=23994727
+STEP fec4/8 epoch=1790642833 drop=384 inj=180338 temp=46 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":22,"dropped":3 txpk=24186501
+SET fec8/16 epoch=1790642893 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=8 n=16 br=16000 txp=17.00 idr="honored":22,"dropped":3 txpk=24186823
+STEP fec8/16 epoch=1790642893 drop=269 inj=176710 temp=46 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=8 n=16 br=16000 txp=17.00 idr="honored":29,"dropped":4 txpk=24374862
+SET fec12/24 epoch=1790642953 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=12 n=24 br=16000 txp=17.00 idr="honored":29,"dropped":4 txpk=24375293
+STEP fec12/24 epoch=1790642953 drop=74 inj=178716 temp=46 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=12 n=24 br=16000 txp=17.00 idr="honored":32,"dropped":4 txpk=24565262
+SET fec12/24 epoch=1790643013 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=12 n=24 br=16000 txp=17.00 idr="honored":32,"dropped":4 txpk=24565711
+STEP fec12/24 epoch=1790643013 drop=84 inj=178178 temp=46 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=12 n=24 br=16000 txp=17.00 idr="honored":38,"dropped":4 txpk=24755189
+SET fec8/16 epoch=1790643073 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=8 n=16 br=16000 txp=17.00 idr="honored":38,"dropped":4 txpk=24755542
+STEP fec8/16 epoch=1790643073 drop=121 inj=178748 temp=46 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=8 n=16 br=16000 txp=17.00 idr="honored":51,"dropped":7 txpk=24945433
+SET fec4/8 epoch=1790643134 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":51,"dropped":7 txpk=24945854
+STEP fec4/8 epoch=1790643134 drop=106 inj=177278 temp=46 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":70,"dropped":9 txpk=25134479
+END epoch=1790643206 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1 k=4 n=8 br=2000 txp=12.00 idr="honored":1,"dropped":0 txpk=25142699 json=3d8a1456 temp=43
+
+# Seconds with air-side injection drops (video wfb_tx PKT line, field 6 > 0). Columns: air uptime_ms, injected, dropped.
+# uptime -> air epoch: epoch = 1790642805 - 9555.60 + uptime_ms/1000 (date +%s and /proc/uptime sampled together).
+# 51 of 375 seconds (uptime 9575000..9950000) had drops; none after 9929562.
+9622562 3025 148
+9623562 2913 28
+9625562 2984 1
+9626562 2972 6
+9628562 2898 142
+9629564 2744 11
+9630562 2763 44
+9641562 2878 4
+9643562 3001 11
+9647562 2851 20
+9651565 2971 2
+9656562 3068 8
+9670562 2988 4
+9674562 2930 77
+9680562 2908 63
+9684562 3154 16
+9686562 2903 32
+9687562 2779 11
+9693562 2967 20
+9694562 2929 5
+9712562 2959 11
+9724563 3072 1
+9730562 2834 21
+9733562 2907 10
+9745562 3091 30
+9757562 3027 1
+9778562 2878 17
+9784563 3129 1
+9786563 2886 4
+9787562 2899 23
+9797562 3117 1
+9799562 3016 1
+9813562 2790 23
+9818562 3005 1
+9820562 2886 13
+9824562 2998 19
+9829562 3201 11
+9833564 3149 25
+9835562 3013 26
+9842562 2974 4
+9854562 3010 20
+9856562 2891 2
+9872562 2988 8
+9883562 3106 6
+9892562 2961 2
+9897563 3087 14
+9907562 3019 3
+9916562 3056 14
+9921562 2969 58
+9924563 3079 11
+9929562 2985 4
+
+# Other air reads during the run (read-only, 2026-09-29 ~PC 1790643000):
+# /sys/module/*/parameters/rtw_drv_log_level: absent (driver built without CONFIG_RTW_DEBUG -> no URB-status prints)
+# /proc/net/rtl88x2eu/wlan0/tx_buf_stat = 0:64:64:64 (MaxTxBufLen:free_xframe_ext:free_xmit_extbuf:NR_XMIT_EXTBUFF)
+# /sys/class/net/wlan0/statistics/tx_dropped = 148637 cumulative, +2 in 5 s while tx_packets +15975; tx_queue_len 1000
+# dmesg: 0 lines matching ECONNRESET|ENOENT|write_port
