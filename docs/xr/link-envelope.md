@@ -226,6 +226,30 @@ Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change b
   - So the 1 MB default needs a guard [INFERRED]: alink / the rate controller must keep the bitrate below capacity; or the buffer shrinks, or is flushed, when the air's input drops start; or the queue is bounded by time rather than bytes.
   - **The rig confirms it on the lens** [PROVEN: latency-test, relayed by the coordinator]: optical first light ~180 ms at 192 KB vs ~430 ms at 1 MB over capacity.
 - **The user's decision:** ~200 ms of added lag is unacceptable. L2 and the HD 1 MB default are on hold until a time-bounded, frame-aware input queue exists in wfb_tx (drop what is older than ~30–50 ms, a flag, default off; OpenIPC session -40). Its acceptance test is this gate again, plus the air's `/proc/net/udp` rx_queue.
+- **Independent review, 2026-09-29 (user: "I think there is a bug") — [full report](research/2026-09-29-bloat-review.md), offline, sub-agent.**
+  - **The 1 MB − 192 KB gap is not a bug; it is how much a full socket holds.**
+    - The gate set the buffer with sysctl (rmem_default = rmem_max = R, no `-R`), so the socket is exactly R, with no doubling.
+    - A queued ~1400 B RTP packet costs ~2240 B of skb truesize, so 192 KB holds ~88 packets and 1 MB ~469 [INFERRED: kernel 4.9 skb sizing].
+    - At the measured drain of ~1460 data pkt/s (air inj/2 and Quest rx agree) that is ~60 ms vs ~321 ms. The predicted gap is 261 ms; the rig measured 252 ms (medians), and the means agree too (rig 231, Quest 224) [INFERRED from PROVEN inputs].
+    - The "~12 ms at 192 KB" above is relative to the 192 KB state's own p5 drift line, not to zero, so it hides the 192 KB queue.
+  - **What we missed: a second standing queue downstream of wfb_tx.**
+    - At 192 KB the rig is already ~134 ms above clean (180 vs 46 ms first light), and the socket explains only ~60 ms of it.
+    - A residual of ~65–74 ms stays at both buffer sizes. It is in the driver/chip TX path: the 8822EU driver's ext frame pool, the USB URBs and the chip's TX FIFO [INFERRED; location not measured].
+    - A flash right after a relaunch, with every queue empty, read 48 ms, the same as clean MCS7. So MCS4 airtime adds nothing; the excess is queue.
+    - **The planned `wfb_tx -A` guard cannot bound this queue.** With -A 40, expect ~150 ms first light over capacity, not ~90.
+  - **Silent driver drops over capacity.**
+    - `monitor_alloc_mgtxmitframe` busy-waits ~1.4 ms, then frees the skb and returns NETDEV_TX_OK [PROVEN: libc0607-rtl88x2eu `core/rtw_xmit.c` monitor path, `tx_drop++; rtw_skb_free(skb); return NETDEV_TX_OK;`].
+    - So wfb_tx counts those packets as injected, and `ant_drop=0` does not mean they went on air.
+    - The Quest receives a flat ~2487 pkt/s in all four steps (the MCS4 ceiling), and pre-FEC loss is 12.8–14 % vs 1.5–3 % below capacity [PROVEN: [link](data/link-2026-09-29-bloat.txt), [audit](data/audit-2026-09-29-bloat.txt)].
+  - **Bookkeeping fixes:**
+    - The rig's step labels used the planned times; the relaunches ran 2–9 s late. The 436 ms "1 MB queue draining into 192 KB" flash was in the 1 MB step.
+    - The "second 1 MB step starts full" is a faster fill (~8 s), seen by a first Quest bin that starts ~7 s after the relaunch.
+    - The slot scripts' revert wrote 196608 into rmem_max, which capped the deployed HD `-R 524288` to 384 KB until reboot. Fixed on 2026-09-29: `rmem_sat.sh` 7effe847 and `rmem_ab.sh` a1163ec8 restore the boot values.
+  - **Next, one live slot before the `-A` re-gate**, all read-only on the air:
+    - (P1) `/proc/net/udp` rx_queue of port 5600;
+    - (P2) wlan0 `tx_dropped` and `tx_buf_stat`;
+    - (P3) the same gate at 16 KB / 192 KB / 1 MB (predicted ~120 / 180 / 430 ms first light if the downstream queue is real);
+    - optional (P4) `max_tx_buf_len` over capacity, to bound the driver pool (earlier found inert only below capacity).
 
 ### Channel A/B in the operational state 2026-09-29 21:59–22:12: ch165 cuts the residual loss 3.5–6× at MCS7 16 Mbit/s
 
