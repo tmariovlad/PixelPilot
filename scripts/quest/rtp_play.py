@@ -1,8 +1,10 @@
 # Replays a recording to <host>:<port> (default 127.0.0.1) with the original pacing; loops N times.
 # Usage: python3 rtp_play.py <stream.rtp | name in streams/> <port> [loops=1] [host=127.0.0.1]
 # KEEPAWAKE=1 also sends ~250 junk pkt/s to the host's discard port so the Quest's Wi-Fi stays out of power save.
+# DROP=<k@period_s | i1,i2,...> leaves packets out, the same in every loop (rtp_drop.py), for deterministic-loss tests.
 import socket, struct, sys, time
 import quest_env
+import rtp_drop
 path, port, loops = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]) if len(sys.argv) > 3 else 1
 host = sys.argv[4] if len(sys.argv) > 4 else "127.0.0.1"
 pkts = []
@@ -13,6 +15,7 @@ with open(quest_env.stream_path(path), "rb") as f:
         t, n = struct.unpack("<dH", h); pkts.append((t, f.read(n)))
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); dur = pkts[-1][0] + 1 / 60
 import threading, os
+dropped = rtp_drop.drops(os.environ.get("DROP", ""), [t for t, _ in pkts])
 keepawake = os.environ.get("KEEPAWAKE") == "1"
 stop = threading.Event()
 def filler():
@@ -22,8 +25,8 @@ def filler():
 if keepawake: threading.Thread(target=filler, daemon=True).start()
 for i in range(loops):
     start = time.perf_counter()
-    for t, d in pkts:
+    for idx, (t, d) in enumerate(pkts):
         while time.perf_counter() - start < t: pass
-        s.sendto(d, (host, port))
+        if idx not in dropped: s.sendto(d, (host, port))
 stop.set()
-print("sent", len(pkts) * loops, "packets", "(keep-awake)" if keepawake else "")
+print("sent", (len(pkts) - len(dropped)) * loops, "packets, dropped", len(dropped) * loops, "(keep-awake)" if keepawake else "")
