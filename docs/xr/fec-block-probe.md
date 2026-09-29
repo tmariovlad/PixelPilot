@@ -56,7 +56,7 @@ logcat epoch (Quest wall) − Q (`quest_minus_pc_ms`, ab_detached's meta) = PC w
 (CLOCK_MONOTONIC: [PROVEN for this repo's wfb-ng copy: `wfb-ng/src/wifibroadcast.cpp:50-56`; INFERRED for the air's
 wfb_tx, the same upstream function]). So A is **not** the wall-clock offset: A = air monotonic ms − PC epoch ms =
 (air `/proc/uptime` × 1000 − air `date +%s%3N`, read together on the air) − (PC − air wall offset). The air runs ntpd,
-so the last term is small, ≈ +50…90 ms (slot_watch's `clock_offset_s`, [slot-watch.md](slot-watch.md)). The air log
+so the last term is small, ≈ +50…90 ms (slot_watch's `AIR_CLOCK pc_minus_air_s`, [slot-watch.md](slot-watch.md)). The air log
 has 1 s resolution, so Y means "the air dropped packets in that second", not that it dropped this block's fragments.
 
 How to read the classes [INFERRED from the definitions; nothing measured yet]:
