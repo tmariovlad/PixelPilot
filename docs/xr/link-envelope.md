@@ -215,6 +215,12 @@ Question (the coordinator, for an "HD" preset): does a lower MCS give fewer loss
 | m7b16f48, 17 dBm | 0 / 0 | 89.6 / 89.5 | 0.18 / 0.20 % | 1.0 / 1.0 | +3.0 / 12.5 · +3.5 / 14.4 | 45 / 53 |
 
 - **MCS5 is no better than MCS7 at 16 Mbit/s here** [PROVEN: N = 2 each]. Loss is about the same and fps equal, but MCS5 costs +9–11 ms mean and +21 ms p95. At ~2950 packets/s on air, MCS5 long GI is near its queue knee [INFERRED from the G5/G6 knee]. MCS5 needed fewer keyframes (air counters: 22/13 vs 45/53) [PROVEN: air `idr/stats` deltas, per the coordinator].
+- **What the residual loss looks like** [PROVEN: [loss_bursts.py](../../scripts/quest-latch/loss_bursts.py), tested; [data](data/loss-bursts-2026-09-29-hdsweep.txt)]. MCS5 needs ~3 dB less SINR than MCS7 yet loses the same, so the SINR margin is not what limits the residual loss [INFERRED].
+  - The loss comes as 0.55–1.2 runs/s, of p50 2–3 RTP packets (mostly 1–4, a few 5–8).
+  - The runs last p50 3.6–4.2 ms, p95 8–11 ms, max 11–24 ms.
+  - They are **not locked to the 102.4 ms beacon period**: Rayleigh Z at 9.77 Hz is 0.7–1.3 in every MCS5/MCS7 step (with fix (a), ch157), so the neighbour AP is not the cause here.
+  - At ~2950 packets/s a FEC 4/8 block lasts ~2.7 ms, so a ~4 ms outage takes out more than one whole block. The lever is a FEC block (or interleaving) spanning ≥ 8–10 ms at the same ratio (e.g. k=12/n=24), not the MCS [INFERRED].
+  - Which positions of a block are lost cannot be seen yet: wfb-ng logs only `PKT_LOST <n>` per unrecoverable block. It needs a per-block log of the fragments received (proposed instrumentation).
 - **MCS4 at 23 vs 24 dBm: +1 dB receives nothing more** [PROVEN: N = 2 each]. RSSI column 87.6 / 87.2 at 23 dBm vs 87.7 / 86.6 at 24; chain A 63.1 / 62.0 vs 62.5 / 63.7; chain B 69.9 / 69.5 vs 70.0 / 69.1; SNR ~16.5 dB throughout. From 17 to 23 dBm the column rises ~7.5, i.e. ~6 dB, as expected [INFERRED: dBm ≈ col/1.25 − 110].
 
 ### G5/G6 2026-09-29 00:51–01:06: which 1080p90 states reach ≥ 88 fps; MCS6 vs MCS7 long GI; FEC 4/8 at 20 Mbit/s; 2SS with stronger FEC

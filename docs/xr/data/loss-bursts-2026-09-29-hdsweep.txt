@@ -1,0 +1,13 @@
+# loss_bursts.py on ab_hdsweep (steps docs/xr/data/steps-2026-09-29-hdsweep.txt, --air-offset-s 1.2445 --guard-s 4); m4 steps invalid (air drop), step 9 overlaps the revert
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_hdsweep.pftrace docs/xr/data/steps-2026-09-29-hdsweep.txt --air-offset-s 1.2445 --guard-s 4
+                 runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77
+ 0 m4b16f48_17    53.42 1035  877  700  587 1022  213        3    0.4    2.2   13.1     1.1
+ 1 m5b16f48_17     1.18   33   31   15   13    4    2        2    3.6   10.0   18.2     1.3
+ 2 m7b16f48_17     0.95   16   17   16   25    4    0        3    4.2   11.3   24.0     1.0
+ 3 m7b16f48_17     1.01   15   20   13   27    6    2        3    4.2    8.4   15.7     0.7
+ 4 m5b16f48_17     0.55   14   11    6   13    0    1        2    4.0    8.1   11.1     1.1
+ 5 m4b16f48_17    53.79  933 1024  953  689  789  184        3    0.4    2.2   17.8     0.6
+ 6 m4b16f48_23    55.05  740  683  525  353  634  148        3    0.4    2.1   17.2     1.2
+ 7 m4b16f48_24    60.02  835  680  622  405  634  185        3    0.4    2.2    9.7     2.6
+ 8 m4b16f48_23    57.44  659  703  622  483  557  135        3    0.4    2.1   20.7     2.2
+ 9 m4b16f48_24    49.41  664  671  620  509  645  152        3    0.4    2.2 2984.1     0.6
