@@ -5,6 +5,7 @@
 #include <string>
 
 #include "LineRateLimiter.h"
+#include "RtpHeader.h"
 
 // One PPXR_RTPHOLE line per hole in the RTP sequence the video aggregator delivers, with the wfb data slots lost
 // between the two packets around it (docs/xr/fec-block-probe.md §6). It splits the missing RTP packets by where they
@@ -30,10 +31,10 @@ class RtpHoleProbe {
 
     // A payload the video aggregator delivered. Returns the PPXR_RTPHOLE line, or "" (no hole, over budget, not RTP).
     std::string onDelivered(int64_t tNs, const uint8_t *p, size_t n) {
-        if (n < 12 || (p[0] >> 6) != 2) return "";   // not RTP v2: ignored, its slot loss carries to the next packet
-        const uint16_t seq = static_cast<uint16_t>((p[2] << 8) | p[3]);
-        const uint32_t ssrc = (static_cast<uint32_t>(p[8]) << 24) | (static_cast<uint32_t>(p[9]) << 16) |
-                              (static_cast<uint32_t>(p[10]) << 8) | p[11];
+        RtpHeader h;
+        if (!h.parse(p, n)) return "";               // not RTP v2: ignored, its slot loss carries to the next packet
+        const uint16_t seq = h.seq;
+        const uint32_t ssrc = h.ssrc;
         std::string line;
         if (havePrev_ && ssrc == ssrc_) {
             const uint16_t step = static_cast<uint16_t>(seq - seq_);

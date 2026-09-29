@@ -19,18 +19,24 @@ from bisect import bisect_left
 TAB = "\t"
 
 
-def parse_air_log(lines):
-    """[(start_ms, end_ms, dropped)] from the air's wfb_tx PKT lines, in log order."""
+def parse_intervals(lines, tag):
+    """[(start_ms, end_ms, colon fields)] from the air's per-interval lines ts TAB <tag> TAB a:b:c..., in log order.
+    The first line of a tag only opens the first interval."""
     out, prev = [], None
     for line in lines:
-        f = line.rstrip("\n").split(TAB)
-        if len(f) < 3 or f[1] != "PKT":
+        f = line.rstrip("\r\n").split(TAB)
+        if len(f) < 3 or f[1] != tag:
             continue
-        ts, c = int(f[0]), f[2].split(":")
-        if prev is not None and len(c) >= 6:
-            out.append((prev, ts, int(c[5])))
+        ts = int(f[0])
+        if prev is not None:
+            out.append((prev, ts, f[2].split(":")))
         prev = ts
     return out
+
+
+def parse_air_log(lines):
+    """[(start_ms, end_ms, dropped)] from the air's wfb_tx PKT lines, in log order."""
+    return [(s, e, int(c[5])) for s, e, c in parse_intervals(lines, "PKT") if len(c) >= 6]
 
 
 def epoch_ms(line):

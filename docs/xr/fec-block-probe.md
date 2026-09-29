@@ -8,7 +8,8 @@ the delivered RTP sequence into packets that never entered the air's wfb_tx and 
 **Status: both built and host-tested; not yet run on the headset.**
 
 Keywords: FEC block, unrecoverable, outage, loss burst, bad FCS, keep_corrupted, fragment bitmap, wfb-ng Aggregator,
-PPXR_FECBLK, PPXR_RTPHOLE, RTP hole, RTP sequence gap, wfb slot, PKT_LOST, pre-FEC vs post-FEC, air input drop, wfb_tx
+PPXR_FECBLK, PPXR_RTPHOLE, PPXR_RELEASE, -Z, marker flush, frame completion delay, waited for next frame, FEC
+recovery release, FRAME_FLUSH, zflush.py, RTP hole, RTP sequence gap, wfb slot, PKT_LOST, pre-FEC vs post-FEC, air input drop, wfb_tx
 UDP overflow, circular time shift control, bloc FEC pierdut, întrerupere, gaură RTP.
 
 ## 1. What is logged
@@ -98,7 +99,7 @@ slots_lost=<wfb data slots lost between the two packets> session=0|1`
 included, to the virtual `send_to_socket` in wfb slot order (`packet_seq = block_idx·k + fragment_idx`). When that slot
 number jumps, it first logs `PKT_LOST\t<slots>` through `ANDROID_IPC_MSG` [PROVEN: rx.cpp:841-846]. This port:
 - routes `ANDROID_IPC_MSG` through `wfb_log.h` to `WfbPktLostTap.h`, a per-thread count, like the SESSION tap;
-- uses `RtpHoleAggregator.h`, wfb-ng's `AggregatorUDPv4` with `send_to_socket` overridden for the video channel only.
+- uses `VideoTapAggregator.h`, wfb-ng's `AggregatorUDPv4` with `send_to_socket` overridden for the video channel only.
   It takes the tap's count, then passes the payload's RTP sequence number and SSRC to `RtpHoleProbe.h`, then calls the
   base.
 
@@ -145,3 +146,68 @@ post-FEC share should sit at their mean.
 **Headset check (to do).** Same slot as §5: a detached capture (ab_detached.sh has the tag) next to the air's
 `/tmp/wfbtx.log`, ideally with the LED rig flashing at a 192 KB wfb_tx buffer (known air drops, a positive control)
 and at 512 KB (none).
+
+## 7. Frame release timing for -Z (PPXR_RELEASE, zflush.py)
+
+Why: pixelpilot-xr-40's wfb_tx patch `-Z` (wfb-ng branch o117-marker-flush `c8a5416`, OpenIPC
+`repos/tasks/loss-outages-2026-09-29/o3-patch/`) closes the open FEC block at each RTP marker packet (fillers + parity),
+so a frame's tail no longer waits for the next frame's packets. The planned slot compares 8/16 +Z, 8/16 −Z and
+12/24 −Z at 1080p90 16 Mbit with the LED rig. So far 12/24 had 3–5× less loss than 4/8 but +2.6 ms mean G2G and
+~+20 ms p95 (§6 run, `3ee9645`).
+
+**When a frame waits** [PROVEN: wfb-ng `src/rx.cpp` 748–833]. Without loss, the Aggregator hands each data fragment
+out the moment it arrives (the front-block loop). A payload waits only behind a gap in its block. Everything queued
+behind the gap then comes out in one `process_packet` call, when the block is recovered (k fragments, which can need
+the next frame's data, or parity the air sends only after that data fills the block) or when it is flushed. So a frame
+whose tail sat in such a block has its marker packet released **in the same call as the next frame's packets**. With
+-Z, the block closes with fillers and parity right after the marker, and the call holds the frame's own packets only.
+
+**What is logged.** `ReleaseProbe.h`, driven by `VideoTapAggregator.h` (`beginCall` before and `endCall` after each
+video `process_packet`, every delivered payload in between). One logcat line, tag `PPXR_RELEASE`, per call that is not
+a plain on-arrival delivery (`rec > 0` or more than one payload); at most 100/s, `suppressed=N` as the others:
+
+`t_mono_ms=<the frame that triggered the call> rec=<fragments recovered> n=<payloads> frames=<rtp ts>:<first seq>-<last
+seq>:<marker 0|1>,... [more=N]`
+
+`rec` = `count_p_fec_recovered` after minus before the call. The counter is reset only by `StatsWindow`, under the same
+`agg_mutex`, so never inside a call [PROVEN: WfbngLink.cpp:535-536, the stats thread takes `agg_mutex` before `take_window`]. The
+RTP header parse (`RtpHeader.h`) is shared with RtpHoleProbe.
+
+**Frame classes.** Defined in one place, [zflush.py](../../scripts/quest-latch/zflush.py):
+- `recovered`: released in a call with rec > 0.
+- `held`: released late without recovery (queued behind a gap, then flushed).
+- `clean`: neither.
+- `waited_next` (a flag on top of the class): the frame's marker packet shares a call with a later frame's packets.
+  wfb-ng releases in slot order, so position in the call is frame order.
+
+**Reading it.** `python3 scripts/quest-latch/zflush.py trace.pftrace steps.txt capture.txt --air-offset-s S --baseline
+LABEL [--guard-s 4] [--air-log wfbtx.log --air-mono-minus-epoch-ms M] [--by-step]`. Per state (or per step):
+- frames;
+- per class, `complete` (first → last packet, ms) and `capture→last` (ms above the baseline state's drift line, as
+  [big_frames.py](../../scripts/quest-latch/big_frames.py)), each as n / mean / p95 / p99;
+- the waited-for-next-frame share of all frames and of the recovered ones.
+
+The frames come from the trace's `ppxr_rtp_seq` / `ppxr_rtp_ts` counters (`ab_segments.load_trace`) and are joined to
+the log by 32-bit RTP timestamp. With `--air-log`, the air's `FRAME_FLUSH frame_ends:blocks_closed:fillers` per
+interval (wfb-ng o117 `tx.cpp:827`, counters reset per interval) is summed per state. Its timestamps are the air's
+CLOCK_MONOTONIC ms; M = air uptime ms − air epoch ms, read together on the air. Residual loss per state comes from the
+existing tools (`ab_segments.py` loss per step, `rtp_holes.py`).
+
+**Limits** [INFERRED from the mechanism]:
+- A late release of a single payload without recovery (a flush with one queued packet) is not logged. That frame lost
+  data anyway, so it shows in PPXR_RTPHOLE.
+- A block closed by the air's `fec_timeout` fillers releases the frame on its own: `waited_next` = 0, but the wait
+  still shows in `complete`.
+- A state with `suppressed` > 0 undercounts recovered and held frames.
+- The join needs one RTP timestamp base across the run, the same as big_frames.py (no waybeam restart).
+
+**Tests.**
+- Host gtests `ReleaseProbe_test.cpp` (7): a plain delivery writes nothing; a recovery lists frames, seq ranges and
+  markers; a held release; non-RTP payloads; the frame cap; a counter that went backwards; the rate limit.
+- Python `test_zflush.py` (8), and `test_air_drops.py` now also covers `parse_intervals`.
+- Mutation checks:
+  - logging single-payload calls failed 2 gtests;
+  - marking every marker group as waited_next failed 3 Python tests.
+
+**Headset check (to do).** Install a build with PPXR_RELEASE. In the -Z slot, record a Perfetto trace (as for
+big_frames) plus a detached capture (ab_detached.sh has the tag) and the air's step log and `/tmp/wfbtx.log`.

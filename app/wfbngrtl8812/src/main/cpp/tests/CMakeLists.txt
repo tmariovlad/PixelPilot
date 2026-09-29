@@ -74,3 +74,8 @@ add_executable(rtp_hole_probe_test RtpHoleProbe_test.cpp)
 target_include_directories(rtp_hole_probe_test PRIVATE ${SRC})
 target_link_libraries(rtp_hole_probe_test GTest::gtest_main)
 gtest_discover_tests(rtp_hole_probe_test)
+
+add_executable(release_probe_test ReleaseProbe_test.cpp)
+target_include_directories(release_probe_test PRIVATE ${SRC})
+target_link_libraries(release_probe_test GTest::gtest_main)
+gtest_discover_tests(release_probe_test)

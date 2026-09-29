@@ -90,8 +90,8 @@ void WfbngLink::initAgg() {
     video_channel_id_be = htobe32(video_channel_id_f);
     auto udsName = std::string("my_socket");
 
-    video_aggregator = std::make_unique<RtpHoleAggregator>(client_addr, 5600, keyPath, epoch, video_channel_id_f, 0,
-                                                           video_rtp_probe);
+    video_aggregator = std::make_unique<VideoTapAggregator>(client_addr, 5600, keyPath, epoch, video_channel_id_f, 0,
+                                                            video_rtp_probe);
 
     int mavlink_client_port = 14550;
     uint8_t mavlink_radio_port = 0x10;
@@ -258,7 +258,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                         const DecErrProbe::Counters before = counters();
                         WfbSessionTap::clear();   // a SESSION logged during this call is the video channel's
                         WfbPktLostTap::clear();   // and so are the PKT_LOST slot counts
-                        video_aggregator->setFrameTime(t_ns);
+                        video_aggregator->beginCall(t_ns);
                         video_aggregator->process_packet(payload,
                                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                                          0,
@@ -269,6 +269,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                                                          0,
                                                          0,
                                                          NULL);
+                        video_aggregator->endCall();
                         const int64_t now = now_ms();
                         const DecErrProbe::Counters after = counters();
                         int fec_k = 0, fec_n = 0;
