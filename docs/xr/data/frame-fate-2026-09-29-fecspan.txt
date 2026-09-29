@@ -1,4 +1,4 @@
-# ab_fecspan (2026-09-29 ~04:00-04:07), steps docs/xr/data/steps-2026-09-29-fecspan.txt (air clock), --air-offset-s 1.2322 (Quest-PC 0.4832 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. Each step restarts waybeam (new RTP timestamp base), so latency is valid only within a step (step_jitter)
+# ab_fecspan (2026-09-29 ~04:00-04:07), steps docs/xr/data/steps-2026-09-29-fecspan.txt (air clock), --air-offset-s 1.2322 (Quest-PC 0.4832 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump
                  decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
  0 fec4-8             88.9       0.3       0.2       0.1        0.5           89.0
  1 fec8-16            88.6       0.1       0.2       0.1        1.0           88.7

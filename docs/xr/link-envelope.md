@@ -203,7 +203,7 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
 
 Question (from the loss shape above, ~4 ms outages vs a ~2.7 ms FEC 4/8 block): does a FEC block that spans more time recover them?
 - **Method.**
-  - Air `fec_span.sh`: 1SS STBC long GI, ch157, 17 dBm, alink off; 4/8 · 8/16 · 12/24 · 12/24 · 8/16 · 4/8, 60 s each. The radio is set before each waybeam restart.
+  - Air `fec_span.sh`: 1SS STBC long GI, ch157, 17 dBm, alink off; 4/8 · 8/16 · 12/24 · 12/24 · 8/16 · 4/8, 60 s each. waybeam runs once (set up before step 0); each step only changes the FEC with `wfb_setfec`.
   - Quest: APK 69dfed66, IDR only, headset still, detached capture `TRACE LOSS: none`, offset +1.2322 s, guard 4 s.
   - The air's own injection drops (wfb_tx, 51 one-second samples) are split off with `loss_bursts.py --air-drop-seconds`.
 - **Data.** [air log](data/air-fec-span-2026-09-29.txt) · [steps](data/steps-2026-09-29-fecspan.txt) · [air-drop seconds](data/air-drop-seconds-2026-09-29-fecspan.txt) · [link_audit](data/audit-2026-09-29-fecspan.txt) · [frame fate](data/frame-fate-2026-09-29-fecspan.txt) · [link](data/link-2026-09-29-fecspan.txt) · [bursts](data/loss-bursts-2026-09-29-fecspan.txt) · [latency within each step](data/step-jitter-2026-09-29-fecspan.txt).
