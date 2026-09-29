@@ -1,5 +1,8 @@
 """Offline checks of slot_watch.py: probe parsing, the alert rules (edge-triggered), the alert line format and the
 end-of-slot timeline. No air, no Quest. Run: python3 test_slot_watch.py"""
+import sys
+
+import quest_env as env
 import slot_watch as sw
 
 PROBE = """now=1790640646
@@ -223,6 +226,25 @@ def test_the_probe_goes_to_the_air_with_lf_only():
         sw.AIR_PROBE = old
     assert cr not in script and script == b"#!/bin/sh\necho now=1\n", script
 
+
+
+def test_timeline_reads_the_app_health_lines_in_both_formats():
+    """pixelpilot-xr-36's real-format lines (scripts/quest-latch/test_health_log.py FILE, build db2142a) and a line
+    from a detached logcat capture both land on the timeline, parsed by health_log.parse (one parser)."""
+    sys.path.insert(0, env.LATCH_DIR)
+    from test_health_log import FILE, LOGCAT
+    rows = sw.timeline([], FILE + [LOGCAT], [], start=1790640000, end=1790640100)
+    codes_seen = [r[2] for r in rows]
+    assert codes_seen.count("SIGNAL_LOST") == 3 and "IDR_FAILED" in codes_seen and "HEALTH" not in codes_seen, rows
+    lost = [r for r in rows if r[2] == "SIGNAL_LOST" and "to=VIDEO_STALLED" in r[4]][0]
+    assert lost[0] == 1790640010.0 and lost[3] == "ALERT", lost
+
+
+def test_the_report_carries_the_app_summary():
+    sys.path.insert(0, env.LATCH_DIR)
+    from test_health_log import FILE
+    md = sw.render_report([], 0, 1, app_summary=sw.app_summary(FILE))
+    assert "## App health summary" in md and "| stalls_per_min | 2.0 |" in md, md
 
 if __name__ == "__main__":
     for name, fn in list(globals().items()):

@@ -77,7 +77,7 @@ A pass without problems prints `INFO quest QUEST_OK` with every value read.
 
 `report` merges the slot's alerts with two logs. It pulls them after the slot, when adb is allowed again:
 
-- The app's `PPXR_EVENT` / `PPXR_HEALTH` lines (pixelpilot-xr-36; not in a build yet).
+- The app's `PPXR_EVENT` / `PPXR_HEALTH` lines (pixelpilot-xr-36, build db2142a / APK 579305ee, codes in [health-logging.md](health-logging.md)). They are parsed by 36's [health_log.py](../../scripts/quest-latch/health_log.py) (`parse`, the one parser of the format; it also reads a detached logcat capture), and the report adds its `summarize` table (stalls per minute, causes, freeze %, IDR failure reasons).
   - Format: `t_mono_ms=… t_wall_ms=… code=… level=INFO|WARN|ALERT k=v …`.
   - Read from `files/ppxr_health.log(.1)` with `adb exec-out run-as com.openipc.pixelpilot.xr cat`, because at the end of a long slot `logcat -d` can have lost them.
   - `t_wall_ms` is the Quest's clock, corrected by the Quest − PC offset measured at the pull.
@@ -105,7 +105,7 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
 
 ## Verification (2026-09-29)
 
-- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 22 offline checks. They cover the probe parser, every
+- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 25 offline checks (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
   air rule including edge-triggering and recovery, the Quest parsers and rules, the alert line round trip and the
   timeline window/offsets. Run `python3 test_slot_watch.py`.
   - Four mutants were killed: drop `>` → `>=`, the uptime rule removed, the IDR threshold disabled, the edge trigger removed.

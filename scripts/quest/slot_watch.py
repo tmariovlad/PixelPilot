@@ -31,6 +31,9 @@ from typing import Optional
 
 import quest_env as env
 
+sys.path.insert(0, env.LATCH_DIR)
+import health_log  # noqa: E402  (scripts/quest-latch, pixelpilot-xr-36: the one parser of the app's health lines)
+
 AIR_PROBE = os.path.join(env.HERE, "air_probe.sh")
 AIR_HOST = os.environ.get("AIR_SSH", "air")          # ~/.ssh/config alias of 192.168.100.132 (key auth)
 RTL_ID = "0bda:8812"
@@ -360,7 +363,7 @@ def _kv(tokens):
     return dict(p.split("=", 1) for p in tokens if "=" in p)
 
 
-APP_META = ("t_wall_ms=", "t_mono_ms=", "code=", "level=")
+APP_META = ("t_wall_ms", "t_mono_ms", "code", "level")
 AIR_META = ("t=", "up_cs=", "code=")
 
 
@@ -371,16 +374,22 @@ def _alert_row(a, periodic):
 
 
 def _app_row(line, offset, periodic):
-    """"PPXR_EVENT|PPXR_HEALTH t_wall_ms=… code=… level=… k=v" (Quest epoch ms) -> a row, or None."""
-    f = line.split()
-    if not f or not f[0].startswith("PPXR_"):
+    """An app health line (files/ppxr_health.log or a detached logcat capture) -> a row on PC time, or None. The
+    format has one parser, pixelpilot-xr-36's health_log.parse (t_wall_ms = the Quest's epoch ms)."""
+    rec = health_log.parse(line.rstrip("\n"))
+    if rec is None:
         return None
-    kv = _kv(f[1:])
-    code = kv.get("code", f[0])
+    tag, kv = rec
+    code = kv.get("code", tag)
     if "t_wall_ms" not in kv or (code == "HEALTH" and not periodic):
         return None
-    rest = " ".join(x for x in f[1:] if not x.startswith(APP_META))
+    rest = " ".join(f"{k}={v}" for k, v in kv.items() if k not in APP_META)
     return int(kv["t_wall_ms"]) / 1000.0 + offset, "app", code, kv.get("level", "INFO"), rest
+
+
+def app_summary(lines):
+    """health_log.summarize of the app's lines (stalls per minute, causes, freeze %, IDR failure reasons)."""
+    return health_log.summarize(lines) if lines else {}
 
 
 def _air_row(line, offset, periodic):
@@ -407,7 +416,7 @@ def timeline(alerts, app_lines, air_lines, start, end, air_offset=0.0, app_offse
     return sorted(r for r in rows if r is not None and start <= r[0] <= end)
 
 
-def render_report(rows, start, end):
+def render_report(rows, start, end, app_summary=None):
     counts = {}
     for r in rows:
         counts[(r[1], r[2], r[3])] = counts.get((r[1], r[2], r[3]), 0) + 1
@@ -417,6 +426,9 @@ def render_report(rows, start, end):
     out += [f"| {s} | {c} | {lv} | {n} |" for (s, c, lv), n in sorted(counts.items())]
     out += ["", "## Timeline (PC time)", "", "| time | source | level | code | detail |", "|---|---|---|---|---|"]
     out += [f"| {fmt(t)} | {s} | {lv} | {c} | {d.replace('|', '/')} |" for t, s, c, lv, d in rows]
+    if app_summary:
+        out += ["", "## App health summary (health_log.summarize)", "", "| key | value |", "|---|---|"]
+        out += [f"| {k} | {str(v).replace('|', '/')} |" for k, v in app_summary.items()]
     return "\n".join(out) + "\n"
 
 
@@ -511,7 +523,7 @@ def cmd_report(args):
     rows = timeline(alerts, app, air, start, end, air_offset=air_off, app_offset=app_off, periodic=args.periodic)
     out = os.path.splitext(args.alerts)[0] + "-report.md"
     with open(out, "w", encoding="utf-8", newline="\n") as f:
-        f.write(render_report(rows, start, end))
+        f.write(render_report(rows, start, end, app_summary=app_summary(app)))
     print(f"report {out}: {len(rows)} rows (app lines {len(app)}, clock {app_off:+} s; air lines {len(air)}, "
           f"clock {air_off:+} s)")
     return 0
