@@ -6,6 +6,7 @@
 #include <android/native_window_jni.h>
 #include <jni.h>
 #include <atomic>
+#include <string>
 #include <chrono>
 #include <fstream>
 #include "AndroidThreadPrioValues.hpp"
@@ -15,13 +16,19 @@
 #define TAG "pixelpilot"
 
 // Key-frame requests to the air unit (IdrRequester), as counters for a system trace: ok and failed so far.
-static void traceIdrRequest(bool ok)
+static void traceIdrRequest(IdrRequester::Result r)
 {
     static std::atomic<int32_t> nOk{0}, nFailed{0};
-    const int32_t n = ok ? ++nOk : ++nFailed;
+    const bool    ok = r == IdrRequester::Result::Ok;
+    const int32_t n  = ok ? ++nOk : ++nFailed;
+    if (!ok) __android_log_print(ANDROID_LOG_WARN, "IdrRequester", "key-frame request failed: %s", IdrRequester::name(r));
     if (__builtin_available(android 29, *))
     {
-        if (ATrace_isEnabled()) ATrace_setCounter(ok ? "ppxr_idr_req_ok" : "ppxr_idr_req_failed", n);
+        if (ATrace_isEnabled())
+        {
+            ATrace_setCounter(ok ? "ppxr_idr_req_ok" : "ppxr_idr_req_failed", n);
+            if (!ok) ATrace_setCounter((std::string("ppxr_idr_req_") + IdrRequester::name(r)).c_str(), n);
+        }
     }
 }
 
@@ -45,9 +52,11 @@ VideoPlayer::VideoPlayer(JNIEnv* env, jobject context)
 {
     env->GetJavaVM(&javaVm);
     mIdrRequester.setOnResult(traceIdrRequest);
+    mIdrRequester.setStillNeeded([this] { return mAwaitingKey.load(); });
     mParser.setOnPacketLoss(
         [this](int)
         {
+            mAwaitingKey = true;
             mFreezeUntilIdr.onLoss(steadyNowMs());
             mIdrRequester.notifyLoss();
         });
@@ -195,6 +204,8 @@ void VideoPlayer::onNewRTPData(const uint8_t* data, const std::size_t data_lengt
 
 void VideoPlayer::onNewNALU(const NALU& nalu)
 {
+    if (nalu.getSize() > 4 && FreezeUntilIdr::isKeySlice(nalu.get_nal_unit_type(), nalu.IS_H265_PACKET))
+        mAwaitingKey = false;   // the key frame asked for (or any) is here: stop repeating the request
     if (nalu.getSize() > 4 && !mFreezeUntilIdr.admit(nalu.get_nal_unit_type(), nalu.IS_H265_PACKET, steadyNowMs()))
     {
         traceFrozen(mFreezeUntilIdr.dropped());
@@ -501,13 +512,17 @@ extern "C"
     (JNIEnv* env, jclass jclass1, jlong nativeInstance)
     {
         VideoPlayer* p     = native(nativeInstance);
-        const jlong  v[5]  = {p ? static_cast<jlong>(p->idrRequestsOk()) : 0,
-                              p ? static_cast<jlong>(p->idrRequestsFailed()) : 0,
-                              p ? static_cast<jlong>(p->frozenSlices()) : 0,
-                              p ? static_cast<jlong>(p->decoderRebuilds()) : 0,
-                              p ? static_cast<jlong>(p->codecSwitches()) : 0};
-        jlongArray   out   = env->NewLongArray(5);
-        env->SetLongArrayRegion(out, 0, 5, v);
+        // 0..4 as before; 5..10 the key-frame requests per IdrRequester::Result, in the enum's order.
+        jlong v[5 + IdrRequester::kResults] = {p ? static_cast<jlong>(p->idrRequestsOk()) : 0,
+                                               p ? static_cast<jlong>(p->idrRequestsFailed()) : 0,
+                                               p ? static_cast<jlong>(p->frozenSlices()) : 0,
+                                               p ? static_cast<jlong>(p->decoderRebuilds()) : 0,
+                                               p ? static_cast<jlong>(p->codecSwitches()) : 0};
+        for (int i = 0; p && i < IdrRequester::kResults; i++)
+            v[5 + i] = static_cast<jlong>(p->idrRequests(static_cast<IdrRequester::Result>(i)));
+        const jsize n   = 5 + IdrRequester::kResults;
+        jlongArray  out = env->NewLongArray(n);
+        env->SetLongArrayRegion(out, 0, n, v);
         return out;
     }
 

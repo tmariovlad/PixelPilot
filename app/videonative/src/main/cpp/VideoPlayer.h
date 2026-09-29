@@ -80,6 +80,7 @@ class VideoPlayer
     // Cumulative lever counters for the Stats page: IDR requests sent ok / failed, slices frozen until an IDR.
     uint32_t idrRequestsOk() const { return mIdrRequester.requestsOk(); }
     uint32_t idrRequestsFailed() const { return mIdrRequester.requestsFailed(); }
+    uint32_t idrRequests(IdrRequester::Result r) const { return mIdrRequester.requests(r); }
     uint32_t frozenSlices() const { return mFreezeUntilIdr.dropped(); }
     uint32_t decoderRebuilds() const { return videoDecoder.decoderRebuilds(); }
     uint32_t codecSwitches() const { return videoDecoder.codecSwitches(); }
@@ -105,6 +106,9 @@ class VideoPlayer
     const std::string   GROUND_RECORDING_DIRECTORY;
     JavaVM*             javaVm = nullptr;
     // Declared before mParser: the parser's loss callback uses it, so it must outlive the parser.
+    // Set on a lost packet, cleared by the next key slice; the requester repeats while it is set. Declared before
+    // mIdrRequester, whose thread reads it, so it outlives that thread.
+    std::atomic<bool>   mAwaitingKey{false};
     IdrRequester        mIdrRequester;
     FreezeUntilIdr      mFreezeUntilIdr;
     H26XParser          mParser;

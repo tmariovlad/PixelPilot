@@ -74,7 +74,11 @@ public class VideoPlayer implements IVideoParamsChanged {
     /** 4 longs per decoded frame: ssrc, RTP timestamp, complete ns, decoded ns (CLOCK_MONOTONIC). */
     public static native long[] nativeDrainFrameTimes(long nativeInstance);
 
-    /** Cumulative: IDR requests ok, IDR requests failed, slices frozen until an IDR, decoder rebuilds, codec switches. */
+    /**
+     * Cumulative: IDR requests ok, IDR requests failed, slices frozen until an IDR, decoder rebuilds, codec switches;
+     * then (index 5..10) the IDR requests per result: ok, refused, connect timeout, reply timeout, HTTP status, error
+     * (IdrRequester::Result).
+     */
     public static native long[] nativeGetLeverCounters(long nativeInstance);
 
     public static native void nativeStartDvr(long nativeInstance, int fd, int fmp4_enabled);
