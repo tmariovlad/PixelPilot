@@ -2,7 +2,7 @@
 and the app's IDR requests, split into the seconds in which the air's wfb_tx dropped input packets vs the rest.
 Run: python3 test_drop_seconds.py"""
 
-from drop_seconds import parse_logcat, split, step_seconds
+from drop_seconds import parse_logcat, per_step, split, step_seconds
 
 
 def test_step_seconds_skip_the_guard_and_stop_at_the_next_step():
@@ -28,6 +28,12 @@ def test_logcat_lines_become_per_second_counts_on_the_air_clock():
 def test_split_gives_rates_per_class_of_second():
     r = split({10: 4, 11: 2, 12: 0}, [10, 11, 12, 13], {10})
     assert r["drop"] == (1, 4, 4.0) and r["clean"] == (3, 2, 2 / 3), r
+
+
+def test_per_step_rates_use_each_steps_own_guarded_seconds():
+    # steps at 100 and 110, END 118, guard 4: step 0 has seconds 105..109 (5), step 1 has 115..117 (3)
+    counts = {105: 5, 109: 5, 112: 99, 116: 3}
+    assert per_step(counts, [100.0, 110.0], 118.0, 4) == [2.0, 1.0]
 
 
 if __name__ == "__main__":

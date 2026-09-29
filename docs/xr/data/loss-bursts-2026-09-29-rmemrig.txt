@@ -1,0 +1,9 @@
+# ab_rmemrig (2026-09-29 04:10-04:16 local), steps docs/xr/data/steps-2026-09-29-rmemrig.txt (air clock; END = last start + 60 s, before the air restore), --air-offset-s 2.230 (Quest-PC 1.4810 + PC-air 0.749), --guard-s 5 (video wfb_tx restart per step); app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing in front of the camera (~1 flash / 1.5 s).
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_rmemrig.pftrace docs/xr/data/steps-2026-09-29-rmemrig.txt --air-offset-s 2.230 --guard-s 5 --air-drop-seconds docs/xr/data/air-drop-seconds-2026-09-29-rmemrig.txt
+                 runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77 clean runs/s lost/s drop-s runs  lost drop-s
+ 0 rmem196608      0.72    9    1    6    9    8    3        4    0.6    7.2   11.1     1.6         0.39    1.0          22   144     14
+ 1 rmem524288      0.60   10    5    5    9    1    0        3    4.4    5.8    6.5     0.9         0.60    1.5           0     0      0
+ 2 rmem2097152     0.48    5    7    3    7    2    0        3    4.4    6.5    6.9     0.3         0.48    1.4           0     0      0
+ 3 rmem2097152     0.54    8    6    4    9    0    0        2    4.3    8.1    9.7     1.3         0.54    1.4           0     0      0
+ 4 rmem524288      0.26    2    1    3    6    1    0        4    4.5    7.4    7.4     0.4         0.26    0.9           0     0      0
+ 5 rmem196608      0.92    8    8    7    8    5   10        4    2.1    6.7    7.3     0.1         0.53    1.2          29   359     18

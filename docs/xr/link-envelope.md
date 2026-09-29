@@ -199,6 +199,31 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### rmem A/B with the G2G rig flashing 2026-09-29 04:10–04:16: 512 KB removes the flash-burst holes; bigger buffers lengthen the flash frames' tail
+
+The same A/B as below (ABCCBA 196608 / 524288 / 2097152, 60 s each, 1080p90 16 Mbit/s MCS7 FEC 4/8, 17 dBm), with the goggles' G2G rig (latency_test session) flashing its LED in front of the camera about every 1.5 s. Every flash is a scene change and a frame of ~55 packets (~3.3× the usual 17).
+- **Method.** Quest APK 1f0870c2, the same prefs as below, detached capture `TRACE LOSS: none`, offset +2.230 s (Quest−PC 1.4810 + PC−air 0.749), guard 5 s (the video wfb_tx restarts per step). Step 5 is closed at its start + 60 s (1790644601), before the air log's `END` line, which comes after the restore. Air-drop seconds come from the air's per-second list (`epoch = 1790633249.73 + uptime`).
+- **Data.** [air log](data/air-rmem-rig-2026-09-29.txt) · [steps](data/steps-2026-09-29-rmemrig.txt) · [air-drop seconds](data/air-drop-seconds-2026-09-29-rmemrig.txt) · [link_audit](data/audit-2026-09-29-rmemrig.txt) · [frame fate](data/frame-fate-2026-09-29-rmemrig.txt) · [link](data/link-2026-09-29-rmemrig.txt) · [bursts](data/loss-bursts-2026-09-29-rmemrig.txt) · [latency](data/latency-2026-09-29-rmemrig.txt) · [latency within each step](data/step-jitter-2026-09-29-rmemrig.txt) · [drop seconds + IDR per step](data/drop-seconds-2026-09-29-rmemrig.txt) · [flash frames](data/big-frames-2026-09-29-rmemrig.txt).
+- **Air** [PROVEN: air log]: 192 KB overflows with the rig (149 and 336 packets per 60 s, in 9 and 10 seconds). 512 KB and 2 MB drop 0 in all four steps. `sendmsg` latency max is 9.8–13.2 ms with the rig vs 2.5–3.2 ms without.
+
+| rmem (N = 2, A then A') | RTP holes | radio post-FEC (PKT_LOST/s) | loss runs/s | IDR requests/s | decoded fps | Δlast / last95 (ms) | flash frames: mean / p95 / max (ms) |
+|---|---|---|---|---|---|---|---|
+| 196608 (default) | 0.24 / 0.54 % | 1.31 / 1.50 | 0.72 / 0.92 | 0.55 / 0.89 | 88.1 / 87.9 | +0.00 / 25.4 | 37.2 / 62 / 74 |
+| 524288 | 0.10 / 0.06 % | 1.78 / 1.39 | 0.60 / 0.26 | 0.88 / 0.59 | 88.1 / 88.7 | +0.29 / 27.5 | 37.0 / 60 / 107 |
+| 2097152 | 0.09 / 0.09 % | 1.65 / 1.59 | 0.48 / 0.54 | 0.64 / 0.84 | 88.2 / 88.1 | +0.55 / 28.0 | 38.8 / 77 / 107 |
+
+- **A 512 KB buffer removes the holes the flash bursts cause at 192 KB** [PROVEN: RTP holes 0.24–0.54 % → 0.06–0.10 %, air drops 149/336 → 0, N = 2 alternating].
+  - The radio is the same in every state and in the drop seconds (1.52 vs 1.54 PKT_LOST/s). The extra holes at 192 KB are the air's own input drops.
+  - 2 MB gains nothing on loss over 512 KB.
+- **The cost: a queued burst instead of a dropped one lengthens the flash frames' tail, not their mean** [INFERRED: ~190 flash frames per state (npkts ≥ 32, p98), so each tail is ~10 frames].
+  - Flash frames (capture → last packet on the 192 KB drift line) average 37–39 ms in every state.
+  - Their max rises from 74 to 107 ms at both 512 KB and 2 MB. Their p95 rises (62 → 77 ms) only at 2 MB.
+  - Ordinary frames: +0.3 / +0.5 ms mean.
+  - 512 KB is the better trade: loss as low as 2 MB, p95 like 192 KB.
+- **IDR requests do not follow the buffer** (0.72 / 0.74 / 0.74 per state, per step 0.55–0.89/s). The feedback loop suspected in the FEC span run (drop → IDR → larger burst) does not show here. Decoded fps is ~88 in every state; frame fate's "never arrived" 1.0–1.4/s matches the air encoder dipping to 84–86 fps on flashes (the coordinator's slot_watch).
+- The rig itself lifts the Quest's last95 from ~5 ms (no rig, below) to ~25 ms in every state, through the flash frames and the frames queued behind them.
+- Over the whole run, 9.4 % of the post-FEC losses fall within 2 ms after a Quest uplink TX (control 3.6 %), vs 4.8 / 1.8 % without the rig.
+
 ### rmem A/B 2026-09-29 03:58–04:04: wfb_tx input socket buffer 196608 / 524288 / 2097152 at 1080p90 16 Mbit/s MCS7 FEC 4/8, no air drops
 
 Question (coordinator): do the air's video wfb_tx input drops (UDP receive-queue overflow before FEC, see FEC span below) go away with a bigger socket buffer? wfb_tx sets no `SO_RCVBUF`, so it gets `net.core.rmem_default` = 196608.
@@ -218,7 +243,7 @@ Question (coordinator): do the air's video wfb_tx input drops (UDP receive-queue
 - **With no air drops, a bigger buffer lowers neither the loss nor the latency** [PROVEN: N = 2 per state, ABCCBA; runs, frame fate and drift-line latency above].
   - 2 MB is slightly worse in both of its steps (0.11–0.13 % vs 0.06–0.07 %, ~2× the runs). But its steps sit in the middle of the ABCCBA order, so a mid-run hump in the link cannot be separated. With no queue ever above 192 KB, there is no mechanism by which the buffer size could act [INFERRED: air `rcvbuf_err_d = 0`]. Not a lever without bursts.
   - The losses stay unlocked from the 102.4 ms period (Z ≤ 2.0). Over the whole run, 4.8 % of the post-FEC losses fall within 2 ms after a Quest uplink TX (control with TX shifted 50 ms: 1.8 %; [link_audit](data/audit-2026-09-29-rmem.txt)).
-- **Next:** the same A/B with the rig flashing continuously (rmemrig, coordinator + latency_test session, 2026-09-29 ~04:10), so there are bursts to overflow the buffer.
+- **Next:** the same A/B with the rig flashing continuously (rmemrig, coordinator + latency_test session, 2026-09-29 ~04:10), so there are bursts to overflow the buffer. Done: see the section above.
 
 ### FEC span 2026-09-29 03:47–03:53: the same 1/2 ratio over longer blocks (4/8, 8/16, 12/24) at 1080p90 16 Mbit/s MCS7
 

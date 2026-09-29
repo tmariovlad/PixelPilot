@@ -1,0 +1,8 @@
+# rmemrig steps (air clock) from air-rmem-rig-2026-09-29.txt. END = last step start + 60 s (1790644601): the air log's END line (1790644612) comes after the restore to MCS2 2 Mbit 12 dBm
+1790644241 rmem196608
+1790644301 rmem524288
+1790644361 rmem2097152
+1790644421 rmem2097152
+1790644481 rmem524288
+1790644541 rmem196608
+1790644601 END

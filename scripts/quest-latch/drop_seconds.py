@@ -46,6 +46,16 @@ def parse_logcat(lines, offset_s):
     return lost, events, idr_req, idr_frames
 
 
+def per_step(counts, starts, end, guard_s):
+    """{second: count} -> per step, the count per second over that step's own guarded seconds."""
+    bounds = list(starts) + [end]
+    out = []
+    for lo, hi in zip(bounds, bounds[1:]):
+        ss = step_seconds([lo], hi, guard_s)
+        out.append(sum(counts.get(s, 0) for s in ss) / len(ss) if ss else 0.0)
+    return out
+
+
 def split(counts, seconds, drop):
     """{second: count} over the given seconds -> {"drop"|"clean": (seconds, total, per second)}."""
     out = {}
@@ -90,6 +100,13 @@ def main():
         _, r, rr = split(idr_req, seconds, drop)[name]
         _, fr, frr = split(idr_frames, seconds, drop)[name]
         print(f"{name:7s}{n:8d}{l:10d}{lr:7.2f}{e:8d}{er:7.2f}{r:9.1f}{rr:7.2f}{fr:8.1f}{frr:7.2f}")
+    labels = [l.split()[1] for l in open(a.steps, encoding="utf-8")
+              if l.split() and l[0].isdigit() and l.split()[1] not in ("END", "PRE") and "ERR" not in l]
+    rates = [per_step(c, starts, end, a.guard_s) for c in (lost, events, idr_req, idr_frames)]
+    print("per step (per second)")
+    print(f"{'':16s}{'PKT_LOST':>9s}{'events':>8s}{'IDR req':>9s}{'IDR fr':>8s}")
+    for i, lab in enumerate(labels):
+        print(f"{i:2d} {lab:13s}{rates[0][i]:9.2f}{rates[1][i]:8.2f}{rates[2][i]:9.2f}{rates[3][i]:8.2f}")
 
 
 if __name__ == "__main__":
