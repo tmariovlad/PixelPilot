@@ -30,9 +30,17 @@ Measure every method at the same position with the same tools (loss, decode fps,
   - ESP32 G2G rig (photodiode total): **READY** (session latency-test-f0, 2026-09-29), not yet used on the Quest. Repo `c:/Users/vlad_/Documents/Arduino/latency_test/` (CLAUDE.md; skills `/g2g-latency`, `/g2g-calibrate`).
     - Port COM7 (CP210x 10C4:EA60), auto-detected by `~/.claude/skills/g2g-latency/scripts/find_rig_port.py`; COM5 is the DPS-150 and is refused.
     - Wiring: LED on GPIO14, TEMT6000 SIG on GPIO32, unchanged. *Correction 2026-09-29 (user, via latency-test-f0):* 5d5a47b said a floating wire had been fixed; nothing was rewired and no resistor was added, only the LED/sensor position and the ambient light changed. The cause of the earlier 0 DC + 50 Hz hum signature is unproven: likely an intermittent SIG/GND contact that closed when things were moved [SPECULATION]. If the hum comes back, wiggle SIG/GND during a cmd `4` free-run.
-    - Face-to-face self-test 25/25, avg **135 µs** (134–158): the rig offset to subtract. Versus the old 47 µs, the difference is probably alignment (max ~2800 vs 4095) [SPECULATION]; the self-test numbers are [PROVEN: latency_test `tasks/diag-50hz-flicker-led-not-reaching-sensor-2026-09-29.md`, raw `tasks/raw-data/com7-fixed-2026-09-29-cmd3.csv`, commits e5da3b0 → 9c4d41b].
+    - **Firmware with the 4 code-review fixes** (latency_test `85097b6` → `9addc3d`, docs `07bfbd4`; the previous firmware is backed up as `backups/com7-firmware-before-review-fixes-20260929-030119.bin`):
+      - calibration passes only if the LED-on peak exceeds the LED-off peak by `rise_margin` (default 30);
+      - the onset reference is the peak of the last `pre_ms` (25 ms) before LED-on, not a single read;
+      - calibration ends with 3 sham runs with the LED dark (`sham (LED dark): 0 / 3` live);
+      - a 300 ms LED-dark dwell before a retry.
+      - The 50 Hz hum signature is rejected in replay (3/3, offline). Rejecting a real floating-input hum on the hardware is not verified live.
+    - Face-to-face self-test on that firmware: 25/25, avg **138 µs** (137–145), so the rig offset to subtract is **~0.14 ms** [PROVEN: latency_test `tasks/code-review-2026-09-29.md` status table, CLAUDE.md]. It replaces the earlier 135 µs (134–158) from the old firmware (`tasks/diag-50hz-flicker-led-not-reaching-sensor-2026-09-29.md`). Versus the old 47 µs, the difference is probably alignment (max ~2800 vs 4095) [SPECULATION].
     - Opening the port resets the board and a run is refused until calibration succeeds, so always `1` (calibrate) before `2` (run).
     - On the Quest: the LED in front of the air unit's camera, the TEMT6000 on a Quest lens under an opaque shield, and calibrate in the final position.
+      - Calibration prints `offPeak` / `readUs` and `sham … n/3`. A sham count > 0, or a FAIL with `offPeak` ≈ max, means the sensor is not seeing the LED.
+      - For a dim Quest image, lower `rise_margin` (runtime knob, default 30; `/g2g-calibrate`).
   - vmoded autostart after a reboot: needs the user's approval.
 0. **High bitrate (≥16–25 Mbit/s clean): hardware limit NOT proven (2026-09-28).** The user asked for an audit. A 5-agent audit is in the OpenIPC repo `repos/tasks/link-25mbit-audit-2026-09-28/` (synthesis `00-INDEX-link-25mbit-audit.md`, runbook `T4-T5-RUNBOOK.md`, todo O117). Results in [link-envelope.md](link-envelope.md):
    - **T5:** proven on the unit that `iw … txpower fixed` sends MCS7 at the same TXAGC index as MCS0. The by-rate table is off/flat, which causes the MCS7 cliff above 20 dBm. The fix is a per-row power cap (O115 §12).
