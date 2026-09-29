@@ -30,6 +30,14 @@ The user asked for one optimal default on the air unit and on the ground, so tha
 - `xr_autostart` defaults on for Meta headsets (`LatencyExperiments`). A fresh launch from the Library or on adapter attach opens XR directly. Leaving XR returns to the 2D screen for settings. The 2D menu toggle is "Start in XR".
 - The XR build's default channel is **157** (`app/src/debug/res/values/link_defaults.xml`; main build 161) and its default `gs.key` is the **OpenIPC firmware default** (`app/src/debug/assets/gs.key`).
 
+**Default channel since 2026-09-29 ~22:20: 165 on both ends** (the user's decision after the [operational channel A/B](link-envelope.md#channel-ab-in-the-operational-state-2026-09-29-21592212-ch165-cuts-the-residual-loss-356-at-mcs7-16-mbits): 165 cut the residual loss 3.5–6×, and a Quest scan found it the only UNII-3 channel outside every visible BSS):
+- **Air:** `/etc/linkmode.chan` = 165, copied to `/tmp/linkmode.chan` by one new line in `/etc/rc.local` (md5 `113fe351`) before the linkmode boot, so wfb starts on 165 at every boot (deployed by the coordinator, md5-gated; the old rc.local is backed up). Revert: `rm /etc/linkmode.chan`. Live change: `linkmode-air.sh chan <n>`.
+- **Quest:** the pref `wifi-channel` = 165 in `shared_prefs/general.xml` (the debug build default stays 157). The user's baseline prefs are now `gs.key` + `od_enabled=false` + `rtp_tight_reorder=true` + `wifi-channel=165`.
+- **Checked** [PROVEN 22:24–22:30]:
+  - logcat `wfb-ng monitoring on /dev/bus/usb/001/002 using wifi channel 165`, then PPXR_STATS fps 167, MCS2, RSSI −29/−33 dBm, post-FEC 0.00 in race mode;
+  - after an air reboot with nothing touched on the Quest, video came back on its own ~99 s after the reboot command (165–168 fps, RSSI −30).
+- **Pitfall found on the way:** with guardian_pause 0 and no one wearing the headset, the Quest shows the Guardian boundary dialog and the XR session goes inactive (`SESSION_INACTIVE`), so the link does not run at all. A remote check needs guardian_pause 1 + prox_close for its duration (then restore both).
+
 **HIL ground station `.208`, not done yet (it was offline):**
 - It needs the OpenIPC default `gs.key` in `~/linkmode/gs.key`; back up the HIL one first.
 - It needs `wfb_rx -i 7669206`. The skill's `linkmode-gs.sh` already has `LINK_ID`; deploy it when `.208` is reachable.

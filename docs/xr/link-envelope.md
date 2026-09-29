@@ -237,7 +237,7 @@ The interference lead from the staircase below: a floor of ~4 bad-FCS frames/s a
   - Quest: [pref_ab.sh](../../scripts/quest/pref_ab.sh) with `START_AT` writes `wifi-channel` and the slot prefs, then relaunches XR at every step start.
   - Air: `chan_ab.sh` with the L1 verb `linkmode-air.sh chan`, switch < 1 s, 17 dBm re-asserted, air drops 0 ([air log](data/air-chan-ab-2026-09-29.txt), per-step `ch=` read back).
   - Every step starts with a relaunch, so the guard is 15 s at both ends. Steps on the PC clock.
-  - The Quest link was checked on 157 beforehand: logcat `wfb-ng monitoring on ... using wifi channel 157`. The APK's effective default is 157, even though `res/values/link_defaults.xml` says 161.
+  - The Quest link was checked on 157 beforehand: logcat `wfb-ng monitoring on ... using wifi channel 157`. The debug build's default is 157 (`app/src/debug/res/values/link_defaults.xml` overrides the main build's 161, [real-link](real-link.md)).
 - **Data.** [steps](data/steps-2026-09-29-chab.txt) · [RSSI per step](data/rssi-steps-2026-09-29-chab.txt) · [link (crc/s)](data/link-2026-09-29-chab.txt) · [link_audit](data/audit-2026-09-29-chab.txt) · [FEC blocks](data/fec-blocks-2026-09-29-chab.txt) ([tsv](data/fec-blocks-2026-09-29-chab.tsv)) · [bursts](data/loss-bursts-2026-09-29-chab.txt) · [latency](data/latency-2026-09-29-chab.txt) · [frame fate](data/frame-fate-2026-09-29-chab.txt) · [large frames](data/big-frames-2026-09-29-chab.txt) · [latency within each step](data/step-jitter-2026-09-29-chab.txt).
 
 | channel (A, A') | RSSI A / B (dBm) | SNR dB | bad-FCS frames/s (crc/s) | loss before FEC (p_data) | post-FEC | unrecoverable FEC blocks/min (with bad FCS) | 102.4 ms lock Z |
