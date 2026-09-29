@@ -1,5 +1,5 @@
-# ab_rmemrig (2026-09-29 04:10-04:16 local), steps docs/xr/data/steps-2026-09-29-rmemrig.txt (air clock; END = last start + 60 s, before the air restore), --air-offset-s 2.230 (Quest-PC 1.4810 + PC-air 0.749), --guard-s 5 (video wfb_tx restart per step); app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing in front of the camera (~1 flash / 1.5 s).
-# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_rmemrig.pftrace docs/xr/data/steps-2026-09-29-rmemrig.txt --air-offset-s 2.230 --guard-s 5 --logcat scripts/quest/out/logcat_rmemrig.txt
+# ab_rmemrig, steps docs/xr/data/steps-2026-09-29-rmemrig.txt, --air-offset-s 1.551 (Quest-PC 1.481 + PC-air 0.07), --guard-s 5. 04:10-04:16 local; END = last start + 60 s, before the air restore; video wfb_tx restart per step; app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing in front of the camera (~1 flash / 1.5 s). Rerun 2026-09-29 ~04:50 with PC-air +0.07 s (the coordinator's corrected clock offset; the earlier 0.749 s was an artefact of clk_off.py, so earlier versions of this file were shifted ~0.7 s) and air-drop seconds on uptime base .97 (see that file).
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_rmemrig.pftrace docs/xr/data/steps-2026-09-29-rmemrig.txt --air-offset-s 1.551 --guard-s 5 --logcat scripts/quest/out/logcat_rmemrig.txt
 PKT_LOST events 417, packets 778; TX DESC 16268; block overrides 0
 post-FEC gap sizes: 1:257, 2:43, 3:43, 4:69, 5:1, 6:3, 7:1
 loss within 2 ms after a Quest TX: 9.4 % (control, TX shifted 50 ms: 3.6 %)
@@ -10,9 +10,9 @@ Rayleigh Z @   72.000 Hz =      0.9
 Rayleigh Z @   90.000 Hz =      0.7
 TRACE LOSS: none (stats table clean)
                     rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
- 0 rmem196608    74149   180  1353    46    1.88   0.24    0.7    9    1    6    9   11  63.9   33.4   4.0
- 1 rmem524288    73947    76  1607    76    2.27   0.10    0.6   10    5    5    9    1   6.6   31.2   4.0
- 2 rmem2097152   73890    68  1312    68    1.87   0.09    0.5    5    7    3    7    2  17.6   33.0   4.0
- 3 rmem2097152   74288    68  1492    68    2.10   0.09    0.5    8    6    4    9    0   0.0   37.9   4.0
- 4 rmem524288    74230    44  1364    37    1.89   0.06    0.3    2    1    3    6    1  15.9   32.3   4.0
- 5 rmem196608    73913   398  1452    63    2.04   0.54    0.9    8    8    7    8   15  80.7   20.9   4.1
+ 0 rmem196608    74154   180  1349    46    1.88   0.24    0.7    9    1    6    9   11  63.9   33.4   4.0
+ 1 rmem524288    73973    76  1627    79    2.30   0.10    0.6   10    5    5    9    1   6.6   31.2   4.0
+ 2 rmem2097152   73895    66  1306    66    1.86   0.09    0.5    5    6    3    7    2  18.2   33.0   4.0
+ 3 rmem2097152   74350    68  1466    68    2.06   0.09    0.5    8    6    4    9    0   0.0   37.9   3.9
+ 4 rmem524288    74263    37  1356    37    1.87   0.05    0.2    2    1    3    6    0   0.0   32.3   4.0
+ 5 rmem196608    73922   399  1465    63    2.06   0.54    0.9    9    8    7    8   15  80.5   20.9   4.1

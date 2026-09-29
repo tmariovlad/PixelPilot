@@ -1,13 +1,13 @@
-# ab_fecspan split by air-drop second (air-drop-seconds-2026-09-29-fecspan.txt), guarded step windows; PKT_LOST = radio post-FEC loss, IDR req = app key-frame requests (idrok+idrfail), IDR fr = IDR frames from the air (PPXR_STATS idr)
-# python3 scripts/quest-latch/drop_seconds.py scripts/quest/out/qtx_fecspan.raw.txt docs/xr/data/steps-2026-09-29-fecspan.txt docs/xr/data/air-drop-seconds-2026-09-29-fecspan.txt --air-offset-s 1.2322 --guard-s 4
+# ab_fecspan, steps docs/xr/data/steps-2026-09-29-fecspan.txt, --air-offset-s 0.5532 (Quest-PC 0.4832 + PC-air 0.07), --guard-s 4. 03:47-03:53 local, epochs 1790642833-1790643206; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump and is not valid for latency; latency baseline fec12-24 (steps 2-3, clean). Rerun 2026-09-29 ~04:50 with PC-air +0.07 s (the coordinator's corrected clock offset; the earlier 0.749 s was an artefact of clk_off.py, so earlier versions of this file were shifted ~0.7 s) and air-drop seconds on uptime base .97 (see that file). drop_seconds with the two-sided guard (same step windows as the other analyzers) since 2026-09-29 ~05:00.
+# python3 scripts/quest-latch/drop_seconds.py scripts/quest/out/qtx_fecspan.raw.txt docs/xr/data/steps-2026-09-29-fecspan.txt docs/xr/data/air-drop-seconds-2026-09-29-fecspan.txt --air-offset-s 0.5532 --guard-s 4
         seconds  PKT_LOST     /s  events     /s  IDR req     /s  IDR fr     /s
-drop         91        66   0.73      41   0.45     53.4   0.59   137.5   1.51
-clean       252       187   0.74     115   0.46     42.8   0.17   238.0   0.94
+drop         84        74   0.88      47   0.56     60.8   0.72   130.5   1.55
+clean       241       183   0.76     109   0.45     36.1   0.15   226.5   0.94
 per step (per second)
                  PKT_LOST  events  IDR req  IDR fr
- 0 fec4-8            0.98    0.47     0.46    1.02
- 1 fec8-16           0.33    0.33     0.29    0.97
- 2 fec12-24          0.22    0.22     0.10    0.98
- 3 fec12-24          0.29    0.29     0.12    1.07
- 4 fec8-16           0.86    0.54     0.24    1.17
- 5 fec4-8            1.57    0.81     0.44    1.31
+ 0 fec4-8            1.04    0.48     0.46    1.04
+ 1 fec8-16           0.35    0.35     0.31    0.96
+ 2 fec12-24          0.23    0.23     0.10    1.00
+ 3 fec12-24          0.33    0.33     0.12    1.02
+ 4 fec8-16           0.91    0.57     0.28    1.21
+ 5 fec4-8            1.69    0.84     0.48    1.31

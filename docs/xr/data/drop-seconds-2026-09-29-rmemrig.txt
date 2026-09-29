@@ -1,13 +1,13 @@
-# ab_rmemrig (2026-09-29 04:10-04:16 local), steps docs/xr/data/steps-2026-09-29-rmemrig.txt (air clock; END = last start + 60 s, before the air restore), --air-offset-s 2.230 (Quest-PC 1.4810 + PC-air 0.749), --guard-s 5 (video wfb_tx restart per step); app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing in front of the camera (~1 flash / 1.5 s).
-# python3 scripts/quest-latch/drop_seconds.py scripts/quest/out/qtx_rmemrig.raw.txt docs/xr/data/steps-2026-09-29-rmemrig.txt docs/xr/data/air-drop-seconds-2026-09-29-rmemrig.txt --air-offset-s 2.230 --guard-s 5
+# ab_rmemrig, steps docs/xr/data/steps-2026-09-29-rmemrig.txt, --air-offset-s 1.551 (Quest-PC 1.481 + PC-air 0.07), --guard-s 5. 04:10-04:16 local; END = last start + 60 s, before the air restore; video wfb_tx restart per step; app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing in front of the camera (~1 flash / 1.5 s). Rerun 2026-09-29 ~04:50 with PC-air +0.07 s (the coordinator's corrected clock offset; the earlier 0.749 s was an artefact of clk_off.py, so earlier versions of this file were shifted ~0.7 s) and air-drop seconds on uptime base .97 (see that file). drop_seconds with the two-sided guard (same step windows as the other analyzers) since 2026-09-29 ~05:00.
+# python3 scripts/quest-latch/drop_seconds.py scripts/quest/out/qtx_rmemrig.raw.txt docs/xr/data/steps-2026-09-29-rmemrig.txt docs/xr/data/air-drop-seconds-2026-09-29-rmemrig.txt --air-offset-s 1.551 --guard-s 5
         seconds  PKT_LOST     /s  events     /s  IDR req     /s  IDR fr     /s
-drop         33        50   1.52      26   0.79     32.8   0.99    58.5   1.77
-clean       291       448   1.54     225   0.77    204.1   0.70   400.0   1.37
+drop         32        53   1.66      29   0.91     32.1   1.00    59.0   1.84
+clean       268       395   1.47     199   0.74    181.4   0.68   357.5   1.33
 per step (per second)
                  PKT_LOST  events  IDR req  IDR fr
- 0 rmem196608        1.31    0.74     0.55    1.39
- 1 rmem524288        1.78    0.96     0.88    1.63
- 2 rmem2097152       1.65    0.70     0.64    1.53
- 3 rmem2097152       1.59    0.87     0.84    1.31
- 4 rmem524288        1.39    0.56     0.59    1.26
- 5 rmem196608        1.50    0.81     0.89    1.37
+ 0 rmem196608        1.28    0.72     0.54    1.32
+ 1 rmem524288        1.90    0.98     0.97    1.55
+ 2 rmem2097152       1.50    0.64     0.51    1.44
+ 3 rmem2097152       1.74    0.92     0.93    1.43
+ 4 rmem524288        0.92    0.42     0.40    1.18
+ 5 rmem196608        1.62    0.88     0.92    1.41

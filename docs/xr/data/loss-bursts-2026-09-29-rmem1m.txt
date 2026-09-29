@@ -1,0 +1,9 @@
+# ab_rmem1m, steps docs/xr/data/steps-2026-09-29-rmem1m.txt, --air-offset-s 1.5892 (Quest-PC 1.5192 + PC-air 0.07), --guard-s 5. 04:27-04:33 local; ABABAB 512 KB / 1 MB, 60 s each; END = last start + 60 s, before the air restore; video wfb_tx restart per step; app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing (latency-test-0d, 12 runs from PC 1790645240). PC-air +0.07 s (slot_watch; air runs ntpd). Quest-PC measured with rtt 205 ms (step alignment +-0.1 s).
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_rmem1m.pftrace docs/xr/data/steps-2026-09-29-rmem1m.txt --air-offset-s 1.5892 --guard-s 5 --air-drop-seconds docs/xr/data/air-drop-seconds-2026-09-29-rmem1m.txt
+                 runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77 clean runs/s lost/s drop-s runs  lost drop-s
+ 0 rmem524288      0.32    5    5    1    5    0    0        2    4.3    6.7    6.7     0.4         0.32    0.8           0     0      0
+ 1 rmem1048576     0.52    8    4    4   10    0    0        3    4.5    6.9    7.4     0.4         0.52    1.4           0     0      0
+ 2 rmem524288      0.62    7    5    4   13    2    0        3    4.3    7.0   14.3     0.4         0.62    1.8           0     0      0
+ 3 rmem1048576     0.62   11    5    5   10    0    0        2    3.9    7.7    8.4     1.7         0.62    1.5           0     0      0
+ 4 rmem524288      0.48    5    5    6    8    0    0        3    4.4    7.1    7.2     1.6         0.48    1.3           0     0      0
+ 5 rmem1048576     0.78    9    8    9   13    0    0        3    3.9    9.7   12.1     1.2         0.78    2.1           0     0      0

@@ -9,15 +9,18 @@ in both classes mean the radio is the same in the drop seconds, and the extra ho
 Usage: python3 drop_seconds.py qtx_<label>.raw.txt steps.txt air-drop-seconds.txt --air-offset-s S [--guard-s 4]
 """
 import argparse
+import math
 import re
 
 _KV = re.compile(r"(\w+)=(-?\d+(?:\.\d+)?)")
 
 
 def step_seconds(starts, end, guard_s):
-    """Whole air seconds strictly inside each guarded step window [start + guard, next start or end)."""
+    """Whole air seconds [s, s + 1) inside each guarded step window [start + guard, next start (or end) - guard), the
+    window ab_segments.step_window uses, so these seconds match what the other analyzers count per step."""
     bounds = list(starts) + [end]
-    return [s for lo, hi in zip(bounds, bounds[1:]) for s in range(int(lo + guard_s) + 1, int(hi))]
+    return [s for lo, hi in zip(bounds, bounds[1:])
+            for s in range(math.ceil(lo + guard_s), math.floor(hi - guard_s))]
 
 
 def parse_logcat(lines, offset_s):

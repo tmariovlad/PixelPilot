@@ -1,0 +1,15 @@
+# ab_rmem1m, steps docs/xr/data/steps-2026-09-29-rmem1m.txt, --air-offset-s 1.5892 (Quest-PC 1.5192 + PC-air 0.07), --guard-s 5. 04:27-04:33 local; ABABAB 512 KB / 1 MB, 60 s each; END = last start + 60 s, before the air restore; video wfb_tx restart per step; app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing (latency-test-0d, 12 runs from PC 1790645240). PC-air +0.07 s (slot_watch; air runs ntpd). Quest-PC measured with rtt 205 ms (step alignment +-0.1 s).
+# python3 scripts/quest-latch/ab_link.py scripts/quest/out/ab_rmem1m.pftrace docs/xr/data/steps-2026-09-29-rmem1m.txt --air-offset-s 1.5892 --guard-s 5
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 rmem524288         -   2901.7        -     30.3      0.8    100.0     84.0     85.0     16.9     17.0        -        -        -        -        -      2.1        -        -        -        -        -        -        -
+ 1 rmem1048576        -   2906.8        -     32.2      1.4    100.0     84.0     85.0     16.9     17.0        -        -        -        -        -      2.3        -        -        -        -        -        -        -
+ 2 rmem524288         -   2921.4        -     34.1      1.8    100.0     84.0     85.0     17.0     17.0        -        -        -        -        -      2.4        -        -        -        -        -        -        -
+ 3 rmem1048576        -   2913.3        -     33.8      1.5    100.0     84.0     85.0     16.8     17.0        -        -        -        -        -      2.4        -        -        -        -        -        -        -
+ 4 rmem524288         -   2907.4        -     31.3      1.3    100.0     84.0     85.0     16.9     17.0        -        -        -        -        -      2.2        -        -        -        -        -        -        -
+ 5 rmem1048576        -   2901.0        -     32.0      2.0    100.0     84.0     85.0     17.0     17.0        -        -        -        -        -      2.3        -        -        -        -        -        -        -
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+rmem524288            -   2910.2        -     31.9      1.3    100.0     84.0     85.0     16.9     17.0        -        -        -        -        -      2.2        -        -        -        -        -        -        -
+rmem1048576           -   2907.1        -     32.7      1.6    100.0     84.0     85.0     16.9     17.0        -        -        -        -        -      2.3        -        -        -        -        -        -        -

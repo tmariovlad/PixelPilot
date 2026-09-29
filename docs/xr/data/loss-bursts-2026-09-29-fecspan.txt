@@ -1,8 +1,9 @@
-# ab_fecspan (2026-09-29 03:47-03:53 local, epochs 1790642833-1790643206), steps docs/xr/data/steps-2026-09-29-fecspan.txt (air clock), --air-offset-s 1.2322 (Quest-PC 0.4832 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump
+# ab_fecspan, steps docs/xr/data/steps-2026-09-29-fecspan.txt, --air-offset-s 0.5532 (Quest-PC 0.4832 + PC-air 0.07), --guard-s 4. 03:47-03:53 local, epochs 1790642833-1790643206; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump and is not valid for latency; latency baseline fec12-24 (steps 2-3, clean). Rerun 2026-09-29 ~04:50 with PC-air +0.07 s (the coordinator's corrected clock offset; the earlier 0.749 s was an artefact of clk_off.py, so earlier versions of this file were shifted ~0.7 s) and air-drop seconds on uptime base .97 (see that file).
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_fecspan.pftrace docs/xr/data/steps-2026-09-29-fecspan.txt --air-offset-s 0.5532 --guard-s 4 --air-drop-seconds docs/xr/data/air-drop-seconds-2026-09-29-fecspan.txt
                  runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77 clean runs/s lost/s drop-s runs  lost drop-s
  0 fec4-8          0.67    4    8    0    9    4   10        4    1.2    6.1    6.5     0.3         0.29    0.8          23   390     10
- 1 fec8-16         0.46    7    3    1    1    5    7        5    0.3    2.7    5.4     1.5         0.29    2.9          14   141     18
- 2 fec12-24        0.13    2    0    1    0    0    4       10    0.2    0.3    0.3     0.5         0.10    0.8           3    42     12
- 3 fec12-24        0.15    4    0    0    1    0    3        4    0.1    0.2    0.2     0.1         0.08    1.1           5    30     16
- 4 fec8-16         0.42    4    4    0    5    4    5        4    0.3   11.6   11.7     1.5         0.21    1.3          14    72     14
- 5 fec4-8          0.78    8    9   10   12    7    4        3    3.0    6.5    7.8     1.7         0.86    3.5           7    16     14
+ 1 fec8-16         0.48    7    3    1    1    5    8        5    0.3    2.7    5.4     1.1         0.21    0.6          18   240     18
+ 2 fec12-24        0.13    2    0    1    0    0    4       10    0.2    0.3    0.3     0.5         0.05    0.1           5    72     12
+ 3 fec12-24        0.15    4    0    0    1    0    3        4    0.1    0.2    0.2     0.1         0.03    0.6           7    48     16
+ 4 fec8-16         0.42    4    4    0    5    4    5        4    0.3   11.6   11.7     1.5         0.15    0.7          16    92     14
+ 5 fec4-8          0.78    8    9   10   12    7    4        3    3.0    6.5    7.8     1.7         0.70    3.0          15    40     14

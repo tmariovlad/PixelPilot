@@ -1,14 +1,14 @@
-# ab_rmemrig (2026-09-29 04:10-04:16 local), steps docs/xr/data/steps-2026-09-29-rmemrig.txt (air clock; END = last start + 60 s, before the air restore), --air-offset-s 2.230 (Quest-PC 1.4810 + PC-air 0.749), --guard-s 5 (video wfb_tx restart per step); app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing in front of the camera (~1 flash / 1.5 s).
-# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_rmemrig.pftrace docs/xr/data/steps-2026-09-29-rmemrig.txt --air-offset-s 2.230 --guard-s 5 --baseline rmem196608
+# ab_rmemrig, steps docs/xr/data/steps-2026-09-29-rmemrig.txt, --air-offset-s 1.551 (Quest-PC 1.481 + PC-air 0.07), --guard-s 5. 04:10-04:16 local; END = last start + 60 s, before the air restore; video wfb_tx restart per step; app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing in front of the camera (~1 flash / 1.5 s). Rerun 2026-09-29 ~04:50 with PC-air +0.07 s (the coordinator's corrected clock offset; the earlier 0.749 s was an artefact of clk_off.py, so earlier versions of this file were shifted ~0.7 s) and air-drop seconds on uptime base .97 (see that file).
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_rmemrig.pftrace docs/xr/data/steps-2026-09-29-rmemrig.txt --air-offset-s 1.551 --guard-s 5 --baseline rmem196608
 big = npkts >= 32 (p98 of the frames in the steps); ms above the 'rmem196608' drift line
                  big n  pkts   last    p50    p95    max | rest n   last    p95
- 0 rmem196608      101    52  35.79  35.79  62.21  73.70 |   4334   3.96  17.13
- 1 rmem524288       98    56  35.62  34.30  60.15  92.04 |   4340   4.48  21.26
- 2 rmem2097152      93    57  37.88  35.57  82.03  91.28 |   4343   4.53  20.72
- 3 rmem2097152     101    56  39.68  36.96  76.98 107.02 |   4332   4.97  23.66
- 4 rmem524288       83    57  38.55  37.50  64.40 107.21 |   4365   4.67  22.18
- 5 rmem196608       91    57  38.67  40.41  60.60  73.01 |   4340   4.49  21.28
+ 0 rmem196608      102    52  35.66  35.91  62.31  73.80 |   4333   4.08  17.24
+ 1 rmem524288       97    57  36.34  35.81  60.23  92.12 |   4339   4.61  21.77
+ 2 rmem2097152      93    57  38.26  35.98  82.10  91.34 |   4343   4.64  21.84
+ 3 rmem2097152      99    56  39.14  36.95  77.01 107.05 |   4338   4.75  21.67
+ 4 rmem524288       84    57  38.23  37.51  64.42 107.22 |   4364   4.69  22.21
+ 5 rmem196608       90    57  38.84  40.73  60.59  73.00 |   4341   4.52  21.49
 per state
-rmem196608         192    54  37.15  38.75  62.21  73.70 |   8674   4.23  19.38
-rmem524288         181    56  36.96  35.96  60.37 107.21 |   8705   4.57  21.70
-rmem2097152        194    56  38.82  36.15  77.26 107.02 |   8675   4.75  22.32
+rmem196608         192    54  37.15  39.10  62.31  73.80 |   8674   4.30  19.67
+rmem524288         181    57  37.22  36.54  60.45 107.22 |   8703   4.65  22.00
+rmem2097152        192    56  38.71  36.22  77.01 107.05 |   8681   4.70  21.67

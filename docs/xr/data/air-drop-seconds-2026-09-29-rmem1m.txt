@@ -1,0 +1,6 @@
+# air epoch seconds with wfb_tx input drops (rmem1m), from air-rmem-1m-2026-09-29.txt; each 1 s sample at air time t marks int(t-1) and int(t). uptime -> epoch base 1790633249.97, the middle of [.73, 1.22] (each air date +%s sample truncates; the three samples of this boot bound it).
+1790645247
+1790645248
+1790645249
+1790645556
+1790645557

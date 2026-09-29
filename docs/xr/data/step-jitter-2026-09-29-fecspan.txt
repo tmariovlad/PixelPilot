@@ -1,8 +1,9 @@
-# ab_fecspan (2026-09-29 03:47-03:53 local, epochs 1790642833-1790643206), steps docs/xr/data/steps-2026-09-29-fecspan.txt (air clock), --air-offset-s 1.2322 (Quest-PC 0.4832 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump
+# ab_fecspan, steps docs/xr/data/steps-2026-09-29-fecspan.txt, --air-offset-s 0.5532 (Quest-PC 0.4832 + PC-air 0.07), --guard-s 4. 03:47-03:53 local, epochs 1790642833-1790643206; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump and is not valid for latency; latency baseline fec12-24 (steps 2-3, clean). Rerun 2026-09-29 ~04:50 with PC-air +0.07 s (the coordinator's corrected clock offset; the earlier 0.749 s was an artefact of clk_off.py, so earlier versions of this file were shifted ~0.7 s) and air-drop seconds on uptime base .97 (see that file).
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_fecspan.pftrace docs/xr/data/steps-2026-09-29-fecspan.txt --air-offset-s 0.5532 --guard-s 4
                  frames    p50    p95    p99     max   (ms around the step's own median)
- 0 fec4-8          4652   0.00   5.39  43.23   71.97
- 1 fec8-16         4626   0.00  26.27  45.94   63.91
- 2 fec12-24        4621   0.00  23.12  44.64   66.24
- 3 fec12-24        4609   0.00  22.86  43.69   68.84
- 4 fec8-16         4697   0.00  25.82  44.80   59.43
- 5 fec4-8          5682   0.00  26.35  45.98 3004.23
+ 0 fec4-8          4652   0.00   5.44  43.28   72.02
+ 1 fec8-16         4621   0.00  27.16  46.11   63.97
+ 2 fec12-24        4621   0.00  23.16  44.68   66.29
+ 3 fec12-24        4609   0.00  22.91  43.74   68.89
+ 4 fec8-16         4689   0.00  25.90  45.36   66.98
+ 5 fec4-8          5628   0.00  27.02  45.94 3004.19

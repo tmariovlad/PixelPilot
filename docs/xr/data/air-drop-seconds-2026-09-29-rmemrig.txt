@@ -1,4 +1,4 @@
-# air epoch seconds with wfb_tx input drops (rmemrig), from air-rmem-rig-2026-09-29.txt: epoch = 1790633249.73 + uptime_ms/1000; each 1 s sample at air time t marks int(t-1) and int(t)
+# air epoch seconds with wfb_tx input drops (rmemrig), from air-rmem-rig-2026-09-29.txt; each 1 s sample at air time t marks int(t-1) and int(t). Corrected 2026-09-29 ~04:50: uptime -> epoch base 1790633249.97, the middle of [.73, 1.22] (each air date +%s sample truncates, so the three samples of this boot bound the base to that range; was .73). Splits bracketed over the range in link-envelope.md.
 1790644230
 1790644231
 1790644234

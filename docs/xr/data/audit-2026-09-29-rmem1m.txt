@@ -1,0 +1,18 @@
+# ab_rmem1m, steps docs/xr/data/steps-2026-09-29-rmem1m.txt, --air-offset-s 1.5892 (Quest-PC 1.5192 + PC-air 0.07), --guard-s 5. 04:27-04:33 local; ABABAB 512 KB / 1 MB, 60 s each; END = last start + 60 s, before the air restore; video wfb_tx restart per step; app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm; G2G rig LED flashing (latency-test-0d, 12 runs from PC 1790645240). PC-air +0.07 s (slot_watch; air runs ntpd). Quest-PC measured with rtt 205 ms (step alignment +-0.1 s).
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_rmem1m.pftrace docs/xr/data/steps-2026-09-29-rmem1m.txt --air-offset-s 1.5892 --guard-s 5 --logcat scripts/quest/out/logcat_rmem1m.txt
+PKT_LOST events 505, packets 929; TX DESC 16633; block overrides 0
+post-FEC gap sizes: 1:317, 2:51, 3:40, 4:95, 5:2
+loss within 2 ms after a Quest TX: 7.5 % (control, TX shifted 50 ms: 1.8 %)
+Rayleigh Z @    1.000 Hz =      4.1
+Rayleigh Z @    4.000 Hz =      0.0
+Rayleigh Z @    9.766 Hz =      1.6
+Rayleigh Z @   72.000 Hz =      1.2
+Rayleigh Z @   90.000 Hz =      0.0
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 rmem524288    73850    38  1515    40    2.10   0.05    0.3    5    5    1    5    0   0.0   13.2   4.1
+ 1 rmem1048576   74025    68  1611    68    2.27   0.09    0.5    8    4    4   10    0   0.0   14.1   4.0
+ 2 rmem524288    74514    91  1707    91    2.41   0.12    0.6    7    5    4   13    2  11.0   35.7   4.0
+ 3 rmem1048576   74292    76  1689    76    2.37   0.10    0.6   11    5    5   10    0   0.0   32.8   4.0
+ 4 rmem524288    74549    65  1567    65    2.19   0.09    0.5    5    5    6    8    0   0.0   20.6   4.0
+ 5 rmem1048576   74372   100  1601   100    2.28   0.13    0.7    5    8    9   13    0   0.0   32.1   4.0

@@ -199,28 +199,47 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### rmem 512 KB vs 1 MB with the G2G rig flashing 2026-09-29 04:27–04:33: the same flash-frame tail; 1 MB adds ~4 ms p95 to every frame and never overflowed
+
+The user chose "1 MB, tested first" for a persistent `rmem_default`, so this is the A/B against the 512 KB of the run below: ABABAB 524288 / 1048576, 60 s each, 1080p90 16 Mbit/s MCS7 FEC 4/8, 17 dBm, rig flashing throughout (latency-test-0d, 12 runs from PC 1790645240).
+- **Method.** Quest APK 1f0870c2, prefs = user backup + `request_idr_on_loss` + `stats_log`, detached capture `TRACE LOSS: none`. Offset +1.5892 s (Quest−PC 1.5192, measured with a 205 ms RTT, so the steps align to ±~0.1 s; + PC−air 0.07). Guard 5 s at both ends of a step. Step 5 is closed at its start + 60 s (1790645621), before the restore. `scripts/quest/analyze_ab.sh`, baseline 524288.
+- **Data.** [air log](data/air-rmem-1m-2026-09-29.txt) · [steps](data/steps-2026-09-29-rmem1m.txt) · [air-drop seconds](data/air-drop-seconds-2026-09-29-rmem1m.txt) · [link_audit](data/audit-2026-09-29-rmem1m.txt) · [frame fate](data/frame-fate-2026-09-29-rmem1m.txt) · [link](data/link-2026-09-29-rmem1m.txt) · [bursts](data/loss-bursts-2026-09-29-rmem1m.txt) · [latency](data/latency-2026-09-29-rmem1m.txt) · [latency within each step](data/step-jitter-2026-09-29-rmem1m.txt) · [drop seconds + IDR per step](data/drop-seconds-2026-09-29-rmem1m.txt) · [flash frames](data/big-frames-2026-09-29-rmem1m.txt).
+- **Air** [PROVEN: air log]: 512 KB dropped 0 / 0 / 88 (all 88 in one second, air ~645557); 1 MB dropped 0 / 0 / 0. `sendmsg` latency max: 512 KB ~9.7–11.3 ms, 1 MB 3.8 / 3.9 / 9.8 ms. Over both rig runs, 512 KB overflowed in 1 of 5 rig steps, 1 MB in 0 of 3.
+- **The air↔Quest join is exact at this scale** [PROVEN: RTP holes in the trace]: the 88 packets are two holes at air 645556.92 (22 + 66). The setup drops before step 0 (38 and 11 packets) are holes of 38 at 645247.89 and 11 at 645249.16. The 88-packet overflow falls in step 4's trailing guard [645556, 645561), so the per-step numbers below exclude it; including it, 512 KB's holes are ≈ 0.14 %.
+
+| rmem (N = 3, ABABAB) | RTP holes | radio post-FEC (PKT_LOST/s) | loss runs/s | IDR requests/s | decoded fps | last95 (ms, 512 KB drift line) | within-step p95 (ms) | flash frames (≥ 34 pkts): mean / p95 / max (ms) |
+|---|---|---|---|---|---|---|---|---|
+| 524288 | 0.06 / 0.14 / 0.10 % | 1.04 / 2.34 / 1.82 | 0.32 / 0.62 / 0.48 | 0.56 / 0.85 / 0.88 | 88.0 / 88.4 / 88.5 | 24.4 / 29.0 / 24.2 | 22.2 / 26.3 / 21.2 | 35.6 / 62.0 / 108 |
+| 1048576 | 0.10 / 0.12 / 0.15 % | 1.84 / 2.00 / 2.48 | 0.52 / 0.62 / 0.78 | 0.61 / 0.91 / 1.17 | 88.2 / 88.4 / 88.2 | 30.3 / 31.0 / 30.6 | 27.6 / 28.3 / 28.4 | 39.0 / 63.0 / 81 |
+
+- **The flash frames' tail is the same at 1 MB as at 512 KB** (p95 63.0 vs 62.0 ms), far from 2 MB's 77 ms in the run below [INFERRED: ~85 flash frames per step]. Their max is lower at 1 MB (75–81 vs 77–108 ms per step), but a max rests on one frame.
+- **1 MB adds ~4 ms at p95 to every frame** [INFERRED: N = 3, alternating, 1 MB higher in all three pairs]. last95 30.3–31.0 vs 24.2–29.0 ms; within-step p95 27.6–28.4 vs 21.2–26.3 ms; ordinary frames p95 25.6 vs 21.2 ms. Mean: Δlast +0.42 ms.
+- Radio loss and loss runs rise over the run in both states (PKT_LOST/s 1.04 → 2.48), so the slightly higher 1 MB values cannot be told apart from that drift. IDR requests (0.76 vs 0.90/s) and decoded fps (88.3) do not separate the states.
+- **The trade for the persistent default:** 1 MB had 0 overflows in 3 rig steps at ~+0.4 ms mean / ~+4 ms p95 on every frame. 512 KB has the better p95 but overflowed once in 5 rig steps (88 packets, a visible corruption on that scene change). The choice is the user's (via the coordinator).
+
 ### rmem A/B with the G2G rig flashing 2026-09-29 04:10–04:16: 512 KB removes the flash-burst holes; bigger buffers lengthen the flash frames' tail
 
 The same A/B as below (ABCCBA 196608 / 524288 / 2097152, 60 s each, 1080p90 16 Mbit/s MCS7 FEC 4/8, 17 dBm), with the goggles' G2G rig (latency_test session) flashing its LED in front of the camera about every 1.5 s. Every flash is a scene change and a frame of ~55 packets (~3.3× the usual 17).
-- **Method.** Quest APK 1f0870c2, the same prefs as below, detached capture `TRACE LOSS: none`, offset +2.230 s (Quest−PC 1.4810 + PC−air 0.749), guard 5 s (the video wfb_tx restarts per step). Step 5 is closed at its start + 60 s (1790644601), before the air log's `END` line, which comes after the restore. Air-drop seconds come from the air's per-second list (`epoch = 1790633249.73 + uptime`).
+- **Method.** Quest APK 1f0870c2, the same prefs as below, detached capture `TRACE LOSS: none`, offset +1.551 s (Quest−PC 1.4810 + PC−air 0.07), guard 5 s at both ends of a step (the video wfb_tx restarts per step). Step 5 is closed at its start + 60 s (1790644601), before the air log's `END` line, which comes after the restore. Air-drop seconds come from the air's per-second list, `epoch = 1790633249.97 + uptime`: each air `date +%s` sample truncates, so the three samples of this boot (.40 / .73 / .22) are lower bounds that put the base in [.73, 1.22]; .97 is the middle.
+- *Correction 2026-09-29 ~05:00: the first version of this section joined the air log with PC−air = 0.749 s, which the coordinator withdrew (an artefact of clk_off.py; slot_watch bounds PC−air to +0.05…+0.09 s and the air runs ntpd). All numbers below are rerun with +0.07 s and the step windows of `analyze_ab.sh`.*
 - **Data.** [air log](data/air-rmem-rig-2026-09-29.txt) · [steps](data/steps-2026-09-29-rmemrig.txt) · [air-drop seconds](data/air-drop-seconds-2026-09-29-rmemrig.txt) · [link_audit](data/audit-2026-09-29-rmemrig.txt) · [frame fate](data/frame-fate-2026-09-29-rmemrig.txt) · [link](data/link-2026-09-29-rmemrig.txt) · [bursts](data/loss-bursts-2026-09-29-rmemrig.txt) · [latency](data/latency-2026-09-29-rmemrig.txt) · [latency within each step](data/step-jitter-2026-09-29-rmemrig.txt) · [drop seconds + IDR per step](data/drop-seconds-2026-09-29-rmemrig.txt) · [flash frames](data/big-frames-2026-09-29-rmemrig.txt).
 - **Air** [PROVEN: air log]: 192 KB overflows with the rig (149 and 336 packets per 60 s, in 9 and 10 seconds). 512 KB and 2 MB drop 0 in all four steps. `sendmsg` latency max is 9.8–13.2 ms with the rig vs 2.5–3.2 ms without.
 
 | rmem (N = 2, A then A') | RTP holes | radio post-FEC (PKT_LOST/s) | loss runs/s | IDR requests/s | decoded fps | Δlast / last95 (ms) | flash frames: mean / p95 / max (ms) |
 |---|---|---|---|---|---|---|---|
-| 196608 (default) | 0.24 / 0.54 % | 1.31 / 1.50 | 0.72 / 0.92 | 0.55 / 0.89 | 88.1 / 87.9 | +0.00 / 25.4 | 37.2 / 62 / 74 |
-| 524288 | 0.10 / 0.06 % | 1.78 / 1.39 | 0.60 / 0.26 | 0.88 / 0.59 | 88.1 / 88.7 | +0.29 / 27.5 | 37.0 / 60 / 107 |
-| 2097152 | 0.09 / 0.09 % | 1.65 / 1.59 | 0.48 / 0.54 | 0.64 / 0.84 | 88.2 / 88.1 | +0.55 / 28.0 | 38.8 / 77 / 107 |
+| 196608 (default) | 0.24 / 0.54 % | 1.28 / 1.62 | 0.72 / 0.94 | 0.54 / 0.92 | 88.1 / 87.9 | +0.00 / 25.6 | 37.2 / 62 / 74 |
+| 524288 | 0.10 / 0.05 % | 1.90 / 0.92 | 0.60 / 0.24 | 0.97 / 0.40 | 88.1 / 88.7 | +0.30 / 27.8 | 37.2 / 60 / 107 |
+| 2097152 | 0.09 / 0.09 % | 1.50 / 1.74 | 0.46 / 0.54 | 0.51 / 0.93 | 88.3 / 88.2 | +0.42 / 27.3 | 38.7 / 77 / 107 |
 
-- **A 512 KB buffer removes the holes the flash bursts cause at 192 KB** [PROVEN: RTP holes 0.24–0.54 % → 0.06–0.10 %, air drops 149/336 → 0, N = 2 alternating].
-  - The radio is the same in every state and in the drop seconds (1.52 vs 1.54 PKT_LOST/s). The extra holes at 192 KB are the air's own input drops.
+- **A 512 KB buffer removes the holes the flash bursts cause at 192 KB** [PROVEN: RTP holes 0.24–0.54 % → 0.05–0.10 %, air drops 149/336 → 0, N = 2 alternating].
+  - The radio shows no measurable difference between the states (1.45 / 1.41 / 1.62 PKT_LOST/s per state) or between drop and clean seconds (1.66 vs 1.47/s, 29 events in 32 drop seconds; over the clock bracket 1.24–1.75 vs 1.47–1.52, the sign flips). The extra holes at 192 KB are the air's own input drops.
   - 2 MB gains nothing on loss over 512 KB.
 - **The cost: a queued burst instead of a dropped one lengthens the flash frames' tail, not their mean** [INFERRED: ~190 flash frames per state (npkts ≥ 32, p98), so each tail is ~10 frames].
   - Flash frames (capture → last packet on the 192 KB drift line) average 37–39 ms in every state.
   - Their max rises from 74 to 107 ms at both 512 KB and 2 MB. Their p95 rises (62 → 77 ms) only at 2 MB.
-  - Ordinary frames: +0.3 / +0.5 ms mean.
+  - Ordinary frames: +0.3 / +0.4 ms mean.
   - 512 KB is the better trade: loss as low as 2 MB, p95 like 192 KB.
-- **IDR requests do not follow the buffer** (0.72 / 0.74 / 0.74 per state, per step 0.55–0.89/s). The feedback loop suspected in the FEC span run (drop → IDR → larger burst) does not show here. Decoded fps is ~88 in every state; frame fate's "never arrived" 1.0–1.4/s matches the air encoder dipping to 84–86 fps on flashes (the coordinator's slot_watch).
+- **IDR requests do not follow the buffer** (0.73 / 0.69 / 0.72 per state, per step 0.40–0.97/s). In the drop seconds they are 1.00 vs 0.68/s in the clean ones (0.83–1.04 vs 0.67–0.70, 1.2–1.5× over the clock bracket). The feedback loop suspected in the FEC span run (drop → IDR → larger burst) does not show here. Decoded fps is ~88 in every state; frame fate's "never arrived" 1.0–1.4/s matches the air encoder dipping to 84–86 fps on flashes (the coordinator's slot_watch).
 - The rig itself lifts the Quest's last95 from ~5 ms (no rig, below) to ~25 ms in every state, through the flash frames and the frames queued behind them.
 - Over the whole run, 9.4 % of the post-FEC losses fall within 2 ms after a Quest uplink TX (control 3.6 %), vs 4.8 / 1.8 % without the rig.
 
@@ -229,16 +248,16 @@ The same A/B as below (ABCCBA 196608 / 524288 / 2097152, 60 s each, 1080p90 16 M
 Question (coordinator): do the air's video wfb_tx input drops (UDP receive-queue overflow before FEC, see FEC span below) go away with a bigger socket buffer? wfb_tx sets no `SO_RCVBUF`, so it gets `net.core.rmem_default` = 196608.
 - **Method.**
   - Air `rmem_ab.sh`: ABCCBA 196608 / 524288 / 2097152, 60 s each. The video wfb_tx restarts at each step start (~2 s gap), so the guard is 5 s. 1SS STBC LDPC long GI, ch157, 17 dBm, alink/vmoded stopped.
-  - Quest: APK 1f0870c2, prefs = user backup + `request_idr_on_loss` + `stats_log`. Detached capture, `TRACE LOSS: none`. Offset +2.2354 s (Quest−PC 1.4864 + PC−air 0.749).
+  - Quest: APK 1f0870c2, prefs = user backup + `request_idr_on_loss` + `stats_log`. Detached capture, `TRACE LOSS: none`. Offset +1.5564 s (Quest−PC 1.4864 + PC−air 0.07). *Correction 2026-09-29 ~05:00: the first version of this section joined the air log with PC−air = 0.749 s, which the coordinator withdrew (an artefact of clk_off.py; slot_watch bounds PC−air to +0.05…+0.09 s and the air runs ntpd). All numbers below are rerun with +0.07 s and the step windows of `analyze_ab.sh`.*
   - The last step is closed at its start + 60 s (1790643860). The air log's `END` line (1790643871) comes after the restore to MCS2 2 Mbit/s 12 dBm and a waybeam restart. Taken up to `END`, step 5 picked up a 3.1 s gap and a sequence jump of ~10.5k packets.
 - **Data.** [air log](data/air-rmem-ab-2026-09-29.txt) · [steps](data/steps-2026-09-29-rmem.txt) · [link_audit](data/audit-2026-09-29-rmem.txt) · [frame fate](data/frame-fate-2026-09-29-rmem.txt) · [link](data/link-2026-09-29-rmem.txt) · [bursts](data/loss-bursts-2026-09-29-rmem.txt) · [latency](data/latency-2026-09-29-rmem.txt) · [latency within each step](data/step-jitter-2026-09-29-rmem.txt).
 - **The air dropped nothing in any step, baseline included** [PROVEN: air log, `drop=0 drop_secs=0 rcvbuf_err_d=0` in all 6 steps]. So the lever cannot be judged on the air side in this run. Per the coordinator, the FEC-span drops came from LED-flash seconds of the G2G rig (see FEC span below); this run had no rig.
 
 | rmem (N = 2, A then A') | post-FEC | loss runs/s | decoded fps | last / last95 (ms, drift line on 196608) | within-step p99 (ms) |
 |---|---|---|---|---|---|
-| 196608 (default) | 0.06 / 0.07 % | 0.26 / 0.36 | 90.1 / 90.1 | +0.00 / 4.81 | 8.1 / 8.5 |
-| 524288 | 0.08 / 0.07 % | 0.48 / 0.48 | 89.9 / 89.9 | +0.00 / 5.12 | 9.5 / 9.1 |
-| 2097152 | 0.11 / 0.13 % | 0.58 / 0.64 | 89.9 / 89.8 | +0.08 / 5.27 | 8.8 / 10.4 |
+| 196608 (default) | 0.06 / 0.07 % | 0.26 / 0.36 | 90.1 / 90.1 | +0.00 / 4.74 | 8.2 / 8.5 |
+| 524288 | 0.08 / 0.07 % | 0.48 / 0.48 | 89.9 / 89.9 | +0.01 / 5.11 | 9.6 / 9.1 |
+| 2097152 | 0.11 / 0.13 % | 0.56 / 0.62 | 89.9 / 89.8 | +0.07 / 5.21 | 8.8 / 10.4 |
 
 - **With no air drops, a bigger buffer lowers neither the loss nor the latency** [PROVEN: N = 2 per state, ABCCBA; runs, frame fate and drift-line latency above].
   - 2 MB is slightly worse in both of its steps (0.11–0.13 % vs 0.06–0.07 %, ~2× the runs). But its steps sit in the middle of the ABCCBA order, so a mid-run hump in the link cannot be separated. With no queue ever above 192 KB, there is no mechanism by which the buffer size could act [INFERRED: air `rcvbuf_err_d = 0`]. Not a lever without bursts.
@@ -250,28 +269,29 @@ Question (coordinator): do the air's video wfb_tx input drops (UDP receive-queue
 Question (from the loss shape above, ~4 ms outages vs a ~2.7 ms FEC 4/8 block): does a FEC block that spans more time recover them?
 - **Method.**
   - Air `fec_span.sh`: 1SS STBC long GI, ch157, 17 dBm, alink off; 4/8 · 8/16 · 12/24 · 12/24 · 8/16 · 4/8, 60 s each. waybeam runs once (set up before step 0); each step only changes the FEC with `wfb_setfec`.
-  - Quest: APK 69dfed66, IDR only, headset still, detached capture `TRACE LOSS: none`, offset +1.2322 s, guard 4 s.
+  - Quest: APK 69dfed66, IDR only, headset still, detached capture `TRACE LOSS: none`, offset +0.5532 s (Quest−PC 0.4832 + PC−air 0.07), guard 4 s at both ends of a step. *Correction 2026-09-29 ~05:00: the first version of this section joined the air log with PC−air = 0.749 s, which the coordinator withdrew (an artefact of clk_off.py; slot_watch bounds PC−air to +0.05…+0.09 s and the air runs ntpd). All numbers below are rerun with +0.07 s and the step windows of `analyze_ab.sh`.* The air-drop seconds moved to uptime base .97 (the committed .40 lies outside the [.73, 1.22] bound; every base in that bound gives the same file).
   - The air's own injection drops (wfb_tx, 51 one-second samples) are split off with `loss_bursts.py --air-drop-seconds`.
 - **Data.** [air log](data/air-fec-span-2026-09-29.txt) · [steps](data/steps-2026-09-29-fecspan.txt) · [air-drop seconds](data/air-drop-seconds-2026-09-29-fecspan.txt) · [link_audit](data/audit-2026-09-29-fecspan.txt) · [frame fate](data/frame-fate-2026-09-29-fecspan.txt) · [link](data/link-2026-09-29-fecspan.txt) · [bursts](data/loss-bursts-2026-09-29-fecspan.txt) · [latency within each step](data/step-jitter-2026-09-29-fecspan.txt).
 - **The geometry differs from the HD sweep:** the RSSI column is saturated at 100 (A/B 82/85, SNR ~19.3 dB, vs 58/63 and 16.5 in the sweep), since the headset position changed during the redo. Absolute loss is therefore not comparable with the sweep; the steps of this run are comparable with each other.
 
 | FEC (N = 2, A then A') | post-FEC | loss runs/s | runs/s in clean seconds | holes/s (frame fate) | run length p50 | air drop (packets) |
 |---|---|---|---|---|---|---|
-| 4/8 (~2.7 ms block) | 0.54 / 0.23 % | 0.67 / 0.78 | 0.29 / 0.86 | 0.3 / 0.5 | 4 / 3 | 384 / 106 |
-| 8/16 (~5.4 ms) | 0.31 / 0.15 % | 0.46 / 0.42 | 0.29 / 0.21 | 0.1 / 0.1 | 5 / 4 | 269 / 121 |
-| **12/24 (~8 ms)** | **0.10 / 0.09 %** | **0.13 / 0.15** | **0.10 / 0.08** | **0.0 / 0.0** | 10 / 4 | 74 / 84 |
+| 4/8 (~2.7 ms block) | 0.54 / 0.23 % | 0.67 / 0.78 | 0.29 / 0.70 | 0.3 / 0.5 | 4 / 3 | 384 / 106 |
+| 8/16 (~5.4 ms) | 0.34 / 0.15 % | 0.48 / 0.42 | 0.21 / 0.15 | 0.1 / 0.1 | 5 / 4 | 269 / 121 |
+| **12/24 (~8 ms)** | **0.10 / 0.09 %** | **0.13 / 0.15** | **0.05 / 0.03** | **0.0 / 0.0** | 10 / 4 | 74 / 84 |
 
-- **12/24 at the same ratio loses 3–5× less than 4/8** [PROVEN: N = 2 each, alternating, the clean seconds agree]. The longer block covers the few-ms outages. A 12/24 block that does fail leaves a larger hole, but rarely.
+- **12/24 at the same ratio loses 3–5× less than 4/8** [PROVEN: N = 2 each, alternating; in the clean seconds the gap is wider, 6–23× (0.05/0.03 vs 0.29/0.70 runs/s)]. The longer block covers the few-ms outages. A 12/24 block that does fail leaves a larger hole, but rarely.
   - The air's injection drops fell over the run (384 → 106 at 4/8), so A vs A' differ; the clean-seconds column is the fair comparison.
   - The losses stay unlocked from the 102.4 ms period (Z ≤ 1.7).
-- **The radio's loss is the same in the air-drop seconds; the extra holes there are the air's own drops** [PROVEN: [drop-second split](data/drop-seconds-2026-09-29-fecspan.txt), `drop_seconds.py`, 91 drop s vs 252 clean s].
-  - wfb post-FEC loss (`PKT_LOST`, the radio): 0.73 vs 0.74 packets/s, 0.45 vs 0.46 events/s.
-  - RTP holes: ≈ 8.2 vs ≈ 1.7 packets/s (691 packets in the 84 drop seconds of `loss_bursts`). About 62 % of the lost video packets fell in 25 % of the time. Packets the air drops at its input never enter FEC, so they show up as holes but not as `PKT_LOST`.
-  - App key-frame requests: 0.59 vs 0.17/s (3.5×). IDR frames from the air: 1.51 vs 0.94/s.
+- **The radio's loss shows no measurable difference in the air-drop seconds; the extra holes there are the air's own drops** [PROVEN: [drop-second split](data/drop-seconds-2026-09-29-fecspan.txt), `drop_seconds.py`, 84 drop s vs 241 clean s].
+  - wfb post-FEC loss (`PKT_LOST`, the radio): 0.88 vs 0.76 packets/s, 0.56 vs 0.45 events/s (47 events in the drop seconds; over the clock bracket 0.74–0.88 vs 0.76–0.81).
+  - RTP holes: ≈ 10.5 vs ≈ 1.0 packets/s (882 packets in the 84 drop seconds of `loss_bursts`). About 79 % of the lost video packets fell in 26 % of the time. Packets the air drops at its input never enter FEC, so they show up as holes but not as `PKT_LOST`.
+  - App key-frame requests: 0.72 vs 0.15/s (4.8×; 4.5–4.8× over the clock bracket). IDR frames from the air: 1.55 vs 0.94/s.
+  - *Correction 2026-09-29 ~05:00: the first version (PC−air 0.749, uptime base .40, start guard only) gave 0.73 vs 0.74 PKT_LOST/s, holes ≈ 8.2 vs 1.7/s (62 % in 25 %) and IDR requests 0.59 vs 0.17/s (3.5×). The conclusion holds; the IDR contrast is sharper.*
   - Trigger [INFERRED by the coordinator from timing]: the goggles' G2G rig (latency_test session) flashed its LED in front of the camera from PC ~642860 to ~643196, and the air drops fall in PC ~642873–643180. Every flash is a scene change and a large frame, and the burst overflows wfb_tx's 192 KB UDP input. The rmem run below, with no rig, had 0 drops. So the "drop seconds" of this run are flash seconds.
   - [SPECULATION] a feedback loop: drop → hole → IDR request → large IDR frame → more input overflow. The rig rerun (rmemrig) can test it: look for IDR bursts right after each flash.
 - **Latency cost: the longer blocks add ~3 ms mean and ~20 ms at p95** [PROVEN: one drift line, baseline 12/24; [latency](data/latency-2026-09-29-fecspan.txt)].
-  - last / p95 in ms: 4/8 2.4 / 6.6 (step 0 only), 8/16 4.7 / 28.4 and 5.6 / 28.9, 12/24 5.6 / 26.5 and 5.6 / 26.1.
+  - last / p95 in ms: 4/8 2.5 / 6.7 (step 0 only), 8/16 4.8 / 29.0 and 5.6 / 28.9, 12/24 5.6 / 26.6 and 5.6 / 26.1 (rerun with PC−air 0.07; the first version differed by ≤ 0.6 ms).
   - **Optical confirmation on the goggles** [PROVEN: ESP32 G2G rig run by the latency_test session during the same air window, split by the active FEC step, ±2 s around each switch dropped; `c:/Users/vlad_/Documents/Arduino/latency_test` commit 04ac49c, `tasks/first-full-light-2026-09-29/split_by_air_fec.py`; relayed by the coordinator]. It is a different receiver on the same air.
     - First-light G2G, average (median): 4/8 44.1 (44.3) ms, n = 44; 8/16 45.2 (44.8), n = 69; 12/24 46.7 (46.8), n = 70.
     - So **12/24 costs +2.6 ms first light / +3.5 ms full light vs 4/8**, ~4 standard errors, and the ABC CBA order cancels linear drift. It matches the Quest's +3 ms mean above.

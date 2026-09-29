@@ -5,9 +5,11 @@ Run: python3 test_drop_seconds.py"""
 from drop_seconds import parse_logcat, per_step, split, step_seconds
 
 
-def test_step_seconds_skip_the_guard_and_stop_at_the_next_step():
-    # steps at 100 and 110, END 118, guard 4: whole seconds strictly inside [104, 110) and [114, 118)
-    assert step_seconds([100.0, 110.0], 118.0, 4) == [105, 106, 107, 108, 109, 115, 116, 117]
+def test_step_seconds_are_the_whole_seconds_inside_the_guarded_windows_of_ab_segments():
+    # steps at 100 and 120, END 135, guard 4: ab_segments.step_window guards both ends -> [104, 116) and [124, 131)
+    assert step_seconds([100.0, 120.0], 135.0, 4) == list(range(104, 116)) + list(range(124, 131))
+    # a fractional start: [100.5 + 4, 110.2 - 4) holds whole seconds 105 only
+    assert step_seconds([100.5], 110.2, 4) == [105]
 
 
 def test_logcat_lines_become_per_second_counts_on_the_air_clock():
@@ -31,9 +33,9 @@ def test_split_gives_rates_per_class_of_second():
 
 
 def test_per_step_rates_use_each_steps_own_guarded_seconds():
-    # steps at 100 and 110, END 118, guard 4: step 0 has seconds 105..109 (5), step 1 has 115..117 (3)
-    counts = {105: 5, 109: 5, 112: 99, 116: 3}
-    assert per_step(counts, [100.0, 110.0], 118.0, 4) == [2.0, 1.0]
+    # steps at 100 and 120, END 135, guard 4: step 0 has seconds 104..115 (12), step 1 has 124..130 (7)
+    counts = {104: 6, 115: 6, 118: 99, 127: 7}
+    assert per_step(counts, [100.0, 120.0], 135.0, 4) == [1.0, 1.0]
 
 
 if __name__ == "__main__":

@@ -1,0 +1,8 @@
+# rmem1m steps (air clock ~= PC) from air-rmem-1m-2026-09-29.txt. END = last step start + 60 s (1790645621): the air log's END line (1790645632) comes after the restore
+1790645261 rmem524288
+1790645321 rmem1048576
+1790645381 rmem524288
+1790645441 rmem1048576
+1790645501 rmem524288
+1790645561 rmem1048576
+1790645621 END

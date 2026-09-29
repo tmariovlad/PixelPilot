@@ -1,5 +1,5 @@
-# ab_rmem (2026-09-29 ~04:58-05:06), steps docs/xr/data/steps-2026-09-29-rmem.txt (air clock, from air-rmem-ab-2026-09-29.txt; END = last start + 60 s, before the air restore), --air-offset-s 2.2354 (Quest-PC 1.4864 + PC-air 0.749), --guard-s 5 (each step restarts the video wfb_tx, ~2 s gap); app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm. Air drops 0 in every step.
-# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_rmem.pftrace docs/xr/data/steps-2026-09-29-rmem.txt --air-offset-s 2.2354 --guard-s 5 --logcat scripts/quest/out/logcat_rmem.txt
+# ab_rmem, steps docs/xr/data/steps-2026-09-29-rmem.txt, --air-offset-s 1.5564 (Quest-PC 1.4864 + PC-air 0.07), --guard-s 5. 03:58-04:04 local; END = last start + 60 s, before the air restore; each step restarts the video wfb_tx (~2 s gap); app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm. Air drops 0 in every step. Rerun 2026-09-29 ~04:45 with PC-air +0.07 s (the coordinator's corrected clock offset; the earlier 0.749 s was an artefact of clk_off.py, so earlier versions of this file were shifted ~0.7 s).
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_rmem.pftrace docs/xr/data/steps-2026-09-29-rmem.txt --air-offset-s 1.5564 --guard-s 5 --logcat scripts/quest/out/logcat_rmem.txt
 PKT_LOST events 330, packets 638; TX DESC 13494; block overrides 0
 post-FEC gap sizes: 1:200, 2:29, 3:32, 4:64, 5:3, 6:1, 7:1
 loss within 2 ms after a Quest TX: 4.8 % (control, TX shifted 50 ms: 1.8 %)
@@ -10,9 +10,9 @@ Rayleigh Z @   72.000 Hz =      0.1
 Rayleigh Z @   90.000 Hz =      0.0
 TRACE LOSS: none (stats table clean)
                     rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
- 0 rmem196608    76005    42  1426    42    1.93   0.06    0.3    1    4    2    4    2  26.2   10.0   3.4
- 1 rmem524288    76206    58  1533    58    2.09   0.08    0.5    7    7    3    7    0   0.0   10.2   3.5
- 2 rmem2097152   76091    86  1501    86    2.08   0.11    0.6    5    5    7   10    2  11.6   14.2   3.3
- 3 rmem2097152   76004    96  1493    96    2.09   0.13    0.6    5    6    5   16    0   0.0   11.2   3.7
- 4 rmem524288    75964    57  1466    57    2.00   0.07    0.5   11    4    1    7    1  12.3   13.6   3.5
- 5 rmem196608    76014    54  1358    54    1.86   0.07    0.4    4    1    4    9    0   0.0   10.4   3.5
+ 0 rmem196608    76025    42  1425    42    1.93   0.06    0.3    1    4    2    4    2  26.2   10.0   3.4
+ 1 rmem524288    76265    58  1515    58    2.06   0.08    0.5    7    7    3    7    0   0.0   10.2   3.5
+ 2 rmem2097152   76128    83  1497    83    2.07   0.11    0.6    5    5    6   10    2  12.0   14.2   3.3
+ 3 rmem2097152   75989    92  1477    92    2.06   0.12    0.6    5    6    5   15    0   0.0   11.2   3.8
+ 4 rmem524288    76010    57  1465    57    2.00   0.07    0.5   11    4    1    7    1  12.3   13.6   3.5
+ 5 rmem196608    76048    54  1358    54    1.86   0.07    0.4    4    1    4    9    0   0.0   10.4   3.5
