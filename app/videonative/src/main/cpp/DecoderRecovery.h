@@ -36,6 +36,10 @@ class DecoderRecovery {
     // A fresh decoder starts clean (a release also ends the output loop, which may have flagged it).
     void configured(int idx) { outputFailed_[idx] = false; }
 
+    // Cumulative, for the health log (PPXR_EVENT DECODER_REBUILD); safe from the stats thread.
+    uint32_t rebuilds() const { return rebuilds_; }
+    uint32_t configureFailures() const { return configureFailures_; }
+
     // " | cfg-fail N | rebuilt M", empty while nothing went wrong.
     std::string summary() const {
         std::string s;

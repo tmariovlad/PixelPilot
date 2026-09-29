@@ -43,3 +43,15 @@ TEST(DecoderRecovery, DecodersAreIndependent) {
     EXPECT_FALSE(r.shouldRebuild(0, true));
     EXPECT_TRUE(r.shouldRebuild(1, true));
 }
+
+// Counts for the health log (PPXR_EVENT DECODER_REBUILD): read from the stats thread.
+TEST(DecoderRecovery, CountsRebuildsAndConfigureFailures) {
+    DecoderRecovery r;
+    EXPECT_EQ(0u, r.rebuilds());
+    EXPECT_EQ(0u, r.configureFailures());
+    r.configureFailed(false, true);
+    r.outputFailed(0);
+    r.shouldRebuild(0, true);
+    EXPECT_EQ(1u, r.rebuilds());
+    EXPECT_EQ(1u, r.configureFailures());
+}

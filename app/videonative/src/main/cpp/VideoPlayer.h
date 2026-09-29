@@ -81,6 +81,8 @@ class VideoPlayer
     uint32_t idrRequestsOk() const { return mIdrRequester.requestsOk(); }
     uint32_t idrRequestsFailed() const { return mIdrRequester.requestsFailed(); }
     uint32_t frozenSlices() const { return mFreezeUntilIdr.dropped(); }
+    uint32_t decoderRebuilds() const { return videoDecoder.decoderRebuilds(); }
+    uint32_t codecSwitches() const { return videoDecoder.codecSwitches(); }
 
     // Threads on the video latency path (receive/parse/feed and output release), for scheduling hints.
     std::vector<int> latencyCriticalThreadIds();

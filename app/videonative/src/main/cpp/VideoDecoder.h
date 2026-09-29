@@ -110,6 +110,10 @@ class VideoDecoder
     // Decoder 0's frames since the last call, keyed by RTP (ssrc, timestamp), for the Stats page (FrameTimeline.h).
     std::vector<FrameTimes> drainFrameTimes() { return mTimeline.drain(); }
 
+    // Cumulative counts for the health log: decoder rebuilds after a failure, H.264 <-> H.265 switches.
+    uint32_t decoderRebuilds() const { return mRecovery.rebuilds(); }
+    uint32_t codecSwitches() const { return mCodec.switches(); }
+
     // Codec name + the levers the running decoder actually accepted, plus how whole access units
     // were closed and how many inputs did not fit, so a measurement can be interpreted.
     std::string getDecoderSummary()

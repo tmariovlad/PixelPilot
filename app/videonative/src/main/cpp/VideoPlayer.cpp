@@ -495,16 +495,19 @@ extern "C"
         return out;
     }
 
-    // Cumulative counters: IDR requests ok, IDR requests failed, slices frozen until an IDR.
+    // Cumulative counters: IDR requests ok, IDR requests failed, slices frozen until an IDR, decoder rebuilds,
+    // codec switches (the first three first: StatsCollector reads [0..2], HealthMonitor all five).
     JNI_METHOD(jlongArray, nativeGetLeverCounters)
     (JNIEnv* env, jclass jclass1, jlong nativeInstance)
     {
         VideoPlayer* p     = native(nativeInstance);
-        const jlong  v[3]  = {p ? static_cast<jlong>(p->idrRequestsOk()) : 0,
+        const jlong  v[5]  = {p ? static_cast<jlong>(p->idrRequestsOk()) : 0,
                               p ? static_cast<jlong>(p->idrRequestsFailed()) : 0,
-                              p ? static_cast<jlong>(p->frozenSlices()) : 0};
-        jlongArray   out   = env->NewLongArray(3);
-        env->SetLongArrayRegion(out, 0, 3, v);
+                              p ? static_cast<jlong>(p->frozenSlices()) : 0,
+                              p ? static_cast<jlong>(p->decoderRebuilds()) : 0,
+                              p ? static_cast<jlong>(p->codecSwitches()) : 0};
+        jlongArray   out   = env->NewLongArray(5);
+        env->SetLongArrayRegion(out, 0, 5, v);
         return out;
     }
 
