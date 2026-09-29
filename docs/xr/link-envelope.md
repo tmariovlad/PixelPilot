@@ -471,7 +471,11 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
     - `SignalState.Kind.HOLD` applies while freeze_until_idr holds and packets arrive;
     - the headline reads "HOLD - WAITING FOR KEYFRAME (x.x s)" and is no alarm;
     - no packets still reads NO SIGNAL, and a hold that outlasts the 1 s freeze timeout becomes VIDEO STALLED.
-  - Before/after capture pending (after the MCS4 redo).
+  - **After capture (B), 2026-09-29 PC 1790645757–645832** [PROVEN: [freeze-gaps-2026-09-29-idrB.txt](data/freeze-gaps-2026-09-29-idrB.txt), APK 1f0870c2 (fixes 1–3), same prefs and air state as the frz60 capture, no rig]. The link was cleaner than at frz60 (post-FEC 0.10 vs 0.21 %, 0.6 vs 1.1 loss runs/s), so the rates are not a pure before/after of the app.
+    - Stalls ≥ 250 ms (all freezes): 13 vs 29 per 75 s (10.4 vs 23.2/min), p50 558 vs 392 ms. Decoded 79.7 vs 70.0 fps.
+    - **Key-frame requests still fail as often: 17 of 60 (28 %) vs 24 of 76 (32 %).** The new reason log says why: 17 of the 19 `IDR_FAILED` events are `connect_timeout` (no TCP connection to the air's port 80 within 1 s through the wfb tunnel), 2 are `reply_timeout`. So the requests die in the uplink tunnel, not at waybeam [INFERRED: consistent with the air's idr/stats counting far fewer dropped than we fail].
+    - 5 of the 13 freezes still run into the 1 s timeout with no successful request (`idr ok 0`): the retry every interval does not get through either.
+    - Next: a request path that survives a lost SYN: a kept-alive connection opened before the loss, or a UDP request (e.g. over the tunnel's existing socket) instead of a fresh TCP connect per request [SPECULATION until measured]. A tunnel-loss probe (ping over the tunnel during a capture) would show whether the uplink loses ~30 % of packets or only the connect is slow.
 - The user's decision (2026-09-29): none of FRZ / IDR-only / FIF+IDR as they stand ("Avatar/Caddx/HDZero don't suffer this"). The target is ~0 residual loss at short range, plus intra-refresh on the air (OpenIPC researching); with gradual refresh, FIF becomes the right policy.
 
 
