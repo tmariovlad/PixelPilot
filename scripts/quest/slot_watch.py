@@ -18,8 +18,10 @@ edge-triggered: one line when a condition starts (or escalates), one INFO `<CODE
 Codes and the DPS-150 checklist: docs/xr/slot-watch.md.
 """
 import argparse
+import collections
 import datetime
 import json
+import math
 import os
 import re
 import signal
@@ -143,7 +145,9 @@ def _idr_counts(text):
 
 @dataclass
 class Thresholds:
-    idr_per_s_max: float = 2.0       # honoured + dropped key-frame requests per second
+    idr_per_s_max: float = 2.0       # honoured + dropped key-frame requests per second, over idr_window_s
+    idr_window_s: float = 30.0       # a 5 s delta flapped WARN <-> OK every 5-10 s in the live run of 2026-09-29
+    idr_clear_frac: float = 0.75     # hysteresis: clear below 0.75 x the limit
     fps_frac: float = 0.975          # waybeam fps below this share of the configured fps (90 -> 87.75, 167 -> 162.8)
     fps_min: Optional[float] = None  # absolute override
     temp_warn: int = 60              # bitrate_grid.sh TEMP_SKIP
@@ -164,18 +168,66 @@ def _same(a, b):
     return fa == fb if fa is not None and fb is not None else str(a) == str(b)
 
 
-class AirWatch:
-    """The air's alert rules over consecutive samples. update(None) = the poll failed."""
+class AirClock:
+    """PC time - air time, bounded instead of guessed.
 
-    def __init__(self, th, expect=None):
-        self.th, self.expect = th, dict(expect or {})
+    The probe prints the air's `date +%s` (whole seconds) and /proc/uptime (10 ms) at the same moment, so
+    floor(uptime + B) = date, with B = air epoch - uptime: every poll bounds B to [date - uptime, date + 1 - uptime].
+    Intersected over the polls, B converges to ~10 ms without a busy wait on the air. The air's sample happens during
+    the ssh call, so pc_before <= its PC time <= pc_after bounds the offset (NTP style); intersected over the polls
+    it converges to the fastest calls. An empty intersection (a clock step) or a reboot starts over.
+    (Taking PC time after the call against the whole-second date gave a 1.1 -> 2.2 s sawtooth live, 2026-09-29.)"""
+    SLACK = 0.02      # uptime resolution + the two reads being a few ms apart
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.b = [-math.inf, math.inf]
+        self.o = [-math.inf, math.inf]
+
+    def add(self, date, uptime, pc_before, pc_after):
+        self.b = _intersect(self.b, [date - uptime - self.SLACK, date + 1 - uptime + self.SLACK])
+        air = uptime + (self.b[0] + self.b[1]) / 2
+        err = (self.b[1] - self.b[0]) / 2
+        self.o = _intersect(self.o, [pc_before - air - err, pc_after - air + err])
+
+    @property
+    def offset(self):
+        return None if math.isinf(self.o[0]) else round((self.o[0] + self.o[1]) / 2, 3)
+
+    @property
+    def err(self):
+        return None if math.isinf(self.o[0]) else round((self.o[1] - self.o[0]) / 2, 3)
+
+
+def _intersect(cur, new):
+    lo, hi = max(cur[0], new[0]), min(cur[1], new[1])
+    return [lo, hi] if lo <= hi else list(new)
+
+
+class AirWatch:
+    """The air's alert rules over consecutive samples. update(None) = the poll failed. `expect` holds planned values;
+    after `expect_until` (PC epoch) they are no longer enforced, so a planned revert at the end is not an ALERT."""
+
+    def __init__(self, th, expect=None, expect_until=None):
+        self.th, self.expect, self.expect_until = th, dict(expect or {}), expect_until
         self.cond = Conditions()
         self.last = {}            # last known value of every sample key (slow reads come every few polls)
-        self.prev_t = None
         self.misses = 0
-        self.clock_offset = None  # PC time - air time, s
+        self.clock = AirClock()
+        self.idr = collections.deque()   # (pc time, honoured + dropped) within idr_window_s
 
-    def update(self, s, pc_time):
+    @property
+    def clock_offset(self):
+        return self.clock.offset
+
+    @property
+    def clock_err(self):
+        return self.clock.err
+
+    def update(self, s, pc_time, pc_before=None):
+        """pc_time = when the poll returned; pc_before = when it started (bounds the air clock offset)."""
         out = []
         if s is None:
             self.misses += 1
@@ -184,14 +236,13 @@ class AirWatch:
             return out
         self.misses = 0
         out += self.cond.set(pc_time, "air", "AIR_UNREACHABLE", None)
-        if s.get("now") is not None:
-            self.clock_offset = round(pc_time - s["now"], 3)
         out += self._reboot(s, pc_time)
+        if s.get("now") is not None and s.get("uptime") is not None:
+            self.clock.add(s["now"], s["uptime"], pc_time if pc_before is None else pc_before, pc_time)
         out += self._rates(s, pc_time)
         out += self._levels(s, pc_time)
         out += self._radio(s, pc_time)
         self.last.update({k: v for k, v in s.items() if v is not None})
-        self.prev_t = pc_time
         return out
 
     def _reboot(self, s, t):
@@ -201,8 +252,8 @@ class AirWatch:
                                                                  and new_up < old_up)
         if not rebooted:
             return []
-        for k in ("idr_honoured", "idr_dropped"):     # counters restart with the air
-            self.last.pop(k, None)
+        self.idr.clear()          # the counters restart with the air
+        self.clock.reset()
         return [Alert(t, "ALERT", "air", "AIR_REBOOT", {"uptime": new_up, "was_uptime": old_up})]
 
     def _rates(self, s, t):
@@ -211,13 +262,26 @@ class AirWatch:
         if drop is not None:
             out += self.cond.set(t, "air", "WFB_DROP", "ALERT" if drop > self.th.drop_max else None,
                                  {"drop": drop, "inj": s.get("wfb_inj")})
-        h, d = s.get("idr_honoured"), s.get("idr_dropped")
-        ph, pd = self.last.get("idr_honoured"), self.last.get("idr_dropped")
-        if None not in (h, d, ph, pd, self.prev_t) and t > self.prev_t and h + d >= ph + pd:
-            rate = (h + d - ph - pd) / (t - self.prev_t)
-            out += self.cond.set(t, "air", "IDR_RATE", "WARN" if rate > self.th.idr_per_s_max else None,
-                                 {"per_s": round(rate, 2), "honoured": h - ph, "dropped": d - pd})
+        rate = self._idr_rate(s, t)
+        if rate is not None:
+            on = "IDR_RATE" in self.cond.active
+            limit = self.th.idr_per_s_max * (self.th.idr_clear_frac if on else 1.0)
+            out += self.cond.set(t, "air", "IDR_RATE", "WARN" if rate > limit else None,
+                                 {"per_s": round(rate, 2), "window_s": round(t - self.idr[0][0], 1)})
         return out
+
+    def _idr_rate(self, s, t):
+        """Key-frame requests per second over the last idr_window_s, or None before there are two samples."""
+        h, d = s.get("idr_honoured"), s.get("idr_dropped")
+        if h is None or d is None:
+            return None
+        if self.idr and h + d < self.idr[-1][1]:
+            self.idr.clear()                              # a counter reset without a detected reboot
+        self.idr.append((t, h + d))
+        while len(self.idr) > 2 and t - self.idr[1][0] >= self.th.idr_window_s:
+            self.idr.popleft()
+        (t0, n0), (t1, n1) = self.idr[0], self.idr[-1]
+        return (n1 - n0) / (t1 - t0) if t1 > t0 else None
 
     def _levels(self, s, t):
         out = []
@@ -247,7 +311,9 @@ class AirWatch:
             v = s.get(sk)
             if v is None:
                 continue
-            if key in self.expect:
+            if key in self.expect and self.expect_until is not None and t > self.expect_until:
+                self.cond.active.pop(code, None)       # the plan is over: from now on a change is only a WARN
+            if key in self.expect and (self.expect_until is None or t <= self.expect_until):
                 ok = _same(v, self.expect[key])
                 out += self.cond.set(t, "air", code, None if ok else "ALERT", {"now": v, "expected": self.expect[key]})
             elif sk in self.last and not _same(v, self.last[sk]):
@@ -483,21 +549,24 @@ def _expect(pairs):
 
 def cmd_watch(args):
     sink, th = Sink(args.alerts), _thresholds(args)
-    watch, probe = AirWatch(th, _expect(args.expect)), AirProbe(args.air_host)
+    start = time.time()
+    until = parse_until(args.expect_until, start)
+    watch, probe = AirWatch(th, _expect(args.expect), expect_until=until), AirProbe(args.air_host)
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
-    end = time.time() + args.duration if args.duration else None
-    sink.emit([Alert(time.time(), "INFO", "watch", "WATCH_START", {"interval_s": args.interval, "host": args.air_host})])
+    end = start + args.duration if args.duration else None
+    sink.emit([Alert(start, "INFO", "watch", "WATCH_START", {"interval_s": args.interval, "host": args.air_host,
+                                                             "expect_until": until})])
     n = 0
     while not stop["now"] and (end is None or time.time() < end):
         t_poll = time.time()
         s = probe.read(slow=n % args.slow_every == 0)
         now = time.time()
-        sink.emit(watch.update(s, now))
+        sink.emit(watch.update(s, now, pc_before=t_poll))
         if s is not None and args.status_every and n % args.status_every == 0:
             sink.emit([Alert(now, "INFO", "air", "AIR_STATUS", {k: watch.last.get(k) for k in (
                 "uptime", "temp", "fps", "kbps", "mcs", "fec", "channel", "txpower", "cfg_bitrate")}
-                | {"clock_offset_s": watch.clock_offset})])
+                | {"clock_offset_s": watch.clock_offset, "clock_err_s": watch.clock_err})])
         n += 1
         time.sleep(max(0.0, args.interval - (time.time() - t_poll)))
     sink.emit([Alert(time.time(), "INFO", "watch", "WATCH_END", {"polls": n, "alerts": sink.alerts})])
@@ -529,9 +598,17 @@ def cmd_report(args):
     return 0
 
 
+def parse_until(value, start):
+    """--expect-until: a PC epoch, or "+N" = N seconds after the watch started; None = the whole watch."""
+    if value is None:
+        return None
+    return start + float(value[1:]) if str(value).startswith("+") else float(value)
+
+
 def _thresholds(args):
-    return Thresholds(idr_per_s_max=args.idr_max, fps_min=args.fps_min, temp_warn=args.temp_warn,
-                      temp_alert=args.temp_alert, storage_min_mb=args.storage_min_mb, battery_min=args.battery_min)
+    return Thresholds(idr_per_s_max=args.idr_max, idr_window_s=args.idr_window, fps_min=args.fps_min,
+                      temp_warn=args.temp_warn, temp_alert=args.temp_alert, storage_min_mb=args.storage_min_mb,
+                      battery_min=args.battery_min)
 
 
 def main(argv=None):
@@ -545,7 +622,10 @@ def main(argv=None):
     p.add_argument("--slow-every", type=int, default=6, help="radio/iw/config reads every N polls (6 x 5 s = 30 s)")
     p.add_argument("--status-every", type=int, default=12, help="an AIR_STATUS line every N polls (0 = never)")
     p.add_argument("--duration", type=float, default=0, help="seconds (0 = until Ctrl-C)")
+    p.add_argument("--expect-until", default=None, metavar="EPOCH|+SECONDS",
+                   help="stop enforcing --expect after this (e.g. before the planned revert at the end of the run)")
     p.add_argument("--idr-max", type=float, default=Thresholds.idr_per_s_max)
+    p.add_argument("--idr-window", type=float, default=Thresholds.idr_window_s, help="seconds of the IDR rate")
     p.add_argument("--fps-min", type=float, default=None)
     p.add_argument("--temp-warn", type=int, default=Thresholds.temp_warn)
     p.add_argument("--temp-alert", type=int, default=Thresholds.temp_alert)

@@ -29,9 +29,14 @@ python3 slot_watch.py report --alerts out/slot_watch/<slot>/alerts.log      # wr
 
 `--expect` names the planned value. A planned key that differs is an ALERT. An unplanned change between two polls
 (MCS, FEC, channel, TX power, bitrate, configured fps) is a WARN with `was=` / `now=`, because alink and vmoded
-change some of them on purpose. Thresholds are flags (`--idr-max`, `--fps-min`, `--temp-warn`, `--temp-alert`,
-`--storage-min-mb`, `--battery-min`); `--status-every 12` adds an `INFO air AIR_STATUS` line every minute so the
-watcher is visibly alive.
+change some of them on purpose.
+
+`--expect-until EPOCH|+SECONDS` stops enforcing `--expect` at that moment, so the planned revert at the end of a run
+(e.g. back to race at 12 dBm) is a WARN, not an ALERT. Pass the run's end, or stop `watch` at the script's END with
+`--duration`.
+
+Thresholds are flags (`--idr-max`, `--idr-window`, `--fps-min`, `--temp-warn`, `--temp-alert`, `--storage-min-mb`,
+`--battery-min`). `--status-every 12` adds an `INFO air AIR_STATUS` line every minute so the watcher is visibly alive.
 
 ## The air (`watch`)
 
@@ -44,7 +49,7 @@ sent on stdin, so nothing is quoted through a chain of shells. The radio, `iw` a
 | `AIR_REBOOT` | ALERT | `boot_id` changed, or uptime went back | `/proc/sys/kernel/random/boot_id`, `/proc/uptime` |
 | `AIR_UNREACHABLE` | ALERT | 2 polls in a row failed (ssh timeout 3 s + 10 s) | — |
 | `WFB_DROP` | ALERT | wfb_tx `p_drop` > 0 in the lines added since the last poll | `/tmp/wfbtx.log` PKT lines, field 6 (wfb-ng `tx.cpp:826`, as `bitrate_grid.sh`) |
-| `IDR_RATE` | WARN | (honoured + dropped) key-frame requests > 2/s | `GET /api/v1/idr/stats` |
+| `IDR_RATE` | WARN | (honoured + dropped) key-frame requests > 2/s over the last 30 s; clears below 1.5/s (hysteresis) | `GET /api/v1/idr/stats` |
 | `AIR_FPS_LOW` | ALERT | waybeam fps < 97.5 % of the configured fps (90 → 87.75; 167 → 162.8) | last `[verbose] … fps … kbps` line of `/tmp/waybeam.log`; `config.json` `fps` |
 | `AIR_TEMP` | WARN ≥ 60 °C, ALERT ≥ 70 °C | the `TEMP_SKIP` / `TEMP_STOP` of `bitrate_grid.sh` | `/sys/devices/virtual/mstar/msys/TEMP_R` |
 | `AIR_CHANNEL`, `AIR_TXPOWER`, `AIR_MCS`, `AIR_FEC`, `AIR_BITRATE`, `AIR_CFG_FPS` | ALERT vs `--expect`, WARN on an unplanned change | — | `iw dev wlan0 info`; `wfb_tx_cmd 9000 get_radio` / `get_fec`; `config.json` |
@@ -54,7 +59,18 @@ sent on stdin, so nothing is quoted through a chain of shells. The radio, `iw` a
 `bcn_off` and any second sampler (openipc-…-40, 2026-09-29). The watcher reads bcn_off's log line instead.
 air_health will be the one sampler of the register between switches.
 
-Every poll also records `clock_offset_s` = PC time − air time (the air's `date +%s`), shown in `AIR_STATUS`.
+**Clock offset.** `AIR_STATUS` carries `clock_offset_s` (PC time − air time) and `clock_err_s` (its half-width).
+- The air's `date +%s` has whole seconds only, and the ssh call takes 0.3–1.5 s. The first version subtracted `date`
+  from the PC time after the call returned, which gave a 1.14 → 2.15 → 1.27 s sawtooth in the live run, while the
+  real offset was constant.
+- Now ([AirClock](../../scripts/quest/slot_watch.py)):
+  - The probe prints `date` and `/proc/uptime` (10 ms) together, and floor(uptime + B) = date. Every poll bounds
+    B = air epoch − uptime to 1 s; intersected over the polls, it narrows to ~10 ms, with no busy wait on the air.
+  - The air's sample happens between the PC's start and end of the ssh call, which bounds the offset NTP-style.
+    Intersected over the polls, the bound narrows to the fastest calls.
+  - A reboot, or an empty intersection (a clock step), starts over.
+- Offline, simulated calls with 0.05–1.5 s latency converge within 0.1 s of the true offset and stay flat
+  (`test_the_clock_offset_converges_instead_of_a_sawtooth`). A live run against the sidecar's SYNC value is still open.
 
 ## The Quest (`between`)
 
@@ -105,12 +121,21 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
 
 ## Verification (2026-09-29)
 
-- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 25 offline checks (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
-  air rule including edge-triggering and recovery, the Quest parsers and rules, the alert line round trip and the
-  timeline window/offsets. Run `python3 test_slot_watch.py`.
-  - Four mutants were killed: drop `>` → `>=`, the uptime rule removed, the IDR threshold disabled, the edge trigger removed.
+- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
+  air rule including edge-triggering and recovery, the Quest parsers and rules, the alert line round trip, the
+  timeline window/offsets, the clock bound, the IDR window, and `--expect-until`. Run `python3 test_slot_watch.py`.
+  - Seven mutants were killed: drop `>` → `>=`, the uptime rule removed, the IDR threshold disabled, the edge trigger removed, the IDR hysteresis removed, the offset bound replaced by the old post-call estimate, and `--expect-until` ignored.
 - The parser fixtures are **real captures**, taken in a window opened by the coordinator (2026-09-29 ~03:10, no measurement running) [PROVEN]:
   - Air (one `ssh air sh -s` of `air_probe.sh`, rc 0; HD 16 Mbit/s, m7, FEC 4/8, alink off): `90 fps | 16243 kbps`, idr/stats `{"honored":432,"dropped":26}`, `mcs_index=7`, `k=4 n=8`, `channel 157 … txpower 17.00 dBm`, `bcn_off 0x550 0x18 -> 0x10`, temp 46.
   - Quest (in-slot state): `mWakefulness=Awake`, `Virtual proximity state: CLOSE`, `State: HEADSET_MOUNTED`, `guardian_pause` 1, `vendor_id=3034 product_id=34834`, `df` and battery.
 - Dry run with an unreachable host: `WATCH_START`, then `ALERT AIR_UNREACHABLE misses=2` after the second poll, then `WATCH_END`, exit 1; `report --no-quest --no-air` wrote the table.
-- **Not yet run live:** a full `watch` against the air, and the one-call `between` script on the headset. Both are for the next slot window.
+- **Live run, HD MCS4 redo (2026-09-29 03:27–03:37, pixelpilot-xr-66; 120 polls, `--expect channel=157 --expect txpower=17`)** [PROVEN: `scripts/quest/out/slot_watch/hdredo/alerts.log`, gitignored; its `alerts-report.md`, 31 rows]. It caught:
+  - `AIR_TXPOWER` 12 vs 17 before the setup;
+  - a real `WFB_DROP drop=106` during the setup (an ordering mistake in the run, cleared 5 s later);
+  - every planned MCS / FEC / bitrate change, as a WARN;
+  - `IDR_RATE` > 2/s repeatedly on `m4b16f46` (real, with the weaker FEC).
+- It also exposed three flaws, fixed afterwards (the second `IDR_RATE` state and the clock rows above):
+  - the clock sawtooth;
+  - the planned revert raised a false ALERT (now `--expect-until`);
+  - `IDR_RATE` flapped WARN ↔ OK 12 times in 10 min with a 5 s delta (now a 30 s window with hysteresis).
+- **Not yet run live:** the one-call `between` script on the headset, the fixed clock against the sidecar's SYNC value, and `report` with real app / air_health lines (the app lines arrive with APK 579305ee; air_health is not deployed).

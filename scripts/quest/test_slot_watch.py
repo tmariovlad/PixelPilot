@@ -139,10 +139,11 @@ def test_unreachable_needs_two_misses_and_recovers():
     assert ("INFO", "AIR_UNREACHABLE_OK") in codes(w.update(sample(), pc_time=115.0))
 
 
-def test_air_clock_offset_is_recorded():
+def test_one_poll_bounds_the_clock_offset_to_the_whole_second():
+    """`date +%s` has 1 s resolution: one poll only says the offset lies in (pc - date - 1, pc - date]."""
     w = sw.AirWatch(sw.Thresholds())
-    w.update(sample(now=1790700000), pc_time=1790700003.5)  # PC ahead of the air by 3.5 s
-    assert w.clock_offset == 3.5, w.clock_offset
+    w.update(sample(now=1790700000), pc_time=1790700003.5)  # PC 3.5 s after the air's whole second began
+    assert 2.5 <= w.clock_offset <= 3.5 and 0.4 < w.clock_err < 0.6, (w.clock_offset, w.clock_err)
 
 
 QUEST_OK = {"wakefulness": "Awake", "pid": "4242", "guardian_pause": "1", "prox": "CLOSE", "headset": "HEADSET_MOUNTED",
@@ -245,6 +246,74 @@ def test_the_report_carries_the_app_summary():
     from test_health_log import FILE
     md = sw.render_report([], 0, 1, app_summary=sw.app_summary(FILE))
     assert "## App health summary" in md and "| stalls_per_min | 2.0 |" in md, md
+
+def _polls(n, offset=0.749, latency=(0.3, 1.2), interval=5.137, t0=1790640000.0, up0=7000.0):
+    """Simulated polls: the air's clock = PC time - offset. The remote probe runs `lat_in` s after the PC starts the
+    ssh call and prints `date +%s` (integer) and /proc/uptime (10 ms); the call returns `lat_out` s later. This is
+    what made the old estimate a 1.1 -> 2.2 s sawtooth in the live run of 2026-09-29 03:27-03:37."""
+    import random
+    rnd = random.Random(7)
+    for i in range(n):
+        pc_before = t0 + i * interval
+        lat_in, lat_out = rnd.uniform(0.05, latency[0]), rnd.uniform(0.2, latency[1])
+        pc_at_probe = pc_before + lat_in
+        air_epoch = pc_at_probe - offset
+        s = sample(now=int(air_epoch), uptime=round(up0 + (pc_at_probe - t0), 2))
+        yield s, pc_before, pc_at_probe + lat_out
+
+
+def test_the_clock_offset_converges_instead_of_a_sawtooth():
+    w = sw.AirWatch(sw.Thresholds())
+    seen = []
+    for s, before, after in _polls(40):
+        w.update(s, after, pc_before=before)
+        seen.append(w.clock_offset)
+    assert abs(seen[-1] - 0.749) < 0.1, seen[-5:]
+    assert max(seen[-10:]) - min(seen[-10:]) < 0.05, seen[-10:]      # stable, no sawtooth
+    assert w.clock_err is not None and w.clock_err < 0.2, w.clock_err
+
+
+def test_the_clock_estimate_restarts_after_a_reboot():
+    w = sw.AirWatch(sw.Thresholds())
+    for s, before, after in _polls(20):
+        w.update(s, after, pc_before=before)
+    s, before, after = next(_polls(1, offset=-3.0, t0=1790640200.0, up0=5.0))
+    w.update(dict(s, boot_id="new-boot"), after, pc_before=before)
+    assert abs(w.clock_offset - (-3.0)) < 1.5, w.clock_offset          # re-anchored, not stuck on 0.749
+
+
+def test_expectations_stop_at_expect_until():
+    w = sw.AirWatch(sw.Thresholds(), expect={"txpower": "17"}, expect_until=200.0)
+    assert codes(w.update(sample(txpower=17.0), pc_time=100.0)) == []
+    a = w.update(sample(txpower=12.0), pc_time=300.0)                  # the planned revert after the run
+    assert ("ALERT", "AIR_TXPOWER") not in codes(a) and ("WARN", "AIR_TXPOWER") in codes(a), codes(a)
+
+
+def test_idr_rate_uses_a_window_and_does_not_flap():
+    w = sw.AirWatch(sw.Thresholds(idr_per_s_max=2.0, idr_window_s=30.0))
+    h, t, flips = 0, 100.0, 0
+    for i in range(40):                                                 # 2.2/s and 1.8/s in turns, mean 2.0
+        h += 11 if i % 2 else 9
+        t += 5.0
+        flips += len([a for a in w.update(sample(idr_honoured=h, idr_dropped=0), pc_time=t) if "IDR_RATE" in a.code])
+    assert flips <= 1, flips
+
+
+def test_idr_rate_still_fires_on_a_sustained_storm():
+    w = sw.AirWatch(sw.Thresholds(idr_per_s_max=2.0, idr_window_s=30.0))
+    h, t, got = 0, 100.0, []
+    for _ in range(10):
+        h += 20                                                         # 4/s
+        t += 5.0
+        got += codes(w.update(sample(idr_honoured=h, idr_dropped=0), pc_time=t))
+    assert ("WARN", "IDR_RATE") in got, got
+
+
+def test_expect_until_accepts_an_epoch_or_seconds_after_the_start():
+    assert sw.parse_until(None, 100.0) is None
+    assert sw.parse_until("+600", 100.0) == 700.0
+    assert sw.parse_until("1790641000", 100.0) == 1790641000.0
+
 
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
