@@ -30,6 +30,7 @@ home of all Quest work.
   - [docs/xr/presets-design.md](docs/xr/presets-design.md): design (for approval) of mode/quality presets switched from the headset, and the VMODE1 protocol to the air.
   - [docs/xr/menu-design.md](docs/xr/menu-design.md): design (for approval, 2026-09-29) of the full in-headset menu, right thumbstick only: every option (stream/decoder/XR levers, air mode/quality/radio/codec/channel), Stats pages with per-segment G2G latency, the VMODE1 extensions it needs.
   - **[docs/xr/HANDOFF.md](docs/xr/HANDOFF.md): current state of air unit / Quest / GS and the open items — start here in a new session.**
+  - [BACKLOG.md](BACKLOG.md): feature/issue backlog found during other work (e.g. the 5 GHz channel survey / spectrum calibration with a per-channel graph).
   - [docs/xr/data/](docs/xr/data/): raw measurement CSVs (linked from the topic files).
 - Design: [spec](docs/superpowers/specs/2026-09-26-quest-openxr-viewer-design.md) ·
   [implementation plan](docs/superpowers/plans/2026-09-26-quest-openxr-viewer.md).
