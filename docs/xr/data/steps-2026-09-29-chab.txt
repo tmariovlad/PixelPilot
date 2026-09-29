@@ -1,0 +1,6 @@
+# channel A/B steps on the PC clock (the shared schedule of pref_ab.sh START_AT; the air switched at air 706489 / 706669 = PC ~706490 / 706670, PC - air ~0.85 s). ABBA 157 165 165 157, 90 s each; every step starts with an XR relaunch on the Quest, so the guard is 15 s. MCS4 1080p90 12 Mbit FEC 4/8 17 dBm, 1 MB.
+1790706400 ch157
+1790706490 ch165
+1790706580 ch165
+1790706670 ch157
+1790706760 END

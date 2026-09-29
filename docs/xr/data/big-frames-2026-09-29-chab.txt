@@ -1,0 +1,11 @@
+# ab_chab, steps docs/xr/data/steps-2026-09-29-chab.txt, --air-offset-s -0.8413 (Quest-PC -0.8413 + PC-air 0), --guard-s 15. 21:44-21:50 local; channel A/B ABBA 157/165/165/157, 90 s each, MCS4 1080p90 12M FEC 4/8 17 dBm, rmem 1 MB, no rig; Quest ~1 m; APK c8986061, prefs = wifi-channel per step + request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted; XR relaunch at every step (guard 15 s). Steps on the PC clock (PC-air 0 here).
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_chab.pftrace docs/xr/data/steps-2026-09-29-chab.txt --air-offset-s -0.8413 --guard-s 15 --baseline ch157
+big = npkts >= 15 (p98 of the frames in the steps); ms above the 'ch157' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 ch157            76    20   9.01  10.18  16.04  18.14 |   5348   2.35   5.56
+ 1 ch165            88    19   9.55  10.53  18.88  21.83 |   5336   2.35   5.49
+ 2 ch165           355    16   4.67   3.87  12.19  15.52 |   5069   2.08   5.04
+ 3 ch157           195    17   6.52   4.13  18.06  21.69 |   5229   2.36   5.76
+per state
+ch157              271    18   7.22   4.56  16.94  21.69 |  10577   2.36   5.65
+ch165              443    17   5.64   3.94  13.51  21.83 |  10405   2.22   5.33

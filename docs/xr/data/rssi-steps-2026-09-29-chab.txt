@@ -1,0 +1,8 @@
+# ab_chab (2026-09-29 21:44-21:50 local), channel A/B ABBA 157/165/165/157, steps docs/xr/data/steps-2026-09-29-chab.txt (PC clock), Quest-PC -841.3 ms, guard 15 s; APK c8986061, keep_corrupted on; Quest ~1 m.
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_chab.raw.txt docs/xr/data/steps-2026-09-29-chab.txt --quest-minus-air-s -0.8413 --guard-s 15
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   rssiA   rssiB    snrA    snrB
+ 0 ch157          30   -28.0   -30.0    21.0    21.0
+ 1 ch165          30   -27.0   -31.0    22.0    21.0
+ 2 ch165          30   -27.0   -32.0    17.0    17.0
+ 3 ch157          29   -28.0   -30.0    22.0    22.0

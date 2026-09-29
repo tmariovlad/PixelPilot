@@ -199,6 +199,30 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Channel A/B 2026-09-29 21:44–21:50: on ch165 the corrupted-frame floor falls ~2.5–3× and the loss before FEC ~42 %, at the same signal
+
+The interference lead from the staircase below: a floor of ~4 bad-FCS frames/s at every received level. ch157 lies inside the neighbour's 80 MHz BSS, ch165 outside ([R3'](#r3-2026-09-28-23272347-ch157-vs-ch165-outside-the-neighbours-80-mhz-at-25-mbits)).
+- **Setup.** ABBA 157 / 165 / 165 / 157, 90 s each. MCS4 1080p90 12 Mbit/s FEC 4/8, 17 dBm, 1 MB input buffer, no rig. Quest ~1 m, as in the staircase.
+- **How both ends switch** (the R3 method): a shared clock schedule.
+  - Quest: [pref_ab.sh](../../scripts/quest/pref_ab.sh) with `START_AT` writes `wifi-channel` and the slot prefs, then relaunches XR at every step start.
+  - Air: `chan_ab.sh` with the L1 verb `linkmode-air.sh chan`, switch < 1 s, 17 dBm re-asserted, air drops 0 ([air log](data/air-chan-ab-2026-09-29.txt), per-step `ch=` read back).
+  - Every step starts with a relaunch, so the guard is 15 s at both ends. Steps on the PC clock.
+  - The Quest link was checked on 157 beforehand: logcat `wfb-ng monitoring on ... using wifi channel 157`. The APK's effective default is 157, even though `res/values/link_defaults.xml` says 161.
+- **Data.** [steps](data/steps-2026-09-29-chab.txt) · [RSSI per step](data/rssi-steps-2026-09-29-chab.txt) · [link (crc/s)](data/link-2026-09-29-chab.txt) · [link_audit](data/audit-2026-09-29-chab.txt) · [FEC blocks](data/fec-blocks-2026-09-29-chab.txt) ([tsv](data/fec-blocks-2026-09-29-chab.tsv)) · [bursts](data/loss-bursts-2026-09-29-chab.txt) · [latency](data/latency-2026-09-29-chab.txt) · [frame fate](data/frame-fate-2026-09-29-chab.txt) · [large frames](data/big-frames-2026-09-29-chab.txt) · [latency within each step](data/step-jitter-2026-09-29-chab.txt).
+
+| channel (A, A') | RSSI A / B (dBm) | SNR dB | bad-FCS frames/s (crc/s) | loss before FEC (p_data) | post-FEC | unrecoverable FEC blocks/min (with bad FCS) | 102.4 ms lock Z |
+|---|---|---|---|---|---|---|---|
+| 157 | −28/−30 · −28/−30 | 21 · 22 | **5.0 · 3.7** | **2.78 · 2.80 %** | 0.02 · 0.05 % | 5 (3) · 9 (8) | 0.0 · 0.6 |
+| 165 | −27/−31 · −27/−32 | 22 · 17 | **1.6 · 1.6** | **1.63 · 1.59 %** | 0.02 · 0.01 % | 7 (4) · 1 (0) | 0.1 · 1.9 |
+
+- **On 165 the bad-FCS floor falls from 3.7–5.0 to 1.6 frames/s, and the loss before FEC from 2.8 % to 1.6 %, at the same received level** [PROVEN: ABBA, N = 2 per channel, so a linear drift cancels; RSSI within 1–2 dB].
+  - The floor the staircase found at every level on 157 is therefore mostly **channel-bound**: something on or next to 157 corrupts our frames [INFERRED; the neighbour's BSS, whose 80 MHz covers 157 but not 165, is the obvious candidate. An RF scan of 157 during the run would confirm it].
+- After FEC the loss is too small at this rate and distance to separate the channels: 6–31 packets per step, post-FEC 0.01–0.05 %. The unrecoverable blocks per step (1–9/min) are also too few.
+  - This differs from R3' at 25 Mbit/s MCS7 in another geometry, where 165 lost as much after FEC as 157. The fair comparison of *residual* loss needs a longer run or the heavier MCS7 16 Mbit state.
+- **No 102.4 ms lock on either channel** (Z ≤ 1.9, whole run 3.9). In R3' 165 showed Z = 70.9; that source was not active tonight.
+- Latency: 165 −0.12 ms mean, last95 5.7 vs 6.0 ms; decoded 90.3 fps on both.
+- **Next:** the same A/B in the operational state (MCS7 16 Mbit/s FEC 4/8), longer steps (≥ 3 min), and with the rig off. That tells whether 165's lower corruption turns into lower residual loss where it matters. If it does, 165 is the channel to use here.
+
 ### MCS4 TX power staircase 2026-09-29 21:00–21:10: no saturation up to −23 dBm at the Quest; corruption rises only at the weak end
 
 The user wanted the saturation *point*, not three levels. MCS7 is limited to 18 dBm (approved limit, [menu-design](menu-design.md); above 20 dBm the air's own PA breaks MCS7, [slot 2026-09-28 20:10](#slot-2026-09-28-2010-u1-streamed-capture-t6-rx-diagnostics-t2-quest-wi-fi-off)), so the staircase uses MCS4, whose limit is 24 dBm and which was clean at 20–23 dBm on 2026-09-28.
