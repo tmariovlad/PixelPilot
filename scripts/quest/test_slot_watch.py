@@ -207,6 +207,23 @@ def test_timeline_keeps_only_events_and_alerts_from_periodic_lines():
     assert rows == [], rows
 
 
+def test_the_probe_goes_to_the_air_with_lf_only():
+    """core.autocrlf=true checks air_probe.sh out with CRLF; busybox sh on the air would read the CR as part of every
+    command, so the script is normalised before it is sent."""
+    import os
+    import tempfile
+    cr = bytes([13])
+    crlf = os.path.join(tempfile.mkdtemp(), "probe.sh")
+    with open(crlf, "wb") as f:
+        f.write(b"#!/bin/sh" + cr + b"\n" + b"echo now=1" + cr + b"\n")
+    old, sw.AIR_PROBE = sw.AIR_PROBE, crlf
+    try:
+        script = sw.AirProbe().script
+    finally:
+        sw.AIR_PROBE = old
+    assert cr not in script and script == b"#!/bin/sh\necho now=1\n", script
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

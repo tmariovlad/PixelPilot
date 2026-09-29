@@ -251,7 +251,9 @@ class AirProbe:
 
     def __init__(self, host=AIR_HOST, timeout=10):
         self.host, self.timeout = host, timeout
-        self.script = open(AIR_PROBE, "rb").read()
+        # core.autocrlf=true checks the .sh out with CRLF; the air's busybox sh would take the CR as part of each command
+        with open(AIR_PROBE, "rb") as f:
+            self.script = f.read().replace(b"\r\n", b"\n")
         self.prev_lines = -1
 
     def read(self, slow):
