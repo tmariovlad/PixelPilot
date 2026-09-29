@@ -1,9 +1,10 @@
-# Air log: bufferbloat gate, 2026-09-29 23:02-23:10 (/tmp/rmem_sat.sh md5 33d6c886 on air .132, boot channel 165)
+# Air log: bufferbloat gate, 2026-09-29 22:39-22:50 (PC local) (/tmp/rmem_sat.sh md5 33d6c886 on air .132, boot channel 165)
 # Question (latency-test-0d): with the video wfb_tx input buffer at 1 MB, does a link that cannot carry the encoder rate
 # build a standing queue (the image falls seconds behind) instead of dropping? Setup at MCS7 (clean, rig calibration),
 # then each step relaunches the video wfb_tx at MCS4 with the step's rmem: 1080p90 16 Mbit, FEC 4/8 = over the MCS4
 # capacity (m4b16f48 overflowed in the HD sweep). ABAB 192K / 1M, 120 s each. ch165, 17 dBm, alink/vmoded stopped.
 # ESP32 G2G rig on the Quest lens (latency-test-0d), Quest capture ab_bloat (pixelpilot-xr-25, IDR-on-loss OFF).
+# Clock this boot: slot_watch AIR_STATUS clock_offset_s = PC - air = +0.043..+0.052 s (err ~0.11 s) at 22:49-22:50.
 # RESULT (air side): sustained overload in every step: 192K dropped 7777 / 8170 packets per 120 s (88 / 87 s with drops),
 # 1M dropped 5053 / 6497 (55 / 74 s): the 1 MB buffer fills and then drops too, a little less. Injection never failed.
 # Whether the image falls behind (the latency drift within the step) is on the rig / Quest side.
