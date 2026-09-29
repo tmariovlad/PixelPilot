@@ -778,8 +778,15 @@ def cmd_watch(args):
                 | {"clock_offset_s": watch.clock_offset, "clock_err_s": watch.clock_err})])
         n += 1
         time.sleep(max(0.0, args.interval - (time.time() - t_poll)))
-    sink.emit([Alert(time.time(), "INFO", "watch", "WATCH_END", {"polls": n, "alerts": sink.alerts})])
+    end_t = time.time()
+    sink.emit([clock_alert(watch, end_t), Alert(end_t, "INFO", "watch", "WATCH_END", {"polls": n, "alerts": sink.alerts})])
     return 1 if sink.alerts else 0
+
+
+def clock_alert(watch, t):
+    """The slot's PC - air offset (AirClock's bound: midpoint and half-width, s) as one line before WATCH_END, so each
+    alerts file carries the offset for joining air and Quest data by the second. "-" = no poll answered."""
+    return Alert(t, "INFO", "watch", "AIR_CLOCK", {"pc_minus_air_s": watch.clock_offset, "err_s": watch.clock_err})
 
 
 def cmd_between(args):

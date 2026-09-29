@@ -456,6 +456,22 @@ def test_the_clock_offset_comes_from_the_poll_head():
                                                                                   f.watch.clock_err)
 
 
+def test_the_watch_ends_with_the_clock_offset_for_the_joins():
+    """pixelpilot-xr-66, 2026-09-29: every alerts file carries the PC - air offset to use when joining air and Quest
+    data by the second (the night's 0.749 s came from an asymmetric rtt/2 and shifted those joins by ~0.7 s)."""
+    f = feed()
+    for i in range(30):
+        pc = 2000.0 + i * 5.13
+        up = 700.0 + i * 5.13 + 0.1
+        f.poll(head(round(up, 2), now=int(pc + 0.1 - 0.75)), [ah(int(up * 100), i + 1)], pc, pc + 0.4)
+    a = sw.clock_alert(f.watch, 3000.0)
+    assert (a.level, a.source, a.code) == ("INFO", "watch", "AIR_CLOCK"), a
+    assert a.detail["pc_minus_air_s"] == f.watch.clock_offset and a.detail["err_s"] == f.watch.clock_err, a
+    assert "pc_minus_air_s=0." in a.line(), a.line()
+    empty = sw.clock_alert(sw.AirWatch(sw.Thresholds()), 3000.0)                 # no poll answered: says so
+    assert empty.detail == {"pc_minus_air_s": None, "err_s": None} and "pc_minus_air_s=-" in empty.line(), empty
+
+
 def test_the_tail_output_splits_into_head_and_lines():
     text = ("now=1790000009\nuptime=9.01\nboot_id=6f1c2a3b-0000\ncfg_bitrate=16000\ncfg_fps=90\n"
             + ah(700, 4) + "\n" + ev(700, "ROTATE", n=2) + "\n")

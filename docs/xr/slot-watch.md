@@ -39,6 +39,8 @@ change some of them on purpose.
 
 Thresholds are flags (`--idr-max`, `--idr-window`, `--fps-min`, `--temp-warn`, `--temp-alert`, `--storage-min-mb`,
 `--battery-min`). `--status-every 12` adds an `INFO air AIR_STATUS` line every minute so the watcher is visibly alive.
+Just before `WATCH_END`, `INFO watch AIR_CLOCK pc_minus_air_s=… err_s=…` gives the slot's PC − air offset (the clock
+bound below, `-` if no poll answered). Use that value when joining air and Quest data by the second.
 
 ## The air (`watch`)
 
@@ -107,9 +109,9 @@ air_health is the one sampler of the register (`reg550` every 30 s, skipped whil
   - The uptime ran without a break, 8416 → 12121 s, so there was no reboot.
   - The "PC − air = 0.749 s" used in that night's data headers and audits lies outside every bound.
   - The run's own `epoch − uptime` constant (1790633249.73, used for the rmemrig air-drop seconds) gives PC(after the call) − air(at the sample) = 0.32–0.37 s. The sample comes before the call returns, so this bounds PC − air ≤ 0.32 s, which also rules out 0.749 [INFERRED].
-  - 0.749 is most likely the whole-second bias of comparing PC time with the air's `date +%s` (≈ +0.5 s on average, plus the ssh latency) [SPECULATION until the coordinator says how it was measured].
+  - Where 0.749 came from: the coordinator's `clk_off.py` took half the round trip of a whole paramiko exec call as the offset. That call's two directions are not symmetric [PROVEN: pixelpilot-xr-66, 2026-09-29, who corrected its six air logs and asked the analysts to redo the 1 s joins].
   - The sidecar's SYNC can't settle it on its own: its air times t2/t3 are CLOCK_MONOTONIC ([stats-backend.md](stats-backend.md), "Clocks"), so its offset becomes a wall-clock one only through the air's `epoch − uptime`.
-  - An NTP step before 03:58 is not excluded (no read on the air), but nothing in the data needs one.
+  - The air runs `ntpd -n` (pid 801) [PROVEN: pixelpilot-xr-66's read on the air, 2026-09-29], so its wall clock is NTP-disciplined like the PC's, and an offset of ~0.05–0.09 s is what to expect.
 
 ## The Quest (`between`)
 
@@ -160,7 +162,7 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
 
 ## Verification (2026-09-29)
 
-- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks before the air_health source (50 with it, below) (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
+- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks before the air_health source (51 with it and AIR_CLOCK) (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
   air rule including edge-triggering and recovery, the Quest parsers and rules, the alert line round trip, the
   timeline window/offsets, the clock bound, the IDR window, and `--expect-until`. Run `python3 test_slot_watch.py`.
   - Seven mutants were killed: drop `>` → `>=`, the uptime rule removed, the IDR threshold disabled, the edge trigger removed, the IDR hysteresis removed, the offset bound replaced by the old post-call estimate, and `--expect-until` ignored.
