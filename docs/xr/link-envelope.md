@@ -220,6 +220,11 @@ Question (from the loss shape above, ~4 ms outages vs a ~2.7 ms FEC 4/8 block): 
   - The losses stay unlocked from the 102.4 ms period (Z ≤ 1.7).
 - **Latency cost: the longer blocks add ~3 ms mean and ~20 ms at p95** [PROVEN: one drift line, baseline 12/24; [latency](data/latency-2026-09-29-fecspan.txt)].
   - last / p95 in ms: 4/8 2.4 / 6.6 (step 0 only), 8/16 4.7 / 28.4 and 5.6 / 28.9, 12/24 5.6 / 26.5 and 5.6 / 26.1.
+  - **Optical confirmation on the goggles** [PROVEN: ESP32 G2G rig run by the latency_test session during the same air window, split by the active FEC step, ±2 s around each switch dropped; `c:/Users/vlad_/Documents/Arduino/latency_test` commit 04ac49c, `tasks/first-full-light-2026-09-29/split_by_air_fec.py`; relayed by the coordinator]. It is a different receiver on the same air.
+    - First-light G2G, average (median): 4/8 44.1 (44.3) ms, n = 44; 8/16 45.2 (44.8), n = 69; 12/24 46.7 (46.8), n = 70.
+    - So **12/24 costs +2.6 ms first light / +3.5 ms full light vs 4/8**, ~4 standard errors, and the ABC CBA order cancels linear drift. It matches the Quest's +3 ms mean above.
+    - The whole HD window measured ~+19 ms G2G vs race on the goggles (45.7 vs 26.4 ms).
+  - **Trade:** 3–5× less residual loss for ~+2.6 ms G2G on average, with the extra wait concentrated in the frames that need recovery (Quest p95 +20 ms).
   - The likely mechanism [INFERRED]: wfb_tx sends a block's parity only after the block has filled with k data packets. With k = 8 or 12, a frame's tail shares its block with the next frame, so recovering a lost packet waits for about a frame (11 ms) or more.
   - The trade: 12/24 removes 3–5× of the residual loss but costs ~20 ms at p95 when there is loss to recover. A block that closes at the frame end (per-frame FEC flush) would keep the recovery without the wait [SPECULATION].
   - Correction (same day): an earlier version of this paragraph said every step restarted waybeam and left the latency unresolved. That was wrong. The coordinator confirmed only `wfb_setfec` ran per step, and on a clean baseline steps 0–4 share one drift line. The false picture came from a drift line fitted on 4/8, which included step 5, whose RTP timestamps jump (frame fate: "never arrived" 15107/s in step 5 only). Step 5 is not valid for latency.
