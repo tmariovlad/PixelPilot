@@ -1,0 +1,37 @@
+# ab_frz60 (2026-09-29 ~03:05, 75 s detached capture), APK 0c012b37, prefs = user backup + request_idr_on_loss + freeze_until_idr; air 1080p90 16 Mbit/s m7 LGI STBC FEC 4/8 17 dBm alink off; headset still, display kept on (prox_close)
+# python3 scripts/quest-latch/freeze_gaps.py scripts/quest/out/ab_frz60.pftrace
+74.9 s, 5241 decoded frames (70.0/s), RTP lost 254 (3.4/s), frozen slices 1440, IDR requests ok 52 failed 24
+stalls >= 250 ms: 29 (23.2/min), p50 392 ms, max 1021 ms, by kind {'freeze': 29}
+  t+  1.74 s    934 ms  freeze             pkts  1395 lost    3 frozen   81 idr ok 1 failed 1
+  t+  3.01 s    270 ms  freeze             pkts   374 lost    1 frozen   20 idr ok 1 failed 0
+  t+  3.70 s    366 ms  freeze             pkts   538 lost    2 frozen   29 idr ok 0 failed 1
+  t+  4.78 s    369 ms  freeze             pkts   518 lost    8 frozen   28 idr ok 1 failed 1
+  t+  5.93 s   1008 ms  freeze             pkts  1482 lost    5 frozen   88 idr ok 0 failed 2
+  t+  7.28 s    823 ms  freeze             pkts  1198 lost   10 frozen   68 idr ok 1 failed 2
+  t+  8.21 s    392 ms  freeze             pkts   548 lost    8 frozen   30 idr ok 1 failed 1
+  t+  8.78 s    357 ms  freeze             pkts   501 lost    5 frozen   26 idr ok 1 failed 1
+  t+ 13.48 s    462 ms  freeze             pkts   709 lost    5 frozen   37 idr ok 2 failed 0
+  t+ 14.40 s    260 ms  freeze             pkts   363 lost    2 frozen   19 idr ok 1 failed 0
+  t+ 16.38 s    262 ms  freeze             pkts   373 lost    4 frozen   20 idr ok 0 failed 0
+  t+ 17.37 s    278 ms  freeze             pkts   399 lost    4 frozen   21 idr ok 1 failed 0
+  t+ 18.87 s    373 ms  freeze             pkts   527 lost   31 frozen   24 idr ok 1 failed 1
+  t+ 20.58 s    259 ms  freeze             pkts   363 lost    2 frozen   19 idr ok 1 failed 0
+  t+ 24.94 s    400 ms  freeze             pkts   605 lost    6 frozen   31 idr ok 1 failed 1
+  t+ 28.52 s   1021 ms  freeze             pkts  1503 lost    1 frozen   90 idr ok 0 failed 1
+  t+ 30.68 s    675 ms  freeze             pkts   986 lost    6 frozen   56 idr ok 1 failed 1
+  t+ 32.75 s   1020 ms  freeze             pkts  1527 lost   10 frozen   86 idr ok 1 failed 2
+  t+ 35.53 s    369 ms  freeze             pkts   529 lost    6 frozen   28 idr ok 1 failed 1
+  t+ 38.50 s    363 ms  freeze             pkts   512 lost   10 frozen   26 idr ok 1 failed 1
+  t+ 39.71 s    261 ms  freeze             pkts   388 lost    7 frozen   18 idr ok 2 failed 0
+  t+ 41.90 s    496 ms  freeze             pkts   748 lost    9 frozen   38 idr ok 2 failed 0
+  t+ 43.28 s   1014 ms  freeze             pkts  1493 lost    3 frozen   91 idr ok 0 failed 1
+  t+ 51.60 s    259 ms  freeze             pkts   359 lost    2 frozen   19 idr ok 1 failed 0
+  t+ 53.46 s    272 ms  freeze             pkts   374 lost    3 frozen   20 idr ok 1 failed 0
+  t+ 59.48 s   1020 ms  freeze             pkts  1527 lost    1 frozen   90 idr ok 0 failed 1
+  t+ 61.85 s   1019 ms  freeze             pkts  1493 lost    2 frozen   90 idr ok 0 failed 1
+  t+ 63.23 s   1010 ms  freeze             pkts  1496 lost    4 frozen   91 idr ok 0 failed 1
+  t+ 70.20 s   1014 ms  freeze             pkts  1494 lost    2 frozen   90 idr ok 0 failed 1
+# link_audit (one step = the capture, Quest clock)
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 frz           99444   205  2645   205    2.86   0.21    1.1   20   14   12   20    5  20.0   18.0   4.8

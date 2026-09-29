@@ -308,6 +308,23 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
 - The picture holds on the last good frame instead of smearing. With `request_idr_on_loss` the hold should be ~0.1–0.3 s [SPECULATION until measured], like DJI's policy.
 - Trace counter `ppxr_frozen_slices`. Host tests `FreezeUntilIdr_test` (5 cases; the timeout mutant dies).
 
+**IDR + freeze in use: "VIDEO STALLED" is the freeze, and a third of the keyframe requests fail (2026-09-29 ~03:05)**
+- Setup: the user saw "video stalled" often. A 75 s detached capture was taken with APK 0c012b37, IDR + freeze on, air 1080p90 16 Mbit/s m7 FEC 4/8, headset still.
+- Analyzer: [freeze_gaps.py](../../scripts/quest-latch/freeze_gaps.py), tested. Data: [freeze-gaps-2026-09-29-frz60.txt](data/freeze-gaps-2026-09-29-frz60.txt).
+- **The headline counts a freeze as a stall** [PROVEN: `SignalState.java:46-47, 104-105, 127`]. The app shows VIDEO STALLED when no decoded frame came for max(250 ms, 6 frame periods), i.e. 250 ms at 90 fps. A freeze until the IDR decodes nothing either.
+- **All 29 gaps ≥ 250 ms were freezes, not link gaps** [PROVEN: in every one the packets kept arriving and `ppxr_frozen_slices` rose]:
+  - 23 per minute, p50 392 ms, max 1021 ms;
+  - decoded 70 fps on average;
+  - the link was good: post-FEC 0.21 %, 1.1 loss runs/s, RSSI column 81.
+- **24 of 76 keyframe requests failed (32 %)** [PROVEN: `ppxr_idr_req_failed`]. Every freeze of ~1.01–1.02 s (9 of 29) had no successful request and ended on the 1 s timeout.
+  - Why a request fails is not known [SPECULATION: `IdrRequester` gives up after 300 ms, while a lost TCP SYN on the tunnel is retransmitted only after ~1 s; or waybeam answers a rate-limited request with a non-200 status].
+- A successful request still left ≥ 260 ms of freeze: request, encoder IDR, and the large IDR frame on air [INFERRED: the shortest freezes with `idr ok 1` were 259–278 ms].
+- **Consequence:** with ~1 loss event per second, freeze-until-IDR holds the picture 23 times a minute. The user reads that as stalls.
+- Next, in the app:
+  1. while frozen, repeat the request every interval until the key frame arrives, instead of waiting for the next loss;
+  2. log why a request fails, and give the HTTP connect a longer timeout, or keep the connection alive;
+  3. show the freeze as its own state, not VIDEO STALLED.
+
 
 ### Bitrate ceiling 2026-09-29 00:21–00:37: the air recorder, and FEC 8/10 up to 50 Mbit/s (1SS m7, 2SS m12/m13)
 
