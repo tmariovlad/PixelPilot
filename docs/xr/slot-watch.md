@@ -122,7 +122,7 @@ adb over Wi-Fi while the link measures costs the RTL packets (the U1 run, [troub
 |---|---|---|---|
 | `QUEST_ASLEEP` | ALERT | `mWakefulness` ≠ Awake | `dumpsys power` |
 | `QUEST_XR_NOT_RUNNING` | ALERT | no pid for `com.openipc.pixelpilot.xr` | `pidof` |
-| `QUEST_NO_ADAPTER` | ALERT | no `0bda:8812` among the USB host devices | `dumpsys usb` (IDs are decimal there: `vendor_id=3034 product_id=34834`; `/sys/bus/usb` is not readable from the adb shell) |
+| `QUEST_NO_ADAPTER` | ALERT | no `0bda:8812` among the attached USB devices | `dumpsys usb`, its `host_manager` block only: `settings_manager` holds the XR app's USB device filters, which list `0bda:8812` whether or not it is plugged in (IDs are decimal there: `vendor_id=3034 product_id=34834`; `/sys/bus/usb` is not readable from the adb shell) |
 | `QUEST_GUARDIAN` | WARN | `debug.oculus.guardian_pause` ≠ `--expect guardian_pause` | `getprop` |
 | `QUEST_PROX` | WARN | `Virtual proximity state` ≠ `--expect prox` (`CLOSE` after `prox_close`) | `dumpsys vrpowermanager` |
 | `QUEST_STORAGE` | WARN | < 2048 MB free on `/data` | `df -k /data` |
@@ -162,7 +162,7 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
 
 ## Verification (2026-09-29)
 
-- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks before the air_health source (51 with it and AIR_CLOCK) (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
+- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks before the air_health source (52 with it, AIR_CLOCK and the USB scope) (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
   air rule including edge-triggering and recovery, the Quest parsers and rules, the alert line round trip, the
   timeline window/offsets, the clock bound, the IDR window, and `--expect-until`. Run `python3 test_slot_watch.py`.
   - Seven mutants were killed: drop `>` → `>=`, the uptime rule removed, the IDR threshold disabled, the edge trigger removed, the IDR hysteresis removed, the offset bound replaced by the old post-call estimate, and `--expect-until` ignored.
@@ -194,4 +194,9 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
   - the report's anchor, the event deduplication and the air summary.
   - 12 mutants were killed, each checked to apply to exactly one place. One mutant (the uptime reset on a reboot) first survived: the test's old boot had a smaller uptime than the new one. The test now uses a 500 s old boot, and that mutant dies.
   - `report --no-quest --no-air` on the hdredo alerts still writes its 31 rows.
-- **Not yet run live:** the one-call `between` script on the headset, `report` with real app / air_health lines (the app lines arrive with APK 579305ee), and `watch --air-source health` against a running air_health.sh. air_health was built and tested offline only, and has not run on the air yet (its §6 procedure and §8 checklist).
+- **`between` live (2026-09-29 04:34, window from pixelpilot-xr-66 between rmem1m and (B), ~1 s)** [PROVEN: `scripts/quest/out/slot_watch/between-preB/alerts.log` and `dumpsys-usb.txt`, gitignored]:
+  - `QUEST_OK`, rc 0: Awake, XR app pid 32499, `guardian_pause=1`, prox CLOSE, HEADSET_MOUNTED, 156839 MB free, battery 100.
+  - It exposed a flaw, since fixed: the USB check listed 49 IDs, because the XR app's device filters under `settings_manager` were counted as attached devices. `QUEST_NO_ADAPTER` could never have fired.
+  - The on-device part now sends the whole `dumpsys usb` (one call, ~1000 lines), and `parse_usb_ids` reads only `host_manager`. On the real capture that gives `['0bda:8812']`.
+  - The test, built on the capture's structure, was red before the fix: plugged / unplugged / no `host_manager` block.
+- **Not yet run live:** `report` with real app / air_health lines (the app lines arrive with APK 579305ee), and `watch --air-source health` against a running air_health.sh. air_health was built and tested offline only, and has not run on the air yet (its §6 procedure and §8 checklist).

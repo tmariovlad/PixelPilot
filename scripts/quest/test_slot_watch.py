@@ -172,14 +172,40 @@ def test_quest_parsers():
     assert sw.parse_battery("Current Battery Service state:\n  AC powered: true\n  level: 77\n  scale: 100\n") == 77
     vr = "Virtual proximity state: CLOSE\nisAutosleepDisabled: false\nState: HEADSET_MOUNTED\nDevice idle state: Not idle\n"
     assert sw.parse_vrpower(vr) == ("CLOSE", "HEADSET_MOUNTED")
-    usb = ("  host_manager={\n    devices={\n      name=/dev/bus/usb/001/002\n      vendor_id=3034\n"
-           "      product_id=34834\n      class=0\n      manufacturer_name=Realtek\n")
-    assert sw.parse_usb_ids(usb) == ["0bda:8812"]
+    assert sw.parse_usb_ids(usb_dump()) == ["0bda:8812"]
+
+
+def usb_dump(attached=True):
+    """`dumpsys usb` shaped like the real one (Quest 2, 2026-09-29 04:34, scripts/quest/out/slot_watch/between-preB/
+    dumpsys-usb.txt): attached devices in host_manager, then settings_manager with the XR app's USB device filters,
+    which list 0bda:8812 among ~48 others whether or not the adapter is plugged in."""
+    dev = ("      name=/dev/bus/usb/001/002\n      vendor_id=3034\n      product_id=34834\n      class=0\n"
+           "      manufacturer_name=Realtek\n      product_name=802.11n NIC\n") if attached else ""
+    return ("USB MANAGER STATE (dumpsys usb):\n  device_manager={\n    handler={\n    }\n  }\n"
+            "  host_manager={\n    devices={\n" + dev + "    }\n    num_connects=105\n    connections=[\n      {\n"
+            "        device_address=/dev/bus/usb/001/002\n        manufacturer=3034\n        product=34834\n      }\n"
+            "    ]\n  }\n  port_manager={\n    is_simulation_active=false\n  }\n"
+            "  settings_manager={\n    user_settings={\n      device_attached_activities=[\n        {\n"
+            "          activity={\n            package_name=com.openipc.pixelpilot.xr\n          }\n          filters=[\n"
+            "            {\n              vendor_id=3034\n              product_id=34834\n              class=-1\n            }\n"
+            "            {\n              vendor_id=3034\n              product_id=34842\n              class=-1\n            }\n"
+            "          ]\n        }\n      ]\n    }\n  }\n")
+
+
+def test_usb_counts_only_attached_devices_not_the_apps_filters():
+    """between-preB (2026-09-29) listed 49 IDs: the XR app's device filters were read as attached devices, so
+    QUEST_NO_ADAPTER could never fire. Only host_manager lists what is attached."""
+    assert sw.parse_usb_ids(usb_dump(attached=True)) == ["0bda:8812"]
+    assert sw.parse_usb_ids(usb_dump(attached=False)) == []
+    assert sw.parse_usb_ids("USB MANAGER STATE (dumpsys usb):\n  settings_manager={\n vendor_id=3034\n"
+                            " product_id=34834\n") == []        # no host_manager block: fail loud (no adapter)
+    q = dict(QUEST_OK, usb=sw.parse_usb_ids(usb_dump(attached=False)))
+    assert ("ALERT", "QUEST_NO_ADAPTER") in codes(sw.quest_alerts(q, sw.Thresholds(), {})), q
 
 
 def test_quest_script_output_splits_into_fields():
     text = ("  mWakefulness=Awake\n@@\n23379\n@@\n1\n@@\nVirtual proximity state: CLOSE\nState: HEADSET_MOUNTED\n@@\n"
-            "      vendor_id=3034\n      product_id=34834\n@@\nFilesystem 1K-blocks Used Available Use% Mounted on\n"
+            + usb_dump() + "@@\nFilesystem 1K-blocks Used Available Use% Mounted on\n"
             "/dev/block/dm-49 242680204 81352368 161196764  34% /data/user/0\n@@\n  level: 77\n")
     q = sw.parse_quest(text)
     assert q == {"wakefulness": "Awake", "pid": "23379", "guardian_pause": "1", "prox": "CLOSE",

@@ -542,7 +542,7 @@ class HealthFeed:
 
 QUEST_SCRIPT = ("dumpsys power | grep mWakefulness=; echo @@; pidof {pkg}; echo @@; "
                 "getprop debug.oculus.guardian_pause; echo @@; dumpsys vrpowermanager 2>/dev/null | head -n 8; echo @@; "
-                "dumpsys usb | grep -E 'vendor_id=|product_id='; echo @@; df -k /data; echo @@; "
+                "dumpsys usb; echo @@; df -k /data; echo @@; "
                 "dumpsys battery | grep ' level:'")
 
 
@@ -572,10 +572,14 @@ def parse_vrpower(text):
 
 
 def parse_usb_ids(text):
-    """dumpsys usb host devices -> ["vvvv:pppp"]; the IDs are decimal there (0bda = 3034) and /sys/bus/usb is not
-    readable from adb shell on the Quest."""
-    vids = re.findall(r"vendor_id=(\d+)", text)
-    pids = re.findall(r"product_id=(\d+)", text)
+    """`dumpsys usb` -> the attached devices as ["vvvv:pppp"]; the IDs are decimal there (0bda = 3034) and
+    /sys/bus/usb is not readable from adb shell on the Quest. Only the host_manager block lists attached devices:
+    settings_manager further down holds the apps' USB device filters (the XR app's list has 0bda:8812 among ~48
+    others), which the first version counted too (between-preB, 2026-09-29). No host_manager block = none attached."""
+    m = re.search(r"^\s*host_manager=\{\n(.*?)(?=^ {0,2}\w+_manager=\{|\Z)", text, re.S | re.M)
+    block = m.group(1) if m else ""
+    vids = re.findall(r"vendor_id=(\d+)", block)
+    pids = re.findall(r"product_id=(\d+)", block)
     return ["%04x:%04x" % (int(v), int(p)) for v, p in zip(vids, pids)]
 
 
