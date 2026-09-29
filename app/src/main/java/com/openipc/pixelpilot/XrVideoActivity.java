@@ -9,6 +9,8 @@ import android.util.Log;
 import android.view.WindowManager;
 
 import com.openipc.mavlink.MavlinkData;
+import com.openipc.pixelpilot.stats.HealthFileSink;
+import com.openipc.pixelpilot.stats.HealthMonitor;
 import com.openipc.pixelpilot.stats.StatsCollector;
 import com.openipc.pixelpilot.stats.StatsLine;
 import com.openipc.pixelpilot.stats.StatsWiring;
@@ -96,6 +98,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     /** The Stats pages' data (session 36's sidecar/link model); EMPTY until it is attached. */
     private volatile StatsSource statsSource;
     private StatsCollector statsCollector;   // statsSource's implementation, fed from the callbacks below
+    private volatile HealthMonitor health;   // PPXR_EVENT / PPXR_HEALTH (docs/xr/health-logging.md)
+    private HealthMonitor.Sink logSink;      // logcat + files/ppxr_health.log
     private final Runnable menuTick = new Runnable() {
         @Override
         public void run() {
@@ -122,6 +126,13 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
             // Drained once per tick: the signal state and the phase meter read the same frames.
             long[] frames = videoPlayer != null ? videoPlayer.drainFrameReadyTimes() : new long[0];
             updateSignal(frames);
+            HealthMonitor h = health;
+            if (h != null) {
+                long mono = monoMs();
+                h.onTick(mono, signal.kind().name(), signal.needsAction(),
+                        videoPlayer != null ? videoPlayer.leverCounters() : null);
+                h.onAdapter(mono, wfbLink != null && wfbLink.isRunning());
+            }
             if (signal.needsAction() != panelOverVideo && xr != null) {
                 panelOverVideo = signal.needsAction();
                 applyLayout();                     // moves only the panel quad; nothing on the video path
@@ -166,6 +177,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         }
         stats = new XrStatsRenderer(xr.statsSurface());
         startMenu();
+        startHealth();
         phase = new CompositorPhase(experiments.xrLatchToDisplayUs, experiments.xrPhaseReport);
 
         videoPlayer = new VideoPlayer(this);
@@ -191,12 +203,30 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         startStats();     // likewise: the air's RTP sidecar is at the tunnel end
     }
 
+    /** CLOCK_MONOTONIC ms (System.nanoTime), the clock of the Perfetto traces and of the health/stats lines. */
+    private static long monoMs() {
+        return System.nanoTime() / 1_000_000;
+    }
+
+    /** PPXR_EVENT / PPXR_HEALTH, always on, to logcat and files/ppxr_health.log (docs/xr/health-logging.md). */
+    private void startHealth() {
+        HealthFileSink file = new HealthFileSink(new java.io.File(getFilesDir(), HealthFileSink.FILE_NAME),
+                HealthFileSink.MAX_BYTES);
+        logSink = (tag, line) -> {
+            Log.i(tag, line);
+            file.line(tag, line);
+        };
+        health = new HealthMonitor(logSink, mono -> System.currentTimeMillis() - (monoMs() - mono));
+    }
+
     /** The Stats pages' data (docs/xr/stats-backend.md): sidecar + decoded frames + link, a snapshot every 0.5 s. */
     private void startStats() {
         StatsCollector c = StatsWiring.create(() -> videoPlayer, () -> wfbLink, () -> xr);
         // One PPXR_STATS line every 2 s while the Stats page is open, or always with the slot pref stats_log;
         // capture it detached (scripts/quest/ab_detached.sh), parse with scripts/quest-latch/stats_log.py.
-        c.setLineSink(line -> Log.i(StatsLine.TAG, line));
+        c.setLineSink(line -> logSink.line(StatsLine.TAG, line));
+        HealthMonitor h = health;
+        if (h != null) c.setSnapshotListener(h::onSnapshot);
         c.setAlwaysLog(getSharedPreferences("general", MODE_PRIVATE).getBoolean("stats_log", false));
         try {
             c.start();
@@ -415,6 +445,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         statsSource = null;
         if (statsCollector != null) statsCollector.close();
         statsCollector = null;
+        health = null;
         ui.removeCallbacks(menuTick);
         menuSurface = null;
         if (vmodeClient != null) vmodeClient.close();
@@ -446,12 +477,14 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     public void onSessionEvent(XrBridge.SessionEvent event) {
         switch (event) {
             case ACTIVE:
+                if (health != null) health.onSession(monoMs(), true);
                 synchronized (videoLock) {
                     videoAllowed = true;
                 }
                 ui.post(this::attachVideo);
                 break;
             case INACTIVE:
+                if (health != null) health.onSession(monoMs(), false);
                 // Synchronously on the XR thread: the runtime calls xrEndSession right after this
                 // returns, so the decoder must have stopped writing by then. Not routed through the
                 // UI thread, which may be busy (e.g. onPause joining the wfb-ng threads).
@@ -528,6 +561,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
 
     @Override
     public void onLinkStatus(String message) {
+        HealthMonitor h = health;
+        if (h != null) h.onLinkStatus(monoMs(), message);
         linkStatus = message;
     }
 
