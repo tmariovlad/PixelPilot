@@ -265,3 +265,36 @@ Glass-to-glass budget per branch on the [real link](real-link.md). Branch D is t
   - **Against c720, same field of view:** the measured segments are ~1.7 ms shorter. Encode+send is 2.24 against 3.49 ms, spread 1.24 against 1.48, and decode 1.85 against 2.05. The ISP range is wider because of the VPE scale (< 1 ms by source), so the total ranges overlap: 31.3–37.6 against 33.0–38.3 ms. e720s is **~0.7–1.7 ms faster** than c720 [INFERRED: measured segments minus the VPE uncertainty]. The price is detail: 12.8 px per % of sensor width, against 19.2 for c720 (~1.5× softer), still sharper than d1080s (8.6).
   - Loss 0.45 % comes from one burst in e720s_a (17 gaps, a transport max of 36 ms). e720s_b lost 2 of 2231 [PROVEN]. So it is not attributed to the mode.
 - **Reading:** for the lowest latency, a480 (26.7–32.0 ms, narrow view). For 3× the view, e720s (+4.9 ms, ~1.5× softer) or c720 (+6.3 ms, as sharp as a480). For the whole scene, d1080s (+9.1 ms, ~2.2× softer). Which one to use is the user's choice. The numbers above are the whole cost of each.
+
+## Optical G2G per mode against the 40 ms ceiling (rig on the Quest lens, 2026-09-30 00:15–01:25)
+
+The user's requirement (2026-09-29): **G2G ≤ 40 ms in every state.** The offline [audit](research/2026-09-29-g2g-40ms-audit.md) predicted that the HD mode itself costs the ~44 ms and that 720p120 fits. This slot measured it on the lens.
+
+- **Setup.**
+  - Air .132, fresh boot, ch165, 17 dBm, FEC 4/8, STBC/LDPC, 20 MHz long GI, no `-R` (rmem_default 196608), alink/vmoded stopped.
+  - Modes were switched in RAM (`/tmp/waybeam.json` + `start.sh`, `wfb_tx_cmd set_radio`) by `mode_ab.sh`.
+  - Quest 2 at ~1 m, APK c8986061, baseline prefs + stats_log. The ESP32 rig (latency-test-0d) was calibrated once in HD, the dimmest mode (max ~485; race ~770).
+  - [Air log](data/air-modes-2026-09-30.txt) · Quest segments: [modes](data/segments-2026-09-30-modes.txt), [hdfresh](data/segments-2026-09-30-hdfresh.txt), [h8hd](data/segments-2026-09-30-h8hd.txt) · rig: latency_test `tasks/mode-audit-2026-09-30/README.md`.
+- **Part A**, palindrome ABCDDCBA, 25 flashes per run, first light pooled over n = 50 per mode [PROVEN: rig]:
+
+| mode | first light (ms) | ≤ 40? | audit prediction |
+|---|---|---|---|
+| race 480p167 2M MCS2 | **27.8** | yes | 25.4–27.9 |
+| 720p120 native 8M MCS7 (h8) | **33.1** | yes | 34–37 |
+| 720p120 native 2M MCS2 (b2) | **36.5** | yes | 32.7–34.2 |
+| 1080p90 16M MCS7 (hd) | **71.4** in Part A; **45–48** in the 9 runs after it | no | 43.7–46.0 |
+
+  - The palindrome halves agree within ~1.4 ms.
+  - b2 is ~3 ms *slower* than h8: at MCS2 each packet takes longer on air [INFERRED: link segment 5.2 vs larger at MCS2].
+- **The 71 ms HD state: intermittent, before VENC, and not reproduced.**
+  - In Part A's two HD steps, the lens read 71 ms. The Quest's own encode→latch chain was the same as in the normal 45 ms state: enc 6.6 · link 13 · decode 2.3 · display 4.1 → 26.9 ms, vs 24.5–27.5 ms in every other HD step [PROVEN: segments files].
+  - So the extra ~25 ms (≈ 2 frames at 90 fps) sat between the sensor and the VENC input [INFERRED].
+  - It did not come back in 9 further HD runs (n = 225). Those covered a live switch vs an XR relaunch (hdfresh, R1–R5) and entry from 720p120 vs from race (h8hd, H1–H4); all read 45–48 ms. The relaunch and the previous mode are therefore excluded as causes [PROVEN: rig].
+  - The step before it, h8 in Part A, fell from 120 to 60 fps mid-step with no switch. The waybeam watchdog logged `DEGRADAT … ratio=200% Fps_1s=59.61` at air epoch 716921. It logged no DEGRADAT during the 71 ms HD steps; it only detects 2:1 drops [PROVEN: air log, watchdog section].
+  - Cause and a detector are open with the OpenIPC session (-40). The risk: it breaks the ceiling without any visible sign.
+- **Part C: the evening's "+3 ms race" is not the channel and not the APK.** ABBA × 2, n = 50 each: ch157 27.2 vs ch165 28.0 ms; APK c8986061 28.1 vs 1f0870c2 29.1 ms. Full light is 29.6–30.3 ms in all four. The pairs cross over [PROVEN: rig].
+  - The Quest side agrees: tot50 12.1–12.3 ms in every step. On 165, pre-FEC loss is 25–35 % lower in race too (pdata 1.7 vs 2.2–2.6 %), with nothing lost after FEC on either channel [PROVEN: pixelpilot-xr-25, `data/*-2026-09-30-partc-*`].
+- **Consequence:**
+  - race (28 ms) and 720p120 8M MCS7 (33 ms) are under the 40 ms ceiling.
+  - 1080p90 16M (45–48 ms) is over it: the mode costs it, and no wrong setting was found.
+  - Changing the HD preset to 720p120 8M is the user's decision.

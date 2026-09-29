@@ -1,0 +1,93 @@
+# Air log: G2G <= 40 ms slot, 2026-09-30 00:15-01:25 (PC local), air .132 fresh boot 21:08 air time (UTC), ch165.
+# Script /tmp/mode_ab.sh: probe run md5 1c208b24 (its 720p120 json fixed live: sensor mode 2 -> 6, json c1a80fdb), later runs mode_ab.next.sh e14087f7.
+# Modes (RAM: /tmp/waybeam.json + start.sh, wfb_tx_cmd set_radio, 17 dBm, FEC 4/8, STBC/LDPC, 20 MHz long GI, no -R, rmem_default 196608):
+#   race = 480p167 2M MCS2 | b2 = 720p120 native 2M MCS2 | h8 = 720p120 native 8M MCS7 | hd = 1080p90 16M MCS7 | cNNN = race on channel NNN.
+# Clock: slot_watch AIR_STATUS PC-air = -0.14 s (err 0.68 s) at 00:32; treat as equal. Air time 21:57:52 = epoch 1790719072.
+# Waybeam restarts take 14-20 s: steps start at SET, not at the planned epoch. G2G results: latency-test-0d (rig) + pixelpilot-xr-25 (Quest segments).
+
+## /tmp/mode_probe.log
+JSON 1080=4164fb6f race=3d8a1456 720=9dec4915 diff=0
+stopped alink/vmoded pids=1456
+PRE epoch=1790716193 ch=165 mcs_index=1 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=1367 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=3 temp=40
+FIX 720 json sensor mode 6 at 1790716213 md5=c1a80fdb
+SET race epoch=1790716356 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3227 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP race epoch=1790716356 drop=0 inj=16595 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3227 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET b2 epoch=1790716401 ch=165 mcs_index=2 k=4 n=8 mode=6 size=1280x720 fps=120 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3753 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP b2 epoch=1790716401 drop=0 inj=15174 ant_drop=0 tx_dropped_d=0 temp=44 ch=165 mcs_index=2 k=4 n=8 mode=6 size=1280x720 fps=120 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3753 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET h8 epoch=1790716432 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3753 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP h8 epoch=1790716432 drop=41 inj=69949 ant_drop=0 tx_dropped_d=0 temp=46 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3753 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790716497 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1116 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790716497 drop=834 inj=72478 ant_drop=0 tx_dropped_d=14 temp=47 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1116 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+END epoch=1790716536 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=1603 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=1864 temp=44
+
+## /tmp/mode_partA.log
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790716544 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=1603 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=1864 temp=43
+SET race epoch=1790716660 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2886 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP race epoch=1790716660 drop=0 inj=45942 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2886 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET b2 epoch=1790716754 ch=165 mcs_index=2 k=4 n=8 mode=6 size=1280x720 fps=120 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3957 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP b2 epoch=1790716754 drop=0 inj=42364 ant_drop=0 tx_dropped_d=0 temp=44 ch=165 mcs_index=2 k=4 n=8 mode=6 size=1280x720 fps=120 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3957 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET h8 epoch=1790716840 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3957 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP h8 epoch=1790716840 drop=0 inj=124098 ant_drop=0 tx_dropped_d=2 temp=43 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3957 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790716960 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2531 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790716960 drop=193 inj=237310 ant_drop=0 tx_dropped_d=2 temp=50 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2531 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790717040 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2531 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790717040 drop=167 inj=299580 ant_drop=0 tx_dropped_d=0 temp=51 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2531 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET h8 epoch=1790717154 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1012 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP h8 epoch=1790717154 drop=0 inj=136624 ant_drop=0 tx_dropped_d=0 temp=46 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1012 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET b2 epoch=1790717240 ch=165 mcs_index=2 k=4 n=8 mode=6 size=1280x720 fps=120 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1012 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP b2 epoch=1790717240 drop=0 inj=49122 ant_drop=0 tx_dropped_d=0 temp=44 ch=165 mcs_index=2 k=4 n=8 mode=6 size=1280x720 fps=120 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1012 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET race epoch=1790717354 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3343 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP race epoch=1790717354 drop=0 inj=50655 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3343 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+END epoch=1790717460 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=690 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=3952 temp=42
+
+## /tmp/mode_hdfresh.log
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790717533 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=690 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=3952 temp=43
+SET hd epoch=1790717720 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3688 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790717720 drop=722 inj=533593 ant_drop=0 tx_dropped_d=8 temp=51 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3688 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET race epoch=1790717920 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2986 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP race epoch=1790717920 drop=0 inj=45728 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2986 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790718014 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=729 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790718014 drop=587 inj=553299 ant_drop=0 tx_dropped_d=50 temp=51 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=729 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+END epoch=1790718214 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=3822 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=7347 temp=47
+
+## /tmp/mode_h8hd.log
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790718226 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=3822 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=7347 temp=46
+SET h8 epoch=1790718440 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3384 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP h8 epoch=1790718440 drop=0 inj=77277 ant_drop=0 tx_dropped_d=0 temp=44 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3384 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790718504 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=685 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790718504 drop=290 inj=226147 ant_drop=0 tx_dropped_d=0 temp=50 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=685 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET race epoch=1790718594 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2106 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP race epoch=1790718594 drop=0 inj=37650 ant_drop=0 tx_dropped_d=0 temp=44 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=2106 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790718664 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3202 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790718664 drop=209 inj=225771 ant_drop=0 tx_dropped_d=40 temp=48 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3202 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET h8 epoch=1790718754 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=840 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP h8 epoch=1790718754 drop=0 inj=89894 ant_drop=0 tx_dropped_d=0 temp=46 ch=165 mcs_index=7 k=4 n=8 mode=6 size=1280x720 fps=120 br=8000 txp=17.00 rmem=196608/524288 vpid=1404 wb=840 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790718824 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1946 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790718824 drop=239 inj=226309 ant_drop=0 tx_dropped_d=3 temp=48 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1946 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET race epoch=1790718920 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3348 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP race epoch=1790718920 drop=0 inj=33553 ant_drop=0 tx_dropped_d=0 temp=44 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=3348 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+SET hd epoch=1790718990 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=645 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+STEP hd epoch=1790718990 drop=221 inj=207640 ant_drop=0 tx_dropped_d=17 temp=48 ch=165 mcs_index=7 k=4 n=8 mode=2 size=1920x1080 fps=90 br=16000 txp=17.00 rmem=196608/524288 vpid=1404 wb=645 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10"
+END epoch=1790719074 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=2019 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=11579 temp=46
+
+## /tmp/waybeam-watchdog.log (air local time = UTC; 21:22:01 = epoch 1790716921)
+[wd 21:08:50] boot-delay 120s (aștept bring-up de boot)
+[wd 21:10:50] ===== WATCHDOG START =====
+[wd 21:10:50] poll=20s window=3s ratio_bad=150%(x100) confirm=2 cooldown=90s breaker=10/1800s
+[wd 21:12:25] SKIP [STALLED] dVsync=-29427 (<200) dFrameDone=-29417 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:13:11] SKIP [STALLED] dVsync=-6993 (<200) dFrameDone=-6982 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:14:43] SKIP [UNKNOWN] parse-fail v0= v1= f0= f1= — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:17:24] SKIP [UNKNOWN] parse-fail v0= v1= f0= f1= — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:22:01] DEGRADAT [dVsync=358 dFrameDone=179 ratio=200%(x100) thresh=150%] Fps_1s=59.61 — confirmare 1/2
+[wd 21:22:24] SKIP [STALLED] dVsync=-23499 (<200) dFrameDone=-20978 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:30:50] SKIP [STALLED] dVsync=0 (<200) dFrameDone=0 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:35:04] SKIP [UNKNOWN] parse-fail v0= v1= f0= f1= — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:38:31] SKIP [STALLED] dVsync=0 (<200) dFrameDone=0 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:40:03] SKIP [STALLED] dVsync=-14398 (<200) dFrameDone=-14384 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:52:21] SKIP [STALLED] dVsync=-7694 (<200) dFrameDone=-7724 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:55:02] SKIP [STALLED] dVsync=-7797 (<200) dFrameDone=-7823 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:56:11] SKIP [STALLED] dVsync=-9135 (<200) dFrameDone=-9138 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+[wd 21:57:43] SKIP [STALLED] dVsync=-6930 (<200) dFrameDone=-6946 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
