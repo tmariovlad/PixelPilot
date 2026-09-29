@@ -199,6 +199,24 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### HD sweep 2026-09-29 03:27–03:40: MCS5 vs MCS7 at 1080p90 16 Mbit/s FEC 4/8, and MCS4 at 23 vs 24 dBm
+
+Question (the coordinator, for an "HD" preset): does a lower MCS give fewer losses at 16 Mbit/s? And does 24 dBm receive better than 23 (R4 of OpenIPC's -1f)?
+- **Method.**
+  - Air `hd_sweep.sh`, 1SS STBC long GI, ch157, alink off: m4/m5/m7/m7/m5/m4 at 17 dBm (90 s each), then MCS4 at 23/24/23/24 dBm (60 s each).
+  - Quest: APK 69dfed66 with IDR only (FRZ and FIF off, so fps and loss measure the link), headset still, detached capture `TRACE LOSS: none`.
+  - Offset Quest − air +1.2445 s, guard 4 s, latency against m7's drift line.
+- **Data.** [air log](data/air-hd-sweep-2026-09-29.txt) · [steps](data/steps-2026-09-29-hdsweep.txt) · [link_audit](data/audit-2026-09-29-hdsweep.txt) · [frame fate](data/frame-fate-2026-09-29-hdsweep.txt) · [latency](data/latency-2026-09-29-hdsweep.txt) · [link](data/link-2026-09-29-hdsweep.txt).
+- **Every MCS4 step is invalid for loss and latency** [PROVEN: air drop 12.7k–18.3k per step, 16 Mbit/s × FEC 2× exceeds MCS4 capacity]; redone within capacity in the next run. The RSSI of those steps is still valid.
+
+| state (N = 2) | air drop | decoded fps | post-FEC | loss runs/s | last / p95 (ms, vs m7) | air IDRs honoured / step |
+|---|---|---|---|---|---|---|
+| m5b16f48, 17 dBm | 10 / 0 | 89.6 / 90.0 | 0.19 / 0.09 % | 1.2 / 0.5 | +12.2 / 34.7 · +14.0 / 35.4 | 22 / 13 |
+| m7b16f48, 17 dBm | 0 / 0 | 89.6 / 89.5 | 0.18 / 0.20 % | 1.0 / 1.0 | +3.0 / 12.5 · +3.5 / 14.4 | 45 / 53 |
+
+- **MCS5 is no better than MCS7 at 16 Mbit/s here** [PROVEN: N = 2 each]. Loss is about the same and fps equal, but MCS5 costs +9–11 ms mean and +21 ms p95. At ~2950 packets/s on air, MCS5 long GI is near its queue knee [INFERRED from the G5/G6 knee]. MCS5 needed fewer keyframes (air counters: 22/13 vs 45/53) [PROVEN: air `idr/stats` deltas, per the coordinator].
+- **MCS4 at 23 vs 24 dBm: +1 dB receives nothing more** [PROVEN: N = 2 each]. RSSI column 87.6 / 87.2 at 23 dBm vs 87.7 / 86.6 at 24; chain A 63.1 / 62.0 vs 62.5 / 63.7; chain B 69.9 / 69.5 vs 70.0 / 69.1; SNR ~16.5 dB throughout. From 17 to 23 dBm the column rises ~7.5, i.e. ~6 dB, as expected [INFERRED: dBm ≈ col/1.25 − 110].
+
 ### G5/G6 2026-09-29 00:51–01:06: which 1080p90 states reach ≥ 88 fps; MCS6 vs MCS7 long GI; FEC 4/8 at 20 Mbit/s; 2SS with stronger FEC
 
 Question (the user: "find all maximum limits"; B6: MCS6 or MCS7 at 25 Mbit/s): which states give ≥ 88 decoded fps at 1080p90 without a latency cost?

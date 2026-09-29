@@ -1,0 +1,12 @@
+# ab_hdsweep (2026-09-29 03:27-03:40), steps docs/xr/data/steps-2026-09-29-hdsweep.txt (air clock), --air-offset-s 1.2445 (Quest-PC 0.4955 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only; the m4 steps overflowed the air (invalid for loss/latency); step 9 overlaps the revert to race
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 m4b16f48_17        38.6       2.4      33.3      16.1        0.0           38.9
+ 1 m5b16f48_17        89.6       0.6       0.1       0.1        0.0           89.6
+ 2 m7b16f48_17        89.6       0.7       0.1       0.0        0.0           89.6
+ 3 m7b16f48_17        89.4       0.7       0.2       0.1        0.0           89.5
+ 4 m5b16f48_17        90.0       0.3       0.1       0.0        0.0           90.0
+ 5 m4b16f48_17        38.4       3.1      31.0      17.9        0.0           38.8
+ 6 m4b16f48_23        37.2       2.7      33.0      17.5        0.0           37.6
+ 7 m4b16f48_24        32.7       2.9      33.4      21.4        0.0           32.9
+ 8 m4b16f48_23        34.8       2.9      33.2      19.5        0.0           35.3
+ 9 m4b16f48_24        42.9       2.2      30.0      16.0    19482.6           43.4
