@@ -41,6 +41,7 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
     private volatile StatsSnapshot snapshot = StatsSnapshot.EMPTY;
     private ScheduledExecutorService ticker;
     private volatile java.util.function.Consumer<String> lineSink;
+    private volatile SnapshotListener snapshotListener;
     private volatile boolean alwaysLog;
     private volatile long viewedUntilUs = Long.MIN_VALUE;
     private int ticks;
@@ -77,6 +78,15 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
         fpsDecoded = fps;
     }
 
+    /** Gets each new snapshot on the collector's thread (the activity: HealthMonitor.onSnapshot). */
+    public interface SnapshotListener {
+        void onSnapshot(long questMs, StatsSnapshot snapshot);
+    }
+
+    public void setSnapshotListener(SnapshotListener listener) {
+        snapshotListener = listener;
+    }
+
     /** Where StatsLine records go (the activity: logcat, tag StatsLine.TAG). Null: none. */
     public void setLineSink(java.util.function.Consumer<String> sink) {
         lineSink = sink;
@@ -107,6 +117,8 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
         link.fill(b, nowUs);
         b.fpsDecoded(fpsDecoded).levers(idrOk.perSecond(), idrFailed.perSecond(), frozen.perSecond());
         snapshot = b.build();
+        SnapshotListener l = snapshotListener;
+        if (l != null) l.onSnapshot(nowUs / 1000, snapshot);
         java.util.function.Consumer<String> sink = lineSink;
         if (++ticks % LINE_EVERY_TICKS == 0 && sink != null && (alwaysLog || nowUs < viewedUntilUs)) {
             sink.accept(StatsLine.format(snapshot, nowUs / 1000));

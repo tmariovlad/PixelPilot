@@ -38,7 +38,11 @@ public final class HealthMonitor {
     }
 
     private static final String OK = "OK";
+    // VideoPlayer.leverCounters(): [0..4] idrOk, idrFailed, frozenSlices, decoderRebuilds, codecSwitches;
+    // [5..10] IdrRequester::Result counts (ok, refused, connect_timeout, reply_timeout, http_status, error).
     private static final int IDR_OK = 0, IDR_FAILED = 1, FROZEN = 2, REBUILDS = 3, SWITCHES = 4;
+    private static final int N_COUNTERS = 11, REASON_FIRST = 6;   // [5] = ok, already counted in [0]
+    private static final String[] REASONS = {"refused", "connect_timeout", "reply_timeout", "http_status", "error"};
 
     private final Sink sink;
     private final LongUnaryOperator wallFromMono;
@@ -55,6 +59,7 @@ public final class HealthMonitor {
     private long freezeStartMs, lastDropMs, freezeStartCount;
     // IDR aggregation
     private long idrOkAcc, idrFailAcc, lastIdrLineMs;
+    private final long[] reasonAcc = new long[REASONS.length];
     // discrete states
     private Boolean adapter;
     private long adapterGoneMs;
@@ -98,6 +103,9 @@ public final class HealthMonitor {
         decoderEvents(monoMs, now);
         freeze(monoMs, dFrozen, now[FROZEN]);
         signal(monoMs, signalKind, needsAction, dFrozen);
+        for (int r = 0; r < REASONS.length; r++) {
+            reasonAcc[r] += Math.max(0, now[REASON_FIRST + r] - prev[REASON_FIRST + r]);
+        }
         idr(monoMs, now[IDR_OK] - prev[IDR_OK], now[IDR_FAILED] - prev[IDR_FAILED]);
         winTicks++;
         if (dFrozen > 0) winDropTicks++;
@@ -157,7 +165,7 @@ public final class HealthMonitor {
     // ------------------------------------------------------------------------------------------------ detectors
 
     private static long[] counters(long[] c) {
-        long[] out = new long[5];
+        long[] out = new long[N_COUNTERS];
         if (c != null) System.arraycopy(c, 0, out, 0, Math.min(c.length, out.length));
         return out;
     }
@@ -225,8 +233,13 @@ public final class HealthMonitor {
         idrFailAcc += Math.max(0, dFail);
         if (idrOkAcc + idrFailAcc == 0 || monoMs - lastIdrLineMs < IDR_EVENT_EVERY_MS) return;
         boolean failed = idrFailAcc > 0;
+        StringBuilder why = new StringBuilder();
+        for (int r = 0; r < REASONS.length; r++) {
+            if (reasonAcc[r] > 0) why.append(' ').append(REASONS[r]).append('=').append(reasonAcc[r]);
+            reasonAcc[r] = 0;
+        }
         event(monoMs, failed ? "IDR_FAILED" : "IDR", failed ? "WARN" : "INFO",
-                " ok=" + idrOkAcc + " failed=" + idrFailAcc);
+                " ok=" + idrOkAcc + " failed=" + idrFailAcc + why);
         idrOkAcc = 0;
         idrFailAcc = 0;
         lastIdrLineMs = monoMs;

@@ -79,6 +79,21 @@ public class StatsCollectorTest {
         assertEquals(1, s.decErr);
     }
 
+    @Test public void theSnapshotListenerGetsEveryNewSnapshot() {
+        StatsCollector c = new StatsCollector(new Fake(), null, 2_000_000);
+        List<Long> times = new ArrayList<>();
+        List<StatsSnapshot> got = new ArrayList<>();
+        c.setSnapshotListener((nowMs, s) -> {
+            times.add(nowMs);
+            got.add(s);
+        });
+        c.tick(1_000_000);
+        c.tick(1_500_000);
+        assertEquals(2, got.size());
+        assertEquals(Long.valueOf(1500), times.get(1));   // Quest monotonic ms of the tick
+        assertSame(c.snapshot(), got.get(1));
+    }
+
     @Test public void beforeTheFirstTickTheSnapshotIsEmpty() {
         StatsCollector c = new StatsCollector(new Fake(), null, 2_000_000);
         assertSame(StatsSnapshot.EMPTY, c.snapshot());

@@ -96,6 +96,16 @@ public class HealthMonitorTest {
         assertTrue(e, e.contains(" level=WARN ok=3 failed=1"));
     }
 
+    @Test public void idrFailuresCarryTheirReasons() {
+        // leverCounters() with IdrRequester's per-result counters (2c86204): [5..10] = ok, refused, connect_timeout,
+        // reply_timeout, http_status, error
+        m.onTick(0, "OK", true, new long[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+        m.onTick(250, "OK", true, new long[]{1, 3, 0, 0, 0, 1, 0, 2, 1, 0, 0});
+        m.onTick(1000, "OK", true, new long[]{1, 3, 0, 0, 0, 1, 0, 2, 1, 0, 0});
+        String e = only("IDR_FAILED");
+        assertTrue(e, e.endsWith(" ok=1 failed=3 connect_timeout=2 reply_timeout=1"));
+    }
+
     @Test public void codecSwitchIsInfo() {
         m.onTick(0, "OK", true, c(0, 0, 0, 0, 0));
         m.onTick(250, "OK", true, c(0, 0, 0, 0, 1));
