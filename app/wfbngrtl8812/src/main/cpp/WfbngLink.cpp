@@ -11,6 +11,7 @@
 #include "LinkGuard.h"
 #include "StatsWindow.h"
 #include "TxFrame.h"
+#include "WfbSessionTap.h"
 #include "devourer/src/ChannelCenter.h"
 #include "devourer/src/RxPacket.h"
 #include "devourer/src/UsbDeviceLock.h"
@@ -216,9 +217,16 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             {
                 std::lock_guard<std::mutex> lock(agg_mutex);
                 video_decrypt_probe.start(now_ms());
+                video_fec_probe.setFcsVisible(rx_diag_cfg.keep_corrupted);   // bad-FCS frames reach us only then
             }
             auto packetProcessor =
                 [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8, now_ms](const Packet &packet) {
+                    const int64_t t_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                             std::chrono::steady_clock::now().time_since_epoch()).count();
+                    if (rx_diag_cfg.keep_corrupted && packet.RxAtrib.crc_err) {
+                        std::lock_guard<std::mutex> lock(agg_mutex);
+                        video_fec_probe.onBadFcs(t_ns);
+                    }
                     if (rx_diag_cfg.keep_corrupted && !rx_diag.on_frame(packet.RxAtrib.crc_err, packet.RxAtrib.icv_err)) {
                         return;  // a bad FCS/ICV: counted, never handed to wfb-ng (same as the chip dropping it)
                     }
@@ -232,6 +240,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                     uint8_t antenna[4] = {1, 1, 1, 1};
 
                     std::lock_guard<std::mutex> lock(agg_mutex);
+                    video_fec_probe.onFrame(t_ns);   // every valid wfb frame: the gaps that make an outage
                     if (frame.MatchesChannelID(video_channel_id_be8)) {
                         SignalQualityCalculator::get_instance().add_rssi(packet.RxAtrib.rssi[0], packet.RxAtrib.rssi[1]);
                         SignalQualityCalculator::get_instance().add_snr(packet.RxAtrib.snr[0], packet.RxAtrib.snr[1]);
@@ -245,6 +254,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                                                          video_aggregator->count_p_session};
                         };
                         const DecErrProbe::Counters before = counters();
+                        WfbSessionTap::clear();   // a SESSION logged during this call is the video channel's
                         video_aggregator->process_packet(payload,
                                                          packet.Data.size() - sizeof(ieee80211_header) - 4,
                                                          0,
@@ -256,7 +266,20 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                                                          0,
                                                          NULL);
                         const int64_t now = now_ms();
-                        video_decrypt_probe.record(payload[0], before, counters(), now);
+                        const DecErrProbe::Counters after = counters();
+                        int fec_k = 0, fec_n = 0;
+                        if (WfbSessionTap::consume(fec_k, fec_n)) video_fec_probe.onFec(fec_k, fec_n);
+                        if (payload[0] == WFB_PACKET_DATA && after.data != before.data) {
+                            // accepted (decrypted) data fragment: data_nonce = (block_idx << 8) + fragment_idx, BE
+                            uint64_t nonce = 0;
+                            for (int i = 1; i <= 8; ++i) nonce = (nonce << 8) | payload[i];
+                            for (const std::string &line : video_fec_probe.onFragment(
+                                     t_ns, nonce >> 8, static_cast<int>(nonce & 0xFF), packet.RxAtrib.rssi[0],
+                                     packet.RxAtrib.rssi[1])) {
+                                __android_log_print(ANDROID_LOG_INFO, "PPXR_FECBLK", "%s", line.c_str());
+                            }
+                        }
+                        video_decrypt_probe.record(payload[0], before, after, now);
                         const std::string report = video_decrypt_probe.report(now);
                         if (!report.empty()) __android_log_print(ANDROID_LOG_WARN, TAG, "%s", report.c_str());
                     } else if (frame.MatchesChannelID(mavlink_channel_id_be8)) {
