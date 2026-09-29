@@ -102,7 +102,15 @@ air_health is the one sampler of the register (`reg550` every 30 s, skipped whil
     Intersected over the polls, the bound narrows to the fastest calls.
   - A reboot, or an empty intersection (a clock step), starts over.
 - Offline, simulated calls with 0.05–1.5 s latency converge within 0.1 s of the true offset and stay flat
-  (`test_the_clock_offset_converges_instead_of_a_sawtooth`). A live run against the sidecar's SYNC value is still open.
+  (`test_the_clock_offset_converges_instead_of_a_sawtooth`).
+- **Live (2026-09-29, three runs of c3f996f, one air boot)** [PROVEN: `scripts/quest/out/slot_watch/{rmem,rmemrig,rmem1m}/alerts.log`, gitignored; the `AIR_STATUS` lines]:
+  - Converged values: rmem 0.052 ± 0.184 s, rmemrig 0.047–0.048 ± 0.162 s, rmem1m 0.077–0.086 ± 0.163 s. The bounds overlap, and the offset stays flat within ± 0.04 s across 03:58–04:33.
+  - The uptime ran without a break, 8416 → 12121 s, so there was no reboot.
+  - The "PC − air = 0.749 s" used in that night's data headers and audits lies outside every bound.
+  - The run's own `epoch − uptime` constant (1790633249.73, used for the rmemrig air-drop seconds) gives PC(after the call) − air(at the sample) = 0.32–0.37 s. The sample comes before the call returns, so this bounds PC − air ≤ 0.32 s, which also rules out 0.749 [INFERRED].
+  - 0.749 is most likely the whole-second bias of comparing PC time with the air's `date +%s` (≈ +0.5 s on average, plus the ssh latency) [SPECULATION until the coordinator says how it was measured].
+  - The sidecar's SYNC can't settle it on its own: its air times t2/t3 are CLOCK_MONOTONIC ([stats-backend.md](stats-backend.md), "Clocks"), so its offset becomes a wall-clock one only through the air's `epoch − uptime`.
+  - An NTP step before 03:58 is not excluded (no read on the air), but nothing in the data needs one.
 
 ## The Quest (`between`)
 
@@ -185,4 +193,4 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
   - the report's anchor, the event deduplication and the air summary.
   - 12 mutants were killed, each checked to apply to exactly one place. One mutant (the uptime reset on a reboot) first survived: the test's old boot had a smaller uptime than the new one. The test now uses a 500 s old boot, and that mutant dies.
   - `report --no-quest --no-air` on the hdredo alerts still writes its 31 rows.
-- **Not yet run live:** the one-call `between` script on the headset, the fixed clock against the sidecar's SYNC value, `report` with real app / air_health lines (the app lines arrive with APK 579305ee), and `watch --air-source health` against a running air_health.sh. air_health was built and tested offline only, and has not run on the air yet (its §6 procedure and §8 checklist).
+- **Not yet run live:** the one-call `between` script on the headset, `report` with real app / air_health lines (the app lines arrive with APK 579305ee), and `watch --air-source health` against a running air_health.sh. air_health was built and tested offline only, and has not run on the air yet (its §6 procedure and §8 checklist).
