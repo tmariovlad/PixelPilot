@@ -29,6 +29,11 @@ level=<INFO|WARN|ALERT> k=v ...`, no spaces inside values, `-` = unknown. The fo
 (pixelpilot-xr-dc). The code is `app/src/main/java/com/openipc/pixelpilot/stats/HealthMonitor.java`, which holds all
 thresholds as constants.
 
+**One parser, two users.** [slot_watch.py](../../scripts/quest/slot_watch.py) (23008e7) parses these lines with
+`health_log.parse` and adds `health_log.summarize` to its report; its tests import the lines of
+`test_health_log.py`. A format change therefore needs `python3 scripts/quest-latch/test_health_log.py` **and**
+`python3 scripts/quest/test_slot_watch.py` (25 offline checks) green.
+
 ## 3. Event codes
 
 | Code | Level | Fields | Source |
