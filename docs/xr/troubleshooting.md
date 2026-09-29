@@ -53,6 +53,15 @@ copied. Only items that had no home in the repo before 2026-09-26 are written ou
 - **No `c2.android.*` software decoders** for apps on Horizon OS; see
   [codec, component and resolution](decoder-levers.md#codec-component-and-resolution-2026-09-26).
 - **Image upside-down or mirrored**: toggle *XR: flip image vertically* (lever table in the [guide](../xr-quest.md#use)).
+- **Headset gone from Wi-Fi ADB after a flat battery (2026-09-29)** [PROVEN]: `prox_close` + `guardian_pause 1` held
+  across a paused slot queue kept the display on all night and drained the battery; the power button then only lit
+  red, the headset left Wi-Fi, and Quest 2 has no remote wake. After charging and booting, Wi-Fi ADB stays closed
+  (`adb tcpip 5555` does not survive a reboot; the host answers ping but refuses 5555) and needs one USB connection.
+  On PC-VLAD the USB link failed (`Unknown USB Device (Device Descriptor Request Failed)`, then nothing), so the
+  laptop was used: plug the Quest into LPT-VLAD, accept *Allow USB debugging*, then through the Cloudflare SSH run
+  `adb.exe -s <serial> tcpip 5555` (laptop adb: `/mnt/c/Users/vlad_/Downloads/platform-tools-latest-windows/platform-tools/adb.exe`
+  from WSL), and `adb connect 192.168.100.114:5555` from PC-VLAD. Prevention: restore both settings as soon as a slot
+  series ends or pauses, not "at the next contact".
 
 ## The app, the adapter and the link
 
