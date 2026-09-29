@@ -324,6 +324,14 @@ Question (the user, via the coordinator): the exact source of the drop below 90 
   1. while frozen, repeat the request every interval until the key frame arrives, instead of waiting for the next loss;
   2. log why a request fails, and give the HTTP connect a longer timeout, or keep the connection alive;
   3. show the freeze as its own state, not VIDEO STALLED.
+- The air's `/api/v1/idr/stats` over the same window counted at most +5 dropped against our 24 failures, so most failed requests never reached waybeam [INFERRED: air vs app counters, read by the coordinator].
+- **Fixes 1 and 2 done (2026-09-29, `7da15d9` + `2c86204`, APK e5998a29):**
+  - `IdrRequester` repeats the request every interval while the key frame is still missing (set on a loss, cleared by the next key slice), for up to 2 s;
+  - connect timeout 1 s (was 300 ms), reply timeout 0.5 s;
+  - a result per request (ok / refused / connect_timeout / reply_timeout / http_status / error), with trace counters `ppxr_idr_req_<reason>`, a `IdrRequester` warn log line, and `leverCounters()` indices 5..10;
+  - host tests 107/107.
+  - Before/after capture pending. Fix 3 (HOLD vs VIDEO STALLED) comes next.
+- The user's decision (2026-09-29): none of FRZ / IDR-only / FIF+IDR as they stand ("Avatar/Caddx/HDZero don't suffer this"). The target is ~0 residual loss at short range, plus intra-refresh on the air (OpenIPC researching); with gradual refresh, FIF becomes the right policy.
 
 
 ### Bitrate ceiling 2026-09-29 00:21–00:37: the air recorder, and FEC 8/10 up to 50 Mbit/s (1SS m7, 2SS m12/m13)
