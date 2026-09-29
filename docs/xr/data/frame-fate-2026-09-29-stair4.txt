@@ -1,0 +1,17 @@
+# ab_stair4, steps docs/xr/data/steps-2026-09-29-stair4.txt, --air-offset-s 0.0191 (Quest-PC -0.8289 + PC-air 0.848), --guard-s 5. 21:00-21:10 local; MCS4 TX power staircase 1/5/9/13/17/21/23/23/21/17/13/9/5/1 dBm, 40 s each (applied txp = requested), 1080p90 12 Mbit FEC 4/8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted. Quest ~1 m from the air unit. PC-air +0.848 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/frame_fate.py scripts/quest/out/ab_stair4.pftrace docs/xr/data/steps-2026-09-29-stair4.txt --air-offset-s 0.0191 --guard-s 5
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 00_1dBm            90.2       0.1       0.2       0.0        0.0           90.1
+ 1 01_5dBm            90.2       0.1       0.0       0.0        0.0           90.3
+ 2 02_9dBm            90.3       0.1       0.0       0.0        0.0           90.3
+ 3 03_13dBm           90.4       0.0       0.0       0.0        0.0           90.4
+ 4 04_17dBm           90.3       0.1       0.0       0.0        0.0           90.3
+ 5 05_21dBm           90.3       0.1       0.0       0.0        0.0           90.3
+ 6 06_23dBm           90.1       0.3       0.1       0.0        0.0           90.1
+ 7 07_23dBm           90.3       0.1       0.0       0.0        0.0           90.3
+ 8 08_21dBm           90.4       0.1       0.0       0.0        0.0           90.3
+ 9 09_17dBm           90.3       0.0       0.1       0.0        0.0           90.2
+10 10_13dBm           90.4       0.1       0.0       0.0        0.0           90.4
+11 11_9dBm            90.2       0.2       0.0       0.0        0.0           90.1
+12 12_5dBm            90.2       0.2       0.1       0.0        0.0           90.2
+13 13_1dBm            90.3       0.1       0.0       0.0        0.0           90.3

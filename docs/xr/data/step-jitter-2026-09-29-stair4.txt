@@ -1,0 +1,17 @@
+# ab_stair4, steps docs/xr/data/steps-2026-09-29-stair4.txt, --air-offset-s 0.0191 (Quest-PC -0.8289 + PC-air 0.848), --guard-s 5. 21:00-21:10 local; MCS4 TX power staircase 1/5/9/13/17/21/23/23/21/17/13/9/5/1 dBm, 40 s each (applied txp = requested), 1080p90 12 Mbit FEC 4/8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted. Quest ~1 m from the air unit. PC-air +0.848 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_stair4.pftrace docs/xr/data/steps-2026-09-29-stair4.txt --air-offset-s 0.0191 --guard-s 5
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 00_1dBm         2712   0.00   7.03  17.40   25.64
+ 1 01_5dBm         2712   0.00   3.30   8.76   15.91
+ 2 02_9dBm         2712   0.00   3.04   7.03   11.84
+ 3 03_13dBm        2803   0.00   3.16   7.14   10.48
+ 4 04_17dBm        2712   0.00   3.79   9.21   14.80
+ 5 05_21dBm        2712   0.00   3.71  10.10   20.61
+ 6 06_23dBm        2622   0.00   4.87  11.32   18.70
+ 7 07_23dBm        2712   0.00   4.38  11.60   19.62
+ 8 08_21dBm        2712   0.00   3.70   9.61   18.29
+ 9 09_17dBm        2712   0.00   3.76  10.62   18.64
+10 10_13dBm        2713   0.00   3.51   8.57   19.55
+11 11_9dBm         2620   0.00   3.56  10.03   17.67
+12 12_5dBm         2712   0.00   6.50  14.83   23.64
+13 13_1dBm         2712   0.00   3.86  10.22   16.30

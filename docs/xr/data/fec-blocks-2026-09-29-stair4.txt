@@ -1,0 +1,30 @@
+# ab_stair4 (2026-09-29 21:00-21:10 local), MCS4 staircase; steps docs/xr/data/steps-2026-09-29-stair4.txt (air clock); Quest-PC -828.9 ms, PC-air +0.848 s -> Quest-air +0.0191 s; guard 5 s; APK c8986061, keep_corrupted on; Quest ~1 m from the air unit.
+# python3 scripts/quest-latch/fec_blocks.py scripts/quest/out/qtx_stair4.raw.txt --tsv docs/xr/data/fec-blocks-2026-09-29-stair4.tsv
+blocks: 78
+per_min: 8.897947388034162
+outage: 41
+with_fcs: 51
+fcs_known: 78
+where: {'tail': 21, 'middle': 21, 'head': 14, 'scattered': 8, 'head+tail': 14}
+reason: {'flush': 78}
+gap_max_us_p50: 2109
+gap_max_us_p95: 3587
+rssi_a_dbm_mean: -33.568376068376075
+suppressed: 0
+# python3 scripts/quest-latch/tsv_steps.py docs/xr/data/fec-blocks-2026-09-29-stair4.tsv scripts/quest/out/qtx_stair4.raw.txt docs/xr/data/steps-2026-09-29-stair4-pc.txt --quest-minus-pc-ms -828.9 --column fcs
+per step: rows per minute by fcs
+                    s                 0                 1                13                 2
+ 0 00_1dBm         30      6.0               6.0               2.0               2.0         
+ 1 01_5dBm         30      2.0               6.0               0.0               2.0         
+ 2 02_9dBm         30      2.0               2.0               0.0               0.0         
+ 3 03_13dBm        31      0.0               1.9               0.0               0.0         
+ 4 04_17dBm        30      2.0               4.0               0.0               0.0         
+ 5 05_21dBm        30      4.0               2.0               0.0               0.0         
+ 6 06_23dBm        29     10.3              10.3               0.0               0.0         
+ 7 07_23dBm        30      4.0               2.0               0.0               0.0         
+ 8 08_21dBm        30      0.0               4.0               0.0               0.0         
+ 9 09_17dBm        30      0.0               6.0               0.0               2.0         
+10 10_13dBm        30      0.0               2.0               0.0               2.0         
+11 11_9dBm         29      0.0              12.4               0.0               0.0         
+12 12_5dBm         30      6.0              10.0               0.0               0.0         
+13 13_1dBm         30      4.0               4.0               0.0               0.0         

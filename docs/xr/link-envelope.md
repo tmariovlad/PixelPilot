@@ -199,6 +199,32 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### MCS4 TX power staircase 2026-09-29 21:00–21:10: no saturation up to −23 dBm at the Quest; corruption rises only at the weak end
+
+The user wanted the saturation *point*, not three levels. MCS7 is limited to 18 dBm (approved limit, [menu-design](menu-design.md); above 20 dBm the air's own PA breaks MCS7, [slot 2026-09-28 20:10](#slot-2026-09-28-2010-u1-streamed-capture-t6-rx-diagnostics-t2-quest-wi-fi-off)), so the staircase uses MCS4, whose limit is 24 dBm and which was clean at 20–23 dBm on 2026-09-28.
+- **Setup.** 1 / 5 / 9 / 13 / 17 / 21 / 23 / 23 / 21 / 17 / 13 / 9 / 5 / 1 dBm, 40 s each (applied txp = requested in every step). 1080p90 12 Mbit/s MCS4 FEC 4/8 (16 Mbit overflows the air at MCS4), 1 MB input buffer, no rig, air drops 0.
+- **Quest and clocks.** The same ~1 m position as the bracket below. APK c8986061 with the same prefs. Quest−PC −828.9 ms; PC−air **+0.848 s** (this boot's slot_watch AIR_CLOCK). Guard 5 s; `analyze_ab.sh`, baseline 17 dBm (up leg).
+- **Data.** [air log](data/air-pw-stair4-2026-09-29.txt) · [steps](data/steps-2026-09-29-stair4.txt) ([PC clock](data/steps-2026-09-29-stair4-pc.txt)) · [RSSI dBm per step](data/rssi-steps-2026-09-29-stair4.txt) · [link_audit](data/audit-2026-09-29-stair4.txt) · [link (crc/s)](data/link-2026-09-29-stair4.txt) · [FEC blocks](data/fec-blocks-2026-09-29-stair4.txt) ([tsv](data/fec-blocks-2026-09-29-stair4.tsv)) · [IDR per step](data/drop-seconds-2026-09-29-stair4.txt) · [loss per 10 s](data/loss-10s-2026-09-29-stair4.txt) · [latency](data/latency-2026-09-29-stair4.txt) · [frame fate](data/frame-fate-2026-09-29-stair4.txt) · [bursts](data/loss-bursts-2026-09-29-stair4.txt) · [large frames](data/big-frames-2026-09-29-stair4.txt) · [latency within each step](data/step-jitter-2026-09-29-stair4.txt) · [air drop seconds (none)](data/air-drop-seconds-2026-09-29-stair4.txt).
+
+| TX dBm (up / down) | RSSI A / B dBm (up · down) | SNR dB | bad-FCS frames/s (crc/s) | unrecoverable FEC blocks/min | post-FEC | pre-FEC data % |
+|---|---|---|---|---|---|---|
+| 1 | −41/−43 · −43/−45 | 16 · 18 | 10.3 · 7.6 | 16.0 · 8.0 | 0.06 · 0.03 % | 3.2 · 3.1 |
+| 5 | −42/−43 · −42/−44 | 17 · 18 | 9.4 · 8.1 | 10.0 · 16.0 | 0.04 · 0.06 % | 3.1 · 3.1 |
+| 9 | −37/−39 · −38/−39 | 17 · 17 | 4.5 · 5.3 | 4.0 · 12.4 | 0.01 · 0.07 % | 2.8 · 2.9 |
+| 13 | −32/−33 · −32/−34 | 18 · 18 | 4.3 · 4.0 | 1.9 · 4.0 | 0.01 · 0.01 % | 2.7 · 2.8 |
+| 17 | −28/−29 · −28/−30 | 19 · 19 | 5.1 · 4.8 | 6.0 · 8.0 | 0.03 · 0.03 % | 2.8 · 2.7 |
+| 21 | −26/−27 · −26/−27 | 19 · 19 | 3.9 · 4.1 | 6.0 · 4.0 | 0.03 · 0.01 % | 2.9 · 2.7 |
+| **23** | **−23/−25** · −23/−25 | 19 · 19–20 | 4.6 · 3.7 | 20.6 · 6.0 | 0.08 · 0.02 % | 3.1 · 2.8 |
+
+- **The received level follows the TX power from 5 to 23 dBm** (−42 → −23 dBm at chain A, +19 dB for +18 dB) [PROVEN: [RSSI per step](data/rssi-steps-2026-09-29-stair4.txt)]. Below 5 dBm it does not move: 1 dBm reads like 5 dBm, so the air's output seems to floor there [INFERRED: applied txp = requested, but RSSI unchanged].
+- **No saturation up to −23 dBm at the Quest** [PROVEN: up and down legs]. Bad-FCS frames stay at 3.7–5.3/s from 9 to 23 dBm, with no rise at the top. SNR saturates at 19–20 dB from 17 dBm on, but the corruption does not follow.
+- **Corruption and loss rise only at the weak end** (1–5 dBm, −41 to −45 dBm, SNR 16–18 dB): 7.6–10.3 bad-FCS frames/s and post-FEC 0.03–0.06 %, both legs. That is the normal noise-limited edge, not saturation.
+- **A floor of ~4 bad-FCS frames/s remains at every level from 9 to 23 dBm** (the cause run and the bracket below had ~5–6/s at MCS7). It does not depend on the received level, so it is neither noise nor saturation. It points to interference or something inside the link [INFERRED: flat in both legs over 18 dB].
+- The unrecoverable blocks per step are noisy (1.9–20.6/min, 78 in total, 51 with bad FCS). One 23 dBm step had 20.6/min, its repeat 6.0.
+  - The 10 s series ([data](data/loss-10s-2026-09-29-stair4.txt)) has no step-shaped jump like the bracket's +150 s. The loss is higher only at the 1–5 dBm ends.
+  - IDR requests follow the loss (0.04–0.58/s). Latency drifts ~2 ms over the 10 min with no power pattern.
+- **Conclusion for the residual loss:** at ~1 m, neither the received level (−45 to −23 dBm) nor RX saturation explains the ~4–5 bad-FCS frames/s floor or the bracket's jump. The next lead is interference: the channel test (165) and a long fixed-power capture that times such jumps.
+
 ### TX power bracket 2026-09-29 20:49–20:55: corruption does not follow power down to −25 dBm at the Quest; the loss jumped ~10× at one moment instead
 
 The test of the saturation hypothesis after the cause run (68 % of the unrecoverable blocks with bad-FCS frames at −26 dBm): if the Quest's RTL8812AU front end compresses at short range, bad-FCS frames and unrecoverable blocks should fall at lower TX power. ABCCBA 1 / 9 / 17 / 17 / 9 / 1 dBm (driver-applied per `iw`), 60 s each, 1080p90 16 Mbit/s MCS7 FEC 4/8, 1 MB input buffer, no rig; only txpower changes per step.

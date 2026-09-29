@@ -1,0 +1,16 @@
+# pw_stair4 steps (AIR clock) from air-pw-stair4-2026-09-29.txt (applied txp = requested, drop 0 in every step); MCS4 1080p90 12 Mbit FEC 4/8, 1 MB; labels = order_txp; END = last start + 40 s (1790704790), before the air log's END (1790704803). PC - air = +0.848 s this boot (slot_watch AIR_CLOCK 21:00).
+1790704231 00_1dBm
+1790704271 01_5dBm
+1790704311 02_9dBm
+1790704351 03_13dBm
+1790704392 04_17dBm
+1790704432 05_21dBm
+1790704472 06_23dBm
+1790704511 07_23dBm
+1790704551 08_21dBm
+1790704591 09_17dBm
+1790704631 10_13dBm
+1790704671 11_9dBm
+1790704710 12_5dBm
+1790704750 13_1dBm
+1790704790 END

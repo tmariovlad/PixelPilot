@@ -1,0 +1,21 @@
+# ab_stair4 (2026-09-29 21:00-21:10 local), MCS4 staircase; steps docs/xr/data/steps-2026-09-29-stair4.txt (air clock); Quest-PC -828.9 ms, PC-air +0.848 s -> Quest-air +0.0191 s; guard 5 s; APK c8986061, keep_corrupted on; Quest ~1 m from the air unit.
+# python3 scripts/quest-latch/drop_seconds.py scripts/quest/out/qtx_stair4.raw.txt docs/xr/data/steps-2026-09-29-stair4.txt docs/xr/data/air-drop-seconds-2026-09-29-stair4.txt --air-offset-s 0.0191 --guard-s 5
+        seconds  PKT_LOST     /s  events     /s  IDR req     /s  IDR fr     /s
+drop          0         0   0.00       0   0.00      0.0   0.00     0.0   0.00
+clean       419       440   1.05     340   0.81    109.9   0.26   255.5   0.61
+per step (per second)
+                 PKT_LOST  events  IDR req  IDR fr
+ 0 00_1dBm           1.63    1.23     0.44    0.77
+ 1 01_5dBm           1.27    0.97     0.22    0.57
+ 2 02_9dBm           0.83    0.77     0.09    0.53
+ 3 03_13dBm          0.65    0.61     0.04    0.53
+ 4 04_17dBm          1.23    1.03     0.27    0.57
+ 5 05_21dBm          1.03    0.77     0.27    0.67
+ 6 06_23dBm          1.45    0.93     0.55    0.67
+ 7 07_23dBm          0.57    0.43     0.13    0.57
+ 8 08_21dBm          0.50    0.47     0.22    0.55
+ 9 09_17dBm          0.83    0.63     0.18    0.60
+10 10_13dBm          0.63    0.57     0.13    0.53
+11 11_9dBm           1.55    0.97     0.34    0.59
+12 12_5dBm           1.27    0.93     0.58    0.73
+13 13_1dBm           1.30    1.07     0.22    0.67

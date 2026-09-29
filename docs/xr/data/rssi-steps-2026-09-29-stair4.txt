@@ -1,0 +1,18 @@
+# ab_stair4 (2026-09-29 21:00-21:10 local), MCS4 staircase; steps docs/xr/data/steps-2026-09-29-stair4.txt (air clock); Quest-PC -828.9 ms, PC-air +0.848 s -> Quest-air +0.0191 s; guard 5 s; APK c8986061, keep_corrupted on; Quest ~1 m from the air unit.
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_stair4.raw.txt docs/xr/data/steps-2026-09-29-stair4.txt --quest-minus-air-s 0.0191
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   rssiA   rssiB    snrA    snrB
+ 0 00_1dBm        15   -41.0   -43.0    16.0    16.0
+ 1 01_5dBm        15   -42.0   -43.0    17.0    17.0
+ 2 02_9dBm        15   -37.0   -39.0    17.0    17.0
+ 3 03_13dBm       15   -32.0   -33.0    18.0    18.0
+ 4 04_17dBm       15   -28.0   -29.0    19.0    19.0
+ 5 05_21dBm       15   -26.0   -27.0    19.0    19.0
+ 6 06_23dBm       15   -23.0   -25.0    19.0    19.0
+ 7 07_23dBm       15   -23.0   -25.0    19.0    20.0
+ 8 08_21dBm       14   -26.0   -27.0    19.0    19.0
+ 9 09_17dBm       15   -28.0   -30.0    19.0    19.0
+10 10_13dBm       15   -32.0   -34.0    18.0    18.0
+11 11_9dBm        15   -38.0   -39.0    17.0    17.0
+12 12_5dBm        15   -42.0   -44.0    18.0    18.0
+13 13_1dBm        15   -43.0   -45.0    18.0    18.0

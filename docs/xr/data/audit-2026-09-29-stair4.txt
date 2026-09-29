@@ -1,0 +1,26 @@
+# ab_stair4, steps docs/xr/data/steps-2026-09-29-stair4.txt, --air-offset-s 0.0191 (Quest-PC -0.8289 + PC-air 0.848), --guard-s 5. 21:00-21:10 local; MCS4 TX power staircase 1/5/9/13/17/21/23/23/21/17/13/9/5/1 dBm, 40 s each (applied txp = requested), 1080p90 12 Mbit FEC 4/8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted. Quest ~1 m from the air unit. PC-air +0.848 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_stair4.pftrace docs/xr/data/steps-2026-09-29-stair4.txt --air-offset-s 0.0191 --guard-s 5 --logcat scripts/quest/out/logcat_stair4.txt
+PKT_LOST events 602, packets 730; TX DESC 16695; block overrides 0
+post-FEC gap sizes: 1:538, 2:26, 3:12, 4:26
+loss within 2 ms after a Quest TX: 1.5 % (control, TX shifted 50 ms: 0.8 %)
+Rayleigh Z @    1.000 Hz =      0.4
+Rayleigh Z @    4.000 Hz =      0.3
+Rayleigh Z @    9.766 Hz =      0.1
+Rayleigh Z @   72.000 Hz =      1.7
+Rayleigh Z @   90.000 Hz =      1.6
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 00_1dBm       34344    20  1071    20    3.17   0.06    0.3    1    4    1    2    0   0.0   11.8   4.3
+ 1 01_5dBm       34598    14  1049    14    3.07   0.04    0.2    1    1    1    2    0   0.0   10.9   4.2
+ 2 02_9dBm       34513     4   944     5    2.75   0.01    0.1    2    1    0    0    0   0.0    9.0   3.9
+ 3 03_13dBm      35654     2   963     2    2.71   0.01    0.0    0    1    0    0    0   0.0   12.3   3.6
+ 4 04_17dBm      34732     9   961     9    2.79   0.03    0.1    0    1    1    1    0   0.0    8.2   3.6
+ 5 05_21dBm      34510    11   997    11    2.92   0.03    0.1    0    0    1    2    0   0.0    8.0   3.7
+ 6 06_23dBm      33504    27  1013    27    3.10   0.08    0.4    5    2    2    3    0   0.0    8.9   3.6
+ 7 07_23dBm      34654     7   964     7    2.80   0.02    0.1    1    1    0    1    0   0.0    8.7   3.6
+ 8 08_21dBm      34392     3   932     3    2.72   0.01    0.1    1    1    0    0    0   0.0   10.2   3.6
+ 9 09_17dBm      34624     9   918     9    2.68   0.03    0.1    2    0    1    1    0   0.0   14.0   3.6
+10 10_13dBm      34429     4   956     4    2.79   0.01    0.1    0    2    0    0    0   0.0    7.7   3.7
+11 11_9dBm       33283    23   933    19    2.86   0.07    0.2    0    0    1    5    0   0.0    9.1   3.6
+12 12_5dBm       34523    20  1054    20    3.11   0.06    0.3    4    4    0    2    0   0.0   15.2   3.6
+13 13_1dBm       34552    11  1044    11    3.05   0.03    0.1    1    0    2    1    0   0.0    9.7   3.6

@@ -1,0 +1,17 @@
+# ab_stair4, steps docs/xr/data/steps-2026-09-29-stair4.txt, --air-offset-s 0.0191 (Quest-PC -0.8289 + PC-air 0.848), --guard-s 5. 21:00-21:10 local; MCS4 TX power staircase 1/5/9/13/17/21/23/23/21/17/13/9/5/1 dBm, 40 s each (applied txp = requested), 1080p90 12 Mbit FEC 4/8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted. Quest ~1 m from the air unit. PC-air +0.848 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_stair4.pftrace docs/xr/data/steps-2026-09-29-stair4.txt --air-offset-s 0.0191 --guard-s 5
+                 runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77
+ 0 00_1dBm         0.27    1    4    1    2    0    0        2    4.8    7.8    7.8     0.6
+ 1 01_5dBm         0.17    1    1    1    2    0    0        3    4.1    6.5    6.5     0.2
+ 2 02_9dBm         0.10    2    1    0    0    0    0        1    3.9    4.7    4.7     1.4
+ 3 03_13dBm        0.03    0    1    0    0    0    0        2    4.5    4.5    4.5     1.0
+ 4 04_17dBm        0.10    0    1    1    1    0    0        3    4.9    6.8    6.8     0.6
+ 5 05_21dBm        0.10    0    0    1    2    0    0        4    4.7    6.4    6.4     0.5
+ 6 06_23dBm        0.48    7    2    2    3    0    0        2    5.3    8.6    8.6     0.4
+ 7 07_23dBm        0.10    1    1    0    1    0    0        2    4.0    7.3    7.3     2.8
+ 8 08_21dBm        0.07    1    1    0    0    0    0        2    4.4    4.4    4.4     1.5
+ 9 09_17dBm        0.13    2    0    1    1    0    0        3    6.5    6.6    6.6     0.9
+10 10_13dBm        0.13    2    2    0    0    0    0        2    4.2    6.2    6.2     0.9
+11 11_9dBm         0.21    0    0    1    5    0    0        4    6.6    8.9    8.9     0.6
+12 12_5dBm         0.33    4    4    0    2    0    0        2    5.8    9.5    9.5     1.1
+13 13_1dBm         0.13    1    0    2    1    0    0        3    6.3    9.7    9.7     0.8
