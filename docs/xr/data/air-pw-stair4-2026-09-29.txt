@@ -1,0 +1,23 @@
+# Air log: MCS4 TX power staircase, 2026-09-29 20:50-21:00 (/tmp/pw_stair4.sh md5 a3014f9d on air .132)
+# User choice: find the RX saturation point within the approved TX caps (MCS4 <= 24 dBm), headset at ~1 m (the user:
+# 1 m is the closest realistic distance). 1080p90 12 Mbit (m4b12f48 = clean in the HD redo), MCS4 1SS STBC LDPC long GI
+# 20 MHz, ch157, FEC 4/8, video wfb_tx input buffer 1 MB, alink/vmoded stopped, rig off.
+# Steps: 1 5 9 13 17 21 23 23 21 17 13 9 5 1 dBm, 40 s each (up then down, to cancel drift).
+# Quest capture ab_stair4 (pixelpilot-xr-25, APK c8986061, keep_corrupted ON). Clock this boot: slot_watch AIR_CLOCK
+# pc_minus_air_s=0.848 err_s=0.121 (21:00). Watcher: 128 polls, 0 alerts.
+PRE epoch=1790704231 start=1790704230 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=1056 idr="honored":2,"dropped":0 temp=43
+STEP pw1 epoch=1790704231 drop=0 inj=89317 ant_drop=0 temp=46 mcs_index=4 k=4 n=8 br=12000 txp=1.00 rmem=1048576 vpid=1056 idr="honored":15,"dropped":0
+STEP pw5 epoch=1790704271 drop=0 inj=92290 ant_drop=0 temp=47 mcs_index=4 k=4 n=8 br=12000 txp=5.00 rmem=1048576 vpid=1056 idr="honored":19,"dropped":1
+STEP pw9 epoch=1790704311 drop=0 inj=92110 ant_drop=0 temp=47 mcs_index=4 k=4 n=8 br=12000 txp=9.00 rmem=1048576 vpid=1056 idr="honored":21,"dropped":1
+STEP pw13 epoch=1790704351 drop=0 inj=89784 ant_drop=0 temp=48 mcs_index=4 k=4 n=8 br=12000 txp=13.00 rmem=1048576 vpid=1056 idr="honored":22,"dropped":1
+STEP pw17 epoch=1790704392 drop=0 inj=90343 ant_drop=0 temp=48 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=1056 idr="honored":27,"dropped":1
+STEP pw21 epoch=1790704432 drop=0 inj=89679 ant_drop=0 temp=51 mcs_index=4 k=4 n=8 br=12000 txp=21.00 rmem=1048576 vpid=1056 idr="honored":36,"dropped":1
+STEP pw23 epoch=1790704472 drop=0 inj=90142 ant_drop=0 temp=53 mcs_index=4 k=4 n=8 br=12000 txp=23.00 rmem=1048576 vpid=1056 idr="honored":47,"dropped":2
+STEP pw23 epoch=1790704511 drop=0 inj=89881 ant_drop=0 temp=53 mcs_index=4 k=4 n=8 br=12000 txp=23.00 rmem=1048576 vpid=1056 idr="honored":55,"dropped":2
+STEP pw21 epoch=1790704551 drop=0 inj=89462 ant_drop=0 temp=53 mcs_index=4 k=4 n=8 br=12000 txp=21.00 rmem=1048576 vpid=1056 idr="honored":61,"dropped":2
+STEP pw17 epoch=1790704591 drop=0 inj=90007 ant_drop=0 temp=51 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=1056 idr="honored":69,"dropped":2
+STEP pw13 epoch=1790704631 drop=0 inj=89438 ant_drop=0 temp=51 mcs_index=4 k=4 n=8 br=12000 txp=13.00 rmem=1048576 vpid=1056 idr="honored":74,"dropped":2
+STEP pw9 epoch=1790704671 drop=0 inj=89769 ant_drop=0 temp=48 mcs_index=4 k=4 n=8 br=12000 txp=9.00 rmem=1048576 vpid=1056 idr="honored":82,"dropped":4
+STEP pw5 epoch=1790704710 drop=0 inj=89814 ant_drop=0 temp=48 mcs_index=4 k=4 n=8 br=12000 txp=5.00 rmem=1048576 vpid=1056 idr="honored":95,"dropped":7
+STEP pw1 epoch=1790704750 drop=0 inj=89980 ant_drop=0 temp=47 mcs_index=4 k=4 n=8 br=12000 txp=1.00 rmem=1048576 vpid=1056 idr="honored":102,"dropped":7
+END epoch=1790704803 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608 vpid=894 idr="honored":1,"dropped":0 json=3d8a1456 temp=44
