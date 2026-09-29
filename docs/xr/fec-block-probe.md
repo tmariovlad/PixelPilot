@@ -244,6 +244,8 @@ It releases the new front's in-order prefix, retires it if it is complete, and s
 - Patched: 5/5, and the whole wfb host suite 70/70.
 - Mutant: removing only the FEC-path `drain_front()` fails exactly R1.
 
+**Reading a Quest A/B of this fix** [INFERRED from zflush.py's class definition and the rx.cpp release paths]: zflush's `recovered` = released in a call with rec > 0. With the drain, the next block's waiting frames join that call (recovered); on stock they come out a call later (held). Class membership moves with the lever, so compare all frames' p95/p99, or recovered ∪ held; the held count per state is the fix's direct signature. A/B APK 7f8b34c1 = 81643b5 + the diff, paired with c8986061.
+
 **Not landed yet.** The wfb-ng submodule tracks upstream `svpcom/wfb-ng`, so the fix needs a home: a
 `tmariovlad/wfb-ng` fork like devourer's (a GitHub fork plus a push, the user's decision) or a build-time patch. Until
 then the test lives on the `rx-drain` branch, not in xr-native, where it would be red against the stock submodule.
