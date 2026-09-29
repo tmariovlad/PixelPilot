@@ -54,6 +54,7 @@ struct FakeAir
     uint16_t                 port = 0;
     std::thread              th;
     std::atomic<bool>        stop{false};
+    std::atomic<int>         status{200};
     std::mutex               m;
     std::vector<std::string> lines;
     std::vector<Clock::time_point> times;
@@ -87,8 +88,9 @@ struct FakeAir
                     lines.push_back(req.substr(0, req.find("\r\n")));
                     times.push_back(Clock::now());
                 }
-                const char ok[] = "HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nok";
-                send(c, ok, sizeof(ok) - 1, 0);
+                const std::string reply =
+                    "HTTP/1.0 " + std::to_string(status.load()) + " X\r\nContent-Length: 2\r\n\r\nok";
+                send(c, reply.data(), reply.size(), 0);
                 close(c);
             }
         });
@@ -134,7 +136,7 @@ TEST(IdrRequester, OneLossSendsOneGetOfTheIdrPath)
     FakeAir      air;
     IdrRequester r("127.0.0.1", air.port, 200);
     std::atomic<int> okResults{0}, failedResults{0};
-    r.setOnResult([&](bool ok) { (ok ? okResults : failedResults)++; });
+    r.setOnResult([&](IdrRequester::Result res) { (res == IdrRequester::Result::Ok ? okResults : failedResults)++; });
     r.setEnabled(true);
     r.notifyLoss();
     ASSERT_TRUE(air.waitFor(1, 1000));
@@ -194,4 +196,61 @@ TEST(IdrRequester, ALongerIntervalSpacesTheRequests)
     ASSERT_TRUE(air.waitFor(2, 1500));
     const auto gap = std::chrono::duration_cast<std::chrono::milliseconds>(air.times[1] - air.times[0]).count();
     EXPECT_GE(gap, 570);
+}
+
+// While the key frame is still needed (a freeze waiting for it), the request is repeated every interval, not only on the
+// next loss: a lost request or a lost IDR would otherwise hold the picture until the 1 s freeze timeout.
+TEST(IdrRequester, RepeatsWhileStillNeededThenStops)
+{
+    FakeAir           air;
+    IdrRequester      r("127.0.0.1", air.port, 150);
+    std::atomic<bool> need{true};
+    r.setStillNeeded([&] { return need.load(); });
+    r.setEnabled(true);
+    r.notifyLoss();
+    ASSERT_TRUE(air.waitFor(3, 1500));
+    need = false;
+    const size_t n = air.count();
+    sleepMs(500);
+    EXPECT_LE(air.count(), n + 1);
+}
+
+TEST(IdrRequester, RepeatsStopAfterTheRetryWindow)
+{
+    FakeAir      air;
+    IdrRequester r("127.0.0.1", air.port, 100, 400);
+    r.setStillNeeded([] { return true; });
+    r.setEnabled(true);
+    r.notifyLoss();
+    sleepMs(1200);
+    EXPECT_GE(air.count(), 3u);
+    EXPECT_LE(air.count(), 6u);
+}
+
+TEST(IdrRequester, AClosedPortCountsAsRefused)
+{
+    uint16_t closedPort;
+    {
+        FakeAir air;
+        closedPort = air.port;
+    }
+    IdrRequester r("127.0.0.1", closedPort, 200);
+    r.setEnabled(true);
+    r.notifyLoss();
+    sleepMs(400);
+    EXPECT_EQ(1u, r.requests(IdrRequester::Result::Refused));
+    EXPECT_EQ(0u, r.requests(IdrRequester::Result::Ok));
+}
+
+TEST(IdrRequester, ANon200ReplyCountsAsBadStatus)
+{
+    FakeAir air;
+    air.status = 429;
+    IdrRequester r("127.0.0.1", air.port, 200);
+    r.setEnabled(true);
+    r.notifyLoss();
+    ASSERT_TRUE(air.waitFor(1, 1000));
+    sleepMs(200);
+    EXPECT_EQ(1u, r.requests(IdrRequester::Result::BadStatus));
+    EXPECT_EQ(0u, r.requests(IdrRequester::Result::Ok));
 }
