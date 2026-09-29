@@ -64,3 +64,8 @@ add_executable(rx_rate_histogram_test RxRateHistogram_test.cpp)
 target_include_directories(rx_rate_histogram_test PRIVATE ${SRC})
 target_link_libraries(rx_rate_histogram_test GTest::gtest_main)
 gtest_discover_tests(rx_rate_histogram_test)
+
+add_executable(fec_block_probe_test FecBlockProbe_test.cpp)
+target_include_directories(fec_block_probe_test PRIVATE ${SRC})
+target_link_libraries(fec_block_probe_test GTest::gtest_main)
+gtest_discover_tests(fec_block_probe_test)
