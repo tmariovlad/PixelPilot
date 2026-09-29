@@ -513,6 +513,21 @@ def test_the_tail_script_goes_to_the_air_with_lf_only():
     assert cr not in script and b"/tmp/air_health.log" in script, script[:80]
 
 
+def test_the_air_scripts_exit_0_when_a_ring_file_is_missing():
+    """Before the first rotation /tmp/air_health.log.1 does not exist: `cat` exited 1, _ssh took the call as failed,
+    and the (B) report pulled 0 lines (2026-09-29). air_tail.sh ended on `tail` of the log, so a missing log was an
+    unreachable air instead of AIR_HEALTH_STALE nolog. Run both under a local sh, where neither file exists."""
+    import shutil
+    import subprocess
+    sh = shutil.which("sh")
+    assert sh, "a POSIX sh is needed (Git for Windows ships one)"
+    absent = subprocess.run([sh, "-c", "[ ! -e /tmp/air_health.log ] && [ ! -e /tmp/air_health.log.1 ]"])
+    assert absent.returncode == 0, "the test needs /tmp without air_health.log(.1)"
+    for script, args in ((sw.AIR_RING_CAT, []), (sw.HealthTail().script, ["0", "15"])):
+        r = subprocess.run([sh, "-s", "--", *args], input=script, capture_output=True)
+        assert r.returncode == 0, (script[:60], r.returncode, r.stderr)
+
+
 def test_auto_picks_air_health_only_when_its_log_is_live():
     assert sw.pick_air_source("auto", head(9.0), [ah(800, 4)]) == "health"
     assert sw.pick_air_source("auto", head(9.0), []) == "probe"

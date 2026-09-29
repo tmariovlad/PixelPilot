@@ -15,3 +15,5 @@ if [ "$SLOW" = 1 ]; then
 fi
 tail -n "$N" /tmp/air_health.log.1 2>/dev/null
 tail -n "$N" /tmp/air_health.log 2>/dev/null
+# a missing ring file is not a failed poll: the watcher reports it as AIR_HEALTH_STALE (a failed connection = 255)
+exit 0

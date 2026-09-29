@@ -715,10 +715,14 @@ def pull_app_lines():
     return lines, offset
 
 
+# exit 0: .log.1 is missing until the first rotation, and cat's exit 1 would read as a failed call (ssh itself = 255)
+AIR_RING_CAT = b"cat /tmp/air_health.log.1 /tmp/air_health.log 2>/dev/null; exit 0\n"
+
+
 def pull_air_lines(host=AIR_HOST):
     """Both ring files of air_health.sh -> (lines, anchor). The anchor comes from its own short call (the air's uptime
     at the middle of it), because the copy of a few MB takes long enough to blur a time taken with it."""
-    text = _ssh(host, b"cat /tmp/air_health.log.1 /tmp/air_health.log 2>/dev/null\n", [], timeout=60)
+    text = _ssh(host, AIR_RING_CAT, [], timeout=60)
     t0 = time.time()
     up = _num((_ssh(host, b"cut -d' ' -f1 /proc/uptime\n", [], timeout=10) or "").strip())
     anchor = ((t0 + time.time()) / 2, up) if up is not None else None

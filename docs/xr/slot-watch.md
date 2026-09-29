@@ -162,7 +162,7 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
 
 ## Verification (2026-09-29)
 
-- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks before the air_health source (52 with it, AIR_CLOCK and the USB scope) (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
+- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks before the air_health source (53 with it, AIR_CLOCK, the USB scope and the exit-0 scripts) (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
   air rule including edge-triggering and recovery, the Quest parsers and rules, the alert line round trip, the
   timeline window/offsets, the clock bound, the IDR window, and `--expect-until`. Run `python3 test_slot_watch.py`.
   - Seven mutants were killed: drop `>` → `>=`, the uptime rule removed, the IDR threshold disabled, the edge trigger removed, the IDR hysteresis removed, the offset bound replaced by the old post-call estimate, and `--expect-until` ignored.
@@ -199,4 +199,15 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
   - It exposed a flaw, since fixed: the USB check listed 49 IDs, because the XR app's device filters under `settings_manager` were counted as attached devices. `QUEST_NO_ADAPTER` could never have fired.
   - The on-device part now sends the whole `dumpsys usb` (one call, ~1000 lines), and `parse_usb_ids` reads only `host_manager`. On the real capture that gives `['0bda:8812']`.
   - The test, built on the capture's structure, was red before the fix: plugged / unplugged / no `host_manager` block.
-- **Not yet run live:** `report` with real app / air_health lines (the app lines arrive with APK 579305ee), and `watch --air-source health` against a running air_health.sh. air_health was built and tested offline only, and has not run on the air yet (its §6 procedure and §8 checklist).
+- **First live run on the air_health ring: slot (B), 2026-09-29 04:35–04:40** (pixelpilot-xr-66, `--air-source auto`) [PROVEN: `scripts/quest/out/slot_watch/B/`, gitignored: `alerts.log`, `alerts-report.md`, the pulled ring `air_health-ring.log`]:
+  - `auto` took the ring (`air_source=health`).
+  - Every one of the 203 ring lines passes -40's `parse_air_health.py --check` (184 AH + 19 EV).
+  - The report has 27 rows: 161 ring lines fall in the slot; one boot, a 2.0 s period, no gaps; `reg550` and `bcn` stay `0x10`.
+  - `AIR_CLOCK pc_minus_air_s=-0.004 err_s=0.331`, which agrees with the three probe runs above.
+  - The alerts:
+    - `AIR_FPS_LOW` 86 at waybeam's start, cleared after 10 s;
+    - after `expect_until`, the planned revert: MCS/TX power `WARN`, waybeam and wfb_tx restarts passed on as `air_health WB_PID` / `WFBTX_PID`;
+    - `WFB_DROP` 4 and 10 at those restarts, where RXQ_DROP shows the UDP socket drops.
+  - It exposed a flaw, since fixed: the report's pull ran `cat` of both ring files. Before the first rotation `.log.1` does not exist, so `cat` exited 1 and the pull returned 0 lines. `air_tail.sh` had the same exposure with a missing log. Both scripts now end with `exit 0`, and a test runs them under a local `sh` with no ring files (red before).
+  - An oddity in air_health, reported to -40: `rmem_def=1 rmem_max=1` on all 184 lines. The fixture reads 163840, and the kernel's floor for `rmem_default` is far above 1.
+- **Not yet run live:** `report` with the app's real health lines (APK 579305ee; the (B) report ran with `--no-quest`, because the next run was measuring and adb over Wi-Fi is not allowed then).
