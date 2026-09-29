@@ -1,0 +1,26 @@
+# Air log: TX power bracket, 2026-09-29 20:37-20:44 (/tmp/pw_bracket.sh md5 a60f1434 on air .132, fresh boot)
+# Question: is the remaining radio loss (68 % of unrecoverable FEC blocks carry bad-FCS frames at -26 dBm, cause run)
+# RX front-end saturation? ABCCBA 1 / 9 / 17 dBm, 60 s each, only txpower changes inside the run.
+# 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, FEC 4/8, video wfb_tx input buffer 1 MB (rmem 1048576,
+# video wfb_tx relaunched once at setup), alink/vmoded stopped. Rig off. GEOMETRY: the Quest was ~1 m from the air
+# (user, 2026-09-29 ~20:40), charging at the wall; NOT the close geometry of the cause run.
+# Quest capture ab_pwbr (pixelpilot-xr-25, APK c8986061, keep_corrupted ON). air_health ef736a43 live.
+# Clock this boot: slot_watch AIR_CLOCK pc_minus_air_s=0.725 err_s=0.256 (fresh boot, ntpd may not have stepped yet).
+# RESULT (air side): drop 0 and ant_drop 0 in every step; the driver applied 1 / 9 / 17 dBm as reported by iw.
+# IDR honored rises through the run (4 -> 100): the Quest asked for more IDRs later in the run. Quest-side analysis
+# (bad-FCS rate, FECBLK, RSSI per step) by pixelpilot-xr-25.
+stopped alink/vmoded pids=1371
+PRE epoch=1790703485 start=1790703485 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=1483 idr="honored":4,"dropped":0 temp=43
+SET pw1 epoch=1790703486 mcs_index=7 k=4 n=8 br=16000 txp=1.00 rmem=1048576 vpid=1483 idr="honored":4,"dropped":0
+STEP pw1 epoch=1790703486 drop=0 inj=178250 ant_drop=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=1.00 rmem=1048576 vpid=1483 idr="honored":4,"dropped":0
+SET pw9 epoch=1790703546 mcs_index=7 k=4 n=8 br=16000 txp=9.00 rmem=1048576 vpid=1483 idr="honored":4,"dropped":0
+STEP pw9 epoch=1790703546 drop=0 inj=178770 ant_drop=0 temp=48 mcs_index=7 k=4 n=8 br=16000 txp=9.00 rmem=1048576 vpid=1483 idr="honored":6,"dropped":0
+SET pw17 epoch=1790703607 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=1483 idr="honored":8,"dropped":0
+STEP pw17 epoch=1790703607 drop=0 inj=178929 ant_drop=0 temp=50 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=1483 idr="honored":17,"dropped":1
+SET pw17 epoch=1790703666 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=1483 idr="honored":17,"dropped":1
+STEP pw17 epoch=1790703666 drop=0 inj=179571 ant_drop=0 temp=51 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576 vpid=1483 idr="honored":50,"dropped":2
+SET pw9 epoch=1790703726 mcs_index=7 k=4 n=8 br=16000 txp=9.00 rmem=1048576 vpid=1483 idr="honored":50,"dropped":2
+STEP pw9 epoch=1790703726 drop=0 inj=178984 ant_drop=0 temp=48 mcs_index=7 k=4 n=8 br=16000 txp=9.00 rmem=1048576 vpid=1483 idr="honored":72,"dropped":8
+SET pw1 epoch=1790703786 mcs_index=7 k=4 n=8 br=16000 txp=1.00 rmem=1048576 vpid=1483 idr="honored":73,"dropped":8
+STEP pw1 epoch=1790703786 drop=0 inj=181951 ant_drop=0 temp=47 mcs_index=7 k=4 n=8 br=16000 txp=1.00 rmem=1048576 vpid=1483 idr="honored":100,"dropped":14
+END epoch=1790703865 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608 vpid=3656 idr="honored":1,"dropped":0 json=3d8a1456 temp=43
