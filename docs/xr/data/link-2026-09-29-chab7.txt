@@ -1,0 +1,13 @@
+# ab_chab7, steps docs/xr/data/steps-2026-09-29-chab7.txt, --air-offset-s -0.8506 (Quest-PC -0.8506 + PC-air 0), --guard-s 15. 21:59-22:12 local; channel A/B in the operational state, ABBA 157/165/165/157, 180 s each, MCS7 1080p90 16M FEC 4/8 17 dBm, rmem 1 MB, no rig; Quest ~1 m; APK c8986061, prefs = wifi-channel per step + request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted; XR relaunch at every step (guard 15 s). Steps on the PC clock (PC-air 0 here).
+# python3 scripts/quest-latch/ab_link.py scripts/quest/out/ab_chab7.pftrace docs/xr/data/steps-2026-09-29-chab7.txt --air-offset-s -0.8506 --guard-s 15
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 ch157              -   2955.2        -     44.4      2.7    100.0     82.0     79.9     17.4     17.4        -        -        -        -        -      3.1      6.2        -        -        -        -        -      0.0
+ 1 ch165              -   2991.5        -     22.2      0.7    100.0     83.0     78.5     17.8     18.0        -        -        -        -        -      1.5      2.2        -        -        -        -        -      0.0
+ 2 ch165              -   2982.3        -     22.6      0.4    100.0     83.0     78.1     18.5     19.0        -        -        -        -        -      1.5      2.3        -        -        -        -        -      0.0
+ 3 ch157              -   2945.8        -     44.9      2.5    100.0     82.0     79.3     17.3     17.5        -        -        -        -        -      3.1      7.0        -        -        -        -        -      0.0
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ch157                 -   2950.5        -     44.7      2.6    100.0     82.0     79.6     17.4     17.4        -        -        -        -        -      3.1      6.6        -        -        -        -        -      0.0
+ch165                 -   2986.9        -     22.4      0.6    100.0     83.0     78.3     18.2     18.5        -        -        -        -        -      1.5      2.3        -        -        -        -        -      0.0

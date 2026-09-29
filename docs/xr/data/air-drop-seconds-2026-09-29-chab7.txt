@@ -1,0 +1,1 @@
+# chab7: the air dropped 0 packets at its input in every step (air-chan-ab7-2026-09-29.txt).

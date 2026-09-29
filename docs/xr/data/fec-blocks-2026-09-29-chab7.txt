@@ -1,0 +1,19 @@
+# ab_chab7 (2026-09-29 21:59-22:12 local), channel A/B MCS7 16M, ABBA 157/165/165/157 180 s, steps docs/xr/data/steps-2026-09-29-chab7.txt (PC clock), Quest-PC -850.6 ms, guard 15 s; APK c8986061, keep_corrupted on; Quest ~1 m.
+blocks: 495
+per_min: 31.179236518129624
+outage: 230
+with_fcs: 355
+fcs_known: 495
+where: {'tail': 202, 'head': 171, 'scattered': 60, 'head+tail': 23, 'middle': 39}
+reason: {'ring': 1, 'flush': 494}
+gap_max_us_p50: 1927
+gap_max_us_p95: 4225
+rssi_a_dbm_mean: -28.02087542087542
+suppressed: 0
+# python3 scripts/quest-latch/tsv_steps.py docs/xr/data/fec-blocks-2026-09-29-chab7.tsv scripts/quest/out/qtx_chab7.raw.txt docs/xr/data/steps-2026-09-29-chab7.txt --quest-minus-pc-ms -850.6 --column fcs --guard-s 15
+per step: rows per minute by fcs
+                    s                 0                 1                 2                 3
+ 0 ch157          150     15.6              35.6               4.8               0.4         
+ 1 ch165          150      4.4              11.6               0.0               0.0         
+ 2 ch165          150      1.2               8.4               0.8               0.0         
+ 3 ch157          150     16.4              29.6               3.6               0.4         

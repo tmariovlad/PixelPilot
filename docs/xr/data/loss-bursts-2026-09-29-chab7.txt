@@ -1,0 +1,7 @@
+# ab_chab7, steps docs/xr/data/steps-2026-09-29-chab7.txt, --air-offset-s -0.8506 (Quest-PC -0.8506 + PC-air 0), --guard-s 15. 21:59-22:12 local; channel A/B in the operational state, ABBA 157/165/165/157, 180 s each, MCS7 1080p90 16M FEC 4/8 17 dBm, rmem 1 MB, no rig; Quest ~1 m; APK c8986061, prefs = wifi-channel per step + request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted; XR relaunch at every step (guard 15 s). Steps on the PC clock (PC-air 0 here).
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_chab7.pftrace docs/xr/data/steps-2026-09-29-chab7.txt --air-offset-s -0.8506 --guard-s 15
+                 runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77
+ 0 ch157           1.05   44   37   21   52    4    0        2    4.3    7.3   15.1     0.6
+ 1 ch165           0.28   12    6    9   15    0    0        3    4.2    5.5    6.5     3.9
+ 2 ch165           0.19    9    6    4    8    1    0        2    3.8    6.5    7.2     0.4
+ 3 ch157           0.93   41   25   18   51    4    0        3    4.2    8.0   11.3     1.2

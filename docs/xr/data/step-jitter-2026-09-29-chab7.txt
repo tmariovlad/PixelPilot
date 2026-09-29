@@ -1,0 +1,7 @@
+# ab_chab7, steps docs/xr/data/steps-2026-09-29-chab7.txt, --air-offset-s -0.8506 (Quest-PC -0.8506 + PC-air 0), --guard-s 15. 21:59-22:12 local; channel A/B in the operational state, ABBA 157/165/165/157, 180 s each, MCS7 1080p90 16M FEC 4/8 17 dBm, rmem 1 MB, no rig; Quest ~1 m; APK c8986061, prefs = wifi-channel per step + request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted; XR relaunch at every step (guard 15 s). Steps on the PC clock (PC-air 0 here).
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_chab7.pftrace docs/xr/data/steps-2026-09-29-chab7.txt --air-offset-s -0.8506 --guard-s 15
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 ch157          13561   0.00   5.94  11.69   21.94
+ 1 ch165          13561   0.00   5.73  11.53   25.81
+ 2 ch165          13560   0.00   5.61  10.10   22.50
+ 3 ch157          13560   0.00   6.24  12.91   21.47

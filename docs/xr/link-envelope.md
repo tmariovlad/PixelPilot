@@ -199,6 +199,31 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Channel A/B in the operational state 2026-09-29 21:59–22:12: ch165 cuts the residual loss 3.5–6× at MCS7 16 Mbit/s
+
+The follow-up of the MCS4 channel A/B below, in the state we fly: 1080p90 16 Mbit/s MCS7 FEC 4/8, 17 dBm, 1 MB input buffer, no rig. ABBA 157 / 165 / 165 / 157, **180 s** each, the same shared-schedule method (air `chan_ab7.sh`, Quest [pref_ab.sh](../../scripts/quest/pref_ab.sh) `START_AT`, XR relaunch per step, guard 15 s). The Quest stays ~1 m from the air. Air drops 0; PC−air +0.98 s (AIR_CLOCK); steps on the PC clock.
+- **Data.** [air log](data/air-chan-ab7-2026-09-29.txt) · [steps](data/steps-2026-09-29-chab7.txt) · [RSSI per step](data/rssi-steps-2026-09-29-chab7.txt) · [link_audit](data/audit-2026-09-29-chab7.txt) · [link (crc/s)](data/link-2026-09-29-chab7.txt) · [FEC blocks](data/fec-blocks-2026-09-29-chab7.txt) ([tsv](data/fec-blocks-2026-09-29-chab7.tsv)) · [IDR per step](data/drop-seconds-2026-09-29-chab7.txt) · [latency](data/latency-2026-09-29-chab7.txt) · [frame fate](data/frame-fate-2026-09-29-chab7.txt) · [bursts](data/loss-bursts-2026-09-29-chab7.txt) · [large frames](data/big-frames-2026-09-29-chab7.txt) · [latency within each step](data/step-jitter-2026-09-29-chab7.txt) · [air drop seconds (none)](data/air-drop-seconds-2026-09-29-chab7.txt).
+
+| channel (A · A') | RSSI A / B dBm | post-FEC | loss runs/s | unrecoverable FEC blocks/min | bad-FCS frames/s | loss before FEC | decoded fps (holes/s) | IDR requests/s (air honoured per step) |
+|---|---|---|---|---|---|---|---|---|
+| 157 | −28/−30 · −28/−31 | **0.18 · 0.16 %** | 1.05 · 0.93 | **56.4 · 50.0** | 6.2 · 7.0 | 3.09 · 3.12 % | 89.4 · 89.6 (0.8 · 0.7) | 1.26 · 1.08 (126 · 142) |
+| 165 | −27/−32 · −27/−32 | **0.05 · 0.03 %** | 0.28 · 0.19 | **16.0 · 10.4** | 2.2 · 2.3 | 1.51 · 1.52 % | 90.1 · 90.2 (0.2 · 0.2) | 0.49 · 0.36 (64 · 47) |
+
+- **On 165 the residual loss after FEC is 3.5–6× lower than on 157, in the state we fly** [PROVEN: ABBA, N = 2 per channel, 150 s measured per step, RSSI within 1–2 dB].
+  - The same holds for loss runs (3.5–5×) and unrecoverable blocks (3–5×).
+  - It shows in the picture: 90.1–90.2 vs 89.4–89.6 decoded fps, and 0.2 vs 0.7–0.8 holes/s.
+  - The IDR requests fall 2.5× (the air counted 64 and 47 honoured per step vs 126 and 142).
+- **The mechanism is the corruption floor** [INFERRED: this run + the MCS4 A/B + the staircase]. Bad-FCS frames 2.2–2.3 vs 6.2–7.0/s, and the loss before FEC halves (1.5 vs 3.1 %), at the same received level.
+  - The staircase showed that floor does not depend on the level on 157, so something on or next to 157 corrupts our frames. The neighbour's 80 MHz BSS covers 157 and not 165, which makes it the candidate [SPECULATION until an RF scan].
+- **Latency is slightly better on 165**: −0.31 ms mean, last95 5.2 vs 6.8 ms, the frames that wait for FEC recovery.
+- No 102.4 ms lock on either (Z ≤ 3.9).
+- **This reverses R3' (2026-09-28, [below](#r3-2026-09-28-23272347-ch157-vs-ch165-outside-the-neighbours-80-mhz-at-25-mbits))**, where 165 lost as much as 157 after FEC, with Z = 70.9 on 165.
+  - R3' ran at 25 Mbit/s MCS7 with the Quest in another position, and a beacon-locked source was active on 165 that night. Tonight none was.
+  - So the best channel depends on what the neighbours transmit at the time [INFERRED]. One night each is not enough to pick a permanent winner.
+- **Recommendation (for the user's decision, via the coordinator):** make 165 the default here, and keep the menu's live channel verb to go back to 157 when 165 is busy.
+  - Before that, a repeat A/B on another day or hour, to see whether 165 stays better.
+  - A persistent default is the user's call.
+
 ### Channel A/B 2026-09-29 21:44–21:50: on ch165 the corrupted-frame floor falls ~2.5–3× and the loss before FEC ~42 %, at the same signal
 
 The interference lead from the staircase below: a floor of ~4 bad-FCS frames/s at every received level. ch157 lies inside the neighbour's 80 MHz BSS, ch165 outside ([R3'](#r3-2026-09-28-23272347-ch157-vs-ch165-outside-the-neighbours-80-mhz-at-25-mbits)).

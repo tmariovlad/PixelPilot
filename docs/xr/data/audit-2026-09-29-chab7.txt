@@ -1,0 +1,16 @@
+# ab_chab7, steps docs/xr/data/steps-2026-09-29-chab7.txt, --air-offset-s -0.8506 (Quest-PC -0.8506 + PC-air 0), --guard-s 15. 21:59-22:12 local; channel A/B in the operational state, ABBA 157/165/165/157, 180 s each, MCS7 1080p90 16M FEC 4/8 17 dBm, rmem 1 MB, no rig; Quest ~1 m; APK c8986061, prefs = wifi-channel per step + request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted; XR relaunch at every step (guard 15 s). Steps on the PC clock (PC-air 0 here).
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_chab7.pftrace docs/xr/data/steps-2026-09-29-chab7.txt --air-offset-s -0.8506 --guard-s 15 --logcat scripts/quest/out/logcat_chab7.txt
+PKT_LOST events 1113, packets 55079; TX DESC 30827; block overrides 0
+post-FEC gap sizes: 1:708, 2:109, 3:73, 4:204, 5:9, 6:3, 7:4, 8:1, 1106:1, 51913:1
+loss within 2 ms after a Quest TX: 7.6 % (control, TX shifted 50 ms: 1.8 %)
+Rayleigh Z @    1.000 Hz =      0.1
+Rayleigh Z @    4.000 Hz =      0.4
+Rayleigh Z @    9.766 Hz =      0.0
+Rayleigh Z @   72.000 Hz =      1.0
+Rayleigh Z @   90.000 Hz =      1.6
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 ch157        228144   407  6664   405    3.09   0.18    1.0   42   37   21   52    4   4.9   15.1   4.1
+ 1 ch165        227568   111  3330   111    1.51   0.05    0.3   12    6    9   15    0   0.0   13.2   4.0
+ 2 ch165        226954    70  3383    66    1.52   0.03    0.2    9    6    4    8    1   7.1   12.0   3.7
+ 3 ch157        227493   371  6738   371    3.12   0.16    0.9   39   25   18   51    4   6.5   12.8   3.7

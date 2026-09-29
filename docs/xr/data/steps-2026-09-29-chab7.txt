@@ -1,0 +1,6 @@
+# chab7 steps on the PC clock (the shared schedule of pref_ab.sh START_AT; the air switched at air 707379 / 707739 = PC ~707380 / 707740, PC - air ~0.98 s this boot). ABBA 157 165 165 157, 180 s each; every step starts with an XR relaunch on the Quest (guard 15 s). MCS7 1080p90 16 Mbit FEC 4/8 17 dBm, 1 MB.
+1790707200 ch157
+1790707380 ch165
+1790707560 ch165
+1790707740 ch157
+1790707920 END
