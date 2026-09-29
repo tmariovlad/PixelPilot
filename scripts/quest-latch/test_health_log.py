@@ -53,6 +53,19 @@ class Summary(unittest.TestCase):
         self.assertAlmostEqual(s["health_fps_mean"], 140.0)
         self.assertAlmostEqual(s["health_frozen_pct_mean"], 15.0)
 
+    def test_idr_handshake_sums_attempts_and_late_wins_over_both_codes(self):
+        # the connect race's fields (IdrRequester, 2026-09-29): SYNs started, requests won by attempt >= 2, and each
+        # line's mean connect time; lines from older builds carry none of them
+        lines = FILE + [
+            "PPXR_EVENT t_mono_ms=41000 t_wall_ms=1790640041000 code=IDR level=INFO ok=3 failed=0 attempts=4 late=1 connected=3 connect_ms=60",
+            "PPXR_EVENT t_mono_ms=42000 t_wall_ms=1790640042000 code=IDR_FAILED level=WARN ok=1 failed=1 connect_timeout=1 attempts=8 late=0 connected=1 connect_ms=20",
+        ]
+        s = health_log.summarize(lines)
+        self.assertEqual(s["idr_attempts"], 12)
+        self.assertEqual(s["idr_won_late"], 1)
+        self.assertAlmostEqual(s["idr_connect_ms_mean"], 50.0)   # per request: (3*60 + 1*20) / 4
+        self.assertEqual(health_log.summarize(FILE)["idr_attempts"], 0)
+
     def test_empty_input(self):
         s = health_log.summarize([])
         self.assertEqual(s["signal_lost"], 0)

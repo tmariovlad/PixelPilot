@@ -65,6 +65,11 @@ def summarize(lines):
             for k in ("refused", "connect_timeout", "reply_timeout", "http_status", "error"):
                 if k in e:
                     reasons[k] += int(_num(e[k]))
+    # IdrRequester's connect race (2026-09-29): SYNs started, requests won by a later attempt, and the connect time
+    # per request (each line gives its mean over `connected` requests)
+    idr = [e for e in events if e.get("code") in ("IDR", "IDR_FAILED")]
+    connected = sum(int(_num(e.get("connected"))) for e in idr)
+    connect_ms = sum(_num(e.get("connect_ms")) * int(_num(e.get("connected"))) for e in idr)
     fps = [_num(h["fps"]) for h in health if h.get("fps")]
     frozen = [_num(h["frozen_pct"]) for h in health if h.get("frozen_pct")]
     freeze_ms = sum(_num(e.get("dur_ms")) for e in events if e.get("code") == "FREEZE_END")
@@ -80,6 +85,9 @@ def summarize(lines):
         "session_off_ms": int(sum(_num(e.get("off_ms")) for e in events if e.get("code") == "SESSION_ACTIVE")),
         "adapter_gone_ms": [int(_num(e.get("gone_ms"))) for e in events if e.get("code") == "ADAPTER_BACK"],
         "idr_fail_reasons": dict(reasons),
+        "idr_attempts": sum(int(_num(e.get("attempts"))) for e in idr),
+        "idr_won_late": sum(int(_num(e.get("late"))) for e in idr),
+        "idr_connect_ms_mean": connect_ms / connected if connected else float("nan"),
         "health_fps_mean": sum(fps) / len(fps) if fps else float("nan"),
         "health_frozen_pct_mean": sum(frozen) / len(frozen) if frozen else float("nan"),
     }

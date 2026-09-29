@@ -81,6 +81,7 @@ class VideoPlayer
     uint32_t idrRequestsOk() const { return mIdrRequester.requestsOk(); }
     uint32_t idrRequestsFailed() const { return mIdrRequester.requestsFailed(); }
     uint32_t idrRequests(IdrRequester::Result r) const { return mIdrRequester.requests(r); }
+    const IdrRequester& idrRequester() const { return mIdrRequester; }
     uint32_t frozenSlices() const { return mFreezeUntilIdr.dropped(); }
     bool     frozenUntilIdr() const { return mFreezeUntilIdr.frozen(); }
     uint32_t decoderRebuilds() const { return videoDecoder.decoderRebuilds(); }

@@ -77,7 +77,8 @@ public class VideoPlayer implements IVideoParamsChanged {
     /**
      * Cumulative: IDR requests ok, IDR requests failed, slices frozen until an IDR, decoder rebuilds, codec switches;
      * then (index 5..10) the IDR requests per result: ok, refused, connect timeout, reply timeout, HTTP status, error
-     * (IdrRequester::Result).
+     * (IdrRequester::Result); then (index 11..14) their connect race: attempts started, requests won by attempt >= 2,
+     * connect ms sum, requests connected.
      */
     public static native long[] nativeGetLeverCounters(long nativeInstance);
 

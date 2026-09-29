@@ -39,9 +39,11 @@ public final class HealthMonitor {
 
     private static final String OK = "OK";
     // VideoPlayer.leverCounters(): [0..4] idrOk, idrFailed, frozenSlices, decoderRebuilds, codecSwitches;
-    // [5..10] IdrRequester::Result counts (ok, refused, connect_timeout, reply_timeout, http_status, error).
+    // [5..10] IdrRequester::Result counts (ok, refused, connect_timeout, reply_timeout, http_status, error);
+    // [11..14] its connect race: attempts started, requests won by attempt >= 2, connect ms sum, requests connected.
     private static final int IDR_OK = 0, IDR_FAILED = 1, FROZEN = 2, REBUILDS = 3, SWITCHES = 4;
-    private static final int N_COUNTERS = 11, REASON_FIRST = 6;   // [5] = ok, already counted in [0]
+    private static final int REASON_FIRST = 6;   // [5] = ok, already counted in [0]
+    private static final int ATTEMPTS = 11, WON_LATE = 12, CONNECT_MS_SUM = 13, CONNECTED = 14, N_COUNTERS = 15;
     private static final String[] REASONS = {"refused", "connect_timeout", "reply_timeout", "http_status", "error"};
 
     private final Sink sink;
@@ -60,6 +62,7 @@ public final class HealthMonitor {
     // IDR aggregation
     private long idrOkAcc, idrFailAcc, lastIdrLineMs;
     private final long[] reasonAcc = new long[REASONS.length];
+    private long attemptsAcc, wonLateAcc, connectMsAcc, connectedAcc;
     // discrete states
     private Boolean adapter;
     private long adapterGoneMs;
@@ -106,6 +109,10 @@ public final class HealthMonitor {
         for (int r = 0; r < REASONS.length; r++) {
             reasonAcc[r] += Math.max(0, now[REASON_FIRST + r] - prev[REASON_FIRST + r]);
         }
+        attemptsAcc += Math.max(0, now[ATTEMPTS] - prev[ATTEMPTS]);
+        wonLateAcc += Math.max(0, now[WON_LATE] - prev[WON_LATE]);
+        connectMsAcc += Math.max(0, now[CONNECT_MS_SUM] - prev[CONNECT_MS_SUM]);
+        connectedAcc += Math.max(0, now[CONNECTED] - prev[CONNECTED]);
         idr(monoMs, now[IDR_OK] - prev[IDR_OK], now[IDR_FAILED] - prev[IDR_FAILED]);
         winTicks++;
         if (dFrozen > 0) winDropTicks++;
@@ -238,6 +245,18 @@ public final class HealthMonitor {
             if (reasonAcc[r] > 0) why.append(' ').append(REASONS[r]).append('=').append(reasonAcc[r]);
             reasonAcc[r] = 0;
         }
+        // The handshake (a native without these counters reports none): SYNs started, requests won by a later
+        // attempt than the first, and the mean connect time of the requests that connected.
+        if (attemptsAcc > 0) {
+            why.append(" attempts=").append(attemptsAcc).append(" late=").append(wonLateAcc);
+            if (connectedAcc > 0) {
+                why.append(" connected=").append(connectedAcc).append(" connect_ms=").append(connectMsAcc / connectedAcc);
+            }
+        }
+        attemptsAcc = 0;
+        wonLateAcc = 0;
+        connectMsAcc = 0;
+        connectedAcc = 0;
         event(monoMs, failed ? "IDR_FAILED" : "IDR", failed ? "WARN" : "INFO",
                 " ok=" + idrOkAcc + " failed=" + idrFailAcc + why);
         idrOkAcc = 0;

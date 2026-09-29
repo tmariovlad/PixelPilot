@@ -15,19 +15,26 @@
 
 #define TAG "pixelpilot"
 
-// Key-frame requests to the air unit (IdrRequester), as counters for a system trace: ok and failed so far.
-static void traceIdrRequest(IdrRequester::Result r)
+// Key-frame requests to the air unit (IdrRequester): one logcat line per request with its handshake (the connect race:
+// SYNs started, which one connected, and when), and counters for a system trace: ok and failed so far, requests won
+// by a later attempt than the first, and each request's connect time.
+static void traceIdrRequest(const IdrRequester::Outcome& o)
 {
-    static std::atomic<int32_t> nOk{0}, nFailed{0};
-    const bool    ok = r == IdrRequester::Result::Ok;
+    static std::atomic<int32_t> nOk{0}, nFailed{0}, nLate{0};
+    const bool    ok = o.result == IdrRequester::Result::Ok;
     const int32_t n  = ok ? ++nOk : ++nFailed;
-    if (!ok) __android_log_print(ANDROID_LOG_WARN, "IdrRequester", "key-frame request failed: %s", IdrRequester::name(r));
+    const int32_t late = o.attempt >= 2 ? ++nLate : nLate.load();
+    __android_log_print(ok ? ANDROID_LOG_INFO : ANDROID_LOG_WARN, "IdrRequester",
+                        "PPXR_IDRREQ result=%s attempts=%d attempt=%d connect_ms=%d", IdrRequester::name(o.result),
+                        o.attempts, o.attempt, o.connect_ms);
     if (__builtin_available(android 29, *))
     {
         if (ATrace_isEnabled())
         {
             ATrace_setCounter(ok ? "ppxr_idr_req_ok" : "ppxr_idr_req_failed", n);
-            if (!ok) ATrace_setCounter((std::string("ppxr_idr_req_") + IdrRequester::name(r)).c_str(), n);
+            if (!ok) ATrace_setCounter((std::string("ppxr_idr_req_") + IdrRequester::name(o.result)).c_str(), n);
+            if (o.attempt >= 2) ATrace_setCounter("ppxr_idr_won_late", late);
+            if (o.connect_ms >= 0) ATrace_setCounter("ppxr_idr_connect_ms", o.connect_ms);
         }
     }
 }
@@ -519,15 +526,25 @@ extern "C"
     (JNIEnv* env, jclass jclass1, jlong nativeInstance)
     {
         VideoPlayer* p     = native(nativeInstance);
-        // 0..4 as before; 5..10 the key-frame requests per IdrRequester::Result, in the enum's order.
-        jlong v[5 + IdrRequester::kResults] = {p ? static_cast<jlong>(p->idrRequestsOk()) : 0,
+        // 0..4 as before; 5..10 the key-frame requests per IdrRequester::Result, in the enum's order; 11..14 their
+        // connect race: attempts started, requests won by attempt >= 2, connect ms sum, requests connected.
+        constexpr int kRace = 5 + IdrRequester::kResults;
+        jlong v[kRace + 4] = {p ? static_cast<jlong>(p->idrRequestsOk()) : 0,
                                                p ? static_cast<jlong>(p->idrRequestsFailed()) : 0,
                                                p ? static_cast<jlong>(p->frozenSlices()) : 0,
                                                p ? static_cast<jlong>(p->decoderRebuilds()) : 0,
                                                p ? static_cast<jlong>(p->codecSwitches()) : 0};
         for (int i = 0; p && i < IdrRequester::kResults; i++)
             v[5 + i] = static_cast<jlong>(p->idrRequests(static_cast<IdrRequester::Result>(i)));
-        const jsize n   = 5 + IdrRequester::kResults;
+        if (p)
+        {
+            const IdrRequester& r = p->idrRequester();
+            v[kRace]     = r.attemptsStarted();
+            v[kRace + 1] = r.wonByLaterAttempt();
+            v[kRace + 2] = static_cast<jlong>(r.connectMsSum());
+            v[kRace + 3] = r.connected();
+        }
+        const jsize n   = kRace + 4;
         jlongArray  out = env->NewLongArray(n);
         env->SetLongArrayRegion(out, 0, n, v);
         return out;

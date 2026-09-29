@@ -106,6 +106,24 @@ public class HealthMonitorTest {
         assertTrue(e, e.endsWith(" ok=1 failed=3 connect_timeout=2 reply_timeout=1"));
     }
 
+    @Test public void idrLinesCarryTheHandshakeOfTheirRequests() {
+        // [11..14] = connect attempts started, requests won by attempt >= 2, connect ms sum, requests connected
+        // (IdrRequester's connect race, 2026-09-29)
+        m.onTick(0, "OK", true, new long[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+        m.onTick(250, "OK", true, new long[]{2, 1, 0, 0, 0, 2, 0, 1, 0, 0, 0, 11, 1, 180, 2});
+        m.onTick(1000, "OK", true, new long[]{3, 1, 0, 0, 0, 3, 0, 1, 0, 0, 0, 12, 1, 190, 3});
+        String e = only("IDR_FAILED");
+        // 3 ok + 1 connect_timeout (7 SYNs): 12 attempts, 1 won late, mean connect 190/3 = 63 ms
+        assertTrue(e, e.endsWith(" ok=3 failed=1 connect_timeout=1 attempts=12 late=1 connected=3 connect_ms=63"));
+    }
+
+    @Test public void idrLinesWithoutHandshakeCountersStayAsBefore() {
+        m.onTick(0, "OK", true, c(0, 0, 0, 0, 0));
+        m.onTick(1000, "OK", true, c(2, 0, 0, 0, 0));
+        String e = only("IDR");
+        assertTrue(e, e.endsWith(" ok=2 failed=0"));
+    }
+
     @Test public void codecSwitchIsInfo() {
         m.onTick(0, "OK", true, c(0, 0, 0, 0, 0));
         m.onTick(250, "OK", true, c(0, 0, 0, 0, 1));
