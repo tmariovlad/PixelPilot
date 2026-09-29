@@ -184,6 +184,12 @@ The dated result sections that used to follow here were moved verbatim into topi
   N = 2 each): APFPV through the Quest's own Wi-Fi has 0 vs 1–7 RTP losses, jitter p95 1.4–2.2 vs 9.0–12.8 ms, a frame on the air
   in ~0.13 vs ~7.8 ms (wfb MCS2). Boot default still wfb (range and higher wfb MCS untested); APFPV through the RTL needs devourer station mode
   ([station mode](xr/station-mode.md): the W0 hardware-ACK gate is GO; [scope](xr/research/2026-09-27-devourer-station-scope.md)).
+- **[Health logging](xr/health-logging.md)** (2026-09-29, built + JVM/host-tested, not yet on the headset): the app logs
+  what the pilot would otherwise have to tell us: PPXR_EVENT per event (SIGNAL_LOST/OK with the SignalState kind and
+  cause freeze/decoder/no_packets, FREEZE, IDR_FAILED with reason, SESSION_INACTIVE = headset asleep, ADAPTER_GONE,
+  LOSS_BURST, FPS_LOW, LINK_STATUS), PPXR_HEALTH every 10 s (fps, frozen %, stalls/min, holes, IDR, RSSI/SNR), to
+  logcat and files/ppxr_health.log; health_log.py → timeline + summary. Keywords: health log, video stalled, HOLD,
+  headset asleep, slot_watch, jurnal.
 - **[Stats pages: data backend](xr/stats-backend.md)** (2026-09-29, built + host/JVM-tested, not yet on the headset): per-frame
   latency by segment (encode, air send, link, decode, decoded → next predicted display as an estimate; sum = G2G est.
   without sensor/panel) from waybeam's RTP sidecar matched by (ssrc, RTP ts) with the Quest's decoded frames, air↔Quest
