@@ -199,6 +199,30 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### FEC span 2026-09-29 ~04:00–04:07: the same 1/2 ratio over longer blocks (4/8, 8/16, 12/24) at 1080p90 16 Mbit/s MCS7
+
+Question (from the loss shape above, ~4 ms outages vs a ~2.7 ms FEC 4/8 block): does a FEC block that spans more time recover them?
+- **Method.**
+  - Air `fec_span.sh`: 1SS STBC long GI, ch157, 17 dBm, alink off; 4/8 · 8/16 · 12/24 · 12/24 · 8/16 · 4/8, 60 s each. The radio is set before each waybeam restart.
+  - Quest: APK 69dfed66, IDR only, headset still, detached capture `TRACE LOSS: none`, offset +1.2322 s, guard 4 s.
+  - The air's own injection drops (wfb_tx, 51 one-second samples) are split off with `loss_bursts.py --air-drop-seconds`.
+- **Data.** [air log](data/air-fec-span-2026-09-29.txt) · [steps](data/steps-2026-09-29-fecspan.txt) · [air-drop seconds](data/air-drop-seconds-2026-09-29-fecspan.txt) · [link_audit](data/audit-2026-09-29-fecspan.txt) · [frame fate](data/frame-fate-2026-09-29-fecspan.txt) · [link](data/link-2026-09-29-fecspan.txt) · [bursts](data/loss-bursts-2026-09-29-fecspan.txt) · [latency within each step](data/step-jitter-2026-09-29-fecspan.txt).
+- **The geometry differs from the HD sweep:** the RSSI column is saturated at 100 (A/B 82/85, SNR ~19.3 dB, vs 58/63 and 16.5 in the sweep), since the headset position changed during the redo. Absolute loss is therefore not comparable with the sweep; the steps of this run are comparable with each other.
+
+| FEC (N = 2, A then A') | post-FEC | loss runs/s | runs/s in clean seconds | holes/s (frame fate) | run length p50 | air drop (packets) |
+|---|---|---|---|---|---|---|
+| 4/8 (~2.7 ms block) | 0.54 / 0.23 % | 0.67 / 0.78 | 0.29 / 0.86 | 0.3 / 0.5 | 4 / 3 | 384 / 106 |
+| 8/16 (~5.4 ms) | 0.31 / 0.15 % | 0.46 / 0.42 | 0.29 / 0.21 | 0.1 / 0.1 | 5 / 4 | 269 / 121 |
+| **12/24 (~8 ms)** | **0.10 / 0.09 %** | **0.13 / 0.15** | **0.10 / 0.08** | **0.0 / 0.0** | 10 / 4 | 74 / 84 |
+
+- **12/24 at the same ratio loses 3–5× less than 4/8** [PROVEN: N = 2 each, alternating, the clean seconds agree]. The longer block covers the few-ms outages. A 12/24 block that does fail leaves a larger hole, but rarely.
+  - The air's injection drops fell over the run (384 → 106 at 4/8), so A vs A' differ; the clean-seconds column is the fair comparison.
+  - The losses stay unlocked from the 102.4 ms period (Z ≤ 1.7).
+- **Latency cost: not resolved.** Every step restarts waybeam with a new RTP timestamp base, so steps cannot share one drift line.
+  - Within each step the tail around the step's own median is about the same for every FEC (p99 43–46 ms; [step_jitter.py](../../scripts/quest-latch/step_jitter.py)). No FEC-span cost is visible [INFERRED].
+  - p95 is 5.4 ms in the first step and 23–26 ms in all the others, which is unexplained.
+  - A clean measure needs the FEC changed without a restart (wfb_tx control port, `-C 9000`), in one waybeam run.
+
 ### HD sweep 2026-09-29 03:27–03:40: MCS5 vs MCS7 at 1080p90 16 Mbit/s FEC 4/8, and MCS4 at 23 vs 24 dBm
 
 Question (the coordinator, for an "HD" preset): does a lower MCS give fewer losses at 16 Mbit/s? And does 24 dBm receive better than 23 (R4 of OpenIPC's -1f)?

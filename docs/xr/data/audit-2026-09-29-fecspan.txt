@@ -1,0 +1,9 @@
+# ab_fecspan (2026-09-29 ~04:00-04:07), steps docs/xr/data/steps-2026-09-29-fecspan.txt (air clock), --air-offset-s 1.2322 (Quest-PC 0.4832 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. Each step restarts waybeam (new RTP timestamp base), so latency is valid only within a step (step_jitter)
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 fec4-8        78059   422  1260    42    1.66   0.54    0.6    2    8    0    9   14  87.2   34.7   3.7
+ 1 fec8-16       76522   239  1498     1    1.95   0.31    0.4    5    3    1    1   12  92.5   32.6   4.7
+ 2 fec12-24      77324    74  1438     0    1.86   0.10    0.1    2    0    1    0    4  93.2   27.8   4.5
+ 3 fec12-24      77055    71  1414     0    1.83   0.09    0.2    4    0    0    1    3  88.7   20.0   4.5
+ 4 fec8-16       78821   119  1562    23    2.01   0.15    0.4    2    4    0    5    9  74.8   18.0   4.5
+ 5 fec4-8        83672   191  1631    85    2.05   0.23    0.8    8    9   10   12   11  45.5 3009.9   4.8
