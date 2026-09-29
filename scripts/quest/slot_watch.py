@@ -385,11 +385,11 @@ def air_health_parser():
 
 
 def air_health_record(line):
-    """parse_air_health.parse_line, with boot= kept as the raw text (the parser makes "00123456" the int 123456)."""
+    """parse_air_health.parse_line; a missing boot (NA or empty, which the parser keeps as text) becomes None, so it
+    never counts as a boot of its own. The parser keeps boot= as text since OpenIPC 2eb1567."""
     rec = air_health_parser().parse_line(line)
-    if rec is not None and "boot" in rec:
-        m = re.search(r"(?:^|\s)boot=(\S+)", line)
-        rec["boot"] = m.group(1) if m and m.group(1) != "NA" else None
+    if rec is not None and rec.get("boot") in ("", "NA"):
+        rec["boot"] = None
     return rec
 
 
