@@ -205,6 +205,7 @@ The dated result sections that used to follow here were moved verbatim into topi
   decoder/XR levers, codec): latency Δ, decoded fps, post-FEC loss, source and tag per row. Canonical source is
   `app/xr/src/main/res/raw/option_costs.json` (parsed by `OptionCosts`); the G2G/FOV of the air's listed presets stay
   only in the air's VMODE1 `list`. Keywords: cost table, menu labels, costuri opțiuni, single source of truth.
+- **[Slot monitoring: slot_watch.py](xr/slot-watch.md)** (2026-09-29, tested offline, fixtures from real captures): alerts while a slot runs, so the user no longer has to report problems. `watch` reads the air over eth0 every 5 s (reboot, wfb drops, IDR/s, fps low, temperature, unplanned MCS/FEC/channel/power changes, fix (a) via the bcn log); `between` checks the Quest only between measurements (asleep, XR app, Guardian/proximity, RTL 0bda:8812, storage, battery); `report` builds the slot's timeline with the app's PPXR_EVENT/PPXR_HEALTH and the air's air_health. DPS-150 checklist for the coordinator. Keywords: monitoring, alerts, watcher, monitorizare, alerte.
 - **[Troubleshooting](xr/troubleshooting.md)**: build traps, Horizon OS quirks, adapter and link problems.
 - **Raw data** ([xr/data/](xr/data/)): [decoder levers](xr/data/measurements-2026-09-26-quest2-decoder-levers.csv) ·
   [key isolation](xr/data/measurements-2026-09-26-quest2-key-isolation.csv) ·

@@ -147,6 +147,7 @@ applied live (no RTP restart).
 |---|---|
 | `quest_env.py` / `quest_env.sh` | configuration (single source of truth) + bash helpers `qadb`, `quest_start_xr`, `quest_prox_close`, `quest_guardian_pause`, `quest_restore` |
 | `quest_adb.py` | adb wrapper, shared-prefs rewrite (`set_prefs`, `write_prefs`), `prox_close`, `start_xr` |
+| `slot_watch.py` + `air_probe.sh` | slot monitoring: `watch` (the air over eth0 every 5 s: reboot, wfb drops, IDR/s, fps, temperature, radio changes, 0x550 via bcn log), `between` (the Quest, only between measurements), `report` (the slot's alert timeline + app/air health logs); [docs/xr/slot-watch.md](../../docs/xr/slot-watch.md). Test: `test_slot_watch.py` |
 | `quest_lever_test.py` | one lever run over a Wi-Fi replay; library for the three below |
 | `quest_lever_repeat.py` | decoder-key isolation matrix, N shuffled rounds |
 | `quest_codec_matrix.py` | decode time per codec x resolution x decoder component |
