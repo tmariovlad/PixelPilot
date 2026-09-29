@@ -1,0 +1,41 @@
+# Air log: cause run = rmem 192 KB vs 1 MB with the ESP32 LED rig flashing, 2026-09-29 04:46-04:51
+# /tmp/rmem_ab.sh md5 a888ab05, DWELL=60, ORDER 196608 1048576 196608 1048576 (chained after slot (B)'s END at air
+# 1790645973). 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, 17 dBm, FEC 4/8, alink/vmoded stopped.
+# Rig: latency-test-0d, run 01 at PC 1790646008.1 (recalibrated in HD), 8 runs. Quest: pixelpilot-xr-25 capture ab_cause,
+# APK cd960b31 (PPXR_FECBLK + PPXR_RTPHOLE), keep_corrupted ON, IDR only. air_health ring live (fdf88c7b).
+# Clock: air wall ~= PC (ntpd). wfbtx.log timestamps are air CLOCK_MONOTONIC ms: air epoch = 1790633249.44 + uptime_s
+# (date 1790670036 with uptime 36786.56).
+#
+# RESULT [PROVEN]: 192 KB dropped 152 and 145 pkts per 60 s (11 and 7 seconds); 1 MB dropped 0 and 0.
+# Across all four rig runs: 192 KB 4 of 4 steps overflowed, 512 KB 1 of 5, 1 MB 0 of 5, 2 MB 0 of 2.
+PRE epoch=1790645991 start=1790646000 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=2766 idr="honored":5,"dropped":0 rcvbuf_err=130847 temp=43
+STEP rmem196608 epoch=1790646002 drop=152 inj=167666 drop_secs=11 ant_drop=0 sendmsg_lat_max_us=12378 rcvbuf_err_d=152 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=1397 idr="honored":49,"dropped":9
+STEP rmem1048576 epoch=1790646062 drop=0 inj=170016 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=11283 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=1763 idr="honored":67,"dropped":12
+STEP rmem196608 epoch=1790646122 drop=145 inj=169850 drop_secs=7 ant_drop=0 sendmsg_lat_max_us=4256 rcvbuf_err_d=145 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=2105 idr="honored":95,"dropped":14
+STEP rmem1048576 epoch=1790646182 drop=0 inj=169763 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=9728 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=2444 idr="honored":121,"dropped":17
+END epoch=1790646253 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608/196608 vpid=2787 idr="honored":2,"dropped":0 json=3d8a1456 temp=42
+
+# Seconds with input drops (air uptime_ms, injected, dropped). 12729619 is the setup (race -> HD switch, before step 0);
+# 12997513 is the revert.
+12729619 2297 2
+12749618 3000 10
+12751891 2850 50
+12752891 2785 19
+12754891 2795 20
+12759891 2881 27
+12760891 2779 8
+12769894 3026 7
+12770891 2938 1
+12780891 2977 16
+12786891 3012 40
+12791891 3183 1
+12794891 2999 10
+12805891 2937 3
+12882755 3137 18
+12901755 2990 17
+12906755 2871 9
+12909755 2912 44
+12912755 3087 1
+12915756 3017 9
+12926755 2992 47
+12997513 683 1
