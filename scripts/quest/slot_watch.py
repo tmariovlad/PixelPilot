@@ -109,7 +109,7 @@ def parse_air_probe(text):
         "fps": None, "kbps": None, "idr_honoured": None, "idr_dropped": None, "mcs": None, "fec": None,
         "channel": None, "txpower": None, "bcn_550": None,
     }
-    m = re.search(r"\|\s*([\d.]+)\s*fps\s*\|\s*(\d+)\s*kbps", raw.get("wb_verbose", ""))
+    m = re.search(r"\| ([\d.]+) fps \| (\d+) kbps", raw.get("wb_verbose", ""))
     if m:
         s["fps"], s["kbps"] = float(m.group(1)), int(m.group(2))
     s["idr_honoured"], s["idr_dropped"] = _idr_counts(raw.get("idr_stats", ""))
@@ -225,12 +225,18 @@ class AirWatch:
                                  {"fps": fps, "floor": round(floor, 1)})
         temp = s.get("temp")
         if temp is not None:
-            lvl = "ALERT" if temp >= self.th.temp_alert else "WARN" if temp >= self.th.temp_warn else None
-            out += self.cond.set(t, "air", "AIR_TEMP", lvl, {"temp": temp})
+            out += self.cond.set(t, "air", "AIR_TEMP", self._temp_level(temp), {"temp": temp})
         bcn = s.get("bcn_550")
         if bcn is not None:
             out += self.cond.set(t, "air", "AIR_BCN_550", "ALERT" if bcn != "0x10" else None, {"value": bcn})
         return out
+
+    def _temp_level(self, temp):
+        if temp >= self.th.temp_alert:
+            return "ALERT"
+        if temp >= self.th.temp_warn:
+            return "WARN"
+        return None
 
     def _radio(self, s, t):
         out = []
@@ -354,40 +360,51 @@ def _kv(tokens):
     return dict(p.split("=", 1) for p in tokens if "=" in p)
 
 
+APP_META = ("t_wall_ms=", "t_mono_ms=", "code=", "level=")
+AIR_META = ("t=", "up_cs=", "code=")
+
+
+def _alert_row(a, periodic):
+    if not periodic and a.code.endswith("_STATUS"):
+        return None
+    return a.t, a.source, a.code, a.level, " ".join(f"{k}={v}" for k, v in a.detail.items())
+
+
+def _app_row(line, offset, periodic):
+    """"PPXR_EVENT|PPXR_HEALTH t_wall_ms=… code=… level=… k=v" (Quest epoch ms) -> a row, or None."""
+    f = line.split()
+    if not f or not f[0].startswith("PPXR_"):
+        return None
+    kv = _kv(f[1:])
+    code = kv.get("code", f[0])
+    if "t_wall_ms" not in kv or (code == "HEALTH" and not periodic):
+        return None
+    rest = " ".join(x for x in f[1:] if not x.startswith(APP_META))
+    return int(kv["t_wall_ms"]) / 1000.0 + offset, "app", code, kv.get("level", "INFO"), rest
+
+
+def _air_row(line, offset, periodic):
+    """An air_health line (epoch s in t=; "EV …" = an event, anything else periodic) -> a row, or None."""
+    f = line.split()
+    event = bool(f) and f[0] == "EV"
+    body = f[1:] if event else f
+    kv = _kv(body)
+    ts = kv.get("t", kv.get("epoch", kv.get("ts")))
+    if ts is None or not (event or periodic):
+        return None
+    level = kv.get("level", "EV" if event else "INFO")
+    rest = " ".join(x for x in body if not x.startswith(AIR_META))
+    return float(ts) + offset, "air_health", kv.get("code", "AIR_HEALTH"), level, rest
+
+
 def timeline(alerts, app_lines, air_lines, start, end, air_offset=0.0, app_offset=0.0, periodic=False):
-    """Rows (pc_time, source, code, level, detail) in [start, end], sorted by time.
-    app_lines: "PPXR_EVENT|PPXR_HEALTH k=v ..." with t_wall_ms (Quest epoch ms) + app_offset.
-    air_lines: air_health lines, epoch s in t= (+ air_offset); "EV ..." lines are events, the rest periodic.
-    Periodic lines (HEALTH, the air's 2 s lines, the watcher's STATUS) only with periodic=True."""
-    rows = []
-    for a in alerts:
-        if periodic or not a.code.endswith("_STATUS"):
-            rows.append((a.t, a.source, a.code, a.level, " ".join(f"{k}={v}" for k, v in a.detail.items())))
-    for line in app_lines:
-        f = line.split()
-        if not f or not f[0].startswith("PPXR_"):
-            continue
-        kv = _kv(f[1:])
-        if "t_wall_ms" not in kv:
-            continue
-        code = kv.get("code", f[0])
-        if code == "HEALTH" and not periodic:
-            continue
-        rest = " ".join(p for p in f[1:] if not p.startswith(("t_wall_ms=", "t_mono_ms=", "code=", "level=")))
-        rows.append((int(kv["t_wall_ms"]) / 1000.0 + app_offset, "app", code, kv.get("level", "INFO"), rest))
-    for line in air_lines:
-        f = line.split()
-        if not f:
-            continue
-        event = f[0] == "EV"
-        kv = _kv(f[1:] if event else f)
-        ts = kv.get("t", kv.get("epoch", kv.get("ts")))
-        if ts is None or (not event and not periodic):
-            continue
-        code = kv.get("code", "AIR_HEALTH")
-        rest = " ".join(p for p in (f[1:] if event else f) if not p.startswith(("t=", "up_cs=", "code=")))
-        rows.append((float(ts) + air_offset, "air_health", code, kv.get("level", "EV" if event else "INFO"), rest))
-    return sorted(r for r in rows if start <= r[0] <= end)
+    """Rows (pc_time, source, code, level, detail) in [start, end], sorted by time. app_lines are corrected by
+    app_offset (Quest clock -> PC), air_lines by air_offset. Periodic lines (HEALTH, the air's 2 s lines, the watcher's
+    AIR_STATUS) only with periodic=True."""
+    rows = [_alert_row(a, periodic) for a in alerts]
+    rows += [_app_row(line, app_offset, periodic) for line in app_lines]
+    rows += [_air_row(line, air_offset, periodic) for line in air_lines]
+    return sorted(r for r in rows if r is not None and start <= r[0] <= end)
 
 
 def render_report(rows, start, end):
