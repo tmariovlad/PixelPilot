@@ -211,3 +211,39 @@ existing tools (`ab_segments.py` loss per step, `rtp_holes.py`).
 
 **Headset check (to do).** Install a build with PPXR_RELEASE. In the -Z slot, record a Perfetto trace (as for
 big_frames) plus a detached capture (ab_detached.sh has the tag) and the air's step log and `/tmp/wfbtx.log`.
+
+## 8. RX: the next block waits after the front block completes (wfb-ng Aggregator fix, not yet landed)
+
+Found by openipc-4b (O121, `repos/tasks/air-latency-30pct-2026-09-30/02-IMPLEMENTATION-PLAN.md` N3, §4.3); the same code
+is in upstream wfb-ng HEAD and on the GS.
+
+**The bug** [PROVEN: `wfb-ng/src/rx.cpp` 748–767 and 820–833, reproduced below]. When `rx_ring_front` advances (the
+front block completed in order, or was recovered through FEC), the new front may already hold fragments that arrived
+earlier: reordering, or the older block's parity arriving after the newer block's first data. Those fragments are not
+released until one more fragment of the new front arrives, up to a frame later. Stock hits it on reordering or lost
+parity. The air's planned `wfb_tx -Y` (parity after the frame) would hit it on any loss in a frame spanning 2 blocks.
+
+**The test** (`tests/RxDrain_test.cpp`, 5 gtests, with `tests/rx_replay.*`). Real encrypted k=4/n=8 packets from our
+`Transmitter` (TxFrame.cpp) go into wfb-ng's real `Aggregator` (rx.cpp built as in the app, `__WFB_RX_SHARED_LIBRARY__`
++ the `wfb_log.h` preinclude; needs libpcap-dev in WSL) in chosen orders:
+- R1, the FEC path. Stock: the recovery call releases `{P2, P3}`, and P4 comes out only with the next fragment, as
+  `{P4, P5}`.
+- R2, the in-order path. Stock: the late fragment releases `{P3}`, and P4 and P5 wait for block 1's fragment 2.
+- A gap in the new front stops the release, and FEC recovers the rest later.
+- Waiting fragments are released, and the block carries on normally.
+- A sanity test: in-order delivery.
+
+A block holding k fragments takes the FEC path and flushes the older blocks (rx.cpp 771–790), so a block can wait
+behind the front with at most k − 1 fragments. The fix's "retire a complete new front" branch is defensive.
+
+**The fix** (4b's `c1/rx-drain-quest.diff`, md5 `c8e0d705`): `Aggregator::drain_front()` after both front advances.
+It releases the new front's in-order prefix, retires it if it is complete, and stops at a gap.
+
+**Verdict:**
+- Stock: 4 of 5 red for the intended reason (the assertions above).
+- Patched: 5/5, and the whole wfb host suite 70/70.
+- Mutant: removing only the FEC-path `drain_front()` fails exactly R1.
+
+**Not landed yet.** The wfb-ng submodule tracks upstream `svpcom/wfb-ng`, so the fix needs a home: a
+`tmariovlad/wfb-ng` fork like devourer's (a GitHub fork plus a push, the user's decision) or a build-time patch. Until
+then the test lives on the `rx-drain` branch, not in xr-native, where it would be red against the stock submodule.

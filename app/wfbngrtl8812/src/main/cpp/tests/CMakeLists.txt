@@ -79,3 +79,20 @@ add_executable(release_probe_test ReleaseProbe_test.cpp)
 target_include_directories(release_probe_test PRIVATE ${SRC})
 target_link_libraries(release_probe_test GTest::gtest_main)
 gtest_discover_tests(release_probe_test)
+
+# wfb-ng's real rx Aggregator (rx.cpp built as in the app: shared-library mode, wfb_log.h preinclude) fed by our
+# Transmitter: the front-block drain (docs/xr/fec-block-probe.md §8). Needs libpcap (rx.cpp's Receiver).
+pkg_check_modules(pcap REQUIRED IMPORTED_TARGET libpcap)
+add_executable(rx_drain_test
+    RxDrain_test.cpp
+    rx_replay.cpp
+    ${SRC}/TxFrame.cpp
+    ${SRC}/wfb-ng/src/rx.cpp
+    ${SRC}/wfb-ng/src/radiotap.c
+    ${SRC}/wfb-ng/src/wifibroadcast.cpp
+    ${SRC}/wfb-ng/src/zfex.c)
+set_source_files_properties(rx_replay.cpp ${SRC}/wfb-ng/src/rx.cpp PROPERTIES
+    COMPILE_DEFINITIONS "__WFB_RX_SHARED_LIBRARY__;PREINCLUDE_FILE=<${SRC}/wfb_log.h>")
+target_include_directories(rx_drain_test PRIVATE ${LOG_SHIM} ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${SRC} ${SRC}/wfb-ng ${SRC}/devourer)
+target_link_libraries(rx_drain_test PkgConfig::sodium PkgConfig::pcap GTest::gtest_main pthread)
+gtest_discover_tests(rx_drain_test)
