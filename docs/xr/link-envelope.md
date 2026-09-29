@@ -215,6 +215,17 @@ Question (the coordinator, for an "HD" preset): does a lower MCS give fewer loss
 | m7b16f48, 17 dBm | 0 / 0 | 89.6 / 89.5 | 0.18 / 0.20 % | 1.0 / 1.0 | +3.0 / 12.5 · +3.5 / 14.4 | 45 / 53 |
 
 - **MCS5 is no better than MCS7 at 16 Mbit/s here** [PROVEN: N = 2 each]. Loss is about the same and fps equal, but MCS5 costs +9–11 ms mean and +21 ms p95. At ~2950 packets/s on air, MCS5 long GI is near its queue knee [INFERRED from the G5/G6 knee]. MCS5 needed fewer keyframes (air counters: 22/13 vs 45/53) [PROVEN: air `idr/stats` deltas, per the coordinator].
+- **Redo within capacity (03:41–03:51)**, air drop 0 in every step.
+  - Data: [air log](data/air-hd-redo-2026-09-29.txt) · [steps](data/steps-2026-09-29-hdredo.txt) · [link_audit](data/audit-2026-09-29-hdredo.txt) · [frame fate](data/frame-fate-2026-09-29-hdredo.txt) · [latency](data/latency-2026-09-29-hdredo.txt) · [link](data/link-2026-09-29-hdredo.txt) · [bursts](data/loss-bursts-2026-09-29-hdredo.txt).
+  - **Only the first pass (steps 0–2) is clean.** In steps 3–5 the RSSI column jumps from ~79 to 93–99 (the geometry changed), 3.1–4.1 s outages fall inside the windows, and in step 5 the RTP timestamp base jumps. Those steps are not used.
+
+| step (first pass, N = 1) | decoded fps | post-FEC | loss runs/s | last / p95 (ms, vs MCS5) | Z 9.77 |
+|---|---|---|---|---|---|
+| m4b12f48 (12 Mbit/s, FEC 4/8) | 90.0 | 0.11 % | 0.49 | −5.9 / 15.1 | 0.6 |
+| m4b16f46 (16 Mbit/s, FEC 4/6) | 86.4 | 0.71 % | 5.7 | −3.0 / 21.7 | 3.5 |
+| m5b16f48 (16 Mbit/s, FEC 4/8) | 89.8 | 0.13 % | 0.70 | 0 / 28.3 | 0.6 |
+
+  - FEC 4/6 at 16 Mbit/s loses 5× more than 4/8 at the same MCS [PROVEN, N = 1]; the air also honoured many more keyframes in those steps (per the coordinator). MCS4 at 12 Mbit/s is as clean as MCS5 at 16 and lower in latency (fewer packets per second) [PROVEN, N = 1], at the cost of a quarter less bitrate.
 - **What the residual loss looks like** [PROVEN: [loss_bursts.py](../../scripts/quest-latch/loss_bursts.py), tested; [data](data/loss-bursts-2026-09-29-hdsweep.txt)]. MCS5 needs ~3 dB less SINR than MCS7 yet loses the same, so the SINR margin is not what limits the residual loss [INFERRED].
   - The loss comes as 0.55–1.2 runs/s, of p50 2–3 RTP packets (mostly 1–4, a few 5–8).
   - The runs last p50 3.6–4.2 ms, p95 8–11 ms, max 11–24 ms.

@@ -1,0 +1,15 @@
+# ab_hdredo (2026-09-29 03:41-03:51), steps docs/xr/data/steps-2026-09-29-hdredo.txt (air clock), --air-offset-s 1.2434 (Quest-PC 0.4944 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. Steps 3-5 compromised: RSSI column jumps 79 -> 93-99 (geometry changed), 3.1-4.1 s outages inside the windows, RTP timestamp base jump in step 5
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 m4b12f48           -   2234.3        -     32.9      1.2     79.3     58.6     63.2     16.5     16.5        -        -        -        -        -      3.0        -        -        -        -        -        -        -
+ 1 m4b16f46           -   2250.2        -     48.0     11.0     80.0     57.1     64.0     16.6     16.6        -        -        -        -        -      3.8        -        -        -        -        -        -        -
+ 2 m5b16f48           -   2950.9        -     41.7      1.9     79.2     58.4     63.2     16.5     16.5        -        -        -        -        -      2.9        -        -        -        -        -        -        -
+ 3 m5b16f48           -   2848.4        -     26.5     69.3     93.6     78.6     78.7     18.1     18.3        -        -        -        -        -      6.3        -        -        -        -        -        -        -
+ 4 m4b16f46           -   2137.4        -     27.3     81.7     99.6     79.1     81.1     18.3     18.0        -        -        -        -        -      7.1        -        -        -        -        -        -        -
+ 5 m4b12f48           -   2127.8        -     15.7      0.1     99.7     80.9     82.5     18.9     18.7        -        -        -        -        -      1.5        -        -        -        -        -        -        -
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+m4b12f48              -   2181.0        -     24.3      0.7     89.5     69.7     72.9     17.7     17.6        -        -        -        -        -      2.2        -        -        -        -        -        -        -
+m4b16f46              -   2193.8        -     37.6     46.4     89.8     68.1     72.5     17.5     17.3        -        -        -        -        -      5.4        -        -        -        -        -        -        -
+m5b16f48              -   2899.7        -     34.1     35.6     86.4     68.5     71.0     17.3     17.4        -        -        -        -        -      4.6        -        -        -        -        -        -        -

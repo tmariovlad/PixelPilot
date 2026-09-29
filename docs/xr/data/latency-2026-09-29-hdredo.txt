@@ -1,0 +1,18 @@
+# ab_hdredo (2026-09-29 03:41-03:51), steps docs/xr/data/steps-2026-09-29-hdredo.txt (air clock), --air-offset-s 1.2434 (Quest-PC 0.4944 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. Steps 3-5 compromised: RSSI column jumps 79 -> 93-99 (geometry changed), 3.1-4.1 s outages inside the windows, RTP timestamp base jump in step 5
+819770 packets, 74934 frames, 42385 lost before the app; 49787 frames inside the steps
+clock drift fitted on 'm5b16f48': +75 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 m4b12f48      7504   90.4  12.75    9.36   -8.21    1.15   15.08     3.55     1.2   0.15     4
+ 1 m4b16f46      7415   90.4  17.13    9.67   -5.62    4.05   21.69     6.82    11.0   1.36    77
+ 2 m5b16f48      7504   90.4  16.82   10.21   -3.18    7.03   28.29     9.46     1.9   0.25     9
+ 3 m5b16f48      7080   86.4  16.82   10.19   -3.85    6.34   25.28     8.77    69.3   7.98     3
+ 4 m4b16f46      7133   86.0  16.93    9.48   -9.38    0.10   12.82     2.73    81.7   9.38    36
+ 5 m4b12f48      8509   90.5  11.90    8.66-23649.65-23640.99    3.54-23467.81     0.1   0.01     5
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+m4b12f48        16013   90.5  12.30    8.98-12570.82-12561.83    8.54-12468.36     0.6   0.08     9-12568.53 -12477.49
+m4b16f46        14548   88.2  17.03    9.58   -7.46    2.11   18.55     4.81    46.3   5.54   113   -4.58     -4.31
+m5b16f48        14584   88.4  16.82   10.20   -3.50    6.70   25.87     9.13    35.6   4.27    12   +0.00     +0.00

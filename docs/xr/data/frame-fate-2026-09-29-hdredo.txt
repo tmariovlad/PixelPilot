@@ -1,0 +1,8 @@
+# ab_hdredo (2026-09-29 03:41-03:51), steps docs/xr/data/steps-2026-09-29-hdredo.txt (air clock), --air-offset-s 1.2434 (Quest-PC 0.4944 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. Steps 3-5 compromised: RSSI column jumps 79 -> 93-99 (geometry changed), 3.1-4.1 s outages inside the windows, RTP timestamp base jump in step 5
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 m4b12f48           90.0       0.4       0.0       0.0        0.0           90.0
+ 1 m4b16f46           86.2       3.5       0.6       0.1        0.0           86.4
+ 2 m5b16f48           89.8       0.5       0.1       0.0        0.0           89.8
+ 3 m5b16f48           86.0       0.2       0.1       0.0        3.6           86.0
+ 4 m4b16f46           83.6       1.9       0.3       0.2        4.1           83.6
+ 5 m4b12f48           90.4       0.0       0.0       0.1      300.4           90.5
