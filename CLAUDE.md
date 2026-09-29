@@ -39,7 +39,10 @@ home of all Quest work.
   [scripts/quest-latch/](scripts/quest-latch/) (Perfetto latch/transport analysis and the phase-lock stand-in:
   [compositor.pbtx](scripts/quest-latch/compositor.pbtx), [latch_analyze.py](scripts/quest-latch/latch_analyze.py),
   [transport_analyze.py](scripts/quest-latch/transport_analyze.py), [rtp_seq.py](scripts/quest-latch/rtp_seq.py), [switch_gap.py](scripts/quest-latch/switch_gap.py), [sidecar_log.py](scripts/quest-latch/sidecar_log.py) (waybeam per-frame encode timing from the air, no RTP needed), [calibrate_latch.py](scripts/quest-latch/calibrate_latch.py),
-  [rtp_pace.py](scripts/quest-latch/rtp_pace.py), [test_rtp_pace.py](scripts/quest-latch/test_rtp_pace.py)).
+  [rtp_pace.py](scripts/quest-latch/rtp_pace.py), [test_rtp_pace.py](scripts/quest-latch/test_rtp_pace.py);
+  loss and freeze analyzers: [frame_fate.py](scripts/quest-latch/frame_fate.py) (why frames are missing: hole / edge / never arrived),
+  [freeze_gaps.py](scripts/quest-latch/freeze_gaps.py) (each VIDEO STALLED gap: link gap vs freeze vs decoder),
+  [loss_bursts.py](scripts/quest-latch/loss_bursts.py) (post-FEC loss runs: length, ms, 102.4 ms beacon lock)).
 - Doc restructure log: [docs/xr/RESTRUCTURE-REPORT-2026-09-26.md](docs/xr/RESTRUCTURE-REPORT-2026-09-26.md).
 
 New results go into the matching `docs/xr/` topic file (raw data into `docs/xr/data/`), with a one-line summary
