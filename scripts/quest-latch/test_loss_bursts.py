@@ -1,7 +1,7 @@
 """Offline checks of loss_bursts: RTP holes after FEC as runs (length in packets, duration in ms), their histogram,
 and the phase lock of the run starts to the 102.4 ms beacon period. Run: python3 test_loss_bursts.py"""
 
-from loss_bursts import histogram, runs
+from loss_bursts import histogram, runs, split_by_air_drop
 from tu_pause import TU_PERIOD_S, rayleigh_z
 
 MS = 1_000_000
@@ -39,6 +39,13 @@ def test_runs_locked_to_the_beacon_period_show_a_high_rayleigh_z():
     r = runs(stream(10300, drop=drops))
     z = rayleigh_z([x[0] for x in r], TU_PERIOD_S)
     assert len(r) >= 95 and z > 50, (len(r), z)
+
+
+def test_runs_in_seconds_the_air_itself_dropped_are_split_off():
+    # runs at air seconds 100.2, 101.5, 102.9; the air dropped packets at injection in second 101
+    rs = [(100_200 * MS, 2, 3.0), (101_500 * MS, 4, 5.0), (102_900 * MS, 1, 2.0)]
+    clean, dirty = split_by_air_drop(rs, {101}, lambda ns: ns / 1e9)
+    assert [r[1] for r in clean] == [2, 1] and [r[1] for r in dirty] == [4], (clean, dirty)
 
 
 if __name__ == "__main__":
