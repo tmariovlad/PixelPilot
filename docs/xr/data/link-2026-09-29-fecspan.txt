@@ -1,4 +1,4 @@
-# ab_fecspan (2026-09-29 ~04:00-04:07), steps docs/xr/data/steps-2026-09-29-fecspan.txt (air clock), --air-offset-s 1.2322 (Quest-PC 0.4832 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump
+# ab_fecspan (2026-09-29 03:47-03:53 local, epochs 1790642833-1790643206), steps docs/xr/data/steps-2026-09-29-fecspan.txt (air clock), --air-offset-s 1.2322 (Quest-PC 0.4832 + PC-air 0.749), --guard-s 4; app 69dfed66 IDR only. waybeam ran once; each step only ran wfb_setfec (the coordinator). Step 5 has an RTP timestamp jump
 per step (link side, guarded windows)
                    tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
  0 fec4-8             -   2965.7        -     24.2      0.8    100.0     82.5     85.0     19.2     19.4        -        -        -        -        -      2.1        -        -        -        -        -        -        -

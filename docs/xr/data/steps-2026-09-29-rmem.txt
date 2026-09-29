@@ -1,0 +1,8 @@
+# rmem A/B steps (air clock) from air-rmem-ab-2026-09-29.txt. END = last step start + DWELL 60 s (1790643860): the air log's END line (1790643871) comes after the restore to MCS2 2 Mbit 12 dBm + a waybeam restart, which fall inside 1790643860-1790643871
+1790643500 rmem196608
+1790643560 rmem524288
+1790643620 rmem2097152
+1790643680 rmem2097152
+1790643740 rmem524288
+1790643800 rmem196608
+1790643860 END

@@ -1,0 +1,5 @@
+# ab_fecspan split by air-drop second (air-drop-seconds-2026-09-29-fecspan.txt), guarded step windows; PKT_LOST = radio post-FEC loss, IDR req = app key-frame requests (idrok+idrfail), IDR fr = IDR frames from the air (PPXR_STATS idr)
+# python3 scripts/quest-latch/drop_seconds.py scripts/quest/out/qtx_fecspan.raw.txt docs/xr/data/steps-2026-09-29-fecspan.txt docs/xr/data/air-drop-seconds-2026-09-29-fecspan.txt --air-offset-s 1.2322 --guard-s 4
+        seconds  PKT_LOST     /s  events     /s  IDR req     /s  IDR fr     /s
+drop         91        66   0.73      41   0.45     53.4   0.59   137.5   1.51
+clean       252       187   0.74     115   0.46     42.8   0.17   238.0   0.94

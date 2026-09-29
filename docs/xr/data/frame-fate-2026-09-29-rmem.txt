@@ -1,0 +1,9 @@
+# ab_rmem (2026-09-29 ~04:58-05:06), steps docs/xr/data/steps-2026-09-29-rmem.txt (air clock, from air-rmem-ab-2026-09-29.txt; END = last start + 60 s, before the air restore), --air-offset-s 2.2354 (Quest-PC 1.4864 + PC-air 0.749), --guard-s 5 (each step restarts the video wfb_tx, ~2 s gap); app 1f0870c2, prefs = user backup + request_idr_on_loss + stats_log. 1080p90 16M MCS7 k4/n8 17 dBm. Air drops 0 in every step.
+# python3 scripts/quest-latch/frame_fate.py scripts/quest/out/ab_rmem.pftrace docs/xr/data/steps-2026-09-29-rmem.txt --air-offset-s 2.2354 --guard-s 5
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 rmem196608         90.1       0.2       0.1       0.0        0.0           90.1
+ 1 rmem524288         89.9       0.4       0.1       0.0        0.0           89.9
+ 2 rmem2097152        89.9       0.5       0.1       0.0        0.0           89.9
+ 3 rmem2097152        89.8       0.5       0.1       0.0        0.0           89.8
+ 4 rmem524288         89.9       0.4       0.1       0.0        0.0           89.9
+ 5 rmem196608         90.1       0.3       0.1       0.0        0.0           90.1

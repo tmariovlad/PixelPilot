@@ -199,7 +199,28 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
-### FEC span 2026-09-29 ~04:00–04:07: the same 1/2 ratio over longer blocks (4/8, 8/16, 12/24) at 1080p90 16 Mbit/s MCS7
+### rmem A/B 2026-09-29 03:58–04:04: wfb_tx input socket buffer 196608 / 524288 / 2097152 at 1080p90 16 Mbit/s MCS7 FEC 4/8, no air drops
+
+Question (coordinator): do the air's video wfb_tx input drops (UDP receive-queue overflow before FEC, see FEC span below) go away with a bigger socket buffer? wfb_tx sets no `SO_RCVBUF`, so it gets `net.core.rmem_default` = 196608.
+- **Method.**
+  - Air `rmem_ab.sh`: ABCCBA 196608 / 524288 / 2097152, 60 s each. The video wfb_tx restarts at each step start (~2 s gap), so the guard is 5 s. 1SS STBC LDPC long GI, ch157, 17 dBm, alink/vmoded stopped.
+  - Quest: APK 1f0870c2, prefs = user backup + `request_idr_on_loss` + `stats_log`. Detached capture, `TRACE LOSS: none`. Offset +2.2354 s (Quest−PC 1.4864 + PC−air 0.749).
+  - The last step is closed at its start + 60 s (1790643860). The air log's `END` line (1790643871) comes after the restore to MCS2 2 Mbit/s 12 dBm and a waybeam restart. Taken up to `END`, step 5 picked up a 3.1 s gap and a sequence jump of ~10.5k packets.
+- **Data.** [air log](data/air-rmem-ab-2026-09-29.txt) · [steps](data/steps-2026-09-29-rmem.txt) · [link_audit](data/audit-2026-09-29-rmem.txt) · [frame fate](data/frame-fate-2026-09-29-rmem.txt) · [link](data/link-2026-09-29-rmem.txt) · [bursts](data/loss-bursts-2026-09-29-rmem.txt) · [latency](data/latency-2026-09-29-rmem.txt) · [latency within each step](data/step-jitter-2026-09-29-rmem.txt).
+- **The air dropped nothing in any step, baseline included** [PROVEN: air log, `drop=0 drop_secs=0 rcvbuf_err_d=0` in all 6 steps]. So the lever cannot be judged on the air side in this run. Per the coordinator, the FEC-span drops came from LED-flash seconds of the G2G rig (see FEC span below); this run had no rig.
+
+| rmem (N = 2, A then A') | post-FEC | loss runs/s | decoded fps | last / last95 (ms, drift line on 196608) | within-step p99 (ms) |
+|---|---|---|---|---|---|
+| 196608 (default) | 0.06 / 0.07 % | 0.26 / 0.36 | 90.1 / 90.1 | +0.00 / 4.81 | 8.1 / 8.5 |
+| 524288 | 0.08 / 0.07 % | 0.48 / 0.48 | 89.9 / 89.9 | +0.00 / 5.12 | 9.5 / 9.1 |
+| 2097152 | 0.11 / 0.13 % | 0.58 / 0.64 | 89.9 / 89.8 | +0.08 / 5.27 | 8.8 / 10.4 |
+
+- **With no air drops, a bigger buffer lowers neither the loss nor the latency** [PROVEN: N = 2 per state, ABCCBA; runs, frame fate and drift-line latency above].
+  - 2 MB is slightly worse in both of its steps (0.11–0.13 % vs 0.06–0.07 %, ~2× the runs). But its steps sit in the middle of the ABCCBA order, so a mid-run hump in the link cannot be separated. With no queue ever above 192 KB, there is no mechanism by which the buffer size could act [INFERRED: air `rcvbuf_err_d = 0`]. Not a lever without bursts.
+  - The losses stay unlocked from the 102.4 ms period (Z ≤ 2.0). Over the whole run, 4.8 % of the post-FEC losses fall within 2 ms after a Quest uplink TX (control with TX shifted 50 ms: 1.8 %; [link_audit](data/audit-2026-09-29-rmem.txt)).
+- **Next:** the same A/B with the rig flashing continuously (rmemrig, coordinator + latency_test session, 2026-09-29 ~04:10), so there are bursts to overflow the buffer.
+
+### FEC span 2026-09-29 03:47–03:53: the same 1/2 ratio over longer blocks (4/8, 8/16, 12/24) at 1080p90 16 Mbit/s MCS7
 
 Question (from the loss shape above, ~4 ms outages vs a ~2.7 ms FEC 4/8 block): does a FEC block that spans more time recover them?
 - **Method.**
@@ -218,6 +239,12 @@ Question (from the loss shape above, ~4 ms outages vs a ~2.7 ms FEC 4/8 block): 
 - **12/24 at the same ratio loses 3–5× less than 4/8** [PROVEN: N = 2 each, alternating, the clean seconds agree]. The longer block covers the few-ms outages. A 12/24 block that does fail leaves a larger hole, but rarely.
   - The air's injection drops fell over the run (384 → 106 at 4/8), so A vs A' differ; the clean-seconds column is the fair comparison.
   - The losses stay unlocked from the 102.4 ms period (Z ≤ 1.7).
+- **The radio's loss is the same in the air-drop seconds; the extra holes there are the air's own drops** [PROVEN: [drop-second split](data/drop-seconds-2026-09-29-fecspan.txt), `drop_seconds.py`, 91 drop s vs 252 clean s].
+  - wfb post-FEC loss (`PKT_LOST`, the radio): 0.73 vs 0.74 packets/s, 0.45 vs 0.46 events/s.
+  - RTP holes: ≈ 8.2 vs ≈ 1.7 packets/s (691 packets in the 84 drop seconds of `loss_bursts`). About 62 % of the lost video packets fell in 25 % of the time. Packets the air drops at its input never enter FEC, so they show up as holes but not as `PKT_LOST`.
+  - App key-frame requests: 0.59 vs 0.17/s (3.5×). IDR frames from the air: 1.51 vs 0.94/s.
+  - Trigger [INFERRED by the coordinator from timing]: the goggles' G2G rig (latency_test session) flashed its LED in front of the camera from PC ~642860 to ~643196, and the air drops fall in PC ~642873–643180. Every flash is a scene change and a large frame, and the burst overflows wfb_tx's 192 KB UDP input. The rmem run below, with no rig, had 0 drops. So the "drop seconds" of this run are flash seconds.
+  - [SPECULATION] a feedback loop: drop → hole → IDR request → large IDR frame → more input overflow. The rig rerun (rmemrig) can test it: look for IDR bursts right after each flash.
 - **Latency cost: the longer blocks add ~3 ms mean and ~20 ms at p95** [PROVEN: one drift line, baseline 12/24; [latency](data/latency-2026-09-29-fecspan.txt)].
   - last / p95 in ms: 4/8 2.4 / 6.6 (step 0 only), 8/16 4.7 / 28.4 and 5.6 / 28.9, 12/24 5.6 / 26.5 and 5.6 / 26.1.
   - **Optical confirmation on the goggles** [PROVEN: ESP32 G2G rig run by the latency_test session during the same air window, split by the active FEC step, ±2 s around each switch dropped; `c:/Users/vlad_/Documents/Arduino/latency_test` commit 04ac49c, `tasks/first-full-light-2026-09-29/split_by_air_fec.py`; relayed by the coordinator]. It is a different receiver on the same air.
