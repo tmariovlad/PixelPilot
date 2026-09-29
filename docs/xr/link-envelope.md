@@ -224,7 +224,8 @@ Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change b
 - **What the buffer buys over capacity is little:** RTP loss 6.8–8.6 % vs 9.9–10.5 %, decoded 78–82 vs 76.5 fps. The picture is broken in both states at this overload.
 - **Consequence for the HD default (1 MB, [below](#rmem-512-kb-vs-1-mb-with-the-g2g-rig-flashing-2026-09-29-04270433-the-same-flash-frame-tail-1-mb-adds-4-ms-p95-to-every-frame-and-never-overflowed)):** it is safe only while the offered rate stays below capacity, where it only absorbs bursts. If the link drops below the video bitrate (range, interference, a wrong MCS), it adds ~¼ s of lag on top of the loss.
   - So the 1 MB default needs a guard [INFERRED]: alink / the rate controller must keep the bitrate below capacity; or the buffer shrinks, or is flushed, when the air's input drops start; or the queue is bounded by time rather than bytes.
-  - The optical G2G from the rig (latency-test) should show the same +¼ s on the lens.
+  - **The rig confirms it on the lens** [PROVEN: latency-test, relayed by the coordinator]: optical first light ~180 ms at 192 KB vs ~430 ms at 1 MB over capacity.
+- **The user's decision:** ~200 ms of added lag is unacceptable. L2 and the HD 1 MB default are on hold until a time-bounded, frame-aware input queue exists in wfb_tx (drop what is older than ~30–50 ms, a flag, default off; OpenIPC session -40). Its acceptance test is this gate again, plus the air's `/proc/net/udp` rx_queue.
 
 ### Channel A/B in the operational state 2026-09-29 21:59–22:12: ch165 cuts the residual loss 3.5–6× at MCS7 16 Mbit/s
 
