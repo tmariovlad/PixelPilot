@@ -49,7 +49,9 @@ home of all Quest work.
   [zflush.py](scripts/quest-latch/zflush.py) (-Z: per frame FEC-recovered / held / waited for the next frame, completion delay per class, air FRAME_FLUSH per state),
   [drop_seconds.py](scripts/quest-latch/drop_seconds.py) (radio post-FEC loss and IDR requests/frames in the air's input-drop seconds vs the rest, and per step),
   [big_frames.py](scripts/quest-latch/big_frames.py) (latency of the largest frames, e.g. scene changes / IDR, apart from the rest)),
-  [tsv_steps.py](scripts/quest-latch/tsv_steps.py) (rows of a probe TSV, e.g. rtp_holes / fec_blocks --tsv, per air step and class)).
+  [tsv_steps.py](scripts/quest-latch/tsv_steps.py) (rows of a probe TSV, e.g. rtp_holes / fec_blocks --tsv, per air step and class),
+  [stats_steps.py](scripts/quest-latch/stats_steps.py) (median PPXR_STATS fields per step, e.g. RSSI dBm),
+  [latency_bins.py](scripts/quest-latch/latency_bins.py) (latency over time within each step: a building queue)).
 - Doc restructure log: [docs/xr/RESTRUCTURE-REPORT-2026-09-26.md](docs/xr/RESTRUCTURE-REPORT-2026-09-26.md).
 
 New results go into the matching `docs/xr/` topic file (raw data into `docs/xr/data/`), with a one-line summary
