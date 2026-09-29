@@ -5,7 +5,9 @@ fec_timeouts:incoming:b_in:injected:b_inj:dropped:truncated (wfb-ng tx.cpp:729-7
 a line covers (previous ts, ts]. `dropped` counts packets wfb_tx read but could not inject.
 
 Clocks: a detached capture's logcat epoch (Quest wall) - quest_minus_pc_ms (ab_detached's meta) = PC wall;
-+ air_minus_pc_ms = the air's get_time_ms (air ms minus PC epoch ms at the same moment).
++ air_minus_pc_ms = the air's get_time_ms, which is CLOCK_MONOTONIC (wfb-ng src/wifibroadcast.cpp:50-56), so
+air_minus_pc_ms = (air uptime ms - air epoch ms, read together on the air) - (PC - air wall offset, ~+50..90 ms with
+ntpd; slot_watch's clock_offset_s). It is not the wall-clock offset alone.
 
 shift_control(): the share of events that fall in drop intervals, against the same share with the drop series rotated
 by every non-zero number of intervals (bounds kept, so coverage stays the same). An event type caused by the drops

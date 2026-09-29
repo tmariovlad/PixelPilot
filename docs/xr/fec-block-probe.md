@@ -53,9 +53,11 @@ air's per-second `PKT` line (wfb-ng `tx.cpp:729-730`; per-interval counters, so 
 the interval containing the block's air time ([air_drops.py](../../scripts/quest-latch/air_drops.py), shared with
 rtp_holes.py). The summary gets `air_drop_share` = Y / (Y + N). Clocks: the capture's
 logcat epoch (Quest wall) − Q (`quest_minus_pc_ms`, ab_detached's meta) = PC wall; + A = the air's `get_time_ms`
-(CLOCK_MONOTONIC on the air [INFERRED: wfb-ng get_time_ms]; A = air ms minus PC epoch ms at the same moment, e.g. from
-the air's uptime read next to the PC clock). The air log has 1 s resolution, so Y means "the air dropped packets in
-that second", not that it dropped this block's fragments.
+(CLOCK_MONOTONIC: [PROVEN for this repo's wfb-ng copy: `wfb-ng/src/wifibroadcast.cpp:50-56`; INFERRED for the air's
+wfb_tx, the same upstream function]). So A is **not** the wall-clock offset: A = air monotonic ms − PC epoch ms =
+(air `/proc/uptime` × 1000 − air `date +%s%3N`, read together on the air) − (PC − air wall offset). The air runs ntpd,
+so the last term is small, ≈ +50…90 ms (slot_watch's `clock_offset_s`, [slot-watch.md](slot-watch.md)). The air log
+has 1 s resolution, so Y means "the air dropped packets in that second", not that it dropped this block's fragments.
 
 How to read the classes [INFERRED from the definitions; nothing measured yet]:
 - `gap_max_us` ≥ 2 ms with `fcs=0` (keep_corrupted on): **no frame at all** reached the Quest's RX: either the air did
