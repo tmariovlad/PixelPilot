@@ -199,6 +199,33 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Bufferbloat gate 2026-09-29 22:39–22:50: over capacity, the 1 MB input buffer holds a standing queue of +210–240 ms
+
+Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change bursts) build a standing queue when the offered rate exceeds the link's capacity? The air ran MCS4 at 16 Mbit/s FEC 4/8, which it cannot carry, alternating the buffer 192 KB / 1 MB / 192 KB / 1 MB, 120 s each, with a relaunch per step. ch165; the G2G rig flashing on the Quest lens (optical first light by latency-test).
+- **Quest.** APK c8986061. Prefs = the user's baseline + `stats_log`, with IDR-on-loss **off** so requested key frames do not add bursts. Detached capture. PC−air +0.05 s (slot_watch AIR_STATUS, ntpd synced). Guard 5 s. `analyze_ab.sh` with the new [latency_bins.py](../../scripts/quest-latch/latency_bins.py) (tested): latency in 10 s bins within each step, plus the slope.
+- **Data.** [air log](data/air-bloat-gate-2026-09-29.txt) · [steps](data/steps-2026-09-29-bloat.txt) · [latency over time per step](data/latency-bins-2026-09-29-bloat.txt) · [latency](data/latency-2026-09-29-bloat.txt) · [link_audit](data/audit-2026-09-29-bloat.txt) · [frame fate](data/frame-fate-2026-09-29-bloat.txt) · [latency within each step](data/step-jitter-2026-09-29-bloat.txt) · [link](data/link-2026-09-29-bloat.txt) · [bursts](data/loss-bursts-2026-09-29-bloat.txt) · [large frames](data/big-frames-2026-09-29-bloat.txt).
+- **Air** [PROVEN: air log]: sustained overload in every step. It dropped 7777 / 8170 packets per step at 192 KB and 5053 / 6497 at 1 MB, so the 1 MB buffer fills and then drops too.
+
+| step (air) | buffer | capture → last packet (ms, 192 KB drift line) | last95 | 10 s bins (ms) | RTP lost | decoded fps |
+|---|---|---|---|---|---|---|
+| 0 | 192 KB | 12.5 | 33 | 5 · 21 · 10 · 5 · 8 · 20 · 16 · 9 · 25 · −4 · 18 · 32 | 9.9 % | 76.5 |
+| 1 | **1 MB** | **221.9** | **293** | **142 · 273 · 246 · 201 · 222 · 123 · 191 · 267 · 264 · 266 · 233 · 265** | 6.8 % | 82.2 |
+| 2 | 192 KB | 12.5 | 34 | 10 · 22 · −4 · 12 · 17 · 4 · 18 · 18 · 17 · 8 · 19 · 2 | 10.5 % | 76.6 |
+| 3 | **1 MB** | **251.2** | **295** | **255 · 201 · 283 · 290 · 283 · 271 · 207 · 280 · 277 · 173 · 242** | 8.6 % | 77.8 |
+
+- **Over capacity the 1 MB buffer adds a standing queue of ~210–240 ms** [PROVEN: N = 2 per state, alternating].
+  - In the first 1 MB step it builds within ~10–20 s (142 → 273 ms), then stays at ~200–290 ms. The second 1 MB step starts already full (255 ms).
+  - At 192 KB the latency stays at ~12 ms above the line.
+  - It is a queue, not an RTP clock artefact [INFERRED]: the level ramps inside step 1, and both 192 KB steps sit at the same level (2.09 / 12.5 ms first / last), so the timestamp base did not jump between steps.
+  - ~0.25 s is half the coordinator's estimate (1 MB = 8 Mbit at ~16 Mbit/s of video ≈ 0.5 s) [SPECULATION].
+    - One candidate: the kernel charges each queued packet's buffer overhead (skb truesize, ~2× a 1.4 KB payload) against rmem, so a "1 MB" socket holds ~0.5 MB of video.
+    - Another: a drain rate above the video rate.
+    - `/proc/net/udp` rx_queue on the air during an overload would settle it.
+- **What the buffer buys over capacity is little:** RTP loss 6.8–8.6 % vs 9.9–10.5 %, decoded 78–82 vs 76.5 fps. The picture is broken in both states at this overload.
+- **Consequence for the HD default (1 MB, [below](#rmem-512-kb-vs-1-mb-with-the-g2g-rig-flashing-2026-09-29-04270433-the-same-flash-frame-tail-1-mb-adds-4-ms-p95-to-every-frame-and-never-overflowed)):** it is safe only while the offered rate stays below capacity, where it only absorbs bursts. If the link drops below the video bitrate (range, interference, a wrong MCS), it adds ~¼ s of lag on top of the loss.
+  - So the 1 MB default needs a guard [INFERRED]: alink / the rate controller must keep the bitrate below capacity; or the buffer shrinks, or is flushed, when the air's input drops start; or the queue is bounded by time rather than bytes.
+  - The optical G2G from the rig (latency-test) should show the same +¼ s on the lens.
+
 ### Channel A/B in the operational state 2026-09-29 21:59–22:12: ch165 cuts the residual loss 3.5–6× at MCS7 16 Mbit/s
 
 The follow-up of the MCS4 channel A/B below, in the state we fly: 1080p90 16 Mbit/s MCS7 FEC 4/8, 17 dBm, 1 MB input buffer, no rig. ABBA 157 / 165 / 165 / 157, **180 s** each, the same shared-schedule method (air `chan_ab7.sh`, Quest [pref_ab.sh](../../scripts/quest/pref_ab.sh) `START_AT`, XR relaunch per step, guard 15 s). The Quest stays ~1 m from the air. Air drops 0; PC−air +0.98 s (AIR_CLOCK); steps on the PC clock.

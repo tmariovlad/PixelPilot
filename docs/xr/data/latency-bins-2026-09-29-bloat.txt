@@ -1,0 +1,7 @@
+# ab_bloat, steps docs/xr/data/steps-2026-09-29-bloat.txt, --air-offset-s 0.192 (Quest-PC 0.142 + PC-air 0.05), --guard-s 5. 22:39-22:50 local; bufferbloat gate: MCS4 1080p90 16 Mbit FEC 4/8 (over capacity), rmem 192K/1M/192K/1M, 120 s each, relaunch per step; ch165; G2G rig flashing (latency-test); air drops 192K 7777/8170, 1M 5053/6497 per step; APK c8986061, prefs = baseline + stats_log (IDR on loss off). PC-air +0.05 s (slot_watch AIR_STATUS, ntpd synced).
+# python3 scripts/quest-latch/latency_bins.py scripts/quest/out/ab_bloat.pftrace docs/xr/data/steps-2026-09-29-bloat.txt --air-offset-s 0.192 --guard-s 5 --baseline rmem192k
+ms above the 'rmem192k' drift line; bins of 10 s from each step's guarded start; slope in ms/s
+ 0 rmem192k      slope  +0.032     5.2   21.2   10.3    4.7    8.1   20.1   16.1    8.6   24.5   -3.8   18.2   32.1
+ 1 rmem1m        slope  +0.556   141.8  273.4  245.8  201.1  221.8  123.2  191.4  266.7  264.4  265.5  232.5  265.3
+ 2 rmem192k      slope  +0.045     9.6   22.2   -3.8   11.6   17.0    4.1   17.5   17.7   17.0    7.5   19.0    2.0
+ 3 rmem1m        slope  -0.238   255.3  200.6  283.2  289.7  282.8  270.5  206.5  279.8  277.4  173.3  241.6

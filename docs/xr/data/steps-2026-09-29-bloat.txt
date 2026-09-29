@@ -1,0 +1,6 @@
+# bufferbloat gate steps (AIR clock) from air-bloat-gate-2026-09-29.txt: relaunch at MCS4 16 Mbit FEC 4/8 (over capacity) with the step's rmem, ~120 s each; END = last start + 120 s (1790711389), before the air log's END (1790711403, the revert). Air drops: 192K 7777 / 8170, 1M 5053 / 6497 per step.
+1790710902 rmem192k
+1790711024 rmem1m
+1790711147 rmem192k
+1790711269 rmem1m
+1790711389 END

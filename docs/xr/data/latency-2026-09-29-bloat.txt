@@ -1,0 +1,16 @@
+# ab_bloat, steps docs/xr/data/steps-2026-09-29-bloat.txt, --air-offset-s 0.192 (Quest-PC 0.142 + PC-air 0.05), --guard-s 5. 22:39-22:50 local; bufferbloat gate: MCS4 1080p90 16 Mbit FEC 4/8 (over capacity), rmem 192K/1M/192K/1M, 120 s each, relaunch per step; ch165; G2G rig flashing (latency-test); air drops 192K 7777/8170, 1M 5053/6497 per step; APK c8986061, prefs = baseline + stats_log (IDR on loss off). PC-air +0.05 s (slot_watch AIR_STATUS, ntpd synced).
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_bloat.pftrace docs/xr/data/steps-2026-09-29-bloat.txt --air-offset-s 0.192 --guard-s 5 --baseline rmem192k
+980715 packets, 97198 frames, 33498 lost before the app; 43399 frames inside the steps
+clock drift fitted on 'rmem192k': +68 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 rmem192k     10022   89.5  16.05   10.39    2.09   12.48   33.36    14.98    64.4   9.92   487
+ 1 rmem1m       10088   89.3  16.26   10.41  211.53  221.94  292.97   222.85    42.2   6.78   283
+ 2 rmem192k     10028   89.5  16.02   10.40    2.09   12.49   34.18    14.86    68.6  10.50   519
+ 3 rmem1m        9844   89.5  16.21   10.39  240.82  251.21  295.48   253.36    56.1   8.61   315
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+rmem192k        20050   89.5  16.04   10.40    2.09   12.49   33.84    14.92    66.5  10.21  1006   +0.00     +0.00
+rmem1m          19932   89.4  16.23   10.40  226.00  236.40  294.18   237.89    49.1   7.71   598 +223.91   +222.96
