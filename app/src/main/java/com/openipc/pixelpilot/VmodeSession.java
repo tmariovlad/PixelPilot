@@ -89,9 +89,13 @@ final class VmodeSession implements VmodeClient.Listener {
         return status.headline(nowMs);
     }
 
-    /** True while a mode switch runs: the frozen picture is expected, so this headline wins over NO SIGNAL. */
+    /**
+     * True while a mode switch runs and its gap is expected (up to the air's revert deadline plus a grace,
+     * {@link PresetStatus#expectsGap}): the frozen picture is then no fault, so this headline wins over NO SIGNAL and
+     * the signal state reports SWITCHING.
+     */
     boolean switching() {
-        return status.switching();
+        return status.expectsGap(nowMs);
     }
 
     /** For the video line: active preset and effective bitrate, "" before the air answered. */

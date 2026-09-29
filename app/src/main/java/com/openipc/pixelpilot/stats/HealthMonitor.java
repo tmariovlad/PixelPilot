@@ -38,6 +38,8 @@ public final class HealthMonitor {
     }
 
     private static final String OK = "OK";
+    /** SignalState's kind for the expected gap of a menu-initiated preset switch (docs/xr/presets-design.md). */
+    private static final String SWITCHING = "SWITCHING";
     // VideoPlayer.leverCounters(): [0..4] idrOk, idrFailed, frozenSlices, decoderRebuilds, codecSwitches;
     // [5..10] IdrRequester::Result counts (ok, refused, connect_timeout, reply_timeout, http_status, error);
     // [11..14] its connect race: attempts started, requests won by attempt >= 2, connect ms sum, requests connected.
@@ -54,6 +56,7 @@ public final class HealthMonitor {
     // signal
     private String kind = OK;
     private long lostSinceMs;
+    private long switchSinceMs;
     private String lostCause = "";
     private long lastDecoderEventMs = Long.MIN_VALUE / 2;
     // freeze
@@ -220,6 +223,21 @@ public final class HealthMonitor {
 
     private void signal(long monoMs, String k, boolean needsAction, long dFrozen) {
         if (k == null || k.equals(kind)) return;
+        // A preset switch's expected gap is its own event, never a SIGNAL_LOST or a stall. If the switch ends without
+        // video, what follows is judged as a new loss from OK. A switch that starts during a loss ends that loss's
+        // accounting (its SIGNAL_OK never comes); the SWITCH_GAP line names it in from=.
+        if (kind.equals(SWITCHING)) {
+            event(monoMs, "SWITCH_END", "INFO",
+                    " dur_ms=" + (monoMs - switchSinceMs) + (k.equals(OK) ? "" : " to=" + k));
+            kind = OK;
+            if (k.equals(OK)) return;
+        }
+        if (k.equals(SWITCHING)) {
+            switchSinceMs = monoMs;
+            event(monoMs, "SWITCH_GAP", "INFO", kind.equals(OK) ? "" : " from=" + kind);
+            kind = k;
+            return;
+        }
         if (k.equals(OK)) {
             event(monoMs, "SIGNAL_OK", "INFO",
                     " was=" + kind + " dur_ms=" + (monoMs - lostSinceMs) + " cause=" + lostCause);

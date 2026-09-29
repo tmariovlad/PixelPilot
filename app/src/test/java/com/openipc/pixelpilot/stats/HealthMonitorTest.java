@@ -47,6 +47,41 @@ public class HealthMonitorTest {
         assertTrue(ok, ok.contains(" was=VIDEO_STALLED dur_ms=1000 cause=stall"));
     }
 
+    // A menu-initiated preset switch: SignalState reports SWITCHING for the expected gap (docs/xr/presets-design.md).
+    // It is logged as its own event, not a SIGNAL_LOST, and does not count as a stall.
+    @Test public void anExpectedSwitchGapIsASwitchEventNotAStall() {
+        m.onTick(0, "OK", true, c(0, 0, 0, 0, 0));
+        m.onTick(250, "SWITCHING", false, c(0, 0, 0, 0, 0));
+        m.onTick(3500, "OK", true, c(0, 0, 0, 0, 0));
+        String gap = only("SWITCH_GAP");
+        assertTrue(gap, gap.contains(" level=INFO"));
+        String end = only("SWITCH_END");
+        assertTrue(end, end.contains(" level=INFO dur_ms=3250"));
+        for (String e : events) assertFalse(e, e.contains("SIGNAL_LOST") || e.contains("SIGNAL_OK"));
+    }
+
+    @Test public void aStallAfterASwitchThatEndedWithoutVideoIsStillAStall() {
+        m.onTick(0, "OK", true, c(0, 0, 0, 0, 0));
+        m.onTick(250, "SWITCHING", false, c(0, 0, 0, 0, 0));
+        m.onTick(3500, "VIDEO_STALLED", true, c(0, 0, 0, 0, 0));        // the air reverted, still no video
+        String end = only("SWITCH_END");
+        assertTrue(end, end.contains(" dur_ms=3250 to=VIDEO_STALLED"));
+        String lost = only("SIGNAL_LOST");
+        assertTrue(lost, lost.contains(" level=ALERT to=VIDEO_STALLED cause=stall"));
+        m.onTick(4500, "OK", true, c(0, 0, 0, 0, 0));
+        assertTrue(only("SIGNAL_OK").contains(" dur_ms=1000 cause=stall"));
+    }
+
+    @Test public void aSwitchGapIsNotInTheStallsPerMinute() {
+        for (int t = 0; t < 10_000; t += 250) {
+            String kind = (t >= 2_000 && t < 5_000) ? "SWITCHING" : "OK";
+            m.onTick(t, kind, !kind.equals("SWITCHING"), c(0, 0, 0, 0, 0));
+        }
+        m.onTick(10_000, "OK", true, c(0, 0, 0, 0, 0));
+        String h = health.get(0);
+        assertTrue(h, h.contains(" stalls_min=0.0 "));
+    }
+
     @Test public void aHoldIsAWarningCausedByTheFreeze() {
         m.onTick(0, "OK", true, c(0, 0, 0, 0, 0));
         m.onTick(250, "HOLD", false, c(0, 0, 5, 0, 0));

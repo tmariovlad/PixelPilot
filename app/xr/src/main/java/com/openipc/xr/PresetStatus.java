@@ -10,6 +10,8 @@ import java.util.Locale;
 public final class PresetStatus {
     public static final int MAX_HEADLINE = 40;
     static final long RESULT_MS = 5000;
+    /** After the air's revert deadline, how long a switch without an answer still excuses a video gap. */
+    static final long GAP_GRACE_MS = 10_000;
     private static final int LABEL = 14;
 
     private String headline = "";
@@ -45,14 +47,23 @@ public final class PresetStatus {
         result(("NOT APPLIED: " + reason).toUpperCase(Locale.US), nowMs);
     }
 
+    /** A switch was accepted and its result (commit, revert, refusal) has not come yet. */
     public boolean switching() {
         return switching;
+    }
+
+    /**
+     * True while a missing picture is the expected gap of this switch: it runs, and the air's revert deadline plus
+     * {@link #GAP_GRACE_MS} has not passed. After that a switch without any answer no longer excuses NO SIGNAL.
+     */
+    public boolean expectsGap(long nowMs) {
+        return switching && nowMs <= deadlineMs + GAP_GRACE_MS;
     }
 
     /** Empty when there is nothing to say. */
     public String headline(long nowMs) {
         String h;
-        if (switching) {
+        if (expectsGap(nowMs)) {
             long left = Math.max(0, (deadlineMs - nowMs + 999) / 1000);
             h = String.format(Locale.US, "SWITCHING TO %s... %d s", switchingLabel, left);
         } else {

@@ -31,6 +31,13 @@ all at 2000 kbit/s, FEC 4/8, MCS2, 12 dBm, adaptive link on [PROVEN there].
   old mode keeps playing. On the Quest the first new RTP packet arrives 3.0–3.5 s after the last old frame, and the
   decoder then adapts in place in 29–55 ms [PROVEN: [audit § final slot](research/2026-09-27-xr-ux-audit.md#final-slot-on-the-headset-2026-09-27), [data](data/2026-09-27-final-switch-gap.txt)].
 - So the panel warning reads `switch ~10–14 s, picture frozen ~4 s` (decided by the coordinator).
+- **What the pilot sees during the gap** (2026-09-29, branch `switch-gap`, device check pending):
+  - the last frame stays on screen; the video layer is never hidden or dimmed [PROVEN: ux-audit X10];
+  - the headline reads `SWITCHING TO <mode>... N s`, drawn in every panel mode;
+  - `SignalState` reports `SWITCHING`, not NO SIGNAL / VIDEO STALLED. It needs no action, so the panel stays under the video instead of moving over it;
+  - the health log writes `SWITCH_GAP` / `SWITCH_END` instead of a SIGNAL_LOST, and does not count a stall ([health-logging.md](health-logging.md)).
+  - A missing adapter or a setup error is still named. The excuse ends when the switch has a result, or at the air's revert deadline + 10 s with no answer at all (`PresetStatus.expectsGap`). A dead air therefore still shows NO SIGNAL.
+  - The gap itself (3.1–3.6 s) is unchanged; the air-side cuts are with the OpenIPC sessions.
 
 ## Axis 2: QUALITY
 

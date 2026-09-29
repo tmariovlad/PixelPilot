@@ -53,6 +53,22 @@ class Summary(unittest.TestCase):
         self.assertAlmostEqual(s["health_fps_mean"], 140.0)
         self.assertAlmostEqual(s["health_frozen_pct_mean"], 15.0)
 
+    def test_menu_switch_gaps_are_counted_apart_from_stalls(self):
+        lines = [
+            "PPXR_EVENT t_mono_ms=1000 t_wall_ms=1790640001000 code=SWITCH_GAP level=INFO",
+            "PPXR_EVENT t_mono_ms=4200 t_wall_ms=1790640004200 code=SWITCH_END level=INFO dur_ms=3200",
+            "PPXR_EVENT t_mono_ms=9000 t_wall_ms=1790640009000 code=SWITCH_GAP level=INFO",
+            "PPXR_EVENT t_mono_ms=12500 t_wall_ms=1790640012500 code=SWITCH_END level=INFO dur_ms=3500 to=VIDEO_STALLED",
+            "PPXR_EVENT t_mono_ms=12500 t_wall_ms=1790640012500 code=SIGNAL_LOST level=ALERT to=VIDEO_STALLED cause=stall",
+            "PPXR_EVENT t_mono_ms=13500 t_wall_ms=1790640013500 code=SIGNAL_OK level=INFO was=VIDEO_STALLED dur_ms=1000 cause=stall",
+        ]
+        s = health_log.summarize(lines)
+        self.assertEqual(s["switch_gaps"], 2)
+        self.assertEqual(s["switch_ms"], 6700)
+        self.assertEqual(s["switch_ended_without_video"], 1)
+        self.assertEqual(s["signal_lost"], 1)                   # the stall after the second switch, not the gaps
+        self.assertEqual(s["lost_ms"], 1000)
+
     def test_idr_handshake_sums_attempts_and_late_wins_over_both_codes(self):
         # the connect race's fields (IdrRequester, 2026-09-29): SYNs started, requests won by attempt >= 2, and each
         # line's mean connect time; lines from older builds carry none of them

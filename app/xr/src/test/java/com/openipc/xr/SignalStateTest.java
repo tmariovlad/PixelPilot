@@ -231,4 +231,38 @@ public class SignalStateTest {
         assertEquals(Kind.OK, s.update(now, new long[]{now}, P, true, GOOD, 100 * MS, false));
         assertEquals("", s.message());
     }
+
+    // A preset switch from the menu stops the stream for ~3 s by design (docs/xr/presets-design.md, "What a mode
+    // switch costs"): the gap is expected, so it is SWITCHING, not a fault, whatever the link shows meanwhile.
+    @Test public void anExpectedSwitchGapIsSwitchingNotAFault() {
+        advance(null, true, GOOD);
+        s.setSwitching(true);
+        assertEquals(Kind.SWITCHING, stall(true, new Link(0, 0, 0)));   // no packets while the air restarts
+        assertFalse(s.needsAction());
+        assertTrue(s.message(), s.message().startsWith("SWITCHING MODE"));
+        assertEquals(Kind.SWITCHING, stall(true, GOOD));                 // packets back, no frame yet
+        assertEquals(Kind.SWITCHING, hold(true, GOOD));                  // a hold during the switch too
+    }
+
+    @Test public void aSwitchDoesNotHideARealFault() {
+        advance(null, true, GOOD);
+        s.setSwitching(true);
+        assertEquals(Kind.NO_ADAPTER, stall(false, GOOD));
+        s.setConfigError("bad gs.key");
+        assertEquals(Kind.CONFIG_ERROR, stall(true, GOOD));
+    }
+
+    @Test public void whenTheSwitchEndsWithoutVideoTheStallIsReported() {
+        advance(null, true, GOOD);
+        s.setSwitching(true);
+        stall(true, GOOD);
+        s.setSwitching(false);                                            // e.g. the air reverted and still no frames
+        assertEquals(Kind.VIDEO_STALLED, stall(true, GOOD));
+        assertTrue(s.needsAction());
+    }
+
+    @Test public void framesDuringASwitchAreOk() {
+        s.setSwitching(true);
+        assertEquals(Kind.OK, advance(null, true, GOOD));                 // the old mode still plays until the gap
+    }
 }

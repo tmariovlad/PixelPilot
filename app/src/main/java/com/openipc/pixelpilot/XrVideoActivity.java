@@ -588,6 +588,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         boolean adapter = wfbLink != null && wfbLink.isRunning();
         if (adapter) udpFallback = null;
         boolean holding = videoPlayer != null && videoPlayer.isFrozenUntilIdr();   // a HOLD, not a stall
+        signal.setSwitching(vmode != null && vmode.switching());   // a menu preset switch's gap: SWITCHING, no alarm
         signal.update(now, frames, periodNs, adapter, link, statsAge, holding);
     }
 

@@ -8,7 +8,8 @@ detached logcat capture (scripts/quest/ab_detached.sh), whose lines are "<epoch>
 Every line carries t_mono_ms (Quest CLOCK_MONOTONIC, the traces' clock), t_wall_ms, code and level
 (app stats/HealthMonitor.java defines them; docs/xr/health-logging.md lists the codes).
 Summary: duration, SIGNAL_LOST count and per minute, causes, time lost, the kinds entered, freeze % of the time,
-headset-off time, IDR failure reasons, mean fps / frozen % of the HEALTH lines.
+headset-off time, IDR failure reasons, mean fps / frozen % of the HEALTH lines, and menu preset-switch gaps
+(SWITCH_GAP / SWITCH_END: count, total ms, how many ended without video), which are never counted as stalls.
 """
 import sys
 from collections import Counter
@@ -73,6 +74,8 @@ def summarize(lines):
     fps = [_num(h["fps"]) for h in health if h.get("fps")]
     frozen = [_num(h["frozen_pct"]) for h in health if h.get("frozen_pct")]
     freeze_ms = sum(_num(e.get("dur_ms")) for e in events if e.get("code") == "FREEZE_END")
+    # A menu preset switch's expected gap (SignalState SWITCHING): its own events, never a SIGNAL_LOST or a stall
+    switch_end = [e for e in events if e.get("code") == "SWITCH_END"]
     return {
         "duration_s": duration_s,
         "signal_lost": len(lost),
@@ -82,6 +85,9 @@ def summarize(lines):
         "by_kind": dict(Counter(e.get("to", "") for e in lost)),
         "lost_ms": int(sum(_num(e.get("dur_ms")) for e in events if e.get("code") == "SIGNAL_OK")),
         "freeze_pct": 100.0 * freeze_ms / (duration_s * 1000.0) if duration_s else 0.0,
+        "switch_gaps": sum(1 for e in events if e.get("code") == "SWITCH_GAP"),
+        "switch_ms": int(sum(_num(e.get("dur_ms")) for e in switch_end)),
+        "switch_ended_without_video": sum(1 for e in switch_end if e.get("to")),
         "session_off_ms": int(sum(_num(e.get("off_ms")) for e in events if e.get("code") == "SESSION_ACTIVE")),
         "adapter_gone_ms": [int(_num(e.get("gone_ms"))) for e in events if e.get("code") == "ADAPTER_BACK"],
         "idr_fail_reasons": dict(reasons),

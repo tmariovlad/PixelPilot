@@ -13,6 +13,25 @@ public class PresetStatusTest {
         assertEquals("SWITCHING TO Wide... 0 s", s.headline(30_000));
     }
 
+    // The air reverts by itself at the deadline and its beacon says so. If no answer ever comes (the air died
+    // mid-switch), the gap stops being "expected" after a grace, so the pilot gets the real NO SIGNAL again.
+    @Test public void aSwitchWithNoAnswerStopsExcusingTheGapAfterTheGrace() {
+        PresetStatus s = new PresetStatus();
+        s.switching("Wide", 25_000);
+        assertTrue(s.expectsGap(0));
+        assertTrue(s.expectsGap(25_000 + PresetStatus.GAP_GRACE_MS));
+        assertFalse(s.expectsGap(25_000 + PresetStatus.GAP_GRACE_MS + 1));
+        assertEquals("", s.headline(25_000 + PresetStatus.GAP_GRACE_MS + 1));
+        assertTrue(s.switching());                      // still waiting for the air's answer
+    }
+
+    @Test public void noGapIsExpectedOnceTheSwitchHasAResult() {
+        PresetStatus s = new PresetStatus();
+        s.switching("Wide", 25_000);
+        s.done("Wide", 10_000);
+        assertFalse(s.expectsGap(10_000));
+    }
+
     @Test public void resultShowsForAWhileThenClears() {
         PresetStatus s = new PresetStatus();
         s.switching("Wide", 25_000);

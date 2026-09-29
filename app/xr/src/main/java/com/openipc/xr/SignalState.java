@@ -24,12 +24,15 @@ import java.util.Locale;
  *   <li>"No packets" is read from the wfb-ng stats as they come: a window with {@code packets == 0}, or no stats for
  *       {@link #STATS_STALE_NS}. The native side owns the dead-link signal (it reports empty windows); this class
  *       does not guess it from repeated counters. Until the native side does that, a dead link shows as a stall.</li>
+ *   <li>While a preset switch from the menu runs ({@link #setSwitching}), missing video is the expected gap
+ *       (docs/xr/presets-design.md, "What a mode switch costs"): {@link Kind#SWITCHING}, no alarm. A setup error or a
+ *       missing adapter is still named, and when the switch ends without video the usual diagnosis returns.</li>
  * </ul>
  * Not thread-safe; call {@link #update} from one thread (the UI thread's stats tick).
  */
 public final class SignalState {
 
-    public enum Kind { OK, CONFIG_ERROR, NO_ADAPTER, NO_PACKETS, WRONG_KEY, WAITING_FOR_VIDEO, VIDEO_STALLED, HOLD }
+    public enum Kind { OK, CONFIG_ERROR, NO_ADAPTER, NO_PACKETS, WRONG_KEY, WAITING_FOR_VIDEO, VIDEO_STALLED, HOLD, SWITCHING }
 
     /** Link counters of the last wfb-ng stats window; null fields are expressed by {@link #NONE}. */
     public static final class Link {
@@ -58,6 +61,7 @@ public final class SignalState {
     private long allFailSinceNs = -1;  // every packet failing to decrypt since then; -1 = not now
     private boolean recovering;
     private String configError;        // non-null: the link cannot start at all (e.g. an invalid gs.key)
+    private boolean switching;         // a menu-initiated preset switch runs: a gap in the video is expected
     private String message = message(Kind.WAITING_FOR_VIDEO, 0);
 
     /**
@@ -66,6 +70,11 @@ public final class SignalState {
      */
     public void setConfigError(String problem) {
         configError = problem;
+    }
+
+    /** A preset switch started from the menu runs (true) or ended (false); the air owns its outcome. */
+    public void setSwitching(boolean switching) {
+        this.switching = switching;
     }
 
     /** Video (re)attached to the compositor surface: forget frames from the previous attachment. */
@@ -131,6 +140,7 @@ public final class SignalState {
     private Kind cause(long nowNs, boolean adapterPresent, Link link, long statsAgeNs, boolean holding) {
         if (configError != null) return Kind.CONFIG_ERROR;
         if (!adapterPresent) return Kind.NO_ADAPTER;
+        if (switching) return Kind.SWITCHING;
         boolean packets = statsAgeNs <= STATS_STALE_NS && link.packets > 0;
         if (!packets) return Kind.NO_PACKETS;
         if (allFailSinceNs >= 0 && nowNs - allFailSinceNs >= WRONG_KEY_NS) return Kind.WRONG_KEY;
@@ -144,10 +154,12 @@ public final class SignalState {
 
     /**
      * True for a fault the pilot has to act on (no adapter, no signal, wrong key, a stall); false when the video is
-     * OK, has not started yet, is resuming, or is held for a key frame. The panel shows the first in red and the others in amber.
+     * OK, has not started yet, is resuming, is held for a key frame, or is in an expected preset-switch gap. The panel
+     * shows the first in red and the others in amber.
      */
     public boolean needsAction() {
-        return kind != Kind.OK && kind != Kind.WAITING_FOR_VIDEO && kind != Kind.HOLD && !recovering;
+        return kind != Kind.OK && kind != Kind.WAITING_FOR_VIDEO && kind != Kind.HOLD && kind != Kind.SWITCHING
+                && !recovering;
     }
 
     /** One short line for the panel headline (at most ~40 characters, so it fits the band); empty when OK. */
@@ -170,6 +182,8 @@ public final class SignalState {
                 return String.format(Locale.US, "VIDEO STALLED (%.1f s)", s);
             case HOLD:
                 return String.format(Locale.US, "HOLD - WAITING FOR KEYFRAME (%.1f s)", s);
+            case SWITCHING:
+                return String.format(Locale.US, "SWITCHING MODE (%.1f s)", s);
             default:
                 return "";
         }
