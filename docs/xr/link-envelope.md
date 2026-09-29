@@ -217,6 +217,11 @@ The follow-up of the MCS4 channel A/B below, in the state we fly: 1080p90 16 Mbi
   - The staircase showed that floor does not depend on the level on 157, so something on or next to 157 corrupts our frames. The neighbour's 80 MHz BSS covers 157 and not 165, which makes it the candidate [SPECULATION until an RF scan].
 - **Latency is slightly better on 165**: −0.31 ms mean, last95 5.2 vs 6.8 ms, the frames that wait for FEC recovery.
 - No 102.4 ms lock on either (Z ≤ 3.9).
+- **Spectrum from the Quest's position** (read-only scan of its internal Wi-Fi, 22:19, country RO with UNII-3 enabled; [scan](data/quest-wifi-scan-2026-09-29.txt)).
+  - The only BSSs on 149–165 are the neighbour's two on 5785 (157): "Staff" and a hidden twin, the same radio, −88/−89 dBm, seen in 1 of 3 scans. Last night's air scan showed it as VHT 80 MHz, center 155, covering 149/153/157/161.
+  - **Nothing on 165** and nothing on 100–144.
+  - The rest of 5 GHz is busy: the user's Zeul36 on 36 (−27 dBm; the Quest's own ADB network) and Zeul37 on 48 (−50); Malik and a hidden BSS on 52 (−76…−82); Vodafone on 64 (−65); weak BSSs on 36/40/52.
+  - So from here **165 is the only 20 MHz channel in UNII-3 outside every visible BSS** [PROVEN for this scan; widths other than the neighbour's are not in the scan output].
 - **This reverses R3' (2026-09-28, [below](#r3-2026-09-28-23272347-ch157-vs-ch165-outside-the-neighbours-80-mhz-at-25-mbits))**, where 165 lost as much as 157 after FEC, with Z = 70.9 on 165.
   - R3' ran at 25 Mbit/s MCS7 with the Quest in another position, and a beacon-locked source was active on 165 that night. Tonight none was.
   - So the best channel depends on what the neighbours transmit at the time [INFERRED]. One night each is not enough to pick a permanent winner.

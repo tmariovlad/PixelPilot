@@ -1,0 +1,28 @@
+# Quest 2 internal Wi-Fi scan, read-only (cmd wifi start-scan + list-scan-results), 2026-09-29 ~22:19-22:20, from the Quest's position ~1 m from the air unit, country RO (UNII-3 5745-5825 enabled: wifi_available_soft_ap_freqs_mhz lists it). 3 scans ~10-16 s apart; the neighbour on 5785 appeared in 1 of 3 (weak, -88/-89 dBm). list-scan-results gives no channel width; the neighbour's width (VHT 80, center 155) comes from the air's scan air-scan-ch157-2026-09-28.txt.
+# latest scan (the scan buffer keeps entries ~30 s):
+    BSSID              Frequency      RSSI           Age(sec)     SSID                                 Flags
+  10:27:f5:84:02:7f       5180    -27(0:-30/1:-30)     3.723    Zeul36                            [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][MFPC]
+  fc:73:fb:4f:54:2c       2422    -64(0:-68/1:-66)     5.903    DIGI-48Pe                         [WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][WPA-PSK-CCMP+TKIP][ESS][WPS]
+  50:a5:dc:d8:82:f3       5320    -65(0:-65/1:-128)     4.544    Vodafone-B544                     [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS]
+  50:a5:dc:d8:82:f2       2462    -50(0:-52/1:-56)     5.126    Vodafone-B544                     [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS]
+  ac:22:05:1b:58:c5       2472    -81(0:-84/1:-85)     4.981    UPC6452F91                        [WPA-PSK-None+None][WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][ESS][WPS]
+  38:43:7d:e0:d2:45       2472    -85(0:-88/1:-88)     5.009    UPC7804907                        [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS]
+  60:de:f3:26:e8:30       2412    -65(0:-66/1:-73)     6.040    Malik                             [WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][WPA-PSK-CCMP+TKIP][ESS]
+  d0:c6:5b:07:75:fc       2412    -43(0:-53/1:-44)     6.020    DIGI-mxtq                         [WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][WPA-PSK-CCMP+TKIP][ESS]
+  fc:73:fb:4f:54:30       5180    -75(0:-83/1:-78)     5.426    DIGI-48Pe                         [WPA2-PSK-CCMP+TKIP][RSN-PSK-CCMP+TKIP][WPA-PSK-CCMP+TKIP][ESS][WPS]
+  04:95:e6:92:81:59       5240    -51(0:-53/1:-55)     4.894    Zeul37                            [WPA2-PSK-CCMP][RSN-PSK-CCMP][WPA-PSK-CCMP][ESS]
+  b6:7c:a6:4c:2f:f5       5260    -91(0:-91/1:-128)     4.703                                      [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS]
+  04:95:e6:92:81:52       2437    -47(0:-51/1:-49)     5.570    Zeul2                             [WPA2-PSK-CCMP][RSN-PSK-CCMP][WPA-PSK-CCMP][ESS]
+  22:3a:eb:4e:5a:2f       5260    -74(0:-74/1:-128)     4.752                                      [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS]
+  10:27:f5:84:02:80       2462    -26(0:-32/1:-27)     5.127    Zeul                              [WPA2-PSK-CCMP][RSN-PSK+SAE-CCMP][ESS][MFPC]
+  20:3a:eb:ae:5a:2f       5260    -77(0:-77/1:-128)     4.754    Malik                             [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][WPS]
+  94:54:c5:22:5d:ad       2437    -44(0:-48/1:-47)     5.562    SONOFF_Dongle-M_5DAC              [WPA2-PSK-CCMP][RSN-PSK-CCMP][ESS][MFPC]
+# scan 2 at 22:19:47, 5 GHz entries (freq, RSSI, BSSID, SSID):
+# 5180 -27 10:27:f5:84:02:7f Zeul36
+# 5180 -75 fc:73:fb:4f:54:30 DIGI-48Pe
+# 5240 -52 04:95:e6:92:81:59 Zeul37
+# 5260 -81 22:3a:eb:4e:5a:2f (hidden)
+# 5260 -82 20:3a:eb:ae:5a:2f Malik
+# 5320 -67 50:a5:dc:d8:82:f3 Vodafone-B544
+# 5785 -88 b2:8b:92:9e:10:b9 (hidden)
+# 5785 -89 b0:8b:92:ee:10:b9 Staff
