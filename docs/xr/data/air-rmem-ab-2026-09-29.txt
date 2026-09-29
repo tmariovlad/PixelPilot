@@ -4,6 +4,7 @@
 # gets net.core.rmem_default (196608). Bracket ABCCBA: 196608 / 524288 / 2097152. At each step start the VIDEO wfb_tx
 # (radio port 0) is restarted with -M 7 -k 4 -n 8 (~2 s gap, new session key); the tunnel wfb_tx (port 32) stays.
 # 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, 17 dBm, alink/vmoded stopped. Air clock = PC - 0.749 s.
+# [CORRECTED 2026-09-29 04:40: the -0.749 s came from clk_off.py (rtt/2 of a whole exec call, asymmetric); the bounded estimate of slot_watch (c3f996f) gives PC - air = +0.05..+0.09 s (err ~0.16 s) over 03:58-04:33, and the air runs ntpd, so treat air ~= PC within ~0.2 s]
 # rcvbuf_err = /proc/net/snmp Udp RcvbufErrors (system-wide; 129182 at PRE, all from before this run).
 #
 # RESULT: drop = 0 and rcvbuf_err_d = 0 in EVERY step, including both 196608 baseline steps. The lever cannot be judged

@@ -5,6 +5,7 @@
 # G6 2SS without STBC (-S 0): HT MCS12/13 with stronger FEC (4/8, 4/7) at 20-35 Mbit.
 # drop/inj = wfb_tx PKT sums (air side). FINAL: race json 3d8a1456, 12 dBm, M2 long, FEC 4/8. find /overlay: empty.
 # This boot air-PC = -0.749 s. Quest: pixelpilot-xr-25 capture ab_g56 (quest_minus_pc +534.9 ms).
+# [CORRECTED 2026-09-29 04:40: the -0.749 s came from clk_off.py (rtt/2 of a whole exec call, asymmetric); the bounded estimate of slot_watch (c3f996f) gives PC - air = +0.05..+0.09 s (err ~0.16 s) over 03:58-04:33, and the air runs ntpd, so treat air ~= PC within ~0.2 s]
 ## g56_run.log
 stopped alink/vmoded pids=1412
 SETUP epoch=1790633396

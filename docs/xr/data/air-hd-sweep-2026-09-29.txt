@@ -4,6 +4,7 @@
 # CAVEAT: every m4 step overflowed the air (16 Mbit x FEC 2x > MCS4 capacity): drop 12.7k-18.3k per step, so the m4 steps
 # say nothing about link quality (my sizing mistake); redo within capacity = data/air-hd-redo-2026-09-29.txt. The m4
 # 23/24 dBm steps still give RSSI per step on the Quest (for R4). This boot air-PC = -0.749 s.
+# [CORRECTED 2026-09-29 04:40: the -0.749 s came from clk_off.py (rtt/2 of a whole exec call, asymmetric); the bounded estimate of slot_watch (c3f996f) gives PC - air = +0.05..+0.09 s (err ~0.16 s) over 03:58-04:33, and the air runs ntpd, so treat air ~= PC within ~0.2 s]
 # Quest: pixelpilot-xr-25 capture ab_hdsweep, app 69dfed66 with IDR only (FRZ/FIF off), stats_log on.
 PRE epoch=1790640737 start=1790640760 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 txp=17.00 idr="honored":491,"dropped":30 temp=47
 SET m4b16f48_17 epoch=1790640760 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 txp=17.00 idr="honored":504,"dropped":31

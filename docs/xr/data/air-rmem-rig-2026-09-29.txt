@@ -4,6 +4,7 @@
 # 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, 17 dBm, FEC 4/8, alink/vmoded stopped.
 # Rig: latency-test-0d, calibration then 12 runs x 25 measurements back to back from PC 1790644220 (one LED flash
 # every ~1.5 s, LED on ~75 ms). Quest capture ab_rmemrig (pixelpilot-xr-25). Air clock = PC - ~0.75 s.
+# [CORRECTED 2026-09-29 04:40: the -0.749 s came from clk_off.py (rtt/2 of a whole exec call, asymmetric); the bounded estimate of slot_watch (c3f996f) gives PC - air = +0.05..+0.09 s (err ~0.16 s) over 03:58-04:33, and the air runs ntpd, so treat air ~= PC within ~0.2 s]
 # drop = video wfb_tx PKT field 6 = UDP input-queue overflow (rcvbuf_err_d = /proc/net/snmp RcvbufErrors delta,
 # identical); ant_drop = injection failures (TX_ANT field 2); sendmsg_lat_max_us = TX_ANT field 5 (max per step).
 #

@@ -4,6 +4,7 @@
 # Script hd_redo.sh (scratchpad). The setup restarted waybeam at 1080p90 while the radio was still MCS2, which dropped 106
 # packets for ~5 s before the first step (caught by slot_watch; fixed in the next script by setting the radio first).
 # slot_watch ran live alongside: scripts/quest/out/slot_watch/hdredo/ (local). This boot air-PC = -0.749 s.
+# [CORRECTED 2026-09-29 04:40: the -0.749 s came from clk_off.py (rtt/2 of a whole exec call, asymmetric); the bounded estimate of slot_watch (c3f996f) gives PC - air = +0.05..+0.09 s (err ~0.16 s) over 03:58-04:33, and the air runs ntpd, so treat air ~= PC within ~0.2 s]
 # Quest: pixelpilot-xr-25 capture ab_hdredo, app 69dfed66, IDR only, stats_log on.
 PRE epoch=1790641682 start=1790641690 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=5 vht_mode=0 vht_nss=1 k=4 n=8 br=12000 txp=17.00 idr="honored":2,"dropped":0 temp=44
 SET m4b12f48 epoch=1790641690 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=8 br=12000 txp=17.00 idr="honored":4,"dropped":0

@@ -2,6 +2,7 @@
 # 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, 17 dBm, alink/vmoded stopped. Same ratio 1/2, longer blocks:
 # 4/8 (~2.7 ms) / 8/16 (~5.4 ms) / 12/24 (~8 ms) at ~2950 pkt/s, ABC CBA, 60 s each (cut from 90 s to fit the
 # Quest capture ab_fecspan of pixelpilot-xr-25). Air clock = PC - 0.749 s this boot.
+# [CORRECTED 2026-09-29 04:40: the -0.749 s came from clk_off.py (rtt/2 of a whole exec call, asymmetric); the bounded estimate of slot_watch (c3f996f) gives PC - air = +0.05..+0.09 s (err ~0.16 s) over 03:58-04:33, and the air runs ntpd, so treat air ~= PC within ~0.2 s]
 # drop/inj = sum of the video wfb_tx PKT line fields 6 (dropped) and 4 (injected) over the step, from /tmp/wfbtx.log.
 PRE epoch=1790642830 start=1790642833 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":6,"dropped":1 txpk=23987629 temp=43
 SET fec4/8 epoch=1790642833 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=7 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":6,"dropped":1 txpk=23994727
