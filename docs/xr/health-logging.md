@@ -43,7 +43,7 @@ thresholds as constants.
 | `FREEZE_START` / `FREEZE_END` | WARN / INFO | `dur_ms` `slices` | FreezeUntilIdr's counter grows / stops for ≥ 500 ms |
 | `DECODER_REBUILD` | WARN | `n` (cumulative) | DecoderRecovery |
 | `CODEC_SWITCH` | INFO | `n` | CodecSwitch (H.264 ↔ H.265) |
-| `IDR` / `IDR_FAILED` | INFO / WARN | `ok` `failed` + `refused` `connect_timeout` `reply_timeout` `http_status` `error` (non-zero only) | IdrRequester counters, aggregated ≤ 1 line/s |
+| `IDR` / `IDR_FAILED` | INFO / WARN | `ok` `failed` + `refused` `connect_timeout` `reply_timeout` `http_status` `error` (non-zero only); from `e48fef9` also `attempts` (SYNs started) `late` (requests won by attempt ≥ 2) `connected` `connect_ms` (mean over the connected ones) | IdrRequester counters, aggregated ≤ 1 line/s. Per request, logcat tag `IdrRequester`: `PPXR_IDRREQ result= attempts= attempt= connect_ms=` ([connect race](link-envelope.md#frame-fate-2026-09-29-where-the-missing-frames-at-1080p90-go-and-the-lever-that-keeps-them)) |
 | `SESSION_INACTIVE` / `SESSION_ACTIVE` | ALERT / INFO | `off_ms` | XR session not visible/focused (headset asleep, OS menu) |
 | `ADAPTER_GONE` / `ADAPTER_BACK` | ALERT / INFO | `gone_ms` | the wfb link's adapter running or not |
 | `LINK_STATUS` | INFO | `msg` (spaces → `_`) | WfbLinkManager texts, e.g. `link_lost_-_restarting_(1)`; repeats dropped |
@@ -59,7 +59,8 @@ OK per minute.
 `python3 scripts/quest-latch/health_log.py files_ppxr_health.log [--tsv timeline.tsv]`
 ([health_log.py](../../scripts/quest-latch/health_log.py), test `test_health_log.py`). It prints the duration, the
 SIGNAL_LOST count and per minute, causes, time lost, the kinds entered, freeze %, headset-off time, adapter
-recoveries, IDR failure reasons, and the mean fps / frozen % of the HEALTH lines. It reads the file format and the
+recoveries, IDR failure reasons, the IDR handshake (`idr_attempts`, `idr_won_late`, `idr_connect_ms_mean`), and the
+mean fps / frozen % of the HEALTH lines. It reads the file format and the
 logcat format alike.
 
 ## 5. Tests
