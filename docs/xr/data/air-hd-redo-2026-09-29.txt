@@ -1,0 +1,21 @@
+# HD MCS4 redo 2026-09-29 03:28-03:37, within capacity (the hd_sweep m4b16f48 steps overflowed the air). Air .132 ch157,
+# 1080p90, 17 dBm, 1SS STBC long GI, alink stopped, fix (a) live. ABC x2 x 90 s: m4b12f48 / m4b16f46 / m5b16f48.
+# idr = waybeam /api/v1/idr/stats cumulative since the setup's waybeam restart (per-step delta = IDR requests honoured).
+# Script hd_redo.sh (scratchpad). The setup restarted waybeam at 1080p90 while the radio was still MCS2, which dropped 106
+# packets for ~5 s before the first step (caught by slot_watch; fixed in the next script by setting the radio first).
+# slot_watch ran live alongside: scripts/quest/out/slot_watch/hdredo/ (local). This boot air-PC = -0.749 s.
+# Quest: pixelpilot-xr-25 capture ab_hdredo, app 69dfed66, IDR only, stats_log on.
+PRE epoch=1790641682 start=1790641690 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=5 vht_mode=0 vht_nss=1 k=4 n=8 br=12000 txp=17.00 idr="honored":2,"dropped":0 temp=44
+SET m4b12f48 epoch=1790641690 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=8 br=12000 txp=17.00 idr="honored":4,"dropped":0
+STEP m4b12f48 epoch=1790641690 drop=0 inj=207729 temp=47 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=8 br=12000 txp=17.00 idr="honored":29,"dropped":3
+SET m4b16f46 epoch=1790641781 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=6 br=16000 txp=17.00 idr="honored":30,"dropped":3
+STEP m4b16f46 epoch=1790641781 drop=0 inj=210446 temp=47 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=6 br=16000 txp=17.00 idr="honored":180,"dropped":33
+SET m5b16f48 epoch=1790641871 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=5 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":181,"dropped":33
+STEP m5b16f48 epoch=1790641871 drop=0 inj=274057 temp=48 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=5 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":202,"dropped":34
+SET m5b16f48 epoch=1790641962 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=5 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":203,"dropped":34
+STEP m5b16f48 epoch=1790641962 drop=0 inj=273960 temp=47 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=5 vht_mode=0 vht_nss=1 k=4 n=8 br=16000 txp=17.00 idr="honored":217,"dropped":35
+SET m4b16f46 epoch=1790642052 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=6 br=16000 txp=17.00 idr="honored":218,"dropped":35
+STEP m4b16f46 epoch=1790642052 drop=0 inj=207972 temp=46 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=6 br=16000 txp=17.00 idr="honored":304,"dropped":54
+SET m4b12f48 epoch=1790642143 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=8 br=12000 txp=17.00 idr="honored":305,"dropped":54
+STEP m4b12f48 epoch=1790642143 drop=0 inj=209874 temp=47 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=4 vht_mode=0 vht_nss=1 k=4 n=8 br=12000 txp=17.00 idr="honored":307,"dropped":54
+END epoch=1790642245 stbc=1 ldpc=1 short_gi=0 bandwidth=20 mcs_index=2 vht_mode=0 vht_nss=1 k=4 n=8 br=2000 txp=12.00 idr="honored":2,"dropped":0 json=3d8a1456 temp=43
