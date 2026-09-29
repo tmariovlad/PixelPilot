@@ -44,6 +44,16 @@ video aggregator's call and reads it after, so the wfb-ng submodule is unchanged
 missing data fragments, where the holes sit (head / middle / tail, or scattered), mean RSSI A/B dBm. The summary gives
 blocks per minute, outages (`gap_max_us` ≥ 2 ms), blocks with bad FCS, hole positions, reasons, gap p50/p95 and mean RSSI.
 
+**Joining the air's injection drops** (the air's `wfb_tx` drops packets at injection itself: non-zero in 27 of ~200 s,
+1–148 pkt/s, per the coordinator's FEC-span run): `fec_blocks.py <capture> --air-log <air /tmp/wfbtx.log>
+--quest-minus-pc-ms Q --air-minus-pc-ms A` marks each block `air_drop=Y/N/?`. It uses the `dropped` field (6th) of the
+air's per-second `PKT` line (wfb-ng `tx.cpp:729-730`; per-interval counters, so a line covers (previous ts, ts]) and
+the interval containing the block's air time. The summary gets `air_drop_share` = Y / (Y + N). Clocks: the capture's
+logcat epoch (Quest wall) − Q (`quest_minus_pc_ms`, ab_detached's meta) = PC wall; + A = the air's `get_time_ms`
+(CLOCK_MONOTONIC on the air [INFERRED: wfb-ng get_time_ms]; A = air ms minus PC epoch ms at the same moment, e.g. from
+the air's uptime read next to the PC clock). The air log has 1 s resolution, so Y means "the air dropped packets in
+that second", not that it dropped this block's fragments.
+
 How to read the classes [INFERRED from the definitions; nothing measured yet]:
 - `gap_max_us` ≥ 2 ms with `fcs=0` (keep_corrupted on): **no frame at all** reached the Quest's RX: either the air did
   not send (compare with the air's per-second TX log) or the RX did not detect them.

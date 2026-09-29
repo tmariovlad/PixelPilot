@@ -52,5 +52,31 @@ class Summary(unittest.TestCase):
         self.assertTrue(rows[0].startswith("t_mono_ms\tblk\tk\tn\tgot\tmissing\tmissing_data\twhere"))
 
 
+class AirDropJoin(unittest.TestCase):
+    # air /tmp/wfbtx.log: "<air get_time_ms>\tPKT\tfec_timeouts:incoming:b_in:injected:b_inj:dropped:truncated"
+    # (wfb-ng tx.cpp:729-730); the counters are per log interval, so a line covers (previous ts, ts].
+    AIR = ["5000000\tPKT\t0:2900:3900000:2900:3900000:0:0\n",
+           "5001000\tPKT\t0:2950:3960000:2900:3900000:50:0\n",
+           "5002000\tPKT\t0:2950:3960000:2950:3960000:0:0\n",
+           "5002000\tTX_ANT\t1\t2900:0:0:0:0\n"]
+
+    def test_air_log_intervals(self):
+        iv = fec_blocks.parse_air_log(self.AIR)
+        self.assertEqual(iv, [(5000000, 5001000, 50), (5001000, 5002000, 0)])
+
+    def test_each_block_is_marked_by_the_air_second_it_falls_in(self):
+        # Quest wall (logcat epoch) - quest_minus_pc = PC wall; + air_minus_pc = air get_time_ms
+        q_minus_pc_ms, air_minus_pc_ms = 500.0, 5000000 - 1790640000000
+        in_drop = ("  1790640000.900 1 2 I PPXR_FECBLK: t_mono_ms=1 blk=1 k=4 n=8 got=11000000 span_us=0 "
+                   "gap_max_us=0 frags=0:0:74:70 fcs=0 reason=flush next=2")
+        clean = in_drop.replace("1790640000.900", "1790640001.700").replace("blk=1 ", "blk=5 ")
+        outside = in_drop.replace("1790640000.900", "1790640009.000").replace("blk=1 ", "blk=9 ")
+        marks = fec_blocks.join_air([in_drop, clean, outside], self.AIR, q_minus_pc_ms, air_minus_pc_ms)
+        self.assertEqual([m["air_drop"] for m in marks], ["Y", "N", "?"])
+        s = fec_blocks.summarize([in_drop, clean, outside], air=(self.AIR, q_minus_pc_ms, air_minus_pc_ms))
+        self.assertEqual((s["air_drop_Y"], s["air_drop_N"], s["air_drop_unknown"]), (1, 1, 1))
+        self.assertAlmostEqual(s["air_drop_share"], 0.5)     # of the blocks the air log covers
+
+
 if __name__ == "__main__":
     unittest.main()
