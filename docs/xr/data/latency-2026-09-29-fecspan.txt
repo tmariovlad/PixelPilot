@@ -1,0 +1,19 @@
+# ab_fecspan latency on one drift line, baseline fec12-24 (steps 2-3, clean); step 5 has an RTP timestamp jump and is not valid for latency
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_fecspan.pftrace docs/xr/data/steps-2026-09-29-fecspan.txt --air-offset-s 1.2322 --guard-s 4 --baseline fec12-24
+658900 packets, 89366 frames, 28679 lost before the app; 33460 frames inside the steps
+clock drift fitted on 'fec12-24': +67 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 fec4-8        4652   89.5  16.78    8.69   -6.29    2.40    6.61     4.72     8.1   0.64    11
+ 1 fec8-16       4626   89.0  16.54    8.63   -3.90    4.73   28.43     7.00     4.6   0.36    11
+ 2 fec12-24      4621   88.9  16.73    8.79   -3.20    5.59   26.54     7.93     1.4   0.11     6
+ 3 fec12-24      4609   88.7  16.72    8.83   -3.19    5.64   26.13     7.95     1.4   0.11     7
+ 4 fec8-16       4697   88.6  16.78    8.79   -3.18    5.61   28.91     7.93     2.2   0.18     9
+ 5 fec4-8        5682   88.8  14.93    7.75-1174016.21-1174008.46   28.53-1174182.16     3.0   0.29    10
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+fec4-8          10334   89.1  15.76    8.17-645518.62-645510.44   18.66-645780.98     5.5   0.47    21-645516.06-645788.92
+fec8-16          9323   88.8  16.66    8.71   -3.54    5.17   28.59     7.47     3.4   0.27    20   -0.44     -0.47
+fec12-24         9230   88.8  16.73    8.81   -3.19    5.62   26.33     7.94     1.4   0.11    13   +0.00     +0.00

@@ -218,10 +218,11 @@ Question (from the loss shape above, ~4 ms outages vs a ~2.7 ms FEC 4/8 block): 
 - **12/24 at the same ratio loses 3–5× less than 4/8** [PROVEN: N = 2 each, alternating, the clean seconds agree]. The longer block covers the few-ms outages. A 12/24 block that does fail leaves a larger hole, but rarely.
   - The air's injection drops fell over the run (384 → 106 at 4/8), so A vs A' differ; the clean-seconds column is the fair comparison.
   - The losses stay unlocked from the 102.4 ms period (Z ≤ 1.7).
-- **Latency cost: not resolved.** Every step restarts waybeam with a new RTP timestamp base, so steps cannot share one drift line.
-  - Within each step the tail around the step's own median is about the same for every FEC (p99 43–46 ms; [step_jitter.py](../../scripts/quest-latch/step_jitter.py)). No FEC-span cost is visible [INFERRED].
-  - p95 is 5.4 ms in the first step and 23–26 ms in all the others, which is unexplained.
-  - A clean measure needs the FEC changed without a restart (wfb_tx control port, `-C 9000`), in one waybeam run.
+- **Latency cost: the longer blocks add ~3 ms mean and ~20 ms at p95** [PROVEN: one drift line, baseline 12/24; [latency](data/latency-2026-09-29-fecspan.txt)].
+  - last / p95 in ms: 4/8 2.4 / 6.6 (step 0 only), 8/16 4.7 / 28.4 and 5.6 / 28.9, 12/24 5.6 / 26.5 and 5.6 / 26.1.
+  - The likely mechanism [INFERRED]: wfb_tx sends a block's parity only after the block has filled with k data packets. With k = 8 or 12, a frame's tail shares its block with the next frame, so recovering a lost packet waits for about a frame (11 ms) or more.
+  - The trade: 12/24 removes 3–5× of the residual loss but costs ~20 ms at p95 when there is loss to recover. A block that closes at the frame end (per-frame FEC flush) would keep the recovery without the wait [SPECULATION].
+  - Correction (same day): an earlier version of this paragraph said every step restarted waybeam and left the latency unresolved. That was wrong. The coordinator confirmed only `wfb_setfec` ran per step, and on a clean baseline steps 0–4 share one drift line. The false picture came from a drift line fitted on 4/8, which included step 5, whose RTP timestamps jump (frame fate: "never arrived" 15107/s in step 5 only). Step 5 is not valid for latency.
 
 ### HD sweep 2026-09-29 03:27–03:40: MCS5 vs MCS7 at 1080p90 16 Mbit/s FEC 4/8, and MCS4 at 23 vs 24 dBm
 
