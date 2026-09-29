@@ -1,0 +1,13 @@
+# ab_pwbr (2026-09-29 20:49-20:55 local), TX power bracket 1/9/17/17/9/1 dBm, 60 s each; steps docs/xr/data/steps-2026-09-29-pwbr.txt (air clock); Quest-PC -822.2 ms, PC-air +0.725 s (this boot's slot_watch AIR_CLOCK) -> Quest-air -0.0972 s; guard 5 s; APK c8986061, keep_corrupted on; Quest ~1 m from the air unit.
+# python3 scripts/quest-latch/drop_seconds.py scripts/quest/out/qtx_pwbr.raw.txt docs/xr/data/steps-2026-09-29-pwbr.txt docs/xr/data/air-drop-seconds-2026-09-29-pwbr.txt --air-offset-s -0.0972 --guard-s 5
+        seconds  PKT_LOST     /s  events     /s  IDR req     /s  IDR fr     /s
+drop          0         0   0.00       0   0.00      0.0   0.00     0.0   0.00
+clean       300       318   1.06     184   0.61    110.1   0.37   188.5   0.63
+per step (per second)
+                 PKT_LOST  events  IDR req  IDR fr
+ 0 txp1              0.14    0.10     0.03    0.50
+ 1 txp9              0.14    0.08     0.05    0.52
+ 2 txp17             0.61    0.39     0.16    0.52
+ 3 txp17             1.80    1.00     0.74    0.84
+ 4 txp9              1.50    0.76     0.58    0.62
+ 5 txp1              2.18    1.36     0.64    0.77

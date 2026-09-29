@@ -1,0 +1,9 @@
+# ab_pwbr, steps docs/xr/data/steps-2026-09-29-pwbr.txt, --air-offset-s -0.0972 (Quest-PC -0.8222 + PC-air 0.725), --guard-s 5. 20:49-20:55 local; TX power bracket 1/9/17/17/9/1 dBm (driver-applied per iw), 60 s each, 1080p90 16M MCS7 k4/n8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted (FRZ, FIF off). Geometry: Quest ~1 m from the air unit, charging at the wall (NOT the cause run's close position). PC-air +0.725 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/frame_fate.py scripts/quest/out/ab_pwbr.pftrace docs/xr/data/steps-2026-09-29-pwbr.txt --air-offset-s -0.0972 --guard-s 5
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 txp1               90.4       0.0       0.0       0.0        0.0           90.4
+ 1 txp9               90.4       0.0       0.0       0.0        0.0           90.4
+ 2 txp17              90.3       0.1       0.0       0.0        0.0           90.3
+ 3 txp17              90.0       0.3       0.1       0.0        0.0           90.0
+ 4 txp9               90.0       0.3       0.1       0.0        0.0           90.0
+ 5 txp1               89.9       0.3       0.2       0.0        0.0           89.9

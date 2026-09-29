@@ -1,0 +1,22 @@
+# ab_pwbr (2026-09-29 20:49-20:55 local), TX power bracket 1/9/17/17/9/1 dBm, 60 s each; steps docs/xr/data/steps-2026-09-29-pwbr.txt (air clock); Quest-PC -822.2 ms, PC-air +0.725 s (this boot's slot_watch AIR_CLOCK) -> Quest-air -0.0972 s; guard 5 s; APK c8986061, keep_corrupted on; Quest ~1 m from the air unit.
+# python3 scripts/quest-latch/fec_blocks.py scripts/quest/out/qtx_pwbr.raw.txt --tsv docs/xr/data/fec-blocks-2026-09-29-pwbr.tsv
+blocks: 100
+per_min: 16.105480158048447
+outage: 44
+with_fcs: 71
+fcs_known: 100
+where: {'head': 26, 'scattered': 19, 'middle': 21, 'tail': 28, 'head+tail': 6}
+reason: {'flush': 100}
+gap_max_us_p50: 1845
+gap_max_us_p95: 4382
+rssi_a_dbm_mean: -33.343333333333334
+suppressed: 0
+# python3 scripts/quest-latch/tsv_steps.py docs/xr/data/fec-blocks-2026-09-29-pwbr.tsv scripts/quest/out/qtx_pwbr.raw.txt docs/xr/data/steps-2026-09-29-pwbr-pc.txt --quest-minus-pc-ms -822.2 --column fcs
+per step: rows per minute by fcs
+                    s                 0                 1                10                 2                 3                 5                 8                 9
+ 0 txp1            50      0.0               0.0               1.2               0.0               0.0               0.0               1.2               0.0         
+ 1 txp9            51      0.0               0.0               0.0               0.0               0.0               0.0               0.0               0.0         
+ 2 txp17           49      2.4               3.7               0.0               0.0               0.0               0.0               0.0               0.0         
+ 3 txp17           50      6.0              16.8               0.0               1.2               0.0               0.0               0.0               0.0         
+ 4 txp9            50      8.4              12.0               0.0               1.2               0.0               1.2               0.0               0.0         
+ 5 txp1            50     10.8              15.6               1.2               0.0               2.4               0.0               0.0               2.4         

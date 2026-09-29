@@ -1,0 +1,16 @@
+# ab_pwbr, steps docs/xr/data/steps-2026-09-29-pwbr.txt, --air-offset-s -0.0972 (Quest-PC -0.8222 + PC-air 0.725), --guard-s 5. 20:49-20:55 local; TX power bracket 1/9/17/17/9/1 dBm (driver-applied per iw), 60 s each, 1080p90 16M MCS7 k4/n8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted (FRZ, FIF off). Geometry: Quest ~1 m from the air unit, charging at the wall (NOT the cause run's close position). PC-air +0.725 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/ab_link.py scripts/quest/out/ab_pwbr.pftrace docs/xr/data/steps-2026-09-29-pwbr.txt --air-offset-s -0.0972 --guard-s 5
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 txp1               -   2990.5        -      9.9      0.1     88.1     70.9     69.0     19.4     19.5        -        -        -        -        -      0.7      6.7        -        -        -        -        -      0.0
+ 1 txp9               -   3014.8        -      8.9      0.1     96.0     77.0     74.4     20.0     20.0        -        -        -        -        -      0.6      2.8        -        -        -        -        -      0.0
+ 2 txp17              -   2992.7        -     16.1      0.4    100.0     85.0     82.3     22.4     22.4        -        -        -        -        -      1.1      4.6        -        -        -        -        -      0.0
+ 3 txp17              -   2977.5        -     27.0      1.2    100.0     84.8     82.4     22.5     22.6        -        -        -        -        -      1.9      6.1        -        -        -        -        -      0.0
+ 4 txp9               -   2968.3        -     27.3      1.1     93.3     74.6     73.9     20.3     20.3        -        -        -        -        -      1.9      8.4        -        -        -        -        -      0.0
+ 5 txp1               -   2949.7        -     42.3      1.4     85.0     68.0     66.8     20.4     20.5        -        -        -        -        -      2.9     12.6        -        -        -        -        -      0.0
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+txp1                  -   2970.1        -     26.1      0.7     86.5     69.4     67.9     19.9     20.0        -        -        -        -        -      1.8      9.7        -        -        -        -        -      0.0
+txp9                  -   2991.6        -     18.1      0.6     94.7     75.8     74.1     20.1     20.1        -        -        -        -        -      1.2      5.6        -        -        -        -        -      0.0
+txp17                 -   2985.1        -     21.6      0.8    100.0     84.9     82.4     22.4     22.5        -        -        -        -        -      1.5      5.3        -        -        -        -        -      0.0

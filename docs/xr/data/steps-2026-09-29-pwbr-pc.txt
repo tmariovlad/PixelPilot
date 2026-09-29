@@ -1,0 +1,8 @@
+# pw_bracket steps on the PC clock (air + 0.725 s) from air-pw-bracket-2026-09-29.txt; PC - air = +0.725 s this boot (slot_watch AIR_CLOCK, air ntpd not yet synced). END = last start + 60 s (1790703846), before the air log's END (1790703865, after the restore). Only txpower changes per step; going up ramps 2 dB at a time, guard 5 s
+1790703486.725 txp1
+1790703546.725 txp9
+1790703607.725 txp17
+1790703666.725 txp17
+1790703726.725 txp9
+1790703786.725 txp1
+1790703846.725 END

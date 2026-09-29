@@ -199,6 +199,33 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### TX power bracket 2026-09-29 20:49–20:55: corruption does not follow power down to −25 dBm at the Quest; the loss jumped ~10× at one moment instead
+
+The test of the saturation hypothesis after the cause run (68 % of the unrecoverable blocks with bad-FCS frames at −26 dBm): if the Quest's RTL8812AU front end compresses at short range, bad-FCS frames and unrecoverable blocks should fall at lower TX power. ABCCBA 1 / 9 / 17 / 17 / 9 / 1 dBm (driver-applied per `iw`), 60 s each, 1080p90 16 Mbit/s MCS7 FEC 4/8, 1 MB input buffer, no rig; only txpower changes per step.
+- **Geometry:** the Quest ~1 m from the air unit, charging at the wall. It was moved since the cause run, so absolute loss is not comparable with it; the steps of this run are.
+- **Method.** APK c8986061, prefs = `request_idr_on_loss` + `rtp_tight_reorder` + `stats_log` + `keep_corrupted`. Detached capture, `TRACE LOSS: none`. Quest−PC −822.2 ms after the reboot; PC−air **+0.725 s** on this fresh air boot (slot_watch AIR_CLOCK; the air's ntpd had not synced yet, see [air-clock join](#rmem-ab-with-the-g2g-rig-flashing-2026-09-29-04100416-512-kb-removes-the-flash-burst-holes-bigger-buffers-lengthen-the-flash-frames-tail)). Guard 5 s at both ends of a step; `scripts/quest/analyze_ab.sh`, baseline txp17. Air drops 0 in every step.
+- **Data.** [air log](data/air-pw-bracket-2026-09-29.txt) · [steps](data/steps-2026-09-29-pwbr.txt) ([PC clock](data/steps-2026-09-29-pwbr-pc.txt)) · [RSSI dBm per step](data/rssi-steps-2026-09-29-pwbr.txt) ([stats_steps.py](../../scripts/quest-latch/stats_steps.py), tested) · [link_audit](data/audit-2026-09-29-pwbr.txt) · [link (crc/s)](data/link-2026-09-29-pwbr.txt) · [FEC blocks](data/fec-blocks-2026-09-29-pwbr.txt) ([tsv](data/fec-blocks-2026-09-29-pwbr.tsv)) · [IDR per step](data/drop-seconds-2026-09-29-pwbr.txt) · [loss per 10 s](data/loss-10s-2026-09-29-pwbr.txt) · [latency](data/latency-2026-09-29-pwbr.txt) · [frame fate](data/frame-fate-2026-09-29-pwbr.txt) · [bursts](data/loss-bursts-2026-09-29-pwbr.txt) · [large frames](data/big-frames-2026-09-29-pwbr.txt) · [latency within each step](data/step-jitter-2026-09-29-pwbr.txt) · [air drop seconds (none)](data/air-drop-seconds-2026-09-29-pwbr.txt).
+
+| step (air) | TX dBm | RSSI A / B (dBm, median) | bad-FCS frames/s (crc/s) | unrecoverable FEC blocks/min (with bad FCS) | radio loss PKT_LOST/s | post-FEC | IDR requests/s |
+|---|---|---|---|---|---|---|---|
+| 0 | 1 | −39 / −41 | 6.7 | 2.4 (2.4) | 0.14 | 0.01 % | 0.03 |
+| 1 | 9 | −33 / −36 | 2.8 | 0 (0) | 0.14 | 0.01 % | 0.05 |
+| 2 | 17 | **−25 / −28** | 4.6 | 6.1 (3.7) | 0.61 | 0.02 % | 0.16 |
+| 3 | 17 | −25 / −28 | 6.1 | 24.0 (18.0) | 1.80 | 0.08 % | 0.74 |
+| 4 | 9 | −35 / −35 | 8.4 | 22.8 (14.4) | 1.50 | 0.08 % | 0.58 |
+| 5 | 1 | −42 / −43 | 12.6 | 32.4 (21.6) | 2.18 | 0.09 % | 0.64 |
+
+- **The steps are valid** [PROVEN: [RSSI per step](data/rssi-steps-2026-09-29-pwbr.txt)]. 16 dB less TX gives 14–17 dB less at both Quest chains, and 8 dB gives 8–10 dB, so the lever reached the receiver.
+- **At 17 dBm the Quest received −25 / −28 dBm, the cause run's level (−26).** So this 1 m geometry did reach the input level where the cause run saw 68 % of the unrecoverable blocks with bad-FCS frames.
+- **Corruption and loss do not follow the power** [PROVEN: ABCCBA, both halves]. Saturation predicts the most bad-FCS frames and blocks at 17 dBm and the fewest at 1 dBm. In each half it is not so, and in the second half the order is the reverse: 12.6 bad-FCS frames/s and 32 blocks/min at 1 dBm (−42 dBm) vs 6.1 and 24 at 17 dBm.
+  - So RX front-end saturation at up to −25 dBm is not the cause of the residual loss [INFERRED: a saturation effect would have to fall with power in both halves].
+  - Above −25 dBm is not tested. Going higher needs more TX than the approved limit (MCS7 ≤ 18 dBm, [menu-design](menu-design.md)), where the air's own PA distortion starts at 20–21 dBm ([slot 2026-09-28 20:10](#slot-2026-09-28-2010-u1-streamed-capture-t6-rx-diagnostics-t2-quest-wi-fi-off)), or a shorter distance.
+- **The loss jumped ~10× at one moment, not at a step** [PROVEN: [loss per 10 s](data/loss-10s-2026-09-29-pwbr.txt)]. 0–5 packets per 10 s until +140 s, then 16–34 from +150 s (air ~1790703636), in the middle of the first 17 dBm step, with no power change. It stayed high through the rest, with a dip at +270–290 s.
+  - This is the same step-change pattern as a new interferer or a change in the room [SPECULATION: the neighbour's AP on ch157 changing its traffic is one candidate; the user moving near the air or the Quest another].
+  - The per-state averages above are dominated by it. The first half (1 / 9 / 17 dBm before the jump: 0.01–0.02 %) is the clean reference.
+- **Latency does not depend on power:** Δlast −0.11 / −0.09 / 0 ms vs 17 dBm, last95 5.2–5.3 ms ([latency](data/latency-2026-09-29-pwbr.txt)).
+- **Next:** the channel test (165, outside the neighbour's BSS) with the same probes. And a longer fixed-power capture at 17 dBm that records when such jumps happen and what the air log and the Quest's bad-FCS rate do at that moment.
+
 ### Cause run 2026-09-29 04:46–04:51: with the air input fixed (1 MB), what remains is the radio, mostly frames that arrive corrupted
 
 The same A/B as below, used as positive and negative controls for the new probes: 192 KB (known air input overflow) vs 1 MB (none), ABAB 60 s, 1080p90 16 Mbit/s MCS7 FEC 4/8 17 dBm, rig flashing. Quest APK cd960b31 (pixelpilot-xr-36's `4bb16ef`: PPXR_RTPHOLE splits every RTP hole into lost before FEC (never entered wfb_tx) or after it (radio); PPXR_FECBLK logs every unrecoverable FEC block), `keep_corrupted` on (bad-FCS frames reach the host and are counted), IDR only.

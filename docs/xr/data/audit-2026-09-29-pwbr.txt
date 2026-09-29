@@ -1,0 +1,18 @@
+# ab_pwbr, steps docs/xr/data/steps-2026-09-29-pwbr.txt, --air-offset-s -0.0972 (Quest-PC -0.8222 + PC-air 0.725), --guard-s 5. 20:49-20:55 local; TX power bracket 1/9/17/17/9/1 dBm (driver-applied per iw), 60 s each, 1080p90 16M MCS7 k4/n8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted (FRZ, FIF off). Geometry: Quest ~1 m from the air unit, charging at the wall (NOT the cause run's close position). PC-air +0.725 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_pwbr.pftrace docs/xr/data/steps-2026-09-29-pwbr.txt --air-offset-s -0.0972 --guard-s 5 --logcat scripts/quest/out/logcat_pwbr.txt
+PKT_LOST events 313, packets 501; TX DESC 12922; block overrides 0
+post-FEC gap sizes: 1:228, 2:24, 3:22, 4:37, 5:1, 6:1
+loss within 2 ms after a Quest TX: 6.7 % (control, TX shifted 50 ms: 2.9 %)
+Rayleigh Z @    1.000 Hz =      1.2
+Rayleigh Z @    4.000 Hz =      0.3
+Rayleigh Z @    9.766 Hz =      0.1
+Rayleigh Z @   72.000 Hz =      0.4
+Rayleigh Z @   90.000 Hz =      0.3
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 txp1          75507     5   495     5    0.66   0.01    0.1    2    0    1    0    0   0.0    7.6   4.2
+ 1 txp9          77289     4   454     4    0.59   0.01    0.0    0    0    0    1    0   0.0    8.2   4.2
+ 2 txp17         74189    18   790    18    1.09   0.02    0.1    2    1    2    2    0   0.0   11.1   4.3
+ 3 txp17         76005    60  1351    60    1.85   0.08    0.4    6    1    4   10    0   0.0   10.4   4.1
+ 4 txp9          75788    57  1364    57    1.87   0.08    0.4    3    5    4    8    0   0.0   11.4   3.7
+ 5 txp1          75680    68  2116    68    2.88   0.09    0.5    7    8    6    4    2  16.2   12.5   3.5

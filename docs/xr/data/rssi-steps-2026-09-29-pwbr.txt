@@ -1,0 +1,10 @@
+# ab_pwbr (2026-09-29 20:49-20:55 local), TX power bracket 1/9/17/17/9/1 dBm, 60 s each; steps docs/xr/data/steps-2026-09-29-pwbr.txt (air clock); Quest-PC -822.2 ms, PC-air +0.725 s (this boot's slot_watch AIR_CLOCK) -> Quest-air -0.0972 s; guard 5 s; APK c8986061, keep_corrupted on; Quest ~1 m from the air unit.
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_pwbr.raw.txt docs/xr/data/steps-2026-09-29-pwbr.txt --quest-minus-air-s -0.0972
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   rssiA   rssiB    snrA    snrB
+ 0 txp1           25   -39.0   -41.0    19.0    19.0
+ 1 txp9           26   -33.0   -36.0    20.0    20.0
+ 2 txp17          24   -25.0   -28.0    22.0    22.0
+ 3 txp17          25   -25.0   -28.0    22.0    22.0
+ 4 txp9           25   -35.0   -35.0    20.0    20.0
+ 5 txp1           25   -42.0   -43.0    20.0    20.0

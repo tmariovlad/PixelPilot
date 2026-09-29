@@ -1,0 +1,19 @@
+# ab_pwbr, steps docs/xr/data/steps-2026-09-29-pwbr.txt, --air-offset-s -0.0972 (Quest-PC -0.8222 + PC-air 0.725), --guard-s 5. 20:49-20:55 local; TX power bracket 1/9/17/17/9/1 dBm (driver-applied per iw), 60 s each, 1080p90 16M MCS7 k4/n8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted (FRZ, FIF off). Geometry: Quest ~1 m from the air unit, charging at the wall (NOT the cause run's close position). PC-air +0.725 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_pwbr.pftrace docs/xr/data/steps-2026-09-29-pwbr.txt --air-offset-s -0.0972 --guard-s 5 --baseline txp17
+587239 packets, 49196 frames, 17747 lost before the app; 32545 frames inside the steps
+clock drift fitted on 'txp17': +73 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 txp1          4520   90.4  16.70    8.48   -5.80    2.68    5.42     5.10     0.1   0.01     0
+ 1 txp9          4610   90.4  16.76    8.49   -5.99    2.50    5.09     4.94     0.1   0.01     0
+ 2 txp17         4429   90.4  16.75    8.47   -6.06    2.41    5.14     4.86     0.4   0.03     1
+ 3 txp17         4521   90.4  16.81    8.48   -5.94    2.54    5.65     5.05     1.2   0.09     0
+ 4 txp9          4520   90.4  16.77    8.51   -6.24    2.27    5.31     4.76     1.1   0.09     2
+ 5 txp1          4520   90.4  16.74    8.51   -6.46    2.05    5.03     4.54     1.4   0.10     0
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+txp1             9040   90.4  16.72    8.49   -6.13    2.36    5.33     4.82     0.7   0.06     0   -0.11     -0.13
+txp9             9130   90.4  16.77    8.50   -6.11    2.39    5.19     4.85     0.6   0.05     2   -0.09     -0.10
+txp17            8950   90.4  16.78    8.48   -6.00    2.48    5.34     4.95     0.8   0.06     1   +0.00     +0.00

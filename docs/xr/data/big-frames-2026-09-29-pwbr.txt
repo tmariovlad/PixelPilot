@@ -1,0 +1,14 @@
+# ab_pwbr, steps docs/xr/data/steps-2026-09-29-pwbr.txt, --air-offset-s -0.0972 (Quest-PC -0.8222 + PC-air 0.725), --guard-s 5. 20:49-20:55 local; TX power bracket 1/9/17/17/9/1 dBm (driver-applied per iw), 60 s each, 1080p90 16M MCS7 k4/n8, rmem 1 MB, no rig, air drops 0; APK c8986061, prefs = request_idr_on_loss + rtp_tight_reorder + stats_log + rx-diag-keep-corrupted (FRZ, FIF off). Geometry: Quest ~1 m from the air unit, charging at the wall (NOT the cause run's close position). PC-air +0.725 s (this boot's slot_watch AIR_CLOCK).
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_pwbr.pftrace docs/xr/data/steps-2026-09-29-pwbr.txt --air-offset-s -0.0972 --guard-s 5 --baseline txp17
+big = npkts >= 19 (p98 of the frames in the steps); ms above the 'txp17' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 txp1            164    21   5.35   4.41  10.22  11.52 |   4356   2.58   5.16
+ 1 txp9             99    22   6.09   5.57  11.25  11.95 |   4511   2.42   4.82
+ 2 txp17           107    22   6.27   4.39  11.69  16.59 |   4322   2.32   4.87
+ 3 txp17           312    21   5.51   3.46  17.77  34.13 |   4209   2.32   5.16
+ 4 txp9            106    24   7.95   5.62  18.24  21.37 |   4414   2.14   4.95
+ 5 txp1             41    33  12.32  10.50  18.63  20.42 |   4479   1.96   4.80
+per state
+txp1               205    23   6.74   5.05  15.71  20.42 |   8835   2.26   4.99
+txp9               205    23   7.05   5.60  16.49  21.37 |   8925   2.28   4.90
+txp17              419    21   5.70   3.59  16.59  34.13 |   8531   2.32   5.07

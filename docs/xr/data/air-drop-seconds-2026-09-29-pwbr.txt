@@ -1,0 +1,1 @@
+# pw_bracket: the air's wfb_tx dropped 0 packets at its input in every step (air-pw-bracket-2026-09-29.txt), so no drop seconds.
