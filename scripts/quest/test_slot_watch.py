@@ -199,15 +199,15 @@ def test_timeline_merges_sources_in_the_slot_window():
     app = ["PPXR_EVENT t_mono_ms=5 t_wall_ms=1001500 code=SIGNAL_LOST level=ALERT to=VIDEO_STALLED",
            "PPXR_HEALTH t_mono_ms=6 t_wall_ms=999000 code=HEALTH level=INFO fps=90",
            "PPXR_EVENT t_mono_ms=7 t_wall_ms=5000000 code=SIGNAL_OK level=INFO"]           # outside the window
-    air = ["EV t=998 up_cs=100 code=WAYBEAM_RESTART", "t=1002 up_cs=500 temp=55"]
-    rows = sw.timeline(alerts, app, air, start=990.0, end=1010.0, air_offset=1.0, periodic=True)
-    assert [r[2] for r in rows] == ["WAYBEAM_RESTART", "HEALTH", "WFB_DROP", "SIGNAL_LOST", "AIR_HEALTH"], rows
-    assert rows[0][0] == 999.0, rows[0]           # air epoch + offset -> PC time
+    air = [ev(900, "WB_PID", "WARN", kind="restart"), ah(1200, 2, temp=55)]
+    rows = sw.timeline(alerts, app, air, start=990.0, end=1010.0, air_anchor=(1010.0, 20.0), periodic=True)
+    assert [r[2] for r in rows] == ["WB_PID", "HEALTH", "WFB_DROP", "SIGNAL_LOST", "AH"], rows
+    assert rows[0][0] == 999.0, rows[0]           # anchor PC time - (anchor uptime - the line's uptime)
 
 
 def test_timeline_keeps_only_events_and_alerts_from_periodic_lines():
     rows = sw.timeline([], ["PPXR_HEALTH t_wall_ms=1000000 code=HEALTH level=INFO"],
-                       ["t=1000 up_cs=1 temp=50"], start=0, end=2000, air_offset=0.0, periodic=False)
+                       [ah(100, 1)], start=0, end=2000, air_anchor=(1000.0, 1.0), periodic=False)
     assert rows == [], rows
 
 
@@ -313,6 +313,194 @@ def test_expect_until_accepts_an_epoch_or_seconds_after_the_start():
     assert sw.parse_until(None, 100.0) is None
     assert sw.parse_until("+600", 100.0) == 700.0
     assert sw.parse_until("1790641000", 100.0) == 1790641000.0
+
+
+# ---------------------------------------------------------------- air_health as the air source (openipc-…-40, 444d017)
+
+def ah(up, seq, sa=0, boot="6f1c2a3b", **kv):
+    """An AH line with every key of the schema (parse_air_health.AH_KEYS, the one list), NA unless given."""
+    pah = sw.air_health_parser()
+    vals: dict = {k: "NA" for k in pah.AH_KEYS}
+    vals.update(t=1790000000 + up // 100, up=up, boot=boot, seq=seq, sa=sa, temp=45, fps=90, kbps=16243, mcs=7,
+                fec_k=4, fec_n=8, ch=157, txpwr=17, idr_h=432, idr_d=26, bcn="0x10", wfb_drop=0, wfb_inj=3400,
+                udp_ddrops=0)
+    vals.update(kv)
+    return "AH " + " ".join(f"{k}={vals[k]}" for k in pah.AH_KEYS)
+
+
+def ev(up, code, level="INFO", boot="6f1c2a3b", **kv):
+    rest = "".join(f" {k}={v}" for k, v in kv.items())
+    return f"EV t={1790000000 + up // 100} up={up} boot={boot} code={code} level={level}{rest}"
+
+
+def head(uptime, boot="6f1c2a3b-0000-4000-8000-000000000000", now=None, **kv):
+    return {"now": now if now is not None else 1790000000 + int(uptime), "uptime": uptime, "boot_id": boot,
+            "cfg_bitrate": kv.get("cfg_bitrate"), "cfg_fps": kv.get("cfg_fps", 90)}
+
+
+def feed():
+    return sw.HealthFeed(sw.AirWatch(sw.Thresholds()), sw.Thresholds())
+
+
+def test_an_ah_line_becomes_a_watch_sample():
+    pah = sw.air_health_parser()
+    s = sw.sample_from_ah(pah.parse_line(ah(123456, 7, bcn="0xA", wfb_drop=2, udp_ddrops=3, wfb_ps="0:1:1:2:0")))
+    assert (s["uptime"], s["boot_id"], s["temp"], s["fps"], s["mcs"], s["fec"], s["channel"], s["txpower"]) == \
+        (1234.56, "6f1c2a3b", 45, 90, 7, "4/8", 157, 17), s
+    assert (s["idr_honoured"], s["idr_dropped"], s["bcn_550"]) == (432, 26, "0xa"), s
+    assert s["wfb_drop"] == 5 and s["udp_ddrops"] == 3 and s["wfb_ps"] == "0:1:1:2:0", s   # wfb_tx + socket drops
+
+
+def test_a_cached_line_does_not_count_the_window_drops_again():
+    """sa>0 lines repeat the slow group (00-DESIGN-air-health.md §2): its window sums must not be counted twice."""
+    s = sw.sample_from_ah(sw.air_health_parser().parse_line(ah(100, 1, sa=2, wfb_drop=4)))
+    assert s["wfb_drop"] is None and s["fps"] == 90, s
+
+
+def test_the_boot_id_stays_a_string_even_when_it_looks_like_a_number():
+    for boot in ("00123456", "1e345678"):
+        rec = sw.air_health_record(ah(100, 1, boot=boot))
+        assert rec["boot"] == boot, rec["boot"]
+    for boot in ("", "NA"):                                                  # no boot: no record key to trust
+        assert sw.air_health_record(ah(100, 1, boot=boot))["boot"] is None
+
+
+def test_the_first_poll_is_a_baseline_and_later_polls_take_only_new_lines():
+    f = feed()
+    lines = [ev(100, "WB_PID", "WARN", kind="restart", old=1, new=2), ah(100, 1), ah(300, 2)]
+    assert f.poll(head(3.5), lines, 1000.0, 1000.2) == []                    # no replay of old events
+    lines2 = lines[1:] + [ah(500, 3), ev(700, "WB_PID", "WARN", kind="restart", old=2, new=3), ah(700, 4)]
+    a = f.poll(head(7.5), lines2, 1005.0, 1005.2)
+    assert codes(a) == [("WARN", "WB_PID")], codes(a)                         # the new event, once
+    assert a[0].source == "air_health" and a[0].detail["new"] == 3, a[0]
+    assert f.poll(head(8.0), lines2, 1005.5, 1005.7) == []                    # the same tail again: nothing
+
+
+def test_a_line_is_placed_on_pc_time_by_its_uptime():
+    f = feed()
+    f.poll(head(3.0), [ah(100, 1)], 1000.0, 1000.2)
+    a = f.poll(head(9.0), [ah(100, 1), ah(300, 2, wfb_drop=7)], 1006.0, 1006.2)
+    drop = [x for x in a if x.code == "WFB_DROP"][0]
+    assert abs(drop.t - (1006.1 - (9.0 - 3.0))) < 1e-6, drop.t               # mid-call - (now_up - line_up)
+
+
+def test_events_the_rules_already_cover_are_not_repeated():
+    f = feed()
+    f.poll(head(3.0), [ah(100, 1)], 1000.0, 1000.2)
+    a = f.poll(head(5.0), [ah(100, 1), ev(300, "THERMAL", "WARN", temp=71, thr=70), ah(300, 2, temp=71),
+                           ev(300, "ROTATE", n=2)], 1002.0, 1002.2)
+    assert codes(a) == [("ALERT", "AIR_TEMP")], codes(a)
+
+
+def test_a_stale_log_is_an_alert_then_clears():
+    f = feed()
+    f.poll(head(3.0), [ah(100, 1)], 1000.0, 1000.2)
+    a = f.poll(head(30.0), [ah(100, 1)], 1027.0, 1027.2)                      # the logger stopped 29 s ago
+    assert ("ALERT", "AIR_HEALTH_STALE") in codes(a), codes(a)
+    a = f.poll(head(32.0), [ah(100, 1), ah(3100, 2)], 1029.0, 1029.2)
+    assert ("INFO", "AIR_HEALTH_STALE_OK") in codes(a), codes(a)
+
+
+def test_no_log_at_all_is_stale():
+    a = feed().poll(head(3.0), [], 1000.0, 1000.2)
+    assert codes(a) == [("ALERT", "AIR_HEALTH_STALE")] and a[0].detail["reason"] == "nolog", a
+
+
+def test_a_reboot_seen_by_the_poll_is_an_alert_once_even_when_the_logger_restarts():
+    f = feed()
+    f.poll(head(501.0), [ah(49800, 1), ah(50000, 2)], 1000.0, 1000.2)        # up 500 s: longer than the new boot
+    a = f.poll(head(4.0, boot="99999999-new"), [], 1060.0, 1060.2)            # rebooted, logger not running
+    assert ("ALERT", "AIR_REBOOT") in codes(a) and ("ALERT", "AIR_HEALTH_STALE") in codes(a), codes(a)
+    a = f.poll(head(9.0, boot="99999999-new"), [ev(600, "AH_START", boot="99999999"), ah(600, 1, boot="99999999"),
+                                                  ah(800, 2, boot="99999999")], 1065.0, 1065.2)
+    assert ("ALERT", "AIR_REBOOT") not in codes(a), codes(a)
+    assert ("INFO", "AIR_HEALTH_STALE_OK") in codes(a) and ("INFO", "AH_START") in codes(a), codes(a)
+
+
+def test_lines_written_around_the_poll_raise_no_false_reboot():
+    """The poll reads the air's uptime, then the tail: lines written in between are newer than that uptime."""
+    f = feed()
+    got = []
+    for i in range(10):
+        up = 1000 + i * 250                                                   # cs
+        lines = [ah(up - 400 + 200 * j, i * 3 + j) for j in range(4)]        # the last line is after the head read
+        got += codes(f.poll(head(up / 100.0), lines, 2000.0 + i * 5, 2000.2 + i * 5))
+    assert ("ALERT", "AIR_REBOOT") not in got, got
+
+
+def test_a_seq_jump_is_a_gap_warning():
+    f = feed()
+    f.poll(head(3.0), [ah(100, 1)], 1000.0, 1000.2)
+    a = f.poll(head(9.0), [ah(100, 1), ah(700, 5)], 1006.0, 1006.2)
+    assert codes(a) == [("WARN", "AIR_HEALTH_GAP")] and a[0].detail["missed"] == 3, a
+
+
+def test_the_idr_storm_is_seen_from_the_totals_of_consecutive_lines():
+    f = feed()
+    f.poll(head(3.0), [ah(100, 1, idr_h=0)], 1000.0, 1000.2)
+    got, lines, h = [], [ah(100, 1, idr_h=0)], 0
+    for i in range(2, 20):
+        h += 8                                                                # 4 per 2 s tick
+        lines = (lines + [ah(i * 200 - 100, i, idr_h=h)])[-15:]
+        got += codes(f.poll(head((i * 200 - 100) / 100.0), lines, 1000.0 + 2 * i, 1000.2 + 2 * i))
+    assert ("WARN", "IDR_RATE") in got, got
+
+
+def test_the_clock_offset_comes_from_the_poll_head():
+    f = feed()
+    for i in range(30):
+        pc = 2000.0 + i * 5.13
+        up = 700.0 + i * 5.13 + 0.1
+        f.poll(head(round(up, 2), now=int(pc + 0.1 - 0.75)), [ah(int(up * 100), i + 1)], pc, pc + 0.4)
+    assert abs(f.watch.clock_offset - 0.75) < 0.25 and f.watch.clock_err < 0.25, (f.watch.clock_offset,
+                                                                                  f.watch.clock_err)
+
+
+def test_the_tail_output_splits_into_head_and_lines():
+    text = ("now=1790000009\nuptime=9.01\nboot_id=6f1c2a3b-0000\ncfg_bitrate=16000\ncfg_fps=90\n"
+            + ah(700, 4) + "\n" + ev(700, "ROTATE", n=2) + "\n")
+    h, lines = sw.parse_tail(text)
+    assert (h["now"], h["uptime"], h["boot_id"], h["cfg_bitrate"], h["cfg_fps"]) == \
+        (1790000009, 9.01, "6f1c2a3b-0000", 16000, 90), h
+    assert len(lines) == 2 and lines[0].startswith("AH ") and lines[1].startswith("EV "), lines
+
+
+def test_the_tail_script_goes_to_the_air_with_lf_only():
+    cr = bytes([13])
+    script = sw.HealthTail().script
+    assert cr not in script and b"/tmp/air_health.log" in script, script[:80]
+
+
+def test_auto_picks_air_health_only_when_its_log_is_live():
+    assert sw.pick_air_source("auto", head(9.0), [ah(800, 4)]) == "health"
+    assert sw.pick_air_source("auto", head(9.0), []) == "probe"
+    assert sw.pick_air_source("auto", head(90.0), [ah(800, 4)]) == "probe"                    # stale
+    assert sw.pick_air_source("auto", head(9.0, boot="77777777-x"), [ah(800, 4)]) == "probe"  # an old boot
+    assert sw.pick_air_source("auto", None, []) == "probe"
+    assert sw.pick_air_source("health", head(9.0), []) == "health"
+
+
+def test_the_report_reads_air_health_lines_on_pc_time():
+    lines = [ev(500, "WB_PID", "WARN", kind="restart", old=1, new=2), ah(700, 4, temp=52)]
+    rows = sw.timeline([], [], lines, start=0, end=5000, air_anchor=(1010.0, 9.0), periodic=True)
+    assert [(r[1], r[2], r[3]) for r in rows] == [("air_health", "WB_PID", "WARN"), ("air_health", "AH", "INFO")], rows
+    assert rows[0][0] == 1010.0 - (9.0 - 5.0) and "kind=restart" in rows[0][4] and "boot=" not in rows[0][4], rows
+    assert "temp=52" in rows[1][4], rows
+    assert sw.timeline([], [], lines[1:], start=0, end=5000, air_anchor=(1010.0, 9.0)) == []    # AH = periodic
+
+
+def test_the_report_does_not_list_a_forwarded_event_twice():
+    alerts = [sw.Alert(1006.0, "WARN", "air_health", "WB_PID", {"new": 2}),
+              sw.Alert(1006.0, "ALERT", "air", "WFB_DROP", {})]
+    lines = [ev(500, "WB_PID", "WARN", kind="restart", old=1, new=2)]
+    rows = sw.timeline(alerts, [], lines, start=0, end=5000, air_anchor=(1010.0, 9.0))
+    assert sorted((r[1], r[2]) for r in rows) == [("air", "WFB_DROP"), ("air_health", "WB_PID")], rows
+
+
+def test_the_report_carries_the_air_summary():
+    recs = [sw.air_health_record(x) for x in (ah(100, 1, temp=44), ah(300, 2, temp=48))]
+    md = sw.render_report([], 0, 1, air_summary=sw.air_summary(recs))
+    assert "## Air health summary" in md and "lines_ah | 2 |" in md and "| events |" not in md, md
 
 
 if __name__ == "__main__":

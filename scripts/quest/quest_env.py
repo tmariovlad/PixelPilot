@@ -70,6 +70,9 @@ STREAMS_DIR = native(_env("QUEST_STREAMS", os.path.join(HERE, "streams")))
 OUT_DIR = native(_env("QUEST_OUT", os.path.join(HERE, "out")))
 LATCH_DIR = os.path.normpath(os.path.join(HERE, "..", "quest-latch"))
 GS_KEY = native(_env("GS_KEY", os.path.join(HERE, "keys", "gs.key")))
+# air_health.sh + parse_air_health.py (the air's health logger and its one parser) live in the OpenIPC repo
+AIR_HEALTH_DIR = native(_env("AIR_HEALTH_DIR", "C:/xampp/htdocs/openipc-low-latency-and-others-video/repos/tasks/"
+                                               "air-health-2026-09-29"))
 
 
 def stream_path(name):

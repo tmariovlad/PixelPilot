@@ -19,7 +19,9 @@ it ends, so a condition that lasts does not repeat every 5 s.
 
 ```bash
 cd scripts/quest
-# during the slot (never touches the Quest); Ctrl-C or --duration ends it; exit 1 if any ALERT was raised
+# during the slot (never touches the Quest); Ctrl-C or --duration ends it; exit 1 if any ALERT was raised.
+# With air_health.sh running on the air (-40's §6: scp + `sh /tmp/air_health.sh start`), --air-source health reads
+# its ring instead of probing; the default auto does so when the ring is live.
 python3 slot_watch.py watch --expect channel=157 --expect txpower=17 --alerts out/slot_watch/<slot>/alerts.log
 # between measurements only (adb over Wi-Fi); exit 1 if any ALERT
 python3 slot_watch.py between --expect guardian_pause=1 --expect prox=CLOSE --alerts out/slot_watch/<slot>/alerts.log
@@ -40,24 +42,53 @@ Thresholds are flags (`--idr-max`, `--idr-window`, `--fps-min`, `--temp-warn`, `
 
 ## The air (`watch`)
 
-Every `--interval` (5 s) one read-only `ssh air sh -s` runs [air_probe.sh](../../scripts/quest/air_probe.sh), which is
-sent on stdin, so nothing is quoted through a chain of shells. The radio, `iw` and `config.json` reads come only every
-`--slow-every` polls (30 s), to spare CPU0 next to the encoder. No waybeam `set`, no register access.
+Every `--interval` (5 s) one read-only `ssh air sh -s` runs a script sent on stdin, so nothing is quoted through a
+chain of shells. No waybeam `set`, no register access. `--air-source` picks what that script reads:
 
-| Code | Level | Condition (default) | Source on the air |
-|---|---|---|---|
-| `AIR_REBOOT` | ALERT | `boot_id` changed, or uptime went back | `/proc/sys/kernel/random/boot_id`, `/proc/uptime` |
-| `AIR_UNREACHABLE` | ALERT | 2 polls in a row failed (ssh timeout 3 s + 10 s) | — |
-| `WFB_DROP` | ALERT | wfb_tx `p_drop` > 0 in the lines added since the last poll | `/tmp/wfbtx.log` PKT lines, field 6 (wfb-ng `tx.cpp:826`, as `bitrate_grid.sh`) |
-| `IDR_RATE` | WARN | (honoured + dropped) key-frame requests > 2/s over the last 30 s; clears below 1.5/s (hysteresis) | `GET /api/v1/idr/stats` |
-| `AIR_FPS_LOW` | ALERT | waybeam fps < 97.5 % of the configured fps (90 → 87.75; 167 → 162.8) | last `[verbose] … fps … kbps` line of `/tmp/waybeam.log`; `config.json` `fps` |
-| `AIR_TEMP` | WARN ≥ 60 °C, ALERT ≥ 70 °C | the `TEMP_SKIP` / `TEMP_STOP` of `bitrate_grid.sh` | `/sys/devices/virtual/mstar/msys/TEMP_R` |
-| `AIR_CHANNEL`, `AIR_TXPOWER`, `AIR_MCS`, `AIR_FEC`, `AIR_BITRATE`, `AIR_CFG_FPS` | ALERT vs `--expect`, WARN on an unplanned change | — | `iw dev wlan0 info`; `wfb_tx_cmd 9000 get_radio` / `get_fec`; `config.json` |
-| `AIR_BCN_550` | ALERT | the last bcn_off readback is not `0x10` (fix (a) off) | last line of `/tmp/linkmode-bcn.log`, written by `linkmode-air.sh` on every switch |
+- **`health`: air_health.sh's ring log** (openipc-…-40, OpenIPC `444d017`, `repos/tasks/air-health-2026-09-29/`).
+  - [air_tail.sh](../../scripts/quest/air_tail.sh) prints the air's `date`, `/proc/uptime` and `boot_id`, then the
+    last 15 lines of `/tmp/air_health.log.1` and of `/tmp/air_health.log`.
+  - The watcher keeps only the lines it has not seen (by boot, uptime and the exact line), so air_health is the one
+    sampler on the air. Two samplers would run the same `wfb_tx_cmd` / `iw` / `wget` calls on CPU0, and two
+    `read_reg` users race.
+  - The lines are parsed by -40's [parse_air_health.py](../../../openipc-low-latency-and-others-video/repos/tasks/air-health-2026-09-29/parse_air_health.py)
+    (`parse_line`, `AH_KEYS`, `EV_KEYS`, `summarize`: the one parser of the format), found through `AIR_HEALTH_DIR`
+    in `quest_env.py`. One exception: `boot=` is kept as the raw text, because the parser turns an all-digit boot id
+    such as `00123456` into a number.
+  - Each line is placed on PC time by its own uptime: mid-call − (the poll's uptime − the line's uptime), to about
+    10 ms, with no clock offset needed.
+  - The first poll is only a baseline: its last AH line, and no replay of older events.
+  - The only extra read on the air is waybeam's configured bitrate/fps from `config.json` every 30 s, which
+    air_health leaves out.
+- **`probe`**: [air_probe.sh](../../scripts/quest/air_probe.sh), the fallback while air_health is not running. The
+  radio, `iw` and `config.json` reads come every `--slow-every` polls (30 s), to spare CPU0 next to the encoder.
+- **`auto`** (the default) takes `health` when the ring has a line of the current boot that is at most 10 s old, and
+  `probe` otherwise. It decides once, at the start. `WATCH_START` says which it took (`air_source=`).
 
-**0x550 is not read from the register.** A read writes the address into `read_reg` first, which races linkmode's own
-`bcn_off` and any second sampler (openipc-…-40, 2026-09-29). The watcher reads bcn_off's log line instead.
-air_health will be the one sampler of the register between switches.
+Both sources feed the same rules ([AirWatch](../../scripts/quest/slot_watch.py)); `sample_from_ah` maps an AH line
+onto the probe's keys.
+
+| Code | Level | Condition (default) | probe reads | air_health keys |
+|---|---|---|---|---|
+| `AIR_REBOOT` | ALERT | `boot_id` changed, or uptime went back | `/proc/sys/kernel/random/boot_id`, `/proc/uptime` | the poll's `boot_id` (seen even while the logger is down); `boot`, `up` |
+| `AIR_UNREACHABLE` | ALERT | 2 polls in a row failed (ssh timeout 3 s + 10 s) | — | — |
+| `WFB_DROP` | ALERT | input drops > 0 | wfb_tx `p_drop` in the `/tmp/wfbtx.log` PKT lines since the last poll (field 6, wfb-ng `tx.cpp:826`) | `wfb_drop` + `udp_ddrops` (the socket's drops) on `sa=0` lines only, with `idr_dh` and the per-second `wfb_ps` in the alert: RXQ_DROP's condition |
+| `IDR_RATE` | WARN | (honoured + dropped) key-frame requests > 2/s over the last 30 s; clears below 1.5/s (hysteresis) | `GET /api/v1/idr/stats` | `idr_h` + `idr_d` totals |
+| `AIR_FPS_LOW` | ALERT | waybeam fps < 97.5 % of the configured fps (90 → 87.75; 167 → 162.8) | last `[verbose] … fps … kbps` line of `/tmp/waybeam.log`; `config.json` `fps` | `fps`; `config.json` from air_tail.sh |
+| `AIR_TEMP` | WARN ≥ 60 °C, ALERT ≥ 70 °C | the `TEMP_SKIP` / `TEMP_STOP` of `bitrate_grid.sh` | `/sys/devices/virtual/mstar/msys/TEMP_R` | `temp` |
+| `AIR_CHANNEL`, `AIR_TXPOWER`, `AIR_MCS`, `AIR_FEC`, `AIR_BITRATE`, `AIR_CFG_FPS` | ALERT vs `--expect`, WARN on an unplanned change | — | `iw dev wlan0 info`; `wfb_tx_cmd 9000 get_radio` / `get_fec`; `config.json` | `ch`, `txpwr`, `mcs`, `fec_k`/`fec_n`; `config.json` |
+| `AIR_BCN_550` | ALERT | the last bcn_off readback is not `0x10` (fix (a) off) | last line of `/tmp/linkmode-bcn.log`, written by `linkmode-air.sh` on every switch | `bcn` (the same log line) |
+| `AIR_HEALTH_STALE` | ALERT | health source: no line of this boot newer than 10 s (`reason=lag`), a ring from an earlier boot (`reason=boot`: not restarted after a reboot), or no ring (`reason=nolog`) | — | `up`, `boot` |
+| `AIR_HEALTH_GAP` | WARN | health source: `seq` jumped, so lines were missed (a poll > 30 s late, or air_health paused below its `/tmp` floor, `TMP_LOW`) | — | `seq` |
+| air_health's events | the air's level | `AH_START`, `AH_STOP`, `WB_PID`, `WFBTX_PID`, `ALINK`, `VMODED`, `REG550`, `REG550_OK`, `TMP_LOW`, `TMP_OK`, passed on as `air_health <CODE>` with their details | — | `EV … code=` |
+
+air_health's `THERMAL`, `CHAN`, `TXPWR` and `RXQ_DROP` are not passed on, because `AIR_TEMP`, `AIR_CHANNEL` /
+`AIR_TXPOWER` and `WFB_DROP` report the same thing. `ROTATE` is not passed on either.
+
+**0x550 is not read from the register by the watcher.** A read writes the address into `read_reg` first, which races
+linkmode's own `bcn_off` and any second sampler (openipc-…-40, 2026-09-29). The watcher reads bcn_off's log line.
+air_health is the one sampler of the register (`reg550` every 30 s, skipped while linkmode runs). Its `REG550` /
+`REG550_OK` events reach the alerts through the health source.
 
 **Clock offset.** `AIR_STATUS` carries `clock_offset_s` (PC time − air time) and `clock_err_s` (its half-width).
 - The air's `date +%s` has whole seconds only, and the ssh call takes 0.3–1.5 s. The first version subtracted `date`
@@ -97,15 +128,15 @@ A pass without problems prints `INFO quest QUEST_OK` with every value read.
   - Format: `t_mono_ms=… t_wall_ms=… code=… level=INFO|WARN|ALERT k=v …`.
   - Read from `files/ppxr_health.log(.1)` with `adb exec-out run-as com.openipc.pixelpilot.xr cat`, because at the end of a long slot `logcat -d` can have lost them.
   - `t_wall_ms` is the Quest's clock, corrected by the Quest − PC offset measured at the pull.
-- The air's `air_health` log (openipc-…-40; not deployed yet): `/tmp/air_health.log(.1)`, 2 s lines plus `EV` event lines, epoch `t=`. It is corrected by the air − PC offset.
-  - The line schema is provisional until -40 sends the final one. The parser takes `t=` / `epoch=` / `ts=` and `code=`.
+- The air's `air_health` ring (openipc-…-40, final schema in its `00-DESIGN-air-health.md` §2): `/tmp/air_health.log.1` and `/tmp/air_health.log`, an `AH` line every 2 s plus `EV … code=` event lines, read with one `cat` over ssh after the slot.
+  - Parsed by -40's `parse_air_health.py` (see [the air](#the-air-watch)).
+  - Each line is placed on PC time by its uptime against an anchor: the air's `/proc/uptime`, read in a second, short call, at that call's middle. That call is separate because copying a few MB takes long enough to blur a time taken with it. /tmp is a tmpfs, so every line in the ring belongs to the current boot.
+  - The events that `watch` passed on (`air_health <CODE>`) are dropped from the alerts side when the ring is there, so none is listed twice.
+  - The report adds -40's `summarize` table over the lines in the slot window (stats, window sums, gaps, `reg550` / `bcn` values seen, events per code), without its event list, which the timeline already has.
 
 The report (`alerts-report.md`) has a count per source/code/level and the timeline. Periodic lines (`HEALTH`, the
-air's 2 s lines, `AIR_STATUS`) are left out unless `--periodic`.
-
-**When air_health is deployed** it becomes the single air sampler (-40's request: two samplers would run the same
-`wfb_tx_cmd` / `iw` / `wget` calls on CPU0). Then `watch` should read the new lines of `/tmp/air_health.log` instead of
-running its own probe. That switch is open until the schema is final.
+air's `AH` lines, `AIR_STATUS`) are left out unless `--periodic`. An `AH` row keeps a short key list
+(`REPORT_AH_KEYS`: temp, cpu0, fps, kbps, mcs, FEC, channel, power, `sa`, drops, `idr_dh`, `bcn`, `reg550`).
 
 ## DPS-150 checklist (the coordinator, with the dps150 MCP)
 
@@ -121,7 +152,7 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
 
 ## Verification (2026-09-29)
 
-- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
+- [test_slot_watch.py](../../scripts/quest/test_slot_watch.py): 31 offline checks before the air_health source (50 with it, below) (including 36's real-format lines from `test_health_log.py`, file and logcat). They cover the probe parser, every
   air rule including edge-triggering and recovery, the Quest parsers and rules, the alert line round trip, the
   timeline window/offsets, the clock bound, the IDR window, and `--expect-until`. Run `python3 test_slot_watch.py`.
   - Seven mutants were killed: drop `>` → `>=`, the uptime rule removed, the IDR threshold disabled, the edge trigger removed, the IDR hysteresis removed, the offset bound replaced by the old post-call estimate, and `--expect-until` ignored.
@@ -138,4 +169,19 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
   - the clock sawtooth;
   - the planned revert raised a false ALERT (now `--expect-until`);
   - `IDR_RATE` flapped WARN ↔ OK 12 times in 10 min with a 5 s delta (now a 30 s window with hysteresis).
-- **Not yet run live:** the one-call `between` script on the headset, the fixed clock against the sidecar's SYNC value, and `report` with real app / air_health lines (the app lines arrive with APK 579305ee; air_health is not deployed).
+- **air_health source (2026-09-29, offline)** [PROVEN: `python3 test_slot_watch.py` → 50 `ok`, exit 0]. 19 checks, built on AH lines made from -40's `AH_KEYS` (its test checks that list against the script's emit line). They cover:
+  - the AH → sample mapping, and window sums counted only on `sa=0` lines;
+  - the boot id kept as text, including `""` and `NA`;
+  - the baseline and deduplication, and line times from uptime;
+  - covered events not repeated;
+  - stale (`lag` / `boot` / `nolog`) and its clearing;
+  - one `AIR_REBOOT` when the logger restarts after a reboot;
+  - no false reboot from lines written between the poll's uptime read and its tail;
+  - the `seq` gap, and an IDR storm seen from the totals;
+  - the clock from the poll head;
+  - the tail parser, and the LF-only script;
+  - `auto`;
+  - the report's anchor, the event deduplication and the air summary.
+  - 12 mutants were killed, each checked to apply to exactly one place. One mutant (the uptime reset on a reboot) first survived: the test's old boot had a smaller uptime than the new one. The test now uses a 500 s old boot, and that mutant dies.
+  - `report --no-quest --no-air` on the hdredo alerts still writes its 31 rows.
+- **Not yet run live:** the one-call `between` script on the headset, the fixed clock against the sidecar's SYNC value, `report` with real app / air_health lines (the app lines arrive with APK 579305ee), and `watch --air-source health` against a running air_health.sh. air_health was built and tested offline only, and has not run on the air yet (its §6 procedure and §8 checklist).

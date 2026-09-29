@@ -3,9 +3,11 @@ The coordinator starts it; every alert is one line on stdout (follow it with Mon
 
 Usage:
   slot_watch.py watch   [--interval 5] [--duration S] [--expect channel=157 --expect txpower=12 ...] [--alerts F]
-      Reads the air over eth0 (ssh alias `air`, one read-only `sh -s` of air_probe.sh per poll) until Ctrl-C or
-      --duration. Never touches the Quest: adb over Wi-Fi during a measurement costs the RTL packets
-      (docs/xr/troubleshooting.md, U1). Exit 1 if any ALERT was raised, else 0.
+                        [--air-source auto|health|probe]
+      Reads the air over eth0 (ssh alias `air`, one read-only `sh -s` per poll) until Ctrl-C or --duration. When
+      air_health.sh runs on the air (openipc-…-40) it only reads the new lines of its ring (air_tail.sh: one sampler
+      on the air); otherwise it probes (air_probe.sh). `auto` picks at the start. Never touches the Quest: adb over
+      Wi-Fi during a measurement costs the RTL packets (docs/xr/troubleshooting.md, U1). Exit 1 if any ALERT, else 0.
   slot_watch.py between [--expect guardian_pause=1 --expect prox=CLOSE] [--alerts F]
       One pass over the Quest, only between measurements: awake, XR app running, Guardian/proximity as planned,
       the RTL8812AU (0bda:8812) attached, free storage, battery. Exit 1 if any ALERT.
@@ -37,6 +39,7 @@ sys.path.insert(0, env.LATCH_DIR)
 import health_log  # noqa: E402  (scripts/quest-latch, pixelpilot-xr-36: the one parser of the app's health lines)
 
 AIR_PROBE = os.path.join(env.HERE, "air_probe.sh")
+AIR_TAIL = os.path.join(env.HERE, "air_tail.sh")
 AIR_HOST = os.environ.get("AIR_SSH", "air")          # ~/.ssh/config alias of 192.168.100.132 (key auth)
 RTL_ID = "0bda:8812"
 LEVELS = ("INFO", "WARN", "ALERT")
@@ -154,6 +157,7 @@ class Thresholds:
     temp_alert: int = 70             # bitrate_grid.sh TEMP_STOP
     drop_max: int = 0                # wfb_tx p_drop per poll
     unreachable_after: int = 2       # consecutive failed polls
+    health_stale_s: float = 10.0     # air_health's newest line older than this (5 of its 2 s ticks) = not logging
     storage_min_mb: int = 2048
     battery_min: int = 30            # link-envelope.md stop rule
 
@@ -227,23 +231,32 @@ class AirWatch:
         return self.clock.err
 
     def update(self, s, pc_time, pc_before=None):
-        """pc_time = when the poll returned; pc_before = when it started (bounds the air clock offset)."""
-        out = []
+        """One probe poll. pc_time = when it returned; pc_before = when it started (bounds the air clock offset)."""
         if s is None:
-            self.misses += 1
-            if self.misses >= self.th.unreachable_after:
-                out += self.cond.set(pc_time, "air", "AIR_UNREACHABLE", "ALERT", {"misses": self.misses})
-            return out
-        self.misses = 0
-        out += self.cond.set(pc_time, "air", "AIR_UNREACHABLE", None)
-        out += self._reboot(s, pc_time)
+            return self.poll_failed(pc_time)
+        out = self.poll_ok(pc_time) + self.observe(s, pc_time)
         if s.get("now") is not None and s.get("uptime") is not None:
-            self.clock.add(s["now"], s["uptime"], pc_time if pc_before is None else pc_before, pc_time)
-        out += self._rates(s, pc_time)
-        out += self._levels(s, pc_time)
-        out += self._radio(s, pc_time)
+            self.add_clock(s["now"], s["uptime"], pc_time if pc_before is None else pc_before, pc_time)
+        return out
+
+    def poll_failed(self, t):
+        self.misses += 1
+        if self.misses >= self.th.unreachable_after:
+            return self.cond.set(t, "air", "AIR_UNREACHABLE", "ALERT", {"misses": self.misses})
+        return []
+
+    def poll_ok(self, t):
+        self.misses = 0
+        return self.cond.set(t, "air", "AIR_UNREACHABLE", None)
+
+    def observe(self, s, t):
+        """The rules over one sample taken at PC time t."""
+        out = self._reboot(s, t) + self._rates(s, t) + self._levels(s, t) + self._radio(s, t)
         self.last.update({k: v for k, v in s.items() if v is not None})
         return out
+
+    def add_clock(self, date, uptime, pc_before, pc_after):
+        self.clock.add(date, uptime, pc_before, pc_after)
 
     def _reboot(self, s, t):
         old_id, old_up = self.last.get("boot_id"), self.last.get("uptime")
@@ -254,6 +267,7 @@ class AirWatch:
             return []
         self.idr.clear()          # the counters restart with the air
         self.clock.reset()
+        self.last.pop("uptime", None)   # the old boot's uptime says nothing about the new one
         return [Alert(t, "ALERT", "air", "AIR_REBOOT", {"uptime": new_up, "was_uptime": old_up})]
 
     def _rates(self, s, t):
@@ -261,7 +275,8 @@ class AirWatch:
         drop = s.get("wfb_drop")
         if drop is not None:
             out += self.cond.set(t, "air", "WFB_DROP", "ALERT" if drop > self.th.drop_max else None,
-                                 {"drop": drop, "inj": s.get("wfb_inj")})
+                                 {"drop": drop, "inj": s.get("wfb_inj")}
+                                 | {k: s[k] for k in ("udp_ddrops", "idr_dh", "wfb_ps") if s.get(k) is not None})
         rate = self._idr_rate(s, t)
         if rate is not None:
             on = "IDR_RATE" in self.cond.active
@@ -321,29 +336,209 @@ class AirWatch:
         return out
 
 
+def _script(path):
+    """A .sh to send on stdin, LF only: core.autocrlf=true checks it out with CRLF, and the air's busybox sh would take
+    the CR as part of each command."""
+    with open(path, "rb") as f:
+        return f.read().replace(b"\r\n", b"\n")
+
+
+def _ssh(host, script, args, timeout):
+    """One read-only `ssh host sh -s -- args` with the script on stdin (no quoting through shells) -> stdout, or None."""
+    cmd = ["ssh", "-o", "ConnectTimeout=3", "-o", "BatchMode=yes", host, "sh", "-s", "--", *args]
+    try:
+        r = subprocess.run(cmd, input=script, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return None
+    return r.stdout.decode("utf-8", "replace") if r.returncode == 0 else None
+
+
 class AirProbe:
-    """One read-only ssh exec of air_probe.sh per poll (the script goes on stdin: no quoting through shells)."""
+    """One read-only ssh exec of air_probe.sh per poll (the fallback while air_health.sh is not running)."""
 
     def __init__(self, host=AIR_HOST, timeout=10):
         self.host, self.timeout = host, timeout
-        # core.autocrlf=true checks the .sh out with CRLF; the air's busybox sh would take the CR as part of each command
-        with open(AIR_PROBE, "rb") as f:
-            self.script = f.read().replace(b"\r\n", b"\n")
+        self.script = _script(AIR_PROBE)
         self.prev_lines = -1
 
     def read(self, slow):
-        cmd = ["ssh", "-o", "ConnectTimeout=3", "-o", "BatchMode=yes", self.host, "sh", "-s", "--",
-               str(self.prev_lines), "1" if slow else "0"]
-        try:
-            r = subprocess.run(cmd, input=self.script, capture_output=True, timeout=self.timeout)
-        except subprocess.TimeoutExpired:
+        text = _ssh(self.host, self.script, [str(self.prev_lines), "1" if slow else "0"], self.timeout)
+        if text is None:
             return None
-        if r.returncode != 0:
-            return None
-        s = parse_air_probe(r.stdout.decode("utf-8", "replace"))
+        s = parse_air_probe(text)
         if s["wfb_lines"] is not None:
             self.prev_lines = s["wfb_lines"]
         return s
+
+
+# ---------------------------------------------------------------- air: air_health.sh's ring log (openipc-…-40)
+
+def air_health_parser():
+    """parse_air_health.py (openipc-…-40, 444d017): the one parser of the air_health lines, from env.AIR_HEALTH_DIR."""
+    if env.AIR_HEALTH_DIR not in sys.path:
+        sys.path.insert(0, env.AIR_HEALTH_DIR)
+    try:
+        import parse_air_health
+    except ImportError as e:
+        raise SystemExit(f"parse_air_health.py not found in {env.AIR_HEALTH_DIR} (set AIR_HEALTH_DIR): {e}")
+    return parse_air_health
+
+
+def air_health_record(line):
+    """parse_air_health.parse_line, with boot= kept as the raw text (the parser makes "00123456" the int 123456)."""
+    rec = air_health_parser().parse_line(line)
+    if rec is not None and "boot" in rec:
+        m = re.search(r"(?:^|\s)boot=(\S+)", line)
+        rec["boot"] = m.group(1) if m and m.group(1) != "NA" else None
+    return rec
+
+
+def _air_pc(rec, anchor):
+    """PC time of an air_health line from its uptime: anchor = (PC time, the air's uptime in s) of one moment. 10 ms,
+    and no clock offset needed. Valid for lines of the anchor's boot (/tmp is a tmpfs: older boots' lines are gone)."""
+    return anchor[0] - (anchor[1] - rec["up"] / 100.0)
+
+
+def sample_from_ah(rec):
+    """An AH record -> the sample AirWatch's rules read (the keys of parse_air_probe). The window sums (wfb_drop,
+    udp_ddrops, idr_dh, wfb_ps) only on sa=0 lines: a cached line repeats them (00-DESIGN-air-health.md §2). The drop
+    rule counts wfb_tx's input drops and the UDP socket's (the two halves of RXQ_DROP)."""
+    g = rec.get
+    k, n, bcn = g("fec_k"), g("fec_n"), str(g("bcn") or "").lower()
+    s = {"now": None, "uptime": g("up") / 100.0 if isinstance(g("up"), int) else None, "boot_id": g("boot"),
+         "temp": g("temp"), "tx_packets": g("wl_txp"), "fps": g("fps"), "kbps": g("kbps"),
+         "idr_honoured": g("idr_h"), "idr_dropped": g("idr_d"), "mcs": g("mcs"),
+         "fec": f"{k}/{n}" if k is not None and n is not None else None, "channel": g("ch"), "txpower": g("txpwr"),
+         "bcn_550": bcn if re.fullmatch(r"0x[0-9a-f]+", bcn) else None, "wfb_drop": None, "wfb_inj": None}
+    if g("sa") == 0 and (g("wfb_drop") is not None or g("udp_ddrops") is not None):
+        s.update(wfb_drop=(g("wfb_drop") or 0) + (g("udp_ddrops") or 0), wfb_inj=g("wfb_inj"),
+                 udp_ddrops=g("udp_ddrops"), idr_dh=g("idr_dh"), wfb_ps=g("wfb_ps"))
+    return s
+
+
+TAIL_HEAD = ("now", "uptime", "boot_id", "cfg_bitrate", "cfg_fps")
+
+
+def parse_tail(text):
+    """air_tail.sh output -> (head, lines): head = the air's clock and boot + waybeam's configured bitrate/fps (slow
+    polls only), lines = the AH/EV lines in file order."""
+    head, lines = dict.fromkeys(TAIL_HEAD), []
+    for line in text.splitlines():
+        if line.startswith(("AH ", "EV ")):
+            lines.append(line)
+        elif "=" in line:
+            k, v = line.split("=", 1)
+            if k in head:
+                head[k] = v.strip() or None
+    head["now"], head["uptime"] = _num(head["now"], int), _num(head["uptime"])
+    head["cfg_bitrate"], head["cfg_fps"] = _num(head["cfg_bitrate"], int), _num(head["cfg_fps"], int)
+    return head, lines
+
+
+class HealthTail:
+    """One read-only ssh exec of air_tail.sh per poll -> (head, lines), or (None, []) when the call failed."""
+
+    def __init__(self, host=AIR_HOST, timeout=10, lines=15):
+        self.host, self.timeout, self.lines = host, timeout, lines   # 15 lines per file = 30 s of 2 s ticks
+        self.script = _script(AIR_TAIL)
+
+    def read(self, slow):
+        text = _ssh(self.host, self.script, ["1" if slow else "0", str(self.lines)], self.timeout)
+        return parse_tail(text) if text is not None else (None, [])
+
+
+def pick_air_source(mode, head, lines, stale_s=Thresholds.health_stale_s):
+    """--air-source auto: air_health when its ring has a line of this boot at most stale_s old, else the probe."""
+    if mode != "auto":
+        return mode
+    if head is None or head.get("uptime") is None:
+        return "probe"
+    boot = (head.get("boot_id") or "")[:8]
+    ups = [r["up"] for r in map(air_health_record, lines) if r and r.get("boot") == boot and isinstance(r.get("up"), int)]
+    return "health" if ups and head["uptime"] - max(ups) / 100.0 <= stale_s else "probe"
+
+
+class HealthFeed:
+    """air_health.sh's ring log as the watcher's air source: one sampler on the air, the same rules as the probe.
+
+    Each poll reads the air's clock, then the tail of the ring. Only lines not seen before go to AirWatch, each at its
+    own PC time (_air_pc). A reboot is seen from the poll's boot_id even while the logger is down. Events no rule
+    covers are passed on as `air_health <CODE>` at the air's level. The first poll is only a baseline: its last AH
+    line, no replay of older events. The watcher's own findings about the log: AIR_HEALTH_STALE (no line newer than
+    health_stale_s, none of this boot, or no log) and AIR_HEALTH_GAP (seq jumped: lines the tail missed)."""
+    COVERED = {"THERMAL", "THERMAL_OK", "CHAN", "TXPWR", "RXQ_DROP", "ROTATE"}   # AIR_TEMP, AIR_*, WFB_DROP; noise
+
+    def __init__(self, watch, th):
+        self.watch, self.th, self.cond = watch, th, Conditions()
+        self.boot, self.up, self.at_up, self.seq = None, None, set(), None
+        self.old_boots, self.baseline = set(), True
+
+    def poll(self, head, lines, pc_before, pc_after):
+        if head is None or head.get("uptime") is None:
+            return self.watch.update(None, pc_after)
+        anchor = ((pc_before + pc_after) / 2, head["uptime"])
+        boot = (head.get("boot_id") or "")[:8] or None
+        # boot only, no uptime: lines written between the head read and the tail are newer than the head's uptime
+        out = self.watch.poll_ok(pc_after) + self.watch.observe({"boot_id": boot}, anchor[0])
+        for rec in self.new_records(lines):
+            t = _air_pc(rec, anchor)
+            out += self._event(rec, t) if rec["_kind"] == "EV" else self._sample(rec, head, t)
+        if head.get("now") is not None:
+            self.watch.add_clock(head["now"], head["uptime"], pc_before, pc_after)
+        return out + self._stale(boot, head["uptime"], anchor[0])
+
+    def new_records(self, lines):
+        """The tail's lines (chronological) -> the records not seen before, by (boot, uptime) + the exact line."""
+        out = []
+        for line in lines:
+            rec = air_health_record(line)
+            if rec is None or rec.get("boot") is None or not isinstance(rec.get("up"), int) \
+                    or rec["boot"] in self.old_boots:
+                continue
+            if rec["boot"] != self.boot:
+                if self.boot is not None:
+                    self.old_boots.add(self.boot)
+                self.boot, self.up, self.at_up, self.seq = rec["boot"], None, set(), None
+            if self.up is not None and (rec["up"] < self.up or (rec["up"] == self.up and line in self.at_up)):
+                continue
+            if rec["up"] != self.up:
+                self.up, self.at_up = rec["up"], set()
+            self.at_up.add(line)
+            out.append(rec)
+        if self.baseline and out:
+            self.baseline = False
+            out = [r for r in out if r["_kind"] == "AH"][-1:]
+        return out
+
+    def _sample(self, rec, head, t):
+        out, seq = [], rec.get("seq")
+        if isinstance(seq, int):
+            if self.seq is not None and seq > self.seq + 1:
+                out.append(Alert(t, "WARN", "air", "AIR_HEALTH_GAP", {"missed": seq - self.seq - 1, "seq": seq}))
+            self.seq = seq
+        s = sample_from_ah(rec)
+        s.update(cfg_bitrate=head.get("cfg_bitrate"), cfg_fps=head.get("cfg_fps"))
+        return out + self.watch.observe(s, t)
+
+    def _event(self, rec, t):
+        code = rec.get("code")
+        if code is None or code in self.COVERED:
+            return []
+        meta = air_health_parser().EV_KEYS
+        level = rec.get("level") if rec.get("level") in LEVELS else "INFO"
+        return [Alert(t, level, "air_health", str(code), {k: rec[k] for k in rec["_keys"] if k not in meta})]
+
+    def _stale(self, boot, uptime, t):
+        lag = None
+        if self.boot is None:
+            reason = "nolog"
+        elif self.boot != boot:
+            reason = "boot"                                   # the ring is from an earlier boot: not restarted
+        else:
+            lag = round(uptime - self.up / 100.0, 1)
+            reason = "lag" if lag > self.th.health_stale_s else None
+        return self.cond.set(t, "air", "AIR_HEALTH_STALE", "ALERT" if reason else None,
+                             {"reason": reason, "lag_s": lag} if reason else {"lag_s": lag})
 
 
 # ---------------------------------------------------------------- quest (between measurements only)
@@ -425,12 +620,9 @@ def quest_alerts(q, th, expect, t=None):
 
 # ---------------------------------------------------------------- end-of-slot timeline
 
-def _kv(tokens):
-    return dict(p.split("=", 1) for p in tokens if "=" in p)
-
-
 APP_META = ("t_wall_ms", "t_mono_ms", "code", "level")
-AIR_META = ("t=", "up_cs=", "code=")
+REPORT_AH_KEYS = ("temp", "cpu0", "fps", "kbps", "mcs", "fec_k", "fec_n", "ch", "txpwr", "sa", "wfb_drop",
+                  "udp_ddrops", "idr_dh", "bcn", "reg550")   # the periodic AH row keeps these (a line has 72 keys)
 
 
 def _alert_row(a, periodic):
@@ -458,31 +650,41 @@ def app_summary(lines):
     return health_log.summarize(lines) if lines else {}
 
 
-def _air_row(line, offset, periodic):
-    """An air_health line (epoch s in t=; "EV …" = an event, anything else periodic) -> a row, or None."""
-    f = line.split()
-    event = bool(f) and f[0] == "EV"
-    body = f[1:] if event else f
-    kv = _kv(body)
-    ts = kv.get("t", kv.get("epoch", kv.get("ts")))
-    if ts is None or not (event or periodic):
+def _air_row(line, anchor, periodic):
+    """An air_health line (parse_air_health's schema) -> a row on PC time via its uptime (_air_pc), or None. EV = an
+    event; AH (every 2 s) only with periodic, with REPORT_AH_KEYS."""
+    rec = air_health_record(line)
+    if rec is None or anchor is None or not isinstance(rec.get("up"), int) or (rec["_kind"] == "AH" and not periodic):
         return None
-    level = kv.get("level", "EV" if event else "INFO")
-    rest = " ".join(x for x in body if not x.startswith(AIR_META))
-    return float(ts) + offset, "air_health", kv.get("code", "AIR_HEALTH"), level, rest
+    t = _air_pc(rec, anchor)
+    if rec["_kind"] == "EV":
+        meta = air_health_parser().EV_KEYS
+        rest = " ".join(f"{k}={rec[k]}" for k in rec["_keys"] if k not in meta)
+        return t, "air_health", str(rec.get("code")), rec.get("level") or "INFO", rest
+    return t, "air_health", "AH", "INFO", " ".join(f"{k}={_token(rec.get(k))}" for k in REPORT_AH_KEYS)
 
 
-def timeline(alerts, app_lines, air_lines, start, end, air_offset=0.0, app_offset=0.0, periodic=False):
+def timeline(alerts, app_lines, air_lines, start, end, air_anchor=None, app_offset=0.0, periodic=False):
     """Rows (pc_time, source, code, level, detail) in [start, end], sorted by time. app_lines are corrected by
-    app_offset (Quest clock -> PC), air_lines by air_offset. Periodic lines (HEALTH, the air's 2 s lines, the watcher's
-    AIR_STATUS) only with periodic=True."""
-    rows = [_alert_row(a, periodic) for a in alerts]
+    app_offset (Quest clock -> PC), air_lines placed by air_anchor (_air_pc). Periodic lines (HEALTH, the air's AH
+    lines, the watcher's AIR_STATUS) only with periodic=True. The events the watcher passed on (source air_health)
+    are left out when the air's own lines are there, so none is listed twice."""
+    rows = [_alert_row(a, periodic) for a in alerts if not (air_lines and a.source == "air_health")]
     rows += [_app_row(line, app_offset, periodic) for line in app_lines]
-    rows += [_air_row(line, air_offset, periodic) for line in air_lines]
+    rows += [_air_row(line, air_anchor, periodic) for line in air_lines]
     return sorted(r for r in rows if r is not None and start <= r[0] <= end)
 
 
-def render_report(rows, start, end, app_summary=None):
+def air_summary(records):
+    """parse_air_health.summarize of the air's records, without its event list (the timeline has the events)."""
+    if not records:
+        return {}
+    s = air_health_parser().summarize(records)
+    s.pop("events", None)
+    return s
+
+
+def render_report(rows, start, end, app_summary=None, air_summary=None):
     counts = {}
     for r in rows:
         counts[(r[1], r[2], r[3])] = counts.get((r[1], r[2], r[3]), 0) + 1
@@ -492,9 +694,11 @@ def render_report(rows, start, end, app_summary=None):
     out += [f"| {s} | {c} | {lv} | {n} |" for (s, c, lv), n in sorted(counts.items())]
     out += ["", "## Timeline (PC time)", "", "| time | source | level | code | detail |", "|---|---|---|---|---|"]
     out += [f"| {fmt(t)} | {s} | {lv} | {c} | {d.replace('|', '/')} |" for t, s, c, lv, d in rows]
-    if app_summary:
-        out += ["", "## App health summary (health_log.summarize)", "", "| key | value |", "|---|---|"]
-        out += [f"| {k} | {str(v).replace('|', '/')} |" for k, v in app_summary.items()]
+    for title, summary in (("App health summary (health_log.summarize)", app_summary),
+                           ("Air health summary (parse_air_health.summarize, slot window)", air_summary)):
+        if summary:
+            out += ["", f"## {title}", "", "| key | value |", "|---|---|"]
+            out += [f"| {k} | {str(v).replace('|', '/')} |" for k, v in summary.items()]
     return "\n".join(out) + "\n"
 
 
@@ -511,17 +715,13 @@ def pull_app_lines():
 
 
 def pull_air_lines(host=AIR_HOST):
-    cmd = ["ssh", "-o", "ConnectTimeout=3", "-o", "BatchMode=yes", host, "sh", "-s"]
-    script = b"cat /tmp/air_health.log.1 /tmp/air_health.log 2>/dev/null; echo @@now=$(date +%s)\n"
+    """Both ring files of air_health.sh -> (lines, anchor). The anchor comes from its own short call (the air's uptime
+    at the middle of it), because the copy of a few MB takes long enough to blur a time taken with it."""
+    text = _ssh(host, b"cat /tmp/air_health.log.1 /tmp/air_health.log 2>/dev/null\n", [], timeout=60)
     t0 = time.time()
-    try:
-        r = subprocess.run(cmd, input=script, capture_output=True, timeout=30)
-    except subprocess.TimeoutExpired:
-        return [], 0.0
-    text = r.stdout.decode("utf-8", "replace")
-    m = re.search(r"@@now=(\d+)", text)
-    offset = round((t0 + time.time()) / 2 - int(m.group(1)), 1) if m else 0.0
-    return [l for l in text.splitlines() if not l.startswith("@@")], offset
+    up = _num((_ssh(host, b"cut -d' ' -f1 /proc/uptime\n", [], timeout=10) or "").strip())
+    anchor = ((t0 + time.time()) / 2, up) if up is not None else None
+    return [l for l in (text or "").splitlines() if l.startswith(("AH ", "EV "))], anchor
 
 
 # ---------------------------------------------------------------- CLI
@@ -551,19 +751,31 @@ def cmd_watch(args):
     sink, th = Sink(args.alerts), _thresholds(args)
     start = time.time()
     until = parse_until(args.expect_until, start)
-    watch, probe = AirWatch(th, _expect(args.expect), expect_until=until), AirProbe(args.air_host)
+    watch = AirWatch(th, _expect(args.expect), expect_until=until)
+    probe, tail = AirProbe(args.air_host), HealthTail(args.air_host)
+    source = args.air_source
+    if source == "auto":
+        source = pick_air_source(source, *tail.read(slow=False), stale_s=th.health_stale_s)
+    feed = HealthFeed(watch, th) if source == "health" else None
     stop = {"now": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(now=True))
     end = start + args.duration if args.duration else None
     sink.emit([Alert(start, "INFO", "watch", "WATCH_START", {"interval_s": args.interval, "host": args.air_host,
-                                                             "expect_until": until})])
+                                                             "air_source": source, "expect_until": until})])
     n = 0
     while not stop["now"] and (end is None or time.time() < end):
-        t_poll = time.time()
-        s = probe.read(slow=n % args.slow_every == 0)
-        now = time.time()
-        sink.emit(watch.update(s, now, pc_before=t_poll))
-        if s is not None and args.status_every and n % args.status_every == 0:
+        t_poll, slow = time.time(), n % args.slow_every == 0
+        if feed:
+            head, lines = tail.read(slow)
+            now = time.time()
+            sink.emit(feed.poll(head, lines, t_poll, now))
+            ok = head is not None
+        else:
+            s = probe.read(slow)
+            now = time.time()
+            sink.emit(watch.update(s, now, pc_before=t_poll))
+            ok = s is not None
+        if ok and args.status_every and n % args.status_every == 0:
             sink.emit([Alert(now, "INFO", "air", "AIR_STATUS", {k: watch.last.get(k) for k in (
                 "uptime", "temp", "fps", "kbps", "mcs", "fec", "channel", "txpower", "cfg_bitrate")}
                 | {"clock_offset_s": watch.clock_offset, "clock_err_s": watch.clock_err})])
@@ -588,13 +800,15 @@ def cmd_report(args):
     start = args.since or (alerts[0].t if alerts else 0.0)
     end = args.until or (alerts[-1].t if alerts else time.time())
     app, app_off = ([], 0.0) if args.no_quest else pull_app_lines()
-    air, air_off = ([], 0.0) if args.no_air else pull_air_lines(args.air_host)
-    rows = timeline(alerts, app, air, start, end, air_offset=air_off, app_offset=app_off, periodic=args.periodic)
+    air, anchor = ([], None) if args.no_air else pull_air_lines(args.air_host)
+    rows = timeline(alerts, app, air, start, end, air_anchor=anchor, app_offset=app_off, periodic=args.periodic)
+    recs = [r for r in map(air_health_record, air) if r and anchor and isinstance(r.get("up"), int)
+            and start <= _air_pc(r, anchor) <= end]
     out = os.path.splitext(args.alerts)[0] + "-report.md"
     with open(out, "w", encoding="utf-8", newline="\n") as f:
-        f.write(render_report(rows, start, end, app_summary=app_summary(app)))
+        f.write(render_report(rows, start, end, app_summary=app_summary(app), air_summary=air_summary(recs)))
     print(f"report {out}: {len(rows)} rows (app lines {len(app)}, clock {app_off:+} s; air lines {len(air)}, "
-          f"clock {air_off:+} s)")
+          f"{len(recs)} in the slot, anchor {anchor})")
     return 0
 
 
@@ -618,6 +832,8 @@ def main(argv=None):
     p.add_argument("--expect", action="append", metavar="KEY=VALUE",
                    help="planned value: air channel/txpower/mcs/fec/bitrate/fps; quest guardian_pause/prox")
     p.add_argument("--air-host", default=AIR_HOST)
+    p.add_argument("--air-source", choices=("auto", "health", "probe"), default="auto",
+                   help="watch: air_health's ring (one sampler on the air), the probe, or auto = the ring if it is live")
     p.add_argument("--interval", type=float, default=5.0)
     p.add_argument("--slow-every", type=int, default=6, help="radio/iw/config reads every N polls (6 x 5 s = 30 s)")
     p.add_argument("--status-every", type=int, default=12, help="an AIR_STATUS line every N polls (0 = never)")
