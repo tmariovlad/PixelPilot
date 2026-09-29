@@ -1,0 +1,21 @@
+# Air log: channel A/B ch157 (inside the neighbour's VHT80 149-161) vs ch165 (outside), 2026-09-29 21:26-21:39
+# /tmp/chan_ab.sh md5 57db658d on air .132. Interference lead: a floor of ~4 bad-FCS frames/s at every TX power in the
+# MCS4 staircase (air-pw-stair4-2026-09-29.txt). ABBA 90 s on pixelpilot-xr-25's shared schedule (pref_ab, the Quest
+# relaunches XR on the step's channel at each step start; first 15 s of each step excluded on the Quest side).
+# HD state as stair4: 1080p90 12 Mbit, MCS4 1SS STBC LDPC long GI 20 MHz, FEC 4/8, 17 dBm, video wfb_tx input buffer
+# 1 MB, alink/vmoded stopped; headset ~1 m. Switches with the L1 verb `linkmode-air.sh chan <n>` (took <1 s, BCN 0x10).
+# Clock this boot: PC - air ~ +0.85 s (slot_watch). NOTE: the "SET/STEP ch17" labels after a switch are a script bug
+# (set_pw reuses the variable C); the real channel is the ch= field: steps are 157, 165, 165, 157.
+# RESULT (air side): drop 0, ant_drop 0 in all four steps; 17 dBm kept on both channels.
+PRE epoch=1790706165 ch=157 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":4,"dropped":0 temp=44
+SET ch157 epoch=1790706399 ch=157 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":65,"dropped":6
+STEP ch157 epoch=1790706399 drop=0 inj=207473 ant_drop=0 temp=51 ch=157 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":78,"dropped":8
+CHAN -> 165 took=0s verdict=AIR_STATE=wfb FREQ=5825 CH=165 BCN=0x10
+SET ch17 epoch=1790706489 ch=165 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":78,"dropped":8
+STEP ch17 epoch=1790706489 drop=0 inj=207403 ant_drop=0 temp=51 ch=165 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":90,"dropped":11
+SET ch165 epoch=1790706579 ch=165 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":90,"dropped":11
+STEP ch165 epoch=1790706579 drop=0 inj=205271 ant_drop=0 temp=51 ch=165 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":98,"dropped":12
+CHAN -> 157 took=0s verdict=AIR_STATE=wfb FREQ=5785 CH=157 BCN=0x10
+SET ch17 epoch=1790706669 ch=157 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":98,"dropped":12
+STEP ch17 epoch=1790706669 drop=0 inj=205908 ant_drop=0 temp=51 ch=157 mcs_index=4 k=4 n=8 br=12000 txp=17.00 rmem=1048576 vpid=974 idr="honored":116,"dropped":12
+END epoch=1790706773 ch=157 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608 vpid=2274 idr="honored":1,"dropped":0 json=3d8a1456 temp=47
