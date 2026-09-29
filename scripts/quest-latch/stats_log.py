@@ -22,12 +22,17 @@ def parse_line(line):
     head = line[:i].split()
     if not head:
         return None
+    return head[0], parse_kv(line[i + len(TAG):])
+
+
+def parse_kv(text):
+    """{key: value} of the "k=v k=v" tokens in text; "-" (unknown) becomes empty. Shared with health_log."""
     kv = {}
-    for token in line[i + len(TAG):].split():
+    for token in text.split():
         k, sep, v = token.partition("=")
         if sep:
             kv[k] = "" if v == "-" else v
-    return head[0], kv
+    return kv
 
 
 def to_tsv(lines):
