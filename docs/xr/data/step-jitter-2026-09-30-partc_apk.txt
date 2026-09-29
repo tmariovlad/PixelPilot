@@ -1,0 +1,7 @@
+# ab_partc_apk, steps docs/xr/data/steps-2026-09-30-partc-apk.txt, --air-offset-s 0.0908 (Quest-PC 0.0908 + PC-air 0), --guard-s 15. ~01:08-01:16 local; Part C run 2: APK ABBA c8986061/1f0870c2/1f0870c2/c8986061 in race on ch165, 120 s each, rig flashing; prefs = baseline + stats_log (IDR off); install on a tag change + XR relaunch per step; steps on the PC clock.
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_partc_apk.pftrace docs/xr/data/steps-2026-09-30-partc-apk.txt --air-offset-s 0.0908 --guard-s 15
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 apk_c8986061   14870   0.00   4.85  10.99   28.98
+ 1 apk_1f0870c2   14854   0.00   4.68  11.09   26.59
+ 2 apk_1f0870c2   14852   0.00   4.75  11.54   39.33
+ 3 apk_c8986061   14863   0.00   4.75  10.20   25.70

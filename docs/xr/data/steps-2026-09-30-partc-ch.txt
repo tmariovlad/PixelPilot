@@ -1,0 +1,6 @@
+# Part C run 1 steps on the PC clock (pref_ab START_AT 1790719250, the air switched with the chan verb at the same epochs, PC-air -0.14 s): race mode, ch157/165/165/157, 120 s each; every step starts with an XR relaunch (guard 15 s).
+1790719250 ch157
+1790719370 ch165
+1790719490 ch165
+1790719610 ch157
+1790719730 END

@@ -225,7 +225,10 @@ The [G2G audit](research/2026-09-29-g2g-40ms-audit.md) §5 part A: the four mode
   - The air's waybeam watchdog logged a 2:1 phase DEGRADAT (Fps_1s 59.61) at air 716921 (coordinator).
   - The second h8 step and both h8 steps of h8→hd held 118–120 fps.
   - Part A's hd followed that episode [INFERRED as the candidate trigger; the watchdog saw no DEGRADAT during that hd].
-- Part C (channel and APK A/B) and the -A gate follow in the same slot; see the next sections when written.
+- **Part C (race, 640×480 167 fps, rig flashing), two ABBA runs with [pref_ab.sh](../../scripts/quest/pref_ab.sh) START_AT, XR relaunch per step, guard 15 s** [PROVEN: [segments ch](data/segments-2026-09-30-partc-ch.txt), [audit ch](data/audit-2026-09-30-partc_ch.txt), [segments APK](data/segments-2026-09-30-partc-apk.txt), [audit APK](data/audit-2026-09-30-partc_apk.txt); steps [ch](data/steps-2026-09-30-partc-ch.txt) · [APK](data/steps-2026-09-30-partc-apk.txt)]:
+  - **Channel 157 / 165 / 165 / 157:** no loss after FEC on either channel in race. Loss before FEC is 2.61 / 2.22 % on 157 vs 1.72 / 1.73 % on 165, the same direction as the MCS7 runs. The pipeline is identical: tot50 12.1–12.3 ms, 167 fps.
+  - **APK c8986061 / 1f0870c2 / 1f0870c2 / c8986061 on 165:** indistinguishable. tot50 12.2 ms in all four (enc 1.9 · lnk 3.8–3.9 · dec 1.5 · dsp 4.1), pre-FEC 1.64–1.74 %, post-FEC ≤ 0.01 %. The app build does not change the Quest's encode→latch.
+- The -A gate follows in the same slot (section to be written).
 
 ### Bufferbloat gate 2026-09-29 22:39–22:50: over capacity, the 1 MB input buffer holds a standing queue of +210–240 ms
 

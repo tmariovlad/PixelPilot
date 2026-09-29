@@ -1,0 +1,7 @@
+# ab_partc_ch, steps docs/xr/data/steps-2026-09-30-partc-ch.txt, --air-offset-s 0.0865 (Quest-PC 0.0865 + PC-air 0), --guard-s 15. ~00:59-01:07 local; Part C run 1: channel ABBA 157/165/165/157 in race (640x480 167 fps), 120 s each, rig flashing; APK c8986061, prefs = baseline + stats_log (IDR off); XR relaunch per step; steps on the PC clock.
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_partc_ch.pftrace docs/xr/data/steps-2026-09-30-partc-ch.txt --air-offset-s 0.0865 --guard-s 15
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 ch157          14873   0.00   4.99  12.76   32.38
+ 1 ch165          14873   0.00   4.68  10.80   26.01
+ 2 ch165          14844   0.00   4.78  11.08   33.05
+ 3 ch157          14864   0.00   4.89  11.86   29.32

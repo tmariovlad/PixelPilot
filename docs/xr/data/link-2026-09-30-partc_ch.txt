@@ -1,0 +1,13 @@
+# ab_partc_ch, steps docs/xr/data/steps-2026-09-30-partc-ch.txt, --air-offset-s 0.0865 (Quest-PC 0.0865 + PC-air 0), --guard-s 15. ~00:59-01:07 local; Part C run 1: channel ABBA 157/165/165/157 in race (640x480 167 fps), 120 s each, rig flashing; APK c8986061, prefs = baseline + stats_log (IDR off); XR relaunch per step; steps on the PC clock.
+# python3 scripts/quest-latch/ab_link.py scripts/quest/out/ab_partc_ch.pftrace docs/xr/data/steps-2026-09-30-partc-ch.txt --air-offset-s 0.0865 --guard-s 15
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 ch157              -    582.2        -      7.8      0.0    100.0     87.0     82.0     18.5     18.6        -        -        -        -        -      2.6        -        -        -        -        -        -        -
+ 1 ch165              -    591.3        -      5.2      0.0    100.0     86.0     83.0     17.9     17.8        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+ 2 ch165              -    608.6        -      5.3      0.0    100.0     86.0     83.0     22.3     22.0        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+ 3 ch157              -    597.1        -      6.8      0.0    100.0     87.0     82.0     19.0     19.0        -        -        -        -        -      2.2        -        -        -        -        -        -        -
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ch157                 -    589.7        -      7.3      0.0    100.0     87.0     82.0     18.8     18.8        -        -        -        -        -      2.4        -        -        -        -        -        -        -
+ch165                 -    600.0        -      5.2      0.0    100.0     86.0     83.0     20.1     19.9        -        -        -        -        -      1.7        -        -        -        -        -        -        -

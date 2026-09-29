@@ -1,0 +1,6 @@
+# Part C run 2 steps on the PC clock (pref_ab START_AT 1790719820): race on ch165, APK c8986061 (A) vs 1f0870c2 (B), 120 s each; install on a tag change + XR relaunch per step (guard 15 s).
+1790719820 apk_c8986061
+1790719940 apk_1f0870c2
+1790720060 apk_1f0870c2
+1790720180 apk_c8986061
+1790720300 END

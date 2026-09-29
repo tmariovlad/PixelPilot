@@ -1,0 +1,8 @@
+# ab_partc_ch (2026-09-30), steps docs/xr/data/steps-2026-09-30-partc-ch.txt (PC clock), Quest-PC 0.0865 s, guard 15 s; race 640x480 167 fps, rig flashing; APK/prefs per the steps file.
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_partc_ch.raw.txt docs/xr/data/steps-2026-09-30-partc-ch.txt --quest-minus-air-s 0.0865 --guard-s 15 --keys enc50,lnk50,dec50,dsp50,tot50,tot95,fps,mcs,rssiA,pdata
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   enc50   lnk50   dec50   dsp50   tot50   tot95     fps     mcs   rssiA   pdata
+ 0 ch157          45     1.9     3.9     1.5     4.1    12.3    17.8   167.0     2.0   -23.0     2.5
+ 1 ch165          45     1.9     3.8     1.5     4.0    12.1    17.1   167.0     2.0   -24.0     1.7
+ 2 ch165          45     1.9     3.8     1.5     4.1    12.2    17.3   167.0     2.0   -24.0     1.7
+ 3 ch157          45     1.9     3.9     1.5     4.1    12.3    17.4   167.0     2.0   -23.0     2.1

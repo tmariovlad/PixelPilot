@@ -1,0 +1,13 @@
+# ab_partc_apk, steps docs/xr/data/steps-2026-09-30-partc-apk.txt, --air-offset-s 0.0908 (Quest-PC 0.0908 + PC-air 0), --guard-s 15. ~01:08-01:16 local; Part C run 2: APK ABBA c8986061/1f0870c2/1f0870c2/c8986061 in race on ch165, 120 s each, rig flashing; prefs = baseline + stats_log (IDR off); install on a tag change + XR relaunch per step; steps on the PC clock.
+# python3 scripts/quest-latch/ab_link.py scripts/quest/out/ab_partc_apk.pftrace docs/xr/data/steps-2026-09-30-partc-apk.txt --air-offset-s 0.0908 --guard-s 15
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 apk_c8986061        -    588.1        -      5.2      0.0    100.0     86.0     83.0     18.7     18.6        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+ 1 apk_1f0870c2        -    593.7        -      4.9      0.0    100.0     86.0     83.0     18.1     18.0        -        -        -        -        -      1.6        -        -        -        -        -        -        -
+ 2 apk_1f0870c2        -    588.4        -      5.0      0.0    100.0     86.0     83.0     18.0     18.0        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+ 3 apk_c8986061        -    585.9        -      5.2      0.0    100.0     86.0     83.0     20.0     20.0        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+apk_c8986061          -    587.0        -      5.2      0.0    100.0     86.0     83.0     19.4     19.3        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+apk_1f0870c2          -    591.0        -      4.9      0.0    100.0     86.0     83.0     18.0     18.0        -        -        -        -        -      1.6        -        -        -        -        -        -        -

@@ -1,0 +1,16 @@
+# ab_partc_apk, steps docs/xr/data/steps-2026-09-30-partc-apk.txt, --air-offset-s 0.0908 (Quest-PC 0.0908 + PC-air 0), --guard-s 15. ~01:08-01:16 local; Part C run 2: APK ABBA c8986061/1f0870c2/1f0870c2/c8986061 in race on ch165, 120 s each, rig flashing; prefs = baseline + stats_log (IDR off); install on a tag change + XR relaunch per step; steps on the PC clock.
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_partc_apk.pftrace docs/xr/data/steps-2026-09-30-partc-apk.txt --air-offset-s 0.0908 --guard-s 15 --logcat scripts/quest/out/logcat_partc_apk.txt
+PKT_LOST events 479, packets 484; TX DESC 9607; block overrides 0
+post-FEC gap sizes: 1:476, 2:2, 4:1
+loss within 2 ms after a Quest TX: 1.5 % (control, TX shifted 50 ms: 0.8 %)
+Rayleigh Z @    1.000 Hz =      0.5
+Rayleigh Z @    4.000 Hz =      0.5
+Rayleigh Z @    9.766 Hz =      0.9
+Rayleigh Z @   72.000 Hz =      0.1
+Rayleigh Z @   90.000 Hz =      1.1
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 apk_c8986061  26887     1   468     1    1.74   0.00    0.0    1    0    0    0    0   0.0   23.0   7.2
+ 1 apk_1f0870c2  27143     4   440     4    1.64   0.01    0.0    0    0    0    1    0   0.0   21.4   7.1
+ 2 apk_1f0870c2  26902     0   446     0    1.66   0.00    0.0    0    0    0    0    0   0.0   26.4   7.1
+ 3 apk_c8986061  26884     0   464     0    1.73   0.00    0.0    0    0    0    0    0   0.0   26.0   7.3

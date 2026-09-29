@@ -1,0 +1,7 @@
+# ab_partc_apk, steps docs/xr/data/steps-2026-09-30-partc-apk.txt, --air-offset-s 0.0908 (Quest-PC 0.0908 + PC-air 0), --guard-s 15. ~01:08-01:16 local; Part C run 2: APK ABBA c8986061/1f0870c2/1f0870c2/c8986061 in race on ch165, 120 s each, rig flashing; prefs = baseline + stats_log (IDR off); install on a tag change + XR relaunch per step; steps on the PC clock.
+# python3 scripts/quest-latch/latency_bins.py scripts/quest/out/ab_partc_apk.pftrace docs/xr/data/steps-2026-09-30-partc-apk.txt --air-offset-s 0.0908 --guard-s 15 --baseline apk_c8986061
+ms above the 'apk_c8986061' drift line; bins of 10 s from each step's guarded start; slope in ms/s
+ 0 apk_c8986061  slope  +0.001     1.0    1.2    1.1    1.2    1.2    1.3    1.2    1.1    1.2
+ 1 apk_1f0870c2  slope  +0.000     1.1    1.1    1.1    1.3    1.3    1.1    1.3    1.1    1.0
+ 2 apk_1f0870c2  slope  +0.000     1.2    1.1    1.2    1.2    1.2    1.3    1.0    1.1    1.2
+ 3 apk_c8986061  slope  +0.000     1.0    1.2    1.1    1.3    1.2    1.4    1.1    1.2    1.1
