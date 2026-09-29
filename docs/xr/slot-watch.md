@@ -209,5 +209,8 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
     - after `expect_until`, the planned revert: MCS/TX power `WARN`, waybeam and wfb_tx restarts passed on as `air_health WB_PID` / `WFBTX_PID`;
     - `WFB_DROP` 4 and 10 at those restarts, where RXQ_DROP shows the UDP socket drops.
   - It exposed a flaw, since fixed: the report's pull ran `cat` of both ring files. Before the first rotation `.log.1` does not exist, so `cat` exited 1 and the pull returned 0 lines. `air_tail.sh` had the same exposure with a missing log. Both scripts now end with `exit 0`, and a test runs them under a local `sh` with no ring files (red before).
-  - An oddity in air_health, reported to -40: `rmem_def=1 rmem_max=1` on all 184 lines. The fixture reads 163840, and the kernel's floor for `rmem_default` is far above 1.
+  - It also exposed an air_health bug: `rmem_def=1 rmem_max=1` on all 184 lines. -40 fixed it in OpenIPC `e0e4c76`, and air_health.sh is now md5 `ef736a43`.
+    - Cause: an integer sysctl returns EOF at any offset > 0, and busybox `read` reads one byte at a time, so only the first digit came through.
+    - The fix reads both files with one `cat`. The regression test T15 runs against a real /proc/sys.
+    - The parser is unchanged, and the watcher does not use these fields. Treat the `rmem_*` values in the (B) ring as invalid.
 - **Not yet run live:** `report` with the app's real health lines (APK 579305ee; the (B) report ran with `--no-quest`, because the next run was measuring and adb over Wi-Fi is not allowed then).
