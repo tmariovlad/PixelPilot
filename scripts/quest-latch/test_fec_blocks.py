@@ -60,10 +60,6 @@ class AirDropJoin(unittest.TestCase):
            "5002000\tPKT\t0:2950:3960000:2950:3960000:0:0\n",
            "5002000\tTX_ANT\t1\t2900:0:0:0:0\n"]
 
-    def test_air_log_intervals(self):
-        iv = fec_blocks.parse_air_log(self.AIR)
-        self.assertEqual(iv, [(5000000, 5001000, 50), (5001000, 5002000, 0)])
-
     def test_each_block_is_marked_by_the_air_second_it_falls_in(self):
         # Quest wall (logcat epoch) - quest_minus_pc = PC wall; + air_minus_pc = air get_time_ms
         q_minus_pc_ms, air_minus_pc_ms = 500.0, 5000000 - 1790640000000

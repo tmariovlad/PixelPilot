@@ -17,6 +17,7 @@ extern "C" {
 #include "devourer/src/IRtlDevice.h"
 #include "devourer/src/WiFiDriver.h"
 #include "wfb-ng/src/rx.hpp"
+#include "RtpHoleAggregator.h"
 #include <cstdint>
 #include <functional>
 #include <jni.h>
@@ -52,10 +53,11 @@ class WfbngLink {
     void stop(JNIEnv *env, jobject androidContext, jint fd);
 
     std::mutex agg_mutex;
-    std::unique_ptr<AggregatorUDPv4> video_aggregator;
+    std::unique_ptr<RtpHoleAggregator> video_aggregator;
     DecErrProbe video_decrypt_probe;   // guarded by agg_mutex, like the aggregator
     RxRateHistogram video_rx_rate;     // RX rate of the video packets per stats window (Stats page)
     FecBlockProbe video_fec_probe;     // PPXR_FECBLK per unrecoverable video FEC block; guarded by agg_mutex
+    RtpHoleProbe video_rtp_probe;      // PPXR_RTPHOLE per hole in the delivered RTP sequence; guarded by agg_mutex
     std::unique_ptr<AggregatorUDPv4> mavlink_aggregator;
     std::unique_ptr<AggregatorUDPv4> udp_aggregator;
 

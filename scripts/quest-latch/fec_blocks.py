@@ -16,11 +16,12 @@ gap_max p50/p95, RSSI means, suppressed lines.
 Air join (--air-log <the air's /tmp/wfbtx.log> --quest-minus-pc-ms Q --air-minus-pc-ms A): marks each block Y / N by
 whether the air's wfb_tx dropped packets at injection in the same log interval (1 s), "?" when the air log does not
 cover it. Clocks: the capture's logcat epoch (Quest wall) - Q = PC wall; + A = the air's get_time_ms (A = air ms minus
-PC epoch ms). The summary then gives the share of lost blocks the air drops explain.
+PC epoch ms; air_drops.py). The summary then gives the share of lost blocks the air drops explain.
 """
 import sys
 from collections import Counter
 
+from air_drops import epoch_ms, mark, parse_air_log, to_air_ms
 from stats_log import parse_kv
 
 TAG = " PPXR_FECBLK: "
@@ -73,30 +74,6 @@ def _blocks(lines):
     return [b for b in (parse(line) for line in lines) if b]
 
 
-def parse_air_log(lines):
-    """[(start_ms, end_ms, dropped)] from the air's wfb_tx PKT lines: ts TAB PKT TAB
-    fec_timeouts:incoming:b_in:injected:b_inj:dropped:truncated (wfb-ng tx.cpp:729-730). The counters are per log
-    interval, so a line covers (previous ts, ts]."""
-    out, prev = [], None
-    for line in lines:
-        f = line.rstrip("\n").split(TAB)
-        if len(f) < 3 or f[1] != "PKT":
-            continue
-        ts, c = int(f[0]), f[2].split(":")
-        if prev is not None and len(c) >= 6:
-            out.append((prev, ts, int(c[5])))
-        prev = ts
-    return out
-
-
-def _epoch_ms(line):
-    head = line.split(None, 1)
-    try:
-        return float(head[0]) * 1000.0
-    except (ValueError, IndexError):
-        return None
-
-
 def join_air(lines, air_lines, quest_minus_pc_ms, air_minus_pc_ms):
     """The blocks, each with air_drop = Y / N (the air dropped packets in the same interval or not) / ? (not covered)."""
     intervals = parse_air_log(air_lines)
@@ -105,15 +82,8 @@ def join_air(lines, air_lines, quest_minus_pc_ms, air_minus_pc_ms):
         b = parse(line)
         if b is None:
             continue
-        wall = _epoch_ms(line)
-        mark = "?"
-        if wall is not None:
-            air_ms = wall - quest_minus_pc_ms + air_minus_pc_ms
-            for start, end, dropped in intervals:
-                if start < air_ms <= end:
-                    mark = "Y" if dropped > 0 else "N"
-                    break
-        b["air_drop"] = mark
+        wall = epoch_ms(line)
+        b["air_drop"] = "?" if wall is None else mark(to_air_ms(wall, quest_minus_pc_ms, air_minus_pc_ms), intervals)
         out.append(b)
     return out
 

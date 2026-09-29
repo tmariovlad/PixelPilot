@@ -187,8 +187,11 @@ The dated result sections that used to follow here were moved verbatim into topi
 - **[Unrecoverable FEC blocks (PPXR_FECBLK)](xr/fec-block-probe.md)** (2026-09-29, built + host-tested, not yet on the
   headset): one line per video FEC block wfb-ng gave up on (mirrors its Aggregator: flush / ring), with the fragment
   bitmap, per-fragment RSSI, span, the longest inter-frame gap (the outage) and bad-FCS frames around it
-  (keep_corrupted); fec_blocks.py classifies outages vs bad FCS vs scattered loss. Keywords: FEC block, outage, loss
-  burst, bad FCS, keep_corrupted, bloc FEC pierdut.
+  (keep_corrupted); fec_blocks.py classifies outages vs bad FCS vs scattered loss. PPXR_RTPHOLE (§6): each hole in
+  the delivered RTP sequence with the wfb slots lost around it; rtp_holes.py splits the missing packets into pre-FEC
+  (never entered the air's wfb_tx) vs post-FEC (radio), with a circular time-shift control against the air's drop
+  seconds. Keywords: FEC block, outage, loss burst, bad FCS, keep_corrupted, RTP hole, pre-FEC, post-FEC, air input
+  drop, PKT_LOST, bloc FEC pierdut, gaură RTP.
 - **[Health logging](xr/health-logging.md)** (2026-09-29, built + JVM/host-tested, not yet on the headset): the app logs
   what the pilot would otherwise have to tell us: PPXR_EVENT per event (SIGNAL_LOST/OK with the SignalState kind and
   cause freeze/decoder/no_packets, FREEZE, IDR_FAILED with reason, SESSION_INACTIVE = headset asleep, ADAPTER_GONE,

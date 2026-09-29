@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "LineRateLimiter.h"
+
 // One PPXR_FECBLK line per video FEC block that wfb-ng could not recover, to find the cause of the short outages
 // that take out whole blocks (loss-bursts-2026-09-29, docs/xr/fec-block-probe.md): which fragments arrived, their RSSI,
 // the block's time span, the longest gap between received frames while the block was pending (the outage), and the
@@ -109,18 +111,7 @@ class FecBlockProbe {
 
     void fail(uint64_t block, const Block &b, int64_t nowNs, const char *reason, uint64_t next,
               std::vector<std::string> &out) {
-        const int64_t second = nowNs / 1'000'000'000LL;
-        if (second != second_) {
-            second_ = second;
-            linesThisSecond_ = 0;
-            carrySuppressed_ += suppressed_;
-            suppressed_ = 0;
-        }
-        if (linesThisSecond_ >= kMaxLinesPerSecond) {
-            ++suppressed_;
-            return;
-        }
-        ++linesThisSecond_;
+        if (!limiter_.admit(nowNs)) return;
         std::string got;
         for (bool f : b.map) got += f ? '1' : '0';
         int64_t lastNs = b.firstNs;
@@ -138,10 +129,7 @@ class FecBlockProbe {
                            " fcs=" + (fcsVisible_ ? std::to_string(fcsAround(b, nowNs)) : std::string("-")) +
                            " reason=" + reason;
         if (next != 0 || std::string(reason) == "flush") line += " next=" + std::to_string(next);
-        if (carrySuppressed_ > 0) {
-            line += " suppressed=" + std::to_string(carrySuppressed_);
-            carrySuppressed_ = 0;
-        }
+        line += limiter_.takeSuppressedSuffix();
         out.push_back(line);
     }
 
@@ -152,8 +140,5 @@ class FecBlockProbe {
     uint64_t done_ = 0;
     int64_t lastFrameNs_ = 0;
     std::deque<int64_t> badFcs_;
-    int64_t second_ = -1;
-    int linesThisSecond_ = 0;
-    int suppressed_ = 0;
-    int carrySuppressed_ = 0;
+    LineRateLimiter limiter_{kMaxLinesPerSecond};
 };
