@@ -508,6 +508,13 @@ extern "C"
 
     // Cumulative counters: IDR requests ok, IDR requests failed, slices frozen until an IDR, decoder rebuilds,
     // codec switches (the first three first: StatsCollector reads [0..2], HealthMonitor all five).
+    JNI_METHOD(jboolean, nativeIsFrozenUntilIdr)
+    (JNIEnv* env, jclass jclass1, jlong nativeInstance)
+    {
+        VideoPlayer* p = native(nativeInstance);
+        return p != nullptr && p->frozenUntilIdr();
+    }
+
     JNI_METHOD(jlongArray, nativeGetLeverCounters)
     (JNIEnv* env, jclass jclass1, jlong nativeInstance)
     {

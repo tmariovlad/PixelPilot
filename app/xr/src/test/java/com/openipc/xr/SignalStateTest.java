@@ -198,4 +198,37 @@ public class SignalStateTest {
             assertTrue(k + ": " + m, m.length() <= 40);
         }
     }
+    // freeze_until_idr holds the last good frame until a key frame: no decoded frames, packets arriving. That is a HOLD,
+    // not a stall (docs/xr/link-envelope.md, "IDR + freeze in use"): no alarm, and it names the wait.
+    private Kind hold(boolean holding, Link link) {
+        now += 400 * MS;
+        return s.update(now, NONE, P, true, link, 100 * MS, holding);
+    }
+
+    @Test public void aFreezeWaitingForTheKeyFrameIsAHoldNotAStall() {
+        advance(null, true, GOOD);
+        assertEquals(Kind.HOLD, hold(true, GOOD));
+        assertFalse(s.needsAction());
+        assertTrue(s.message(), s.message().startsWith("HOLD - WAITING FOR KEYFRAME"));
+        assertTrue(s.message().length() <= 40);
+    }
+
+    @Test public void withoutPacketsAHoldIsStillNoSignal() {
+        advance(null, true, GOOD);
+        assertEquals(Kind.NO_PACKETS, hold(true, new Link(0, 0, 0)));
+    }
+
+    @Test public void notHoldingIsTheUsualStall() {
+        advance(null, true, GOOD);
+        assertEquals(Kind.VIDEO_STALLED, hold(false, GOOD));
+        assertTrue(s.needsAction());
+    }
+
+    @Test public void theKeyFrameAfterAHoldIsOkAtOnce() {
+        advance(null, true, GOOD);
+        hold(true, GOOD);
+        now += P;
+        assertEquals(Kind.OK, s.update(now, new long[]{now}, P, true, GOOD, 100 * MS, false));
+        assertEquals("", s.message());
+    }
 }

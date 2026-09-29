@@ -552,7 +552,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         long statsAge = l == null ? Long.MAX_VALUE : now - lastLinkNs;
         boolean adapter = wfbLink != null && wfbLink.isRunning();
         if (adapter) udpFallback = null;
-        signal.update(now, frames, periodNs, adapter, link, statsAge);
+        boolean holding = videoPlayer != null && videoPlayer.isFrozenUntilIdr();   // a HOLD, not a stall
+        signal.update(now, frames, periodNs, adapter, link, statsAge, holding);
     }
 
     private String[] statsLines() {

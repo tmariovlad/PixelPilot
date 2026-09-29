@@ -57,7 +57,7 @@ class FreezeUntilIdr
   private:
     const int             m_timeout_ms;
     std::atomic<bool>     m_enabled{false};
-    bool                  m_frozen   = false;
+    std::atomic<bool>     m_frozen{false};   // read by the UI thread (SignalState HOLD)
     int64_t               m_since_ms = 0;
     std::atomic<uint32_t> m_dropped{0};
 };

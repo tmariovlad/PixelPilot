@@ -29,7 +29,7 @@ import java.util.Locale;
  */
 public final class SignalState {
 
-    public enum Kind { OK, CONFIG_ERROR, NO_ADAPTER, NO_PACKETS, WRONG_KEY, WAITING_FOR_VIDEO, VIDEO_STALLED }
+    public enum Kind { OK, CONFIG_ERROR, NO_ADAPTER, NO_PACKETS, WRONG_KEY, WAITING_FOR_VIDEO, VIDEO_STALLED, HOLD }
 
     /** Link counters of the last wfb-ng stats window; null fields are expressed by {@link #NONE}. */
     public static final class Link {
@@ -89,8 +89,18 @@ public final class SignalState {
      */
     public Kind update(long nowNs, long[] frameReadyNs, long framePeriodNs, boolean adapterPresent, Link link,
                        long statsAgeNs) {
+        return update(nowNs, frameReadyNs, framePeriodNs, adapterPresent, link, statsAgeNs, false);
+    }
+
+    /**
+     * As above; {@code holdingForKeyframe}: freeze_until_idr is holding the last good frame until a key frame arrives
+     * (FreezeUntilIdr.h). Frames missing for that reason, with packets arriving, are a {@link Kind#HOLD}, not a stall.
+     */
+    public Kind update(long nowNs, long[] frameReadyNs, long framePeriodNs, boolean adapterPresent, Link link,
+                       long statsAgeNs, boolean holdingForKeyframe) {
         long newest = lastFrameNs;
-        boolean hadStall = kind != Kind.OK;
+        // A hold ends on a clean key frame, so the video is OK at once, with no resuming phase.
+        boolean hadStall = kind != Kind.OK && kind != Kind.HOLD;
         for (long t : frameReadyNs) {
             if (t < attachNs) continue;             // decoded before this attachment
             if (hadStall && t > lastFrameNs) recoveryFrames++;
@@ -108,7 +118,7 @@ public final class SignalState {
             recoveryFrames = 0;
         } else if (!fresh) {
             recoveryFrames = 0;
-            kind = cause(nowNs, adapterPresent, link, statsAgeNs);
+            kind = cause(nowNs, adapterPresent, link, statsAgeNs, holdingForKeyframe);
         }
         // fresh but still recovering: keep the previous non-OK kind until enough frames arrived
         recovering = fresh && kind != Kind.OK;
@@ -118,13 +128,14 @@ public final class SignalState {
         return kind;
     }
 
-    private Kind cause(long nowNs, boolean adapterPresent, Link link, long statsAgeNs) {
+    private Kind cause(long nowNs, boolean adapterPresent, Link link, long statsAgeNs, boolean holding) {
         if (configError != null) return Kind.CONFIG_ERROR;
         if (!adapterPresent) return Kind.NO_ADAPTER;
         boolean packets = statsAgeNs <= STATS_STALE_NS && link.packets > 0;
         if (!packets) return Kind.NO_PACKETS;
         if (allFailSinceNs >= 0 && nowNs - allFailSinceNs >= WRONG_KEY_NS) return Kind.WRONG_KEY;
-        return lastFrameNs == 0 ? Kind.WAITING_FOR_VIDEO : Kind.VIDEO_STALLED;
+        if (lastFrameNs == 0) return Kind.WAITING_FOR_VIDEO;
+        return holding ? Kind.HOLD : Kind.VIDEO_STALLED;
     }
 
     public Kind kind() {
@@ -133,10 +144,10 @@ public final class SignalState {
 
     /**
      * True for a fault the pilot has to act on (no adapter, no signal, wrong key, a stall); false when the video is
-     * OK, has not started yet, or is resuming. The panel shows the first in red and the others in amber.
+     * OK, has not started yet, is resuming, or is held for a key frame. The panel shows the first in red and the others in amber.
      */
     public boolean needsAction() {
-        return kind != Kind.OK && kind != Kind.WAITING_FOR_VIDEO && !recovering;
+        return kind != Kind.OK && kind != Kind.WAITING_FOR_VIDEO && kind != Kind.HOLD && !recovering;
     }
 
     /** One short line for the panel headline (at most ~40 characters, so it fits the band); empty when OK. */
@@ -157,6 +168,8 @@ public final class SignalState {
                 return String.format(Locale.US, "WAITING FOR VIDEO (%.1f s)", s);
             case VIDEO_STALLED:
                 return String.format(Locale.US, "VIDEO STALLED (%.1f s)", s);
+            case HOLD:
+                return String.format(Locale.US, "HOLD - WAITING FOR KEYFRAME (%.1f s)", s);
             default:
                 return "";
         }

@@ -81,6 +81,9 @@ public class VideoPlayer implements IVideoParamsChanged {
      */
     public static native long[] nativeGetLeverCounters(long nativeInstance);
 
+    /** True while freeze_until_idr holds the last good frame until a key frame (FreezeUntilIdr.h). */
+    public static native boolean nativeIsFrozenUntilIdr(long nativeInstance);
+
     public static native void nativeStartDvr(long nativeInstance, int fd, int fmp4_enabled);
 
     public static native void nativeStopDvr(long nativeInstance);
@@ -184,6 +187,11 @@ public class VideoPlayer implements IVideoParamsChanged {
     /** Decoded frames since the last call, for the Stats page: see {@link #nativeDrainFrameTimes}. */
     public long[] drainFrameTimes() {
         return nativeDrainFrameTimes(nativeVideoPlayer);
+    }
+
+    /** See {@link #nativeIsFrozenUntilIdr}. */
+    public boolean isFrozenUntilIdr() {
+        return nativeIsFrozenUntilIdr(nativeVideoPlayer);
     }
 
     /** See {@link #nativeGetLeverCounters}. */
