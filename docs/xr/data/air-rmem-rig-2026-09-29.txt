@@ -1,0 +1,53 @@
+# Air log: rmem A/B WITH the ESP32 G2G rig flashing its LED in front of the air camera, 2026-09-29
+# Same script as air-rmem-ab-2026-09-29.txt (/tmp/rmem_ab.sh md5 a888ab05, DWELL=60): net.core.rmem_default/max
+# 196608 / 524288 / 2097152 / 2097152 / 524288 / 196608, video wfb_tx (radio port 0) restarted at each step start.
+# 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz, ch157, 17 dBm, FEC 4/8, alink/vmoded stopped.
+# Rig: latency-test-0d, calibration then 12 runs x 25 measurements back to back from PC 1790644220 (one LED flash
+# every ~1.5 s, LED on ~75 ms). Quest capture ab_rmemrig (pixelpilot-xr-25). Air clock = PC - ~0.75 s.
+# drop = video wfb_tx PKT field 6 = UDP input-queue overflow (rcvbuf_err_d = /proc/net/snmp RcvbufErrors delta,
+# identical); ant_drop = injection failures (TX_ANT field 2); sendmsg_lat_max_us = TX_ANT field 5 (max per step).
+#
+# RESULT [PROVEN, N=2 per state, ABCCBA]: with LED-flash bursts the 192 KB default buffer overflows
+# (149 and 336 packets per 60 s, in 9 and 10 seconds), 512 KB and 2 MB drop 0 in all four steps.
+# Injection never failed (ant_drop 0). sendmsg_lat_max 9.8-13.2 ms with the rig vs 2.5-3.2 ms without.
+# IDR honored per step: 68 / 43 / 32 / 40 / 18 / 37 (the two 192 KB steps are the 1st and 3rd highest).
+# Without the rig (air-rmem-ab-2026-09-29.txt) every step dropped 0, so the overflow needs a burst (scene change).
+PRE epoch=1790644185 start=1790644239 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=1190 idr="honored":8,"dropped":0 rcvbuf_err=129214 temp=42
+STEP rmem196608 epoch=1790644241 drop=149 inj=169286 drop_secs=9 ant_drop=0 sendmsg_lat_max_us=11306 rcvbuf_err_d=149 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=2932 idr="honored":76,"dropped":7
+STEP rmem524288 epoch=1790644301 drop=0 inj=168859 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=10227 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=3365 idr="honored":119,"dropped":10
+STEP rmem2097152 epoch=1790644361 drop=0 inj=169694 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=9924 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=2097152/2097152 vpid=3796 idr="honored":151,"dropped":11
+STEP rmem2097152 epoch=1790644421 drop=0 inj=169695 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=11332 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=2097152/2097152 vpid=448 idr="honored":191,"dropped":15
+STEP rmem524288 epoch=1790644481 drop=0 inj=169331 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=13236 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=899 idr="honored":209,"dropped":15
+STEP rmem196608 epoch=1790644541 drop=336 inj=168481 drop_secs=10 ant_drop=0 sendmsg_lat_max_us=9760 rcvbuf_err_d=336 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=1335 idr="honored":246,"dropped":22
+END epoch=1790644612 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608/196608 vpid=1765 idr="honored":1,"dropped":0 json=3d8a1456 temp=43
+
+# Seconds with input drops (air uptime_ms, injected, dropped). uptime -> air epoch: epoch = 1790633249.73 + uptime_s
+# (date +%s 1790644654 with /proc/uptime 11404.27). Lines before uptime 10991 are the setup (rig already flashing,
+# 192 KB, before step 0).
+10981565 2936 31
+10985564 3090 2
+10987564 2817 2
+10990851 3068 3
+10995851 2994 15
+11009851 3075 1
+11022851 2991 53
+11024851 2831 17
+11025852 2936 10
+11026851 2938 39
+11030851 3095 5
+11042851 3027 6
+11044851 3043 3
+11048851 3081 3
+11296906 2984 1
+11306906 2984 38
+11310906 3079 9
+11314906 3001 115
+11319906 3114 16
+11324906 2911 96
+11325906 2729 29
+11331907 3032 5
+11336906 2922 10
+11345907 2953 17
+
+# slot_watch (--no-quest) during the run also flagged AIR_FPS_LOW 84-86 fps (floor 87.8) on several polls while the
+# rig flashed: the encoder output fps dips with the flashes (scripts/quest/out/slot_watch/rmemrig/alerts.log).
