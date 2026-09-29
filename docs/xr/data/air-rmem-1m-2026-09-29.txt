@@ -1,0 +1,24 @@
+# Air log: rmem 512 KB vs 1 MB WITH the ESP32 G2G rig flashing, 2026-09-29 (user: "1 MB, tested first")
+# /tmp/rmem_ab.sh md5 a888ab05, DWELL=60, ORDER ABABAB = 524288 1048576 524288 1048576 524288 1048576 (net.core
+# rmem_default/max; video wfb_tx restarted at each step start). 1080p90 16 Mbit, MCS7 1SS STBC LDPC long GI 20 MHz,
+# ch157, 17 dBm, FEC 4/8, alink/vmoded stopped. Rig: latency-test-0d, run 01 at PC 1790645240, 12 runs. Quest capture
+# ab_rmem1m (pixelpilot-xr-25). Clock: air wall ~= PC (ntpd; PC - air ~ +0.05..0.09 s). wfbtx.log timestamps are air
+# CLOCK_MONOTONIC ms (~ /proc/uptime): air epoch = 1790633249.22 + uptime_s (date 1790645606 with uptime 12356.78).
+#
+# RESULT [PROVEN, N=3 per state, alternating]: 512 KB dropped 0 / 0 / 88 (the 88 in ONE second, air epoch ~645557);
+# 1 MB dropped 0 / 0 / 0. Together with air-rmem-rig-2026-09-29.txt (512 KB 0 / 0 there): 512 KB overflowed in 1 of 5
+# rig steps, 1 MB in 0 of 3, 2 MB in 0 of 2, 192 KB in 2 of 2. Injection never failed (ant_drop 0).
+PRE epoch=1790645202 start=1790645259 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=196608/196608 vpid=1765 idr="honored":10,"dropped":2 rcvbuf_err=130708 temp=42
+STEP rmem524288 epoch=1790645261 drop=0 inj=168724 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=11306 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=3891 idr="honored":77,"dropped":6
+STEP rmem1048576 epoch=1790645321 drop=0 inj=168884 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=3766 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=552 idr="honored":98,"dropped":9
+STEP rmem524288 epoch=1790645381 drop=0 inj=170130 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=9695 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=996 idr="honored":135,"dropped":12
+STEP rmem1048576 epoch=1790645441 drop=0 inj=169656 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=3931 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=1435 idr="honored":175,"dropped":15
+STEP rmem524288 epoch=1790645501 drop=88 inj=170819 drop_secs=1 ant_drop=0 sendmsg_lat_max_us=11315 rcvbuf_err_d=88 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=524288/524288 vpid=1882 idr="honored":212,"dropped":17
+STEP rmem1048576 epoch=1790645561 drop=0 inj=170009 drop_secs=0 ant_drop=0 sendmsg_lat_max_us=9763 rcvbuf_err_d=0 temp=46 mcs_index=7 k=4 n=8 br=16000 txp=17.00 rmem=1048576/1048576 vpid=2313 idr="honored":256,"dropped":24
+END epoch=1790645632 mcs_index=2 k=4 n=8 br=2000 txp=12.00 rmem=196608/196608 vpid=2766 idr="honored":1,"dropped":0 json=3d8a1456 temp=42
+
+# Seconds with input drops (air uptime_ms, injected, dropped); the first two are the setup (196608, rig flashing,
+# before step 0), the last is step 5 (512 KB).
+11998595 2832 38
+11999598 2953 11
+12307860 3203 88
