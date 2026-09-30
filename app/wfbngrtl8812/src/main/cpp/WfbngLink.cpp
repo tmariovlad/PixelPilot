@@ -220,6 +220,9 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
     uint8_t *udp_channel_id_be8 = reinterpret_cast<uint8_t *>(&udp_channel_id_be);
     uint8_t *mavlink_channel_id_be8 = reinterpret_cast<uint8_t *>(&mavlink_channel_id_be);
 
+    // The device this run registered in devctl (null until then, or when the fd was taken): release_link detaches
+    // only it, never another run's device on the same fd number.
+    IRtlDevice *attached = nullptr;
     const int result = run_guarded(
         [&]() -> int {
             std::shared_ptr<IRtlDevice> created = wifi_driver->CreateRtlDevice(dev_handle, ctx, usb_lock, cfg);
@@ -231,7 +234,13 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             // release_link() detaches the device. No local shared_ptr: the device must die in release_link, while
             // the USB handle is still valid.
             IRtlDevice *const current_device = created.get();
-            devctl.attach(fd, std::move(created));
+            if (auto refused = devctl.attach(fd, std::move(created))) {
+                // Another run still holds a device on this fd number (25's hardening note): refuse rather than free
+                // a device it uses. The refused device dies here, before release_link releases the USB handle.
+                __android_log_print(ANDROID_LOG_ERROR, TAG, "fd=%d already has a device (another run); not starting", fd);
+                return -1;
+            }
+            attached = current_device;
             if (stop_requested(fd)) {
                 __android_log_print(ANDROID_LOG_WARN, TAG, "stop requested for fd=%d before bring-up, aborting", fd);
                 return -1;
@@ -413,7 +422,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                                 status == 0 && readable ? readable : type, what);
             std::free(readable);
         });
-    release_link(fd, dev_handle, ctx);
+    release_link(fd, attached, dev_handle, ctx);
     return result;
 }
 
@@ -476,7 +485,7 @@ void WfbngLink::survey_frame(const Packet &packet, uint8_t *video_id, uint8_t *m
                  static_cast<uint32_t>(packet.Data.size()), packet.RxAtrib.bw, packet.RxAtrib.sgi != 0);
 }
 
-void WfbngLink::release_link(int fd, libusb_device_handle *dev_handle, libusb_context *ctx) {
+void WfbngLink::release_link(int fd, IRtlDevice *attached, libusb_device_handle *dev_handle, libusb_context *ctx) {
     // First: a survey still running uses the device (and ends by starting the uplink); after this no survey call
     // reaches the device, on every way out of run(), including a throwing RX loop.
     survey.stopAndJoin();
@@ -489,7 +498,7 @@ void WfbngLink::release_link(int fd, libusb_device_handle *dev_handle, libusb_co
     // (25's review F1/F2). Null when the device was never created (CreateRtlDevice threw or returned null).
     // Stop() errors are reported, not thrown: cleanup may run right after the link failed, with no caller to catch.
     std::string stop_error;
-    std::shared_ptr<IRtlDevice> dev = devctl.detach(fd, true, &stop_error);
+    std::shared_ptr<IRtlDevice> dev = devctl.detach(fd, attached, true, &stop_error);
     if (!stop_error.empty())
         __android_log_print(ANDROID_LOG_ERROR, TAG, "device Stop() failed during release: %s", stop_error.c_str());
     // Destroy the device while the handle is still valid: its destructor de-inits the chip and
@@ -503,8 +512,9 @@ void WfbngLink::release_link(int fd, libusb_device_handle *dev_handle, libusb_co
 }
 
 void WfbngLink::stop(JNIEnv *env, jobject context, jint fd) {
-    // Recorded first, and whether or not the device exists yet: run() may not have got as far
-    // as creating it, and StartRxLoop() would clear the flag set below anyway.
+    // Recorded first, and whether or not the device exists yet: run() may not have got as far as creating it. Once
+    // the device exists, StopRxLoop() below ends its RX loop even when it has not started yet: devourer keeps a stop
+    // made before StartRxLoop (RxStop.h; it used to clear it on entry and lose a stop racing the start).
     note_stop_requested(fd);
     if (!devctl.stopRxLoop(fd)) {
         // Happens when the adapter was already gone by the time the stop arrived, e.g. it

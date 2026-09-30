@@ -311,6 +311,35 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
         refuse on replace.
       - Older and unchanged: a stop() that lands between the `stop_requested` check and `StartRxLoop` is lost,
         because StartRxLoop clears the flag (see the comment at `WfbngLink::stop`).
+    - **Both fixed, 2026-10-01 (66's item; branch stoplatch):**
+      - **Lost stop.** Root cause: every devourer generation's StartRxLoop cleared the stop request on entry
+        ("Restartable: clear any stop request left by a prior StopRxLoop()", RtlJaguarDevice.cpp:1304-1305; the same
+        in Jaguar2/3 and Kestrel). devourer's own `examples/timesync/main.cpp:391` has the same shape.
+        - Fixed in devourer: the fork's local commit `abe9d7a` on `pixelpilot-xr`, **not pushed**. The push waits for
+          the user's OK in 66's morning bundle.
+        - New `src/RxStop.h`: RxStopLatch, shared by all four generations. A stop requested before or while the loop
+          runs ends it, and the loop consumes the request on exit, so the device stays restartable. The transport's
+          stop predicate is now the latch, still including g_devourer_should_stop.
+        - The loop polls that predicate on every event wake, packets or not, so a stop that isn't wiped is always
+          seen.
+        - Tests (`tests/RxStop_test.cpp`, 5):
+          - the forced interleaving: the check passes, the stop lands, then the loop starts;
+          - stop before start;
+          - stop during;
+          - restart after exit;
+          - the signal flag.
+          The old contract fails 3 of them (reproduced before the fix); the no-consume mutant fails the restart
+          test. 20/20 repeats stable.
+        - Jaguar2 and Kestrel are not in the Android build, so a native WSL build of the devourer library compiled
+          all four generations.
+      - **attach.** It refuses an fd that already has a device and hands the new device back; WfbngLink logs
+        `fd=N already has a device (another run); not starting` and returns. Replacing would free a device the other
+        run still uses. `detach(fd, expected, …)` removes only the device the caller attached, so the refused run's
+        release_link can't stop the other run's device. Tests: 2 new DeviceControl tests (9 in all); mutants
+        (replace instead of refusing; detach ignoring `expected`) killed.
+      - Host 104/104; `assembleDebug` builds.
+      - Out of scope, and older: the rest of release_link (survey, txFrame, the adaptive link) is per WfbngLink, not
+        per run. Two adapters at once share it (WfbNgLink.java runs one nativeRun per UsbDevice on one WfbngLink).
 - **Not yet verified** [SPECULATION until a slot]:
   - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
     (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);

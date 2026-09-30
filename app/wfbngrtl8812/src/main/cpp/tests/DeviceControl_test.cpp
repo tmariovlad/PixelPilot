@@ -84,7 +84,7 @@ TEST(DeviceControl, ConcurrentControlCallsNeverOverlapInsideTheDevice)
 {
     auto dev = std::make_shared<FakeDevice>();
     Ctl ctl;
-    ctl.attach(kFd, dev);
+    ASSERT_EQ(ctl.attach(kFd, dev), nullptr);
     hammer([&](int op) {
         switch (op)
         {
@@ -122,10 +122,10 @@ TEST(DeviceControl, NoCallReachesADeviceAfterItsStopWhileAnotherThreadKeepsCalli
     {
         auto dev = std::make_shared<FakeDevice>();
         seen.push_back(dev);
-        ctl.attach(kFd, dev);
+        ASSERT_EQ(ctl.attach(kFd, dev), nullptr);
         std::this_thread::sleep_for(std::chrono::microseconds(300));
         std::string err;
-        auto back = ctl.detach(kFd, true, &err);
+        auto back = ctl.detach(kFd, dev.get(), true, &err);
         EXPECT_EQ(back, dev);   // handed back: the caller destroys it while the USB handle is still valid
         EXPECT_TRUE(err.empty());
     }
@@ -150,7 +150,7 @@ TEST(DeviceControl, CallsForADeviceThatIsNotThereAreNoOps)
     EXPECT_EQ(ctl.rxEnergy(kFd, true), 0);
     EXPECT_EQ(ctl.selectedChannel(kFd), 0);
     std::string err;
-    EXPECT_EQ(ctl.detach(kFd, true, &err), nullptr);
+    EXPECT_EQ(ctl.detach(kFd, nullptr, true, &err), nullptr);
 }
 
 TEST(DeviceControl, DevicesArePerFdAndAFailingStopStillDetaches)
@@ -160,15 +160,45 @@ TEST(DeviceControl, DevicesArePerFdAndAFailingStopStillDetaches)
     auto a = std::make_shared<FakeDevice>();
     auto b = std::make_shared<FakeDevice>();
     b->stopThrows = true;
-    ctl.attach(1, a);
-    ctl.attach(2, b);
+    ASSERT_EQ(ctl.attach(1, a), nullptr);
+    ASSERT_EQ(ctl.attach(2, b), nullptr);
     std::string err;
-    EXPECT_EQ(ctl.detach(2, true, &err), b);
+    EXPECT_EQ(ctl.detach(2, b.get(), true, &err), b);
     EXPECT_EQ(err, "usb gone");
     EXPECT_FALSE(ctl.setTxPower(2, 30));
     EXPECT_TRUE(ctl.setTxPower(1, 30));
-    EXPECT_EQ(ctl.detach(1, false, &err), a);
+    EXPECT_EQ(ctl.detach(1, a.get(), false, &err), a);
     EXPECT_FALSE(a->stopped.load());   // stop=false: removed without Stop()
+}
+
+TEST(DeviceControl, AttachRefusesAnOccupiedFdAndHandsTheNewDeviceBack)
+{
+    // A reused fd number while the old run still holds its device (25's hardening note): replacing would free a
+    // device another run still uses. The refused device goes back to the caller, which destroys it itself.
+    Ctl ctl;
+    auto a = std::make_shared<FakeDevice>();
+    auto b = std::make_shared<FakeDevice>();
+    ASSERT_EQ(ctl.attach(kFd, a), nullptr);
+    EXPECT_EQ(ctl.attach(kFd, b), b);
+    EXPECT_TRUE(ctl.setTxPower(kFd, 30));
+    EXPECT_EQ(a->calls.load(), 1);   // the registered device is still the first one
+    EXPECT_EQ(b->calls.load(), 0);
+}
+
+TEST(DeviceControl, DetachRemovesOnlyTheDeviceTheCallerAttached)
+{
+    // The refused run's release_link(fd) must not stop and remove the other run's device on the same fd.
+    Ctl ctl;
+    auto a = std::make_shared<FakeDevice>();
+    auto b = std::make_shared<FakeDevice>();
+    ASSERT_EQ(ctl.attach(kFd, a), nullptr);
+    std::string err;
+    EXPECT_EQ(ctl.detach(kFd, b.get(), true, &err), nullptr);
+    EXPECT_EQ(ctl.detach(kFd, nullptr, true, &err), nullptr);   // a run that never attached
+    EXPECT_FALSE(a->stopped.load());
+    EXPECT_TRUE(ctl.setTxPower(kFd, 30));
+    EXPECT_EQ(ctl.detach(kFd, a.get(), true, &err), a);
+    EXPECT_TRUE(a->stopped.load());
 }
 
 // ---- structural: WfbngLink reaches the device only through DeviceControl ----

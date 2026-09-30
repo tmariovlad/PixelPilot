@@ -36,17 +36,25 @@ template <class Dev> class DeviceControlT {
   public:
     using Ptr = std::shared_ptr<Dev>;
 
-    void attach(int fd, Ptr d) {
-        std::lock_guard<std::mutex> lock(mu_);
-        devs_[fd] = std::move(d);
-    }
-
-    // Removes fd's device and hands it back (null when there is none). With stop, Stop() (halt TRX DMA, power down)
-    // runs first under the same lock. An exception from it is reported in *stop_error, and the device is still removed.
-    Ptr detach(int fd, bool stop, std::string *stop_error) {
+    // Registers d for fd. Returns null on success. It refuses an fd that already has a device: an fd number reused
+    // while the old run still holds its device (25's hardening note) would otherwise free a device another run still
+    // uses. The refused device is handed back, and the caller destroys it.
+    [[nodiscard]] Ptr attach(int fd, Ptr d) {
         std::lock_guard<std::mutex> lock(mu_);
         auto it = devs_.find(fd);
-        if (it == devs_.end()) return nullptr;
+        if (it != devs_.end() && it->second) return d;
+        devs_[fd] = std::move(d);
+        return nullptr;
+    }
+
+    // Removes fd's device and hands it back, but only when it is `expected` (the device this caller attached), so a
+    // refused run's cleanup cannot take the other run's device. Returns null when that device is not registered.
+    // With stop, Stop() (halt TRX DMA, power down) runs first under the same lock. An exception from it is reported in
+    // *stop_error, and the device is still removed.
+    Ptr detach(int fd, const Dev *expected, bool stop, std::string *stop_error) {
+        std::lock_guard<std::mutex> lock(mu_);
+        auto it = devs_.find(fd);
+        if (it == devs_.end() || !expected || it->second.get() != expected) return nullptr;
         Ptr d = std::move(it->second);
         devs_.erase(it);
         if (stop && d) {
