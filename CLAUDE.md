@@ -95,7 +95,7 @@ in the "Results and deep dives" index of [docs/xr-quest.md](docs/xr-quest.md). T
   is disabled on purpose). Never push to or open a PR against `openipc/devourer` unless the user asks.
 - The **wfb-ng submodule** comes from the fork `tmariovlad/wfb-ng`, branch `pixelpilot-xr` (since 2026-09-30, the
   user's choice): upstream `svpcom/wfb-ng` plus our commits (the RX front-block drain, `66d4bdb`,
-  [fec-block-probe.md §8](docs/xr/fec-block-probe.md)). xr-native pins stock `0da5279` again since the drain's
-  Quest A/B showed more loss (2026-09-30). Same rules as devourer: the `fork` remote only, the local
+  [fec-block-probe.md §8](docs/xr/fec-block-probe.md)). xr-native pins `66d4bdb` (re-pinned 2026-09-30,
+  after a toggle run refuted a suspected loss regression; the drain is a no-op with the stock air TX). Same rules as devourer: the `fork` remote only, the local
   `origin` push URL disabled, never push to or open a PR against `svpcom/wfb-ng` unless the user asks. An older
   checkout needs `git submodule sync` once ([troubleshooting](docs/xr/troubleshooting.md)).
