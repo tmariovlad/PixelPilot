@@ -258,3 +258,28 @@ capture's** Perfetto trace.
   - a detached capture with the trace (ab_detached.sh).
 - **Command:** `python3 scripts/quest-latch/owd_crosscheck.py scripts/quest/out/ab_<label>.pftrace
   scripts/quest/out/qtx_<label>.raw.txt`.
+
+### 7.5 Queue signal vs loss per ramp step, for openipc-1f's rc_fit (owd_lead.py)
+
+[owd_lead.py](../../scripts/quest-latch/owd_lead.py) (test `test_owd_lead.py`, 6) is the module openipc-1f's
+`rc_fit.py` (OpenIPC `slot/`, e9b8b46) imports for its lever_rc slow ramp. The interface was agreed with 1f.
+- **`lead(steps, frames, holes, knee_kbps=, q_hi_ms=3, n_hi=2, win_s=0.25, settle_s=1, cross_skip_s=0)`:** everything
+  in air uptime seconds, the base rc_fit uses. For every ramp step (`b<kbps>`) it gives:
+  - `owd_cross_s`: from the SET until the unbounded relative OWD has a window median above `q_hi_ms` for `n_hi`
+    consecutive windows (§7.1's persistence rule);
+  - `loss_onset_s`: from the SET until the first post-FEC RTP hole;
+  - `lead_s` = loss − cross;
+  - `owd_med_ms`, after the settle;
+  - `build_ms_per_mbps`, versus the previous ramp step;
+  - and overall `build_ms_per_mbps_fit`, the slope over the steps at or above the knee.
+- **`load(trace, quest_mono_minus_air_up_s)`:** the frames (the app's rate-control value, `LiveBase` unbounded) and the
+  holes from a Quest trace.
+- **`compose_offset(realtime_minus_mono_s, quest_minus_pc_s, pc_minus_air_s, samp0_epoch_s, samp0_up_s)`:** chains the
+  clocks: the trace snapshot (`realtime_minus_mono_s()`), then the ab_detached meta, slot_watch `AIR_CLOCK`, and
+  lever_rc `SAMP0`.
+- **Smoke test on real data** (g56 grid, the steps mapped to Quest monotonic) [PROVEN: 2026-10-01]:
+  - `owd_med` finds the standing queues: m6b25f46 56 ms, m7b20f48 19.9 ms (link-envelope: +19.8), m12b25f48 77 ms,
+    m13b30f48 64 ms. Clean states read 0.8–2.3 ms.
+  - Most steps "cross" at 0 s, clean ones included: every g56 switch reconfigures the link. That is why
+    `cross_skip_s` exists. In the one step not dominated by the switch (m7b20f48), the queue came 1.98 s before the loss,
+    as §7.1 found.
