@@ -225,6 +225,10 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                 [this, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8, now_ms](const Packet &packet) {
                     const int64_t t_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
                                              std::chrono::steady_clock::now().time_since_epoch()).count();
+                    if (survey_active.load(std::memory_order_acquire)) {   // no video while a survey runs
+                        survey_frame(packet, video_channel_id_be8, mavlink_channel_id_be8, udp_channel_id_be8);
+                        return;
+                    }
                     if (rx_diag_cfg.keep_corrupted && packet.RxAtrib.crc_err) {
                         std::lock_guard<std::mutex> lock(agg_mutex);
                         video_fec_probe.onBadFcs(t_ns);
@@ -336,47 +340,19 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                 .ChannelWidth = bandWidth,
             });
 
-            if (!usb_tx_thread) {
-                std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
-                args->udp_port = 8001;
-                args->link_id = link_id;
-                args->keypair = keyPath;
-                args->stbc = stbc_enabled;
-                args->ldpc = ldpc_enabled;
-                const UplinkConfig up = uplink_config();
-                args->mcs_index = up.mcs;
-                args->vht_mode = false;
-                args->short_gi = false;
-                args->bandwidth = 20;
-                args->k = static_cast<uint8_t>(up.fec_k);
-                args->n = static_cast<uint8_t>(up.fec_n);
-                args->radio_port = wfb_tx_port;
-
-                __android_log_print(ANDROID_LOG_ERROR,
-                                    TAG,
-                                    "radio link ID %d, radio PORT %d, uplink FEC %d/%d MCS%d, %d reports/s",
-                                    args->link_id,
-                                    args->radio_port,
-                                    up.fec_k,
-                                    up.fec_n,
-                                    up.mcs,
-                                    up.rate_hz);
-
-                // One TxFrame per TX thread: stop() is final for an instance (its loop exits and never restarts), so a
-                // link that comes back (sleep/wake, replug) needs a fresh one. Reusing the old one made run() return at
-                // once, leaving the uplink dead and its UDP socket open (2026-09-27, docs/xr/troubleshooting.md).
-                txFrame = std::make_shared<TxFrame>();
-                init_thread(usb_tx_thread, [&]() {
-                    return std::make_unique<std::thread>([tx = txFrame, current_device, args] {
-                        tx->run(current_device, args.get());
-                        __android_log_print(ANDROID_LOG_DEBUG, TAG, "usb_transfer thread should terminate");
-                    });
-                });
-
-                if (adaptive_link_enabled) {
-                    stop_adaptive_link();
-                    start_link_quality_thread(fd);
-                }
+            // Pre-flight channel survey (pref survey_on_start, one shot per app launch): on its own thread while the RX loop
+            // below feeds it; the uplink starts only after it, so no uplink frame goes out on a surveyed channel.
+            if (survey_on_start) {
+                survey_on_start = false;
+                survey_abort = false;
+                survey_active = true;
+                const SelectedChannel link = current_device->GetSelectedChannel();
+                // Launched and joined without thread_mutex: the survey ends by starting the uplink (init_thread, which
+                // takes that mutex), so joining it under the mutex could deadlock.
+                survey_thread = std::make_unique<std::thread>(
+                    [this, current_device, fd, link] { run_survey(current_device, fd, link); });
+            } else {
+                start_uplink(current_device, fd);
             }
 
             // Blocking RX loop on this thread; devourer pumps the libusb events
@@ -387,6 +363,10 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             } else {
                 current_device->StartRxLoop(packetProcessor);
             }
+            survey_abort = true;   // the RX loop is gone: a survey still running must stop before the device goes
+            if (survey_thread && survey_thread->joinable()) survey_thread->join();
+            survey_thread.reset();
+            survey_active = false;
             __android_log_print(ANDROID_LOG_DEBUG, TAG, "RX loop exited, releasing...");
             return 0;
         },
@@ -399,6 +379,168 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
         });
     release_link(fd, dev_handle, ctx);
     return result;
+}
+
+// The uplink (TX thread) and, when enabled, the adaptive-link thread. Called from run() at once, or by the survey
+// thread when it ends.
+void WfbngLink::start_uplink(IRtlDevice *current_device, int fd) {
+    if (!usb_tx_thread) {
+        std::shared_ptr<TxArgs> args = std::make_shared<TxArgs>();
+        args->udp_port = 8001;
+        args->link_id = link_id;
+        args->keypair = keyPath;
+        args->stbc = stbc_enabled;
+        args->ldpc = ldpc_enabled;
+        const UplinkConfig up = uplink_config();
+        args->mcs_index = up.mcs;
+        args->vht_mode = false;
+        args->short_gi = false;
+        args->bandwidth = 20;
+        args->k = static_cast<uint8_t>(up.fec_k);
+        args->n = static_cast<uint8_t>(up.fec_n);
+        args->radio_port = wfb_tx_port;
+
+        __android_log_print(ANDROID_LOG_ERROR,
+                            TAG,
+                            "radio link ID %d, radio PORT %d, uplink FEC %d/%d MCS%d, %d reports/s",
+                            args->link_id,
+                            args->radio_port,
+                            up.fec_k,
+                            up.fec_n,
+                            up.mcs,
+                            up.rate_hz);
+
+        // One TxFrame per TX thread: stop() is final for an instance (its loop exits and never restarts), so a
+        // link that comes back (sleep/wake, replug) needs a fresh one. Reusing the old one made run() return at
+        // once, leaving the uplink dead and its UDP socket open (2026-09-27, docs/xr/troubleshooting.md).
+        txFrame = std::make_shared<TxFrame>();
+        init_thread(usb_tx_thread, [&]() {
+            return std::make_unique<std::thread>([tx = txFrame, current_device, args] {
+                tx->run(current_device, args.get());
+                __android_log_print(ANDROID_LOG_DEBUG, TAG, "usb_transfer thread should terminate");
+            });
+        });
+
+        if (adaptive_link_enabled) {
+            stop_adaptive_link();
+            start_link_quality_thread(fd);
+        }
+    }
+}
+
+namespace {
+survey::Energy survey_energy(const RxEnergy &e) {
+    survey::Energy s;
+    s.valid_fa = e.valid_fa;
+    s.fa_ofdm = e.fa_ofdm;
+    s.fa_cck = e.fa_cck;
+    s.cca_ofdm = e.cca_ofdm;
+    s.cca_cck = e.cca_cck;
+    s.valid_igi = e.valid_igi;
+    s.igi = e.igi;
+    s.valid_nhm = e.valid_nhm;
+    for (int i = 0; i < 12; ++i) s.nhm[i] = e.nhm[i];
+    s.nhm_dur = e.nhm_duration;
+    return s;
+}
+
+int64_t survey_now_ms() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+}
+
+void survey_log(const std::string &line) { __android_log_print(ANDROID_LOG_INFO, "PPXR_SURVEY", "%s", line.c_str()); }
+}  // namespace
+
+// One received frame during a survey: own = a valid wfb frame of one of our channels. A bad-FCS frame's header cannot
+// be trusted for that, so it is left out.
+void WfbngLink::survey_frame(const Packet &packet, uint8_t *video_id, uint8_t *mavlink_id, uint8_t *udp_id) {
+    if (packet.RxAtrib.crc_err) return;
+    RxFrame frame(packet.Data);
+    const bool own = frame.IsValidWfbFrame() && (frame.MatchesChannelID(video_id) ||
+                                                 frame.MatchesChannelID(mavlink_id) || frame.MatchesChannelID(udp_id));
+    std::lock_guard<std::mutex> lock(survey_mutex);
+    if (!survey_observing) return;
+    survey_dwell.frame(own, packet.RxAtrib.rssi[0], packet.RxAtrib.snr[0], packet.RxAtrib.data_rate,
+                       static_cast<uint32_t>(packet.Data.size()), packet.RxAtrib.bw, packet.RxAtrib.sgi != 0);
+}
+
+// The survey (docs/xr/channel-survey-design.md, phase 1): 20 MHz, every candidate once per round, per dwell retune +
+// settle + a discard read (the FA/CCA counters are delta-on-read) + a kDwellMs observation closed by a read with NHM.
+// Each dwell and the ranking are logged as PPXR_SURVEY (devourer chanmig JSONL). Then back to the link channel, and
+// the uplink starts. Stops within ~50 ms on survey_abort or a stop request.
+void WfbngLink::run_survey(IRtlDevice *dev, int fd, SelectedChannel link) {
+    const auto cands = survey::candidates();
+    const uint32_t plan = survey::plan_hash(cands);
+    std::vector<survey::SurveyDwell> dwells;
+    const auto cut = [this, fd] { return survey_abort.load() || stop_requested(fd); };
+    const auto nap = [&cut](int ms) {
+        for (int t = 0; t < ms && !cut(); t += 50) std::this_thread::sleep_for(std::chrono::milliseconds(std::min(50, ms - t)));
+    };
+    survey_log(survey::start_line(plan, cands.size(), link.Channel));
+    bool aborted = false;
+    try {
+        dev->SetMonitorChannel(SelectedChannel{.Channel = cands.front().primary,
+                                               .ChannelOffset = devourer::kPrimeDontCare,
+                                               .ChannelWidth = CHANNEL_WIDTH_20});
+        uint64_t seq = 0;
+        for (const survey::Visit &v : survey::schedule(cands.size(), survey::kRounds)) {
+            if (cut()) {
+                aborted = true;
+                break;
+            }
+            const auto &def = cands[v.idx];
+            const int64_t t0 = survey_now_ms();
+            const auto r0 = std::chrono::steady_clock::now();
+            uint16_t flags = 0;
+            try {
+                dev->FastRetune(def.primary);
+            } catch (const std::exception &e) {
+                flags |= devourer::chanmig::kFlagRetuneFailed;
+            }
+            const int64_t retune_us =
+                std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - r0).count();
+            nap(survey::kSettleMs);
+            dev->GetRxEnergy(false);   // discard: resets the delta counters, drains the previous channel's frames
+            const int64_t obs0 = survey_now_ms();
+            {
+                std::lock_guard<std::mutex> lock(survey_mutex);
+                survey_dwell.begin(seq++, def, v.round, plan, t0);
+                survey_dwell.retuned(retune_us, survey::kSettleMs);
+                survey_observing = true;
+            }
+            nap(survey::kDwellMs);
+            const RxEnergy e = dev->GetRxEnergy(true);
+            const int64_t t1 = survey_now_ms();
+            survey::SurveyDwell d;
+            {
+                std::lock_guard<std::mutex> lock(survey_mutex);
+                survey_observing = false;
+                survey_dwell.energy(survey_energy(e));
+                if (cut()) flags |= devourer::chanmig::kFlagTruncated;
+                d = survey_dwell.finish(t1, t1 - obs0, flags);
+            }
+            dwells.push_back(d);
+            survey_log(survey::dwell_line(d));
+        }
+    } catch (const std::exception &e) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "survey failed: %s", e.what());
+        aborted = true;
+    }
+    try {
+        dev->SetMonitorChannel(link);
+    } catch (const std::exception &e) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "survey: back to the link channel failed: %s", e.what());
+    }
+    int recommended = 0;
+    if (!aborted && !dwells.empty()) {
+        const survey::Result r = survey::recommend(dwells, cands, plan, link.Channel, survey_now_ms());
+        survey_log(survey::ranking_line(r.decision));
+        recommended = r.recommended;
+    }
+    survey_log(survey::result_line(recommended, link.Channel, dwells.size(), aborted));
+    survey_active = false;
+    if (!cut()) start_uplink(dev, fd);
 }
 
 void WfbngLink::release_link(int fd, libusb_device_handle *dev_handle, libusb_context *ctx) {
@@ -801,6 +943,15 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     link->fec_recovered_to_2 = recTo2;
     link->fec_recovered_to_1 = recTo1;
 }
+extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetSurveyOnStart(JNIEnv *env,
+                                                                                               jclass clazz,
+                                                                                               jlong nativeInstance,
+                                                                                               jboolean on) {
+    WfbngLink *link = reinterpret_cast<WfbngLink *>(nativeInstance);
+    if (!link) return;
+    link->survey_on_start = on == JNI_TRUE;
+}
+
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetRxDiag(
     JNIEnv *env, jclass clazz, jlong nativeInstance, jint ringMs, jboolean keepCorrupted, jint rxMode) {
     WfbngLink *link = reinterpret_cast<WfbngLink *>(nativeInstance);

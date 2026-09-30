@@ -96,3 +96,9 @@ set_source_files_properties(rx_replay.cpp ${SRC}/wfb-ng/src/rx.cpp PROPERTIES
 target_include_directories(rx_drain_test PRIVATE ${LOG_SHIM} ${CMAKE_CURRENT_SOURCE_DIR}/host_shim ${SRC} ${SRC}/wfb-ng ${SRC}/devourer)
 target_link_libraries(rx_drain_test PkgConfig::sodium PkgConfig::pcap GTest::gtest_main pthread)
 gtest_discover_tests(rx_drain_test)
+
+# The pre-flight channel survey's app side on devourer's chanmig library (docs/xr/channel-survey-design.md, phase 1).
+add_executable(channel_survey_test ChannelSurvey_test.cpp ${SRC}/devourer/src/chanmig/ChannelScore.cpp)
+target_include_directories(channel_survey_test PRIVATE ${SRC} ${SRC}/devourer/src)
+target_link_libraries(channel_survey_test GTest::gtest_main)
+gtest_discover_tests(channel_survey_test)

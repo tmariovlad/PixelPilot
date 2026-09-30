@@ -1,6 +1,6 @@
 # Channel survey before a flight: design (2026-09-30, no code yet)
 
-**Status: design for review.** From [BACKLOG.md](../../BACKLOG.md), first item: a calibration mode that says which 5 GHz
+**Status: phase 1 built on branch `survey` (§7), not merged, not on the headset; phases 2–3 (menu, push to the air) not started.** From [BACKLOG.md](../../BACKLOG.md), first item: a calibration mode that says which 5 GHz
 channel is free right now, shows the strong signals as a graph, and moves the link there.
 - **Why measure instead of hard-coding:** on 2026-09-29, ch165 cut residual loss 3.5–6× vs ch157, with the neighbour
   "Staff" VHT80 on 149–161 ([channel A/B](link-envelope.md), [air log](data/air-chan-ab7-2026-09-29.txt)). R3′ on
@@ -72,6 +72,8 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
   the gap (PPXR_EVENT) [PROVEN: [health-logging](health-logging.md)].
 
 ## 3. Score, graph, script
+
+> **Correction (2026-09-30, phase 1):** devourer already has a channel-survey library, `src/chanmig/`: the `SurveyDwell` record with own/other airtime (`frame_airtime_us`), `ScanPlan`, JSONL emitters and parsers, and a pure scoring engine `RecommendEngine` with `PolicyConfig` (qualify ≤ 20 % occupancy, burstiness, min 3 rounds / 3 s per bin, hysteresis margin) [PROVEN: `src/chanmig/ChannelScore.h:71-163`, `SurveyRecord.h`, `chanmig/CLAUDE.md`]. The app already compiles it (`CMakeLists.txt:52-53`). Phase 1 uses that engine, not the hand-made cost below, which stays only as the design-time sketch. The graph and the log follow chanmig's schema.
 
 **Per channel c:**
 - `occ(c)` = max(RTL foreign airtime %, the highest BSS load % among Quest-scan BSSs whose span covers c).
@@ -149,3 +151,44 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
 - Is the 8812A's NHM busy % stable enough in 4 reads per second? Or should dwells lengthen on noisy channels? (§5 run)
 - Is a short air TX pause (a new VMODE1 verb) worth it, to measure the link channel's energy without our own
   transmitter? (§2)
+
+
+## 7. Phase 1, built (branch `survey`, 2026-09-30; no menu, no push to the air)
+
+- **Switch:** pref `survey_on_start`, **off by default** (`SurveyPref.java`, JVM test). `LinkOptions.apply` passes it
+  to native (`WfbNgLink.setSurveyOnStart`). Native runs it **once per app launch**: the flag clears when the survey
+  starts, so a link restart in flight never repeats the ~30 s blackout.
+- **Run** (`WfbngLink::run_survey`):
+  - at link start, after bring-up, on its own thread while the RX loop feeds it. During the survey every received
+    frame goes to the survey instead of the aggregators, so there is no video;
+  - 20 MHz, the 9 candidates × 3 rounds, round-major;
+  - per dwell: `FastRetune`, 30 ms settle, a discard `GetRxEnergy(false)` (the FA/CCA counters are delta-on-read),
+    1000 ms of observation, then `GetRxEnergy(true)` with NHM;
+  - then back to the link channel (`SetMonitorChannel`), and **only then** the uplink starts (`start_uplink`), so no
+    uplink frame goes out on a surveyed channel;
+  - it stops within ~50 ms on a stop request or when the RX loop ends; `run()` joins it before the device is released.
+- **Record and score:** devourer's chanmig (`ChannelSurvey.h` is the thin app layer).
+  - `DwellBuilder` fills `SurveyDwell`. Own = a valid wfb frame of our video/mavlink/tunnel channel ids, other = the
+    rest; both are timed with `frame_airtime_us`. Bad-FCS frames are skipped.
+  - `recommend()` feeds `RecommendEngine` (default policy). Pre-flight, with no active-link telemetry, the engine
+    holds, but its ranking scores every candidate. The recommendation is the best qualified one.
+- **Log:** tag `PPXR_SURVEY`, one JSONL event per line: `survey.start`, 27 × `survey.dwell` (chanmig schema v1),
+  `channel.ranking`, `survey.result`. Now in ab_detached.sh's `-s` list.
+- **Graph:** [scripts/quest/channel_survey.py](../../scripts/quest/channel_survey.py) (test `test_channel_survey.py`).
+  It prints a per-channel text bar chart: foreign airtime %, NHM busy, the strongest foreign signal, the engine's score,
+  and the link and the recommendation marked. `--png` gives the same as an image. It only reads what the Quest
+  computed.
+- **Tests:**
+  - host `ChannelSurvey_test.cpp`, 7 tests: plan, schedule, NHM helpers, own/other attribution, a busy channel ranked
+    last and not qualified while our 50 % own video on the link channel is not occupancy, the JSONL lines;
+  - wfb host suite 80/80;
+  - JVM app 156 / videonative 22 / xr 134;
+  - `test_channel_survey.py` 3;
+  - mutation: counting own frames as other fails the attribution and the ranking tests.
+- **Not yet verified** [SPECULATION until a slot]:
+  - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
+    (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);
+  - the real retune cost and NHM values;
+  - the ~30 s blackout end to end.
+  - **Headset check:** turn the pref on, relaunch XR with the air on, run a detached capture, then `channel_survey.py`
+    on it. Compare with a second survey 5 min later.

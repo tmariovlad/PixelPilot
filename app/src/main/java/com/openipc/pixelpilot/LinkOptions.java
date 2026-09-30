@@ -26,6 +26,7 @@ final class LinkOptions {
         Uplink up = Uplink.from(prefs::getInt);
         link.setUplink(up.rateHz, up.fecK, up.fecN, up.mcs);
         link.setRxDiagnostics(RxDiagPrefs.fromPrefs(prefs.getAll()));
+        link.setSurveyOnStart(SurveyPref.enabled(prefs.getAll()));
     }
 
     static void applyFecThresholds(Context context, WfbNgLink link) {

@@ -39,7 +39,7 @@ home of all Quest work.
 - Research (moved in from the ev300d project): [Quest 2 research synthesis](docs/xr/research/2026-09-26-quest2/00-INDEX-SYNTHESIS.md) ·
   [WSL start failure incident](docs/xr/research/wsl-start-failure-2026-09-26.md) ·
   [research move report](docs/xr/research/MOVE-REPORT-2026-09-26.md).
-- Scripts: [scripts/quest/README.md](scripts/quest/README.md) (Quest test scripts) ·
+- Scripts: [scripts/quest/README.md](scripts/quest/README.md) (Quest test scripts; [channel_survey.py](scripts/quest/channel_survey.py): the pre-flight channel survey's bar graph from PPXR_SURVEY) ·
   [scripts/quest-latch/](scripts/quest-latch/) (Perfetto latch/transport analysis and the phase-lock stand-in:
   [compositor.pbtx](scripts/quest-latch/compositor.pbtx), [latch_analyze.py](scripts/quest-latch/latch_analyze.py),
   [transport_analyze.py](scripts/quest-latch/transport_analyze.py), [rtp_seq.py](scripts/quest-latch/rtp_seq.py), [switch_gap.py](scripts/quest-latch/switch_gap.py), [sidecar_log.py](scripts/quest-latch/sidecar_log.py) (waybeam per-frame encode timing from the air, no RTP needed), [calibrate_latch.py](scripts/quest-latch/calibrate_latch.py),

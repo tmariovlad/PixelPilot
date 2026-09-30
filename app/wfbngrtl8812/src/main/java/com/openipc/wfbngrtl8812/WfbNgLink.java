@@ -30,6 +30,12 @@ public class WfbNgLink implements WfbNGStatsChanged {
     public void setUplink(int rateHz, int fecK, int fecN, int mcs) {
         nativeSetUplink(nativeWfbngLink, rateHz, fecK, fecN, mcs);
     }
+    // Pre-flight channel survey at the next link start, once per app launch (SurveyPref, docs/xr/channel-survey-design.md).
+    public static native void nativeSetSurveyOnStart(long nativeInstance, boolean on);
+
+    public void setSurveyOnStart(boolean on) {
+        nativeSetSurveyOnStart(nativeWfbngLink, on);
+    }
     // Link-audit RX diagnostics (RxDiagPrefs); applies at the next link start.
     public static native void nativeSetRxDiag(long nativeInstance, int ringMs, boolean keepCorrupted, int rxMode);
 
