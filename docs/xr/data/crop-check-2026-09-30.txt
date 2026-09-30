@@ -1,0 +1,19 @@
+# crop_check.py (scripts/quest), 2026-09-30 18:52-19:02, Quest 2, no air: edges_360.rtp (640x360, 4-row bands) and edges_1080b.rtp (1920x1080, 12-row bands) from rtp_gen_edges.sh, replayed over Wi-Fi to UDP 5600.
+# red/green = thickness of the bottom red band / the top green band in screen rows (left eye): ~3 at 360 (12 vs 4 rows) and ~1.7 at 1080 (20 vs 12) if the layer draws the 8 padding rows, ~1 if it honours the crop.
+# Order: old, fix, fix, old (ABBA). old = 3b37a562 (xr-native 5669151); fix = 086a64aa (xr-native 765591d). A first pass with the int crop keys only (4f58446b, 4733ca2) gave the same numbers as old: that decoder publishes a Rect key.
+
+old-3b37   edges_360.rtp    green rows   7 @ 536  red rows  20 @1263  red/green 2.86
+old-3b37   edges_1080b.rtp  green rows   8 @ 541  red rows  11 @1270  red/green 1.38
+fix-086a   edges_360.rtp    green rows   7 @ 544  red rows   7 @1274  red/green 1.00
+fix-086a   edges_1080b.rtp  green rows   7 @ 544  red rows   8 @1273  red/green 1.14
+fix-086a-2 edges_360.rtp    green rows   7 @ 544  red rows   7 @1274  red/green 1.00
+fix-086a-2 edges_1080b.rtp  green rows   7 @ 544  red rows   8 @1273  red/green 1.14
+old-3b37-2 edges_360.rtp    green rows   7 @ 536  red rows  20 @1263  red/green 2.86
+old-3b37-2 edges_1080b.rtp  green rows   8 @ 541  red rows  11 @1270  red/green 1.38
+
+# decoder output format (VideoDecoder logcat), both APKs:
+OUTPUT_FORMAT_CHANGED 640 368 color-range: int32(2), color-st slice-height: int32(384) crop: Rect(0, 0, 639, 359) 
+OUTPUT_FORMAT_CHANGED 1920 1088 color-range: int32(2), color- slice-height: int32(1088) crop: Rect(0, 0, 1919, 1079) 
+# fix APK:
+Actual Width and Height in output 1920,1088 visible 1920x1080 at 0,0
+Actual Width and Height in output 640,368 visible 640x360 at 0,0
