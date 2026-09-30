@@ -199,6 +199,26 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### RX drain A/B 2026-09-30 10:43–10:53: the drain build loses ~30 % more after FEC for −0.1 ms; not deployed
+
+openipc-4b's fix to wfb-ng's Aggregator releases the next FEC block's already-arrived fragments as soon as the front block completes, instead of after one more fragment ([fec-block-probe](fec-block-probe.md) §8, branch rx-drain). A = c8986061, B = 7f8b34c1: the same source (81643b5) plus only the drain fix (pixelpilot-xr-36).
+- **Setup.** ABBA 150 s with [pref_ab.sh](../../scripts/quest/pref_ab.sh) START_AT: install on a tag change + XR relaunch per step, guard 15 s, [pid_watch.sh](../../scripts/quest/pid_watch.sh) `ALLOW_RESTART=1`. The air held q7 (720p120, 25 Mbit/s, MCS7, FEC 8/10, 17 dBm, ch165), a state with FEC recoveries. Baseline prefs + `stats_log`, IDR off. Steps on the PC clock (air ≈ PC).
+- **Data.** [steps](data/steps-2026-09-30-drain.txt) · [zflush per step](data/zflush-2026-09-30-drain.txt) · [latency](data/latency-2026-09-30-drain.txt) · [link_audit](data/audit-2026-09-30-drain.txt) · [frame fate](data/frame-fate-2026-09-30-drain.txt) · [latency over time](data/latency-bins-2026-09-30-drain.txt) · [link](data/link-2026-09-30-drain.txt) · [bursts](data/loss-bursts-2026-09-30-drain.txt).
+- The readouts follow pixelpilot-xr-36's note: the drain moves frames between zflush's "recovered" and "held" classes, so the comparison uses all frames, recovered ∪ held, and held on its own.
+
+| step | post-FEC | RTP lost | radio loss (PKT_LOST pkts) | loss runs/s | held frames | recovered ∪ held | all frames: last / last95 (ms) | decoded fps |
+|---|---|---|---|---|---|---|---|---|
+| A c8986061 | 0.40 % | 1.67 % | 716 | 3.3 | 314 | 3772 | 1.86 / 4.97 | 116.2 |
+| B 7f8b34c1 | 0.50 % | 2.04 % | 853 | 3.9 | 384 | 4003 | 1.79 / 4.94 | 115.6 |
+| B 7f8b34c1 | 0.57 % | 2.33 % | 815 | 3.9 | 364 | 3366 | 1.63 / 4.70 | 115.5 |
+| A c8986061 | 0.37 % | 1.55 % | 650 | 3.1 | 273 | 3690 | 1.71 / 4.83 | 116.4 |
+
+- **B loses more after FEC in both of its steps** [PROVEN: ABBA, a linear drift cancels]. Radio loss 1668 vs 1366 packets in equal time (Poisson z ≈ 5.5), post-FEC 0.50–0.57 vs 0.37–0.40 %, loss runs 3.9 vs 3.1–3.3/s, decoded 115.5 vs 116.3 fps. Loss before FEC is the same (1.55–1.81 vs 1.64–1.68 %).
+- **The latency gain is ~0.1 ms** (last 1.63–1.79 vs 1.71–1.86 ms, last95 4.70–4.94 vs 4.83–4.97 ms), with no trend in any step.
+- **Held frames rose in B (+28 %: 364–384 vs 273–314), against the prediction that they would drop**, while recovered ∪ held stayed about equal.
+  - One possible reading is that the drain releases or flushes a front block before fragments that would still have arrived, turning a later recovery into a loss [SPECULATION; the fix's release path in `rx.cpp` would show it].
+- **Decision:** 7f8b34c1 is not left installed (c8986061 stays, md5 checked after the run). The `-Y` gate, which needs a drain-capable Quest APK, stays closed until the drain fix loses no more than stock.
+
 ### Payload size 2026-09-30 10:18–10:34 (O121 E0+E1 for openipc-4b): at race, a payload that fits a frame in one packet cuts the link tail 6.8 → 4.3 ms
 
 Race REC (480p167, 2 Mbit/s, MCS2, FEC 4/8, 17 dBm, ch165). waybeam `maxPayloadSize` stepped live (no restart) as a 1400 / 1800 / 2400 / 3000 palindrome, 120 s each. APK c8986061, no relaunch, guard 5 s. Quest−air +0.920 s (air ≈ PC this boot). The watcher (app pid + post-FEC stop rule) never fired.

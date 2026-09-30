@@ -1,0 +1,7 @@
+# ab_drain, steps docs/xr/data/steps-2026-09-30-drain.txt, --air-offset-s 0.9143 (Quest-PC 0.9143 + PC-air 0), --guard-s 15. ~10:43-10:53 local; RX drain A/B (openipc-4b's wfb-ng Aggregator drain fix): A = c8986061, B = 7f8b34c1, ABBA 150 s, pref_ab relaunch per step; air q7 720p120 25M MCS7 FEC 8/10 17 dBm ch165; baseline + stats_log, IDR off; steps on the PC clock (air ~= PC).
+# python3 scripts/quest-latch/latency_bins.py scripts/quest/out/ab_drain.pftrace docs/xr/data/steps-2026-09-30-drain.txt --air-offset-s 0.9143 --guard-s 15 --baseline A_c8986061
+ms above the 'A_c8986061' drift line; bins of 10 s from each step's guarded start; slope in ms/s
+ 0 A_c8986061    slope  -0.006     1.6    2.1    2.3    2.2    2.2    1.7    2.6    1.8    1.5    1.4    1.5    1.5
+ 1 B_7f8b34c1    slope  -0.006     1.4    2.1    2.2    2.2    1.6    1.9    2.3    2.3    1.4    1.4    1.4    1.3
+ 2 B_7f8b34c1    slope  -0.005     1.3    1.8    1.7    1.9    1.6    2.6    2.7    1.1    1.2    1.2    1.2    1.3
+ 3 A_c8986061    slope  -0.010     1.2    2.0    2.9    2.6    2.0    2.0    1.7    1.5    1.2    1.1    1.2    1.2

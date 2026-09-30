@@ -1,0 +1,16 @@
+# ab_drain, steps docs/xr/data/steps-2026-09-30-drain.txt, --air-offset-s 0.9143 (Quest-PC 0.9143 + PC-air 0), --guard-s 15. ~10:43-10:53 local; RX drain A/B (openipc-4b's wfb-ng Aggregator drain fix): A = c8986061, B = 7f8b34c1, ABBA 150 s, pref_ab relaunch per step; air q7 720p120 25M MCS7 FEC 8/10 17 dBm ch165; baseline + stats_log, IDR off; steps on the PC clock (air ~= PC).
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_drain.pftrace docs/xr/data/steps-2026-09-30-drain.txt --air-offset-s 0.9143 --guard-s 15 --baseline A_c8986061
+1433366 packets, 75525 frames, 82015 lost before the app; 67944 frames inside the steps
+clock drift fitted on 'A_c8986061': +71 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 A_c8986061   14205  118.4  19.36    6.24   -4.38    1.86    4.97     3.78     9.3   1.67     9
+ 1 B_7f8b34c1   14184  118.2  19.32    6.24   -4.44    1.79    4.94     3.72    11.4   2.04     7
+ 2 B_7f8b34c1   14164  118.0  19.33    6.20   -4.57    1.63    4.70     3.56    13.0   2.33     3
+ 3 A_c8986061   14218  118.5  19.41    6.24   -4.53    1.71    4.83     3.63     8.6   1.55     6
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+A_c8986061      28423  118.4  19.38    6.24   -4.45    1.78    4.92     3.71     8.9   1.61    15   +0.00     +0.00
+B_7f8b34c1      28348  118.1  19.33    6.22   -4.51    1.71    4.81     3.64    12.2   2.19    10   -0.07     -0.07

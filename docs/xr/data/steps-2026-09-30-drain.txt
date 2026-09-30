@@ -1,0 +1,6 @@
+# RX drain A/B steps on the PC clock (pref_ab START_AT 1790753000, 150 s each; air held q7 = 720p120 25 Mbit MCS7 FEC 8/10, 17 dBm, ch165, air ~= PC): A = c8986061 (stock wfb-ng Aggregator), B = 7f8b34c1 (the same + openipc-4b's drain fix, pixelpilot-xr-36); install on a tag change + XR relaunch per step (guard 15 s).
+1790753000 A_c8986061
+1790753150 B_7f8b34c1
+1790753300 B_7f8b34c1
+1790753450 A_c8986061
+1790753600 END

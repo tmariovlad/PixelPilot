@@ -1,0 +1,7 @@
+# ab_drain, steps docs/xr/data/steps-2026-09-30-drain.txt, --air-offset-s 0.9143 (Quest-PC 0.9143 + PC-air 0), --guard-s 15. ~10:43-10:53 local; RX drain A/B (openipc-4b's wfb-ng Aggregator drain fix): A = c8986061, B = 7f8b34c1, ABBA 150 s, pref_ab relaunch per step; air q7 720p120 25M MCS7 FEC 8/10 17 dBm ch165; baseline + stats_log, IDR off; steps on the PC clock (air ~= PC).
+# python3 scripts/quest-latch/frame_fate.py scripts/quest/out/ab_drain.pftrace docs/xr/data/steps-2026-09-30-drain.txt --air-offset-s 0.9143 --guard-s 15
+                 decoded/s (a)hole/s (a)edge/s (b)ndec/s (c)never/s measured dec/s
+ 0 A_c8986061        116.1       2.0       0.3       0.0        0.0          116.2
+ 1 B_7f8b34c1        115.4       2.3       0.4       0.0        0.0          115.6
+ 2 B_7f8b34c1        115.3       2.2       0.5       0.0        0.0          115.5
+ 3 A_c8986061        116.3       1.9       0.3       0.0        0.0          116.4
