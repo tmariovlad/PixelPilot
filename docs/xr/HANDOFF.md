@@ -21,6 +21,8 @@ Measure every method at the same position with the same tools (loss, decode fps,
 
 ## Open items, most valuable first
 
+- **Air day 2026-10-01 runs from one runbook: [slot-plan-2026-10-01.md](slot-plan-2026-10-01.md)** (HD hunt → -Z × payload → L1 → RC probe → superframe cap; owners, md5s, launch lines, captures, pulls, analysis, stop rules, reverts). Open TBDs: L1 block length (66), alink restart line (66), rc_fit.py (-1f, 09:30), l1_fit final (f0), slot 5 lever_sf (4b, ~01:00).
+
 - **2026-09-30 evening (Quest side, pixelpilot-xr-25):**
   - HD payload: 3900 wins the median by 0.5 ms but loses the p95 by 4.6 ms (FEC-block fill), and 3000 loses 3× more after FEC. HD stays at 2400; 3900's median goes to -40's -Z slot ([section](link-envelope.md)).
   - MFE clock L6: encode +0.356 ms per ns of clock period. **The whole air hung ~1 s after the second switch to 384 MHz** (air 789220; radio and Ethernet, power cycle at 22:03, /tmp logs lost).
