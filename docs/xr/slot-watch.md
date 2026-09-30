@@ -157,7 +157,7 @@ Only one process can hold the DPS-150's port (COM5), so slot_watch never opens i
    ~10 s later; that is expected.
 3. After `output_on`: the air must come back with a **fresh boot**, i.e. `AIR_UNREACHABLE_OK` followed by `AIR_REBOOT`
    (new `boot_id`, small uptime) in the watcher.
-4. After a power-on, vmoded does not start by itself (it is started by hand), and `/tmp/linkmode-bcn.log` must show
+4. After a power-on, vmoded starts by itself (L2, since 2026-09-30 16:02–16:12 [PROVEN: HANDOFF, "-Y race + L2 slot 16:02–16:12"; OpenIPC `vmode-presets-2026-09-27/deploy/slot-y-race-l2/07-SLOT-PLAN.md` §5]; before that it was started by hand), and `/tmp/linkmode-bcn.log` must show
    `-> 0x10` again (`AIR_BCN_550` stays quiet).
 
 ## Verification (2026-09-29)
