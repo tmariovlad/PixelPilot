@@ -89,3 +89,27 @@ completes; the frame completes at its last slice.
   maps to the Quest's wall clock as `air − air_minus_pc_us + quest_minus_pc_ms·1000`, so a PC capture joins a Quest trace
   of the same window. The first 10 columns are unchanged. (A capture made with the old script, e.g.
   `scripts/quest/out/sidecar_probe_1080p90_h264_30M.tsv`, has only the deltas and cannot be joined.)
+
+## 7. A live queue signal for rate control (research for openipc-1f, 2026-10-01; no code yet)
+
+openipc-1f designs air-side rate control for the 40 ms ceiling over capacity: the bitrate must drop *before* the knee, because over capacity nothing in wfb_tx or the driver holds 40 ms ([link-envelope](link-envelope.md), age-guard gate: floor ~130 ms). This section is what the Quest can feed it.
+
+- **Delay rises before loss** [INFERRED from PROVEN steps in [link-envelope](link-envelope.md)]. At the MCS7 knee, m7b20f48 (3710 pkt/s) queued +20 ms at 0.22 % loss after FEC, and MCS6 long GI at 25 Mbit/s read +55 ms at the same loss as MCS7. A delay signal therefore leads the loss signal.
+- **What the app has live** [PROVEN: code]:
+  - `link` per frame = complete on the Quest − the air's `last_pkt_send` (ClockSync), folded over a 2 s window every 500 ms (`StatsCollector.java:18-19`, `LatencyWindow.java:18,124`).
+    - Caveat: it needs the sidecar's record of each frame, which travels down the same congested link. Under congestion the signal therefore lags by about the delay it measures.
+  - Per decoded frame (ssrc, RTP timestamp, complete ns, decoded ns), drained from native to Java (`QuestFrame.java:12-26`, `RtpTag.h:13-15`).
+    - From these, the **relative one-way delay** = complete − RTP ts / 90 kHz, minus its running minimum, is the queueing delay with no sidecar and no clock sync. It is the standard delay-based congestion signal and what `ab_segments.py`'s drift line does offline. Clock drift (+71 ppm measured) moves it by only 0.07 ms/s, so a minimum over a few seconds holds.
+    - Limit: only the completion time is tagged, not the first packet's arrival. A large frame (scene change, IDR) completes later without any queue, so a p90 over completion mixes in frame size. A first-packet time in `RtpTag` would separate the two (a small native change).
+  - Holes, pre-/post-FEC loss and RSSI per 2 s window (`LinkWindow.java:48-52`).
+- **Where it fits in the alink report** [PROVEN: the parser, openipc repo `tools/alink-air/src/parse.c:52-99`, `parse.h:44`; constraints from openipc-1f]. The app sends `%ld:%d:%d:%d:%d:%d:%f:0:-1:%d:%s` = 11 fields (`WfbngLink.cpp:680-682`).
+  - The parser takes up to 16 fields in a line of at most 255 bytes, and reads field 11 as an optional pre-FEC %.
+  - New numeric fields therefore go at 12–15. Fields 0/1/3/4/9 must stay integers, and recovered = lost = 300 is the link-dead sentinel.
+  - The other programs in the local repos that use this line send it and do not parse it (aviateur `wfbng_link.cpp:460`; OpenIPC-air_manager does not read it) [PROVEN: grep]. Upstream alink_drone's parser is not in any local repo, so whether extra fields break it is [SPECULATION].
+- **Latency of the feedback path**:
+  - Measurement: one window of ~250 ms (30–40 frames at 120–167 fps).
+  - Java → native hand-off: a new JNI setter, like `nativeSetFecThresholds` (`WfbNgLink.java:21`).
+  - Report slot: 0–250 ms at 4 reports/s (`UplinkSchedule.h:30`). A change can go out at once as "news", as IDR requests and fec_change do (`UplinkSchedule.h:41-44`, polled every 20 ms).
+  - Tunnel one-way: ~2.5–3 ms [INFERRED: ClockSync round trip 4.8–5.9 ms over the same tunnel, PPXR_STATS `rtt` 2026-09-30].
+  - alink: reads at once, and its policy ticks every 100 ms (`config.c` tick_ms, openipc-1f).
+  - **Total ~0.3–0.6 s**, or ~0.3–0.4 s with the change sent as news.

@@ -202,7 +202,7 @@ The dated result sections that used to follow here were moved verbatim into topi
   LOSS_BURST, FPS_LOW, LINK_STATUS), PPXR_HEALTH every 10 s (fps, frozen %, stalls/min, holes, IDR, RSSI/SNR), to
   logcat and files/ppxr_health.log; health_log.py → timeline + summary. Keywords: health log, video stalled, HOLD,
   headset asleep, slot_watch, jurnal.
-- **[Stats pages: data backend](xr/stats-backend.md)** (2026-09-29, built + host/JVM-tested, not yet on the headset): per-frame
+- **[Stats pages: data backend](xr/stats-backend.md)** (2026-09-29, built + host/JVM-tested, not yet on the headset): §7 (2026-10-01, research for openipc-1f's rate control): a live queue signal from the Quest, the relative one-way delay (frame complete − RTP ts, minus its running minimum; no sidecar, no clock sync), fits alink report fields 12–15; feedback ~0.3–0.6 s. per-frame
   latency by segment (encode, air send, link, decode, decoded → next predicted display as an estimate; sum = G2G est.
   without sensor/panel) from waybeam's RTP sidecar matched by (ssrc, RTP ts) with the Quest's decoded frames, air↔Quest
   clock by NTP-style SYNC (all sidecar clocks are CLOCK_MONOTONIC on the air's build); RX MCS/NSS/GI, RSSI dBm, SNR,
