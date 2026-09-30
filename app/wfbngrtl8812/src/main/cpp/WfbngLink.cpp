@@ -126,7 +126,7 @@ survey::Energy survey_energy(const RxEnergy &e) {
     return s;
 }
 
-int link_channel_of(DeviceControlT<IRtlDevice> &ctl, IRtlDevice *dev) { return ctl.selectedChannel(dev).Channel; }
+int link_channel_of(DeviceControlT<IRtlDevice> &ctl, int fd) { return ctl.selectedChannel(fd).Channel; }
 
 void survey_log(const std::string &line) { __android_log_print(ANDROID_LOG_INFO, "PPXR_SURVEY", "%s", line.c_str()); }
 }  // namespace
@@ -222,13 +222,16 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
 
     const int result = run_guarded(
         [&]() -> int {
-            rtl_devices[fd] = wifi_driver->CreateRtlDevice(dev_handle, ctx, usb_lock, cfg);
-            // operator[] on purpose: a failed create leaves a null entry, which release_link() erases with find().
-            // Do not "optimise" the check to .at().
-            if (!rtl_devices[fd]) {
+            std::shared_ptr<IRtlDevice> created = wifi_driver->CreateRtlDevice(dev_handle, ctx, usb_lock, cfg);
+            if (!created) {
                 __android_log_print(ANDROID_LOG_ERROR, TAG, "CreateRtlDevice error");
                 return -1;
             }
+            // devctl owns it from here. This thread keeps only a raw pointer for StartRxLoop, valid until its own
+            // release_link() detaches the device. No local shared_ptr: the device must die in release_link, while
+            // the USB handle is still valid.
+            IRtlDevice *const current_device = created.get();
+            devctl.attach(fd, std::move(created));
             if (stop_requested(fd)) {
                 __android_log_print(ANDROID_LOG_WARN, TAG, "stop requested for fd=%d before bring-up, aborting", fd);
                 return -1;
@@ -345,7 +348,6 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             // Store the current fd for later TX power updates.
             current_fd = fd;
 
-            IRtlDevice *current_device = rtl_devices.at(fd).get();
 
             // TX-capable bring-up with RX enabled (cfg.rx.enable_with_tx). On
             // Jaguar3 (RTL8812EU/8822EU) this also starts the coex runtime thread
@@ -354,7 +356,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             // At 40 MHz the primary must be explicit (it was DONT_CARE): it sets the RX primary and the sub-channel
             // of the 20 MHz uplink. In 5 GHz the channel's pair fixes it, e.g. 157 = HT40+ (primary lower, center 159)
             // (devourer ChannelCenter.h; docs/xr/research/2026-09-28-ht40-channel-center.md).
-            devctl.initWrite(current_device, SelectedChannel{
+            devctl.initWrite(fd, SelectedChannel{
                 .Channel = static_cast<uint8_t>(wifiChannel),
                 .ChannelOffset = bandWidth == CHANNEL_WIDTH_40 ? devourer::ht40_offset(wifiChannel)
                                                                : devourer::kPrimeDontCare,
@@ -365,28 +367,28 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             // RX loop below feeds it; the uplink starts only when it completes, so no uplink frame goes out on a
             // surveyed channel. A failed retune back stops the RX loop: run() returns and the Java side restarts the link.
             if (survey_on_start.exchange(false)) {
-                const SelectedChannel link = devctl.selectedChannel(current_device);
+                const SelectedChannel link = devctl.selectedChannel(fd);
                 SurveyOps ops;
-                ops.to20 = [this, current_device](uint8_t ch) {
-                    devctl.setMonitorChannel(current_device, SelectedChannel{
+                ops.to20 = [this, fd](uint8_t ch) {
+                    devctl.setMonitorChannel(fd, SelectedChannel{
                         .Channel = ch, .ChannelOffset = devourer::kPrimeDontCare, .ChannelWidth = CHANNEL_WIDTH_20});
                 };
-                ops.retune = [this, current_device](uint8_t ch) { devctl.fastRetune(current_device, ch); };
-                ops.energy = [this, current_device](bool nhm) {
-                    return survey_energy(devctl.rxEnergy(current_device, nhm));
+                ops.retune = [this, fd](uint8_t ch) { devctl.fastRetune(fd, ch); };
+                ops.energy = [this, fd](bool nhm) {
+                    return survey_energy(devctl.rxEnergy(fd, nhm));
                 };
-                ops.back = [this, current_device, link] { devctl.setMonitorChannel(current_device, link); };
+                ops.back = [this, fd, link] { devctl.setMonitorChannel(fd, link); };
                 survey.start(ops, link.Channel, survey_log, [this, current_device, fd](SurveyOutcome o) {
                     if (survey::starts_uplink(o)) {
                         if (o == SurveyOutcome::Failed)
                             __android_log_print(ANDROID_LOG_WARN, TAG, "survey: device error mid-sweep; back on ch %d",
-                                                link_channel_of(devctl, current_device));
-                        if (tx_power_pending.exchange(false)) devctl.setTxPower(current_device, adaptive_tx_power.load());
+                                                link_channel_of(devctl, fd));
+                        if (tx_power_pending.exchange(false)) devctl.setTxPower(fd, adaptive_tx_power.load());
                         start_uplink(current_device, fd);
                     } else if (o == SurveyOutcome::RetuneBackFailed) {
                         __android_log_print(ANDROID_LOG_ERROR, TAG, "survey: no retune back to ch %d; restarting the link",
-                                            link_channel_of(devctl, current_device));
-                        current_device->StopRxLoop();
+                                            link_channel_of(devctl, fd));
+                        devctl.stopRxLoop(fd);
                     }
                 });
             } else {
@@ -482,21 +484,18 @@ void WfbngLink::release_link(int fd, libusb_device_handle *dev_handle, libusb_co
     destroy_thread(usb_tx_thread);
     stop_adaptive_link();
 
-    // Clean shutdown: halt TRX DMA and power the chip down before releasing the USB interface. find(), not at():
-    // the device may never have been created (CreateRtlDevice threw or returned null).
-    auto it = rtl_devices.find(fd);
-    if (it != rtl_devices.end() && it->second) {
-        try {
-            it->second->Stop();
-        } catch (const std::exception &e) {
-            // Cleanup must not throw: it may run right after the link failed, and there is no caller left to catch.
-            __android_log_print(ANDROID_LOG_ERROR, TAG, "device Stop() failed during release: %s", e.what());
-        }
-    }
+    // Clean shutdown: halt TRX DMA and power the chip down before releasing the USB interface. Stop() and the
+    // removal happen under devctl's lock, so a JNI nativeSetTxPower can no longer reach a stopped or destroyed device
+    // (25's review F1/F2). Null when the device was never created (CreateRtlDevice threw or returned null).
+    // Stop() errors are reported, not thrown: cleanup may run right after the link failed, with no caller to catch.
+    std::string stop_error;
+    std::shared_ptr<IRtlDevice> dev = devctl.detach(fd, true, &stop_error);
+    if (!stop_error.empty())
+        __android_log_print(ANDROID_LOG_ERROR, TAG, "device Stop() failed during release: %s", stop_error.c_str());
     // Destroy the device while the handle is still valid: its destructor de-inits the chip and
-    // releases the per-adapter lock. Kept in the map, it held the lock for the lifetime of this
+    // releases the per-adapter lock. Kept alive, it held the lock for the lifetime of this
     // WfbngLink, so the next activity (2D -> XR) found the adapter "in use" (2026-09-27).
-    if (it != rtl_devices.end()) rtl_devices.erase(it);
+    dev.reset();
 
     int r = libusb_release_interface(dev_handle, 0);
     __android_log_print(ANDROID_LOG_DEBUG, TAG, "libusb_release_interface: %d", r);
@@ -507,17 +506,11 @@ void WfbngLink::stop(JNIEnv *env, jobject context, jint fd) {
     // Recorded first, and whether or not the device exists yet: run() may not have got as far
     // as creating it, and StartRxLoop() would clear the flag set below anyway.
     note_stop_requested(fd);
-    if (rtl_devices.find(fd) == rtl_devices.end()) {
+    if (!devctl.stopRxLoop(fd)) {
         // Happens when the adapter was already gone by the time the stop arrived, e.g. it
-        // was unplugged or the hub re-enumerated it. Nothing left to stop.
+        // was unplugged or the hub re-enumerated it, or run() has not created it yet. Nothing left to stop.
         __android_log_print(ANDROID_LOG_WARN, TAG, "stop: no rtl device for fd=%d, already gone", fd);
         return;
-    }
-    auto dev = rtl_devices.at(fd).get();
-    if (dev) {
-        dev->StopRxLoop();
-    } else {
-        __android_log_print(ANDROID_LOG_ERROR, TAG, "rtl_devices.at(%d) is nullptr", fd);
     }
     stop_adaptive_link();
 }
@@ -787,7 +780,7 @@ void WfbngLink::start_link_quality_thread(int fd) {
     };
 
     init_thread(link_quality_thread, [=]() { return std::make_unique<std::thread>(thread_func); });
-    devctl.setTxPower(rtl_devices.at(fd).get(), adaptive_tx_power.load());
+    devctl.setTxPower(fd, adaptive_tx_power.load());
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetAdaptiveLinkEnabled(
@@ -822,9 +815,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     // concurrently with a channel set); stored under the survey's end lock and applied when it completes, before the
     // uplink starts. After the survey ifActive() is false and the power is applied here (25's S1).
     if (link->survey.ifActive([link] { link->tx_power_pending = true; })) return;
-    if (link->current_fd != -1 && link->rtl_devices.find(link->current_fd) != link->rtl_devices.end()) {
-        link->devctl.setTxPower(link->rtl_devices.at(link->current_fd).get(), power);
-    }
+    link->devctl.setTxPower(link->current_fd, power);   // a no-op when that adapter has no device (yet / any more)
     // If adaptive mode is enabled and the adaptive thread is not running, restart it.
     if (link->adaptive_link_enabled) {
         link->stop_adaptive_link();

@@ -1,8 +1,11 @@
-// DeviceControl (DeviceControl.h): every control-plane call to the RTL is sequenced by one lock, as devourer's
-// IRtlDevice.h:110-117 asks ("single-control-thread ... never concurrently with a channel set"). A fake device counts
-// how many calls are inside it at once; the positive control shows the fake does see overlaps when nothing sequences
-// the calls, so a green "0 overlaps" means the lock did it. The structural test keeps WfbngLink.cpp from calling a
-// control-plane method on the device directly (bypassing the lock).
+// DeviceControl (DeviceControl.h): the registry of the RTL devices (per USB fd) and the one lock that sequences every
+// control-plane call to them, as devourer's IRtlDevice.h:110-117 asks ("single-control-thread ... never concurrently
+// with a channel set").
+// - A fake device counts how many calls are inside it at once; the positive control shows the fake does see overlaps
+//   when nothing sequences the calls, so a green "0 overlaps" means the lock did it.
+// - Lifetime (pixelpilot-xr-25's review, F1/F2): Stop() and the removal happen under the same lock, so no call reaches
+//   a stopped or destroyed device, whichever thread (JNI, run, survey) it comes from.
+// - The structural test keeps WfbngLink.cpp/.hpp from calling the device directly (bypassing the registry and lock).
 #include "DeviceControl.h"
 
 #include <gtest/gtest.h>
@@ -10,8 +13,10 @@
 #include <atomic>
 #include <chrono>
 #include <fstream>
+#include <memory>
 #include <regex>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -23,9 +28,13 @@ struct FakeDevice
     std::atomic<int> inside{0};
     std::atomic<int> overlaps{0};
     std::atomic<int> calls{0};
+    std::atomic<bool> stopped{false};
+    std::atomic<int> afterStop{0};   // control calls that reached the device after its Stop()
+    bool stopThrows = false;
 
     void enter()
     {
+        if (stopped) afterStop++;
         if (++inside > 1) overlaps++;
         calls++;
         std::this_thread::sleep_for(std::chrono::microseconds(50));
@@ -45,8 +54,17 @@ struct FakeDevice
         enter();
         return 36;
     }
+    void StopRxLoop() { enter(); }
+    void Stop()
+    {
+        enter();
+        stopped = true;
+        if (stopThrows) throw std::runtime_error("usb gone");
+    }
 };
 
+using Ctl = DeviceControlT<FakeDevice>;
+constexpr int kFd = 42;
 constexpr int kThreads = 8;
 constexpr int kCalls = 100;
 
@@ -56,7 +74,7 @@ void hammer(Call call)
     std::vector<std::thread> ts;
     for (int t = 0; t < kThreads; ++t)
         ts.emplace_back([&call, t] {
-            for (int i = 0; i < kCalls; ++i) call((t + i) % 6);
+            for (int i = 0; i < kCalls; ++i) call((t + i) % 7);
         });
     for (auto& th : ts) th.join();
 }
@@ -64,21 +82,23 @@ void hammer(Call call)
 
 TEST(DeviceControl, ConcurrentControlCallsNeverOverlapInsideTheDevice)
 {
-    FakeDevice dev;
-    DeviceControlT<FakeDevice> ctl;
+    auto dev = std::make_shared<FakeDevice>();
+    Ctl ctl;
+    ctl.attach(kFd, dev);
     hammer([&](int op) {
         switch (op)
         {
-        case 0: ctl.initWrite(&dev, 36); break;
-        case 1: ctl.setMonitorChannel(&dev, 40); break;
-        case 2: ctl.fastRetune(&dev, 44); break;
-        case 3: ctl.setTxPower(&dev, 30); break;
-        case 4: EXPECT_EQ(ctl.rxEnergy(&dev, true), 7); break;
-        default: EXPECT_EQ(ctl.selectedChannel(&dev), 36); break;
+        case 0: EXPECT_TRUE(ctl.initWrite(kFd, 36)); break;
+        case 1: EXPECT_TRUE(ctl.setMonitorChannel(kFd, 40)); break;
+        case 2: EXPECT_TRUE(ctl.fastRetune(kFd, 44)); break;
+        case 3: EXPECT_TRUE(ctl.setTxPower(kFd, 30)); break;
+        case 4: EXPECT_EQ(ctl.rxEnergy(kFd, true), 7); break;
+        case 5: EXPECT_TRUE(ctl.stopRxLoop(kFd)); break;
+        default: EXPECT_EQ(ctl.selectedChannel(kFd), 36); break;
         }
     });
-    EXPECT_EQ(dev.calls.load(), kThreads * kCalls);
-    EXPECT_EQ(dev.overlaps.load(), 0);
+    EXPECT_EQ(dev->calls.load(), kThreads * kCalls);
+    EXPECT_EQ(dev->overlaps.load(), 0);
 }
 
 TEST(DeviceControl, PositiveControlTheFakeSeesOverlapsWithoutTheLock)
@@ -89,16 +109,79 @@ TEST(DeviceControl, PositiveControlTheFakeSeesOverlapsWithoutTheLock)
     EXPECT_GT(dev.overlaps.load(), 0);
 }
 
-// ---- structural: WfbngLink.cpp reaches the device's control plane only through DeviceControl ----
+TEST(DeviceControl, NoCallReachesADeviceAfterItsStopWhileAnotherThreadKeepsCalling)
+{
+    // F1/F2: nativeSetTxPower on the JNI thread vs release_link's Stop() + removal on the run thread.
+    Ctl ctl;
+    std::atomic<bool> done{false};
+    std::vector<std::shared_ptr<FakeDevice>> seen;
+    std::thread jni([&] {
+        while (!done) ctl.setTxPower(kFd, 30);
+    });
+    for (int round = 0; round < 50; ++round)
+    {
+        auto dev = std::make_shared<FakeDevice>();
+        seen.push_back(dev);
+        ctl.attach(kFd, dev);
+        std::this_thread::sleep_for(std::chrono::microseconds(300));
+        std::string err;
+        auto back = ctl.detach(kFd, true, &err);
+        EXPECT_EQ(back, dev);   // handed back: the caller destroys it while the USB handle is still valid
+        EXPECT_TRUE(err.empty());
+    }
+    done = true;
+    jni.join();
+    int after = 0, calls = 0;
+    for (const auto& d : seen)
+    {
+        after += d->afterStop.load();
+        calls += d->calls.load();
+    }
+    EXPECT_EQ(after, 0);
+    EXPECT_GT(calls, 50);   // the JNI thread did reach attached devices: the test exercised the race
+    EXPECT_FALSE(ctl.setTxPower(kFd, 30));
+}
+
+TEST(DeviceControl, CallsForADeviceThatIsNotThereAreNoOps)
+{
+    Ctl ctl;
+    EXPECT_FALSE(ctl.setTxPower(kFd, 30));
+    EXPECT_FALSE(ctl.stopRxLoop(kFd));
+    EXPECT_EQ(ctl.rxEnergy(kFd, true), 0);
+    EXPECT_EQ(ctl.selectedChannel(kFd), 0);
+    std::string err;
+    EXPECT_EQ(ctl.detach(kFd, true, &err), nullptr);
+}
+
+TEST(DeviceControl, DevicesArePerFdAndAFailingStopStillDetaches)
+{
+    // One WfbngLink serves every adapter (WfbNgLink.java: one nativeRun thread per UsbDevice).
+    Ctl ctl;
+    auto a = std::make_shared<FakeDevice>();
+    auto b = std::make_shared<FakeDevice>();
+    b->stopThrows = true;
+    ctl.attach(1, a);
+    ctl.attach(2, b);
+    std::string err;
+    EXPECT_EQ(ctl.detach(2, true, &err), b);
+    EXPECT_EQ(err, "usb gone");
+    EXPECT_FALSE(ctl.setTxPower(2, 30));
+    EXPECT_TRUE(ctl.setTxPower(1, 30));
+    EXPECT_EQ(ctl.detach(1, false, &err), a);
+    EXPECT_FALSE(a->stopped.load());   // stop=false: removed without Stop()
+}
+
+// ---- structural: WfbngLink reaches the device only through DeviceControl ----
 
 namespace
 {
 // devourer's control-plane entry points (IRtlDevice.h): the TX-power family, channel/width sets, TX mode, CW tone,
-// xtal, CCA, energy/quality reads that touch registers. StartRxLoop / StopRxLoop / send_packet are not control-plane
-// calls here (DeviceControl.h says why).
+// xtal, CCA, register reads, Stop (halts DMA, powers down), plus StopRxLoop (lifetime: the device may be gone).
+// StartRxLoop (the run thread's blocking loop on the device it created) and send_packet (TX data path) stay direct.
 const std::regex kRawControl(
     R"((->|\.)\s*(InitWrite|SetMonitorChannel|FastRetune|FastSetBandwidth|SetTxPower\w*|ReApplyTxPower|SetXtalCap|)"
-    R"(SetTxMode|ClearTxMode|StartCwTone|StopCwTone|SetCcaMode|GetRxEnergy|GetRxQuality|GetSelectedChannel)\s*\()");
+    R"(SetTxMode|ClearTxMode|StartCwTone|StopCwTone|SetCcaMode|GetRxEnergy|GetRxQuality|GetSelectedChannel|)"
+    R"(Stop|StopRxLoop)\s*\()");
 
 std::vector<std::string> rawControlCalls(std::istream& in)
 {
@@ -112,24 +195,30 @@ std::vector<std::string> rawControlCalls(std::istream& in)
     }
     return hits;
 }
+
+void expectNoRawCalls(const char* path)
+{
+    std::ifstream f(path);
+    ASSERT_TRUE(f.good()) << path;
+    const auto hits = rawControlCalls(f);
+    std::string all;
+    for (const auto& h : hits) all += "\n  " + h;
+    EXPECT_TRUE(hits.empty()) << path << ": device calls that bypass DeviceControl:" << all;
+}
 }  // namespace
 
 TEST(DeviceControl, TheScannerFindsRawCallsAndIgnoresCommentsAndTheLockedForm)
 {
     std::istringstream bad("dev->SetTxPower(3);\n  rtl_devices.at(fd)->FastRetune(ch);\n"
-                           "x->GetRxEnergy(true);\n");
-    EXPECT_EQ(rawControlCalls(bad).size(), 3u);
-    std::istringstream ok("devctl.setTxPower(dev, 3);   // not dev->SetTxPower(3)\n// dev->FastRetune(1);\n"
-                          "dev->StopRxLoop();\ndev->send_packet(p, n);\n");
+                           "x->GetRxEnergy(true);\nit->second->Stop();\ndev->StopRxLoop();\n");
+    EXPECT_EQ(rawControlCalls(bad).size(), 5u);
+    std::istringstream ok("devctl.setTxPower(fd, 3);   // not dev->SetTxPower(3)\n// dev->FastRetune(1);\n"
+                          "txFrame->stop();\ndev->StartRxLoop(p);\ndev->send_packet(p, n);\n");
     EXPECT_TRUE(rawControlCalls(ok).empty());
 }
 
-TEST(DeviceControl, WfbngLinkMakesNoRawControlPlaneCall)
+TEST(DeviceControl, WfbngLinkMakesNoRawDeviceCall)
 {
-    std::ifstream f(WFBNGLINK_CPP);
-    ASSERT_TRUE(f.good()) << WFBNGLINK_CPP;
-    const auto hits = rawControlCalls(f);
-    std::string all;
-    for (const auto& h : hits) all += "\n  " + h;
-    EXPECT_TRUE(hits.empty()) << "device control-plane calls that bypass DeviceControl:" << all;
+    expectNoRawCalls(WFBNGLINK_CPP);
+    expectNoRawCalls(WFBNGLINK_HPP);
 }

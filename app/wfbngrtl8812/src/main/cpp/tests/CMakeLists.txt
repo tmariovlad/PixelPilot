@@ -107,6 +107,6 @@ gtest_discover_tests(channel_survey_test)
 # WfbngLink.cpp for calls that bypass it.
 add_executable(device_control_test DeviceControl_test.cpp)
 target_include_directories(device_control_test PRIVATE ${SRC})
-target_compile_definitions(device_control_test PRIVATE WFBNGLINK_CPP="${SRC}/WfbngLink.cpp")
+target_compile_definitions(device_control_test PRIVATE WFBNGLINK_CPP="${SRC}/WfbngLink.cpp" WFBNGLINK_HPP="${SRC}/WfbngLink.hpp")
 target_link_libraries(device_control_test GTest::gtest_main pthread)
 gtest_discover_tests(device_control_test)

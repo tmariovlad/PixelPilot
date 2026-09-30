@@ -66,8 +66,8 @@ class WfbngLink {
     std::atomic<bool> survey_on_start{false};
     std::atomic<bool> tx_power_pending{false};   // a TX power set during a survey, applied when it completes
     SurveyRunner survey;
-    // Every control-plane call to the RTL goes through devctl: one lock sequences the run, survey and JNI threads
-    // (devourer IRtlDevice.h:110-117; DeviceControl.h).
+    // The RTL devices per USB fd, and the one lock every call to them goes through: it sequences the run, survey and
+    // JNI threads' control-plane calls (devourer IRtlDevice.h:110-117) and the devices' lifetime (DeviceControl.h).
     DeviceControlT<IRtlDevice> devctl;
     void survey_frame(const Packet &packet, uint8_t *video_id, uint8_t *mavlink_id, uint8_t *udp_id);
     void start_uplink(IRtlDevice *current_device, int fd);
@@ -91,7 +91,7 @@ class WfbngLink {
 
     // adaptive link
     // TODO: move this to private section
-    int current_fd;
+    std::atomic<int> current_fd;   // the adapter nativeSetTxPower applies to (the last one started)
     bool adaptive_link_enabled;
     bool adaptive_link_should_stop{false};
     // atomic: the JNI thread writes it, the survey thread's done() and the uplink start read it (25's note)
@@ -111,7 +111,6 @@ class WfbngLink {
         return uplink;
     }
 
-    std::map<int, std::shared_ptr<IRtlDevice>> rtl_devices;
 
     // Set by stop() and read by run(). A StopRxLoop() only takes effect once the RX loop is
     // running: RtlJaguarDevice::StartRxLoop() clears should_stop on entry, so a stop that
@@ -166,11 +165,7 @@ class WfbngLink {
 
   private:
     void stopDevice() {
-        if (rtl_devices.find(current_fd) == rtl_devices.end()) return;
-        auto dev = rtl_devices.at(current_fd).get();
-        if (dev) {
-            dev->StopRxLoop();
-        }
+        devctl.stopRxLoop(current_fd);
     }
 
     // The app's files dir (Context.getFilesDir()), resolved in the constructor so the paths follow the

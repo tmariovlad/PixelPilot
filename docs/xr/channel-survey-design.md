@@ -274,6 +274,33 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
       raw calls; its regex is self-checked.
   - Mutants killed: no lock; one lock per method instead of one shared; a raw SetTxPower put back.
   - 20/20 repeats stable. Host 94/94; `assembleDebug` builds (APK md5 27301198, not installed).
+  - **After 25's review of 339c72b (F1, F2):**
+    - **F1:** release_link's `Stop()` halts TRX DMA and powers the chip down. It is a control-plane call, and it was
+      outside the lock: nativeSetTxPower could run concurrently with it.
+    - **F2 (older):** nativeSetTxPower looked the device up in `rtl_devices`, an unsynchronised std::map, on the JNI
+      thread while run threads inserted and erased. It also fetched the pointer outside any lock, so it could reach
+      a destroyed device. One WfbngLink serves every adapter: WfbNgLink.java starts one nativeRun thread per
+      UsbDevice.
+    - Fix: DeviceControl now owns the devices per fd (`attach` / `detach`), and `rtl_devices` is gone.
+      - `detach(fd, stop)` runs Stop() and removes the device under the one lock, then hands the device back.
+        release_link destroys it while the USB handle is valid, keeping the 2026-09-27 adapter-lock fix.
+      - Every call goes by fd and is a no-op when that fd has no device.
+      - StopRxLoop (nativeStop, done(), stopDevice) goes through it for the lifetime. It only sets a flag on every
+        devourer generation, e.g. `RtlJaguarDevice.h:97`.
+      - `current_fd` is atomic.
+    - Tests (7):
+      - no call reaches a device after its Stop() while a JNI-like thread keeps calling (50 attach/stop/detach
+        rounds);
+      - calls for a missing fd are no-ops;
+      - devices are per fd, and a throwing Stop() still detaches;
+      - the scan now covers WfbngLink.cpp and .hpp, including `Stop` and `StopRxLoop`. It was red first and listed
+        4 raw calls.
+    - Mutants killed:
+      - Stop() outside the lock (10/10 runs caught);
+      - no lock;
+      - a raw Stop() back in release_link;
+      - a missing fd reported as success.
+    - 20/20 repeats stable. Host 97/97; `assembleDebug` builds (APK md5 ebe1a623, not installed).
 - **Not yet verified** [SPECULATION until a slot]:
   - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
     (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);
