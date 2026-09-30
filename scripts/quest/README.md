@@ -189,6 +189,7 @@ applied live (no RTP restart).
 | `blu.py` | Quest 2 backlight flash timing from the kernel panel dtsi numbers (`python3 blu.py 3664 14 7 1 120`) |
 | `build_wb_f8742fe.sh` | **OpenIPC project, not this repo:** rebuild waybeam f8742fe for the air unit (WSL) |
 | `test_quest_env.py` | offline checks of `quest_env.py` |
+| `o118_s0.py` | OpenIPC O118 S0 decoder tests with the air off (GDR / no-IDR cold start T1, multi-slice T4, rebuild T5): replays `rtp_gen_gdr.sh` streams, reads configure → first output, frames, decode ms from the log; backs up and restores the user's prefs |
 | `led_locate.py` | where the G2G rig's flashing LED sits in the video picture (row/column fractions, inside the central 75 % vertically?), from a burst of screencaps: the LED = the largest on/off difference; the layer box = auto, or (dark room, black decodes to 0) the LayerLayout geometry from a measured reference box; numbers only, screencaps stay in `out/led_locate/` |
 | `crop_check.py` + `rtp_gen_edges.sh` | does the XR layer draw the decoder's padding rows (360 → 368, 1080 → 1088)? Replays a stream with a green top band and a red bottom band over Wi-Fi, screencaps, and prints the bands' thickness in screen rows (red/green ~3 = padding drawn, ~1 = crop honoured); numbers only, no image in the output |
 | `test_pid_watch.py` | offline checks of `pid_watch.sh` against a fake adb (the `ADB` override): returns at the end time, not one interval later; GONE / CHANGED / `ALLOW_RESTART` |

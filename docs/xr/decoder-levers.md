@@ -117,3 +117,20 @@ The RTP timestamp base is random at every waybeam start (OpenIPC `00-H264-H265-t
 - **One segment:** the air switches the codec and runs the sidecar for 60 s. On the Quest, `NO_RESTART=1 mode_segment.sh h265_a`. `NO_RESTART` keeps the app, so the segment measures the decoder rebuilt by the live switch, the one the pilot will use. The output shows `live switch: codec changed to H.265`, and the `codec:` line from the trace confirms the payload type.
 - **Budget:** `w3_budget.py air.tsv out/mode_h264_*.txt out/mode_h265_*.txt`. The air rows carry `mode = h264 / h265`, with the same `readout_ms`, `isp_lo`, `isp_hi` and `fov_h`/`fov_v` for both. The trade-off line then gives H.265's extra latency against H.264, the "+X ms" for the menu.
 - **Which modes:** at least Race 480p167. Also Wide 1080p90 → 848×480 if the menu shows the cost per mode, since H.265 decode grows with resolution (table above). First check that H.265 holds 167 fps on the air. OpenIPC lists a general VENC fps cap regardless of codec (`00-H264-H265-timing.md` §3), and Race runs above it only on the patched `mi_venc`.
+
+## GDR / no-IDR cold start (OpenIPC O118 S0, 2026-10-01): H.264 starts without an IDR, H.265 does not
+
+The tests of openipc repo `repos/tasks/intra-refresh-slices-2026-09-29/R4-quest-decoder.md` (T1–T5), run on the Quest with the air off. [o118_s0.py](../../scripts/quest/o118_s0.py) replays the intra-refresh streams of `rtp_gen_gdr.sh` over Wi-Fi, one XR relaunch per run, APK 086a64aa, default levers. The `*_noidr.rtp` cuts start at an SPS before a non-IDR frame and hold **no IDR at all** (`rtp_gdr.py`: idr=0, SPS every 30 frames; 684/690 access units at 720p60, 990/1015 at 1080p90). The user's prefs were backed up and restored byte for byte. Data: [o118-s0-2026-10-01.txt](data/o118-s0-2026-10-01.txt).
+
+| test | result | numbers [PROVEN: data file] | verdict |
+|---|---|---|---|
+| **T1 H.264** cold start without an IDR | outputs from the start | 666–683 of 684 frames (N=3, 720p60), 935 of 990 (1080p90); first output 25–51 ms after the decoder's configure (2–3 frames at 60 fps); 0 errors | **GO** |
+| **T1 H.265** cold start without an IDR | **no output at all** | 0 frames in all 5 runs (720p60 × 3, 1080p90, `dec_component=c2.qti.hevc.decoder`); the control with an IDR (the full stream) decodes 671 | **NO-GO**: an H.265 join needs an IRAP (join-IDR, R4's fallback B3) |
+| T1 H.264 with `c2.qti.avc.decoder` | starts, poorly | 150 frames, first output 101 ms | the default (OMX) component stays |
+| T2 look of the unrefreshed band | not run | needs stills at frames k = 1…N+2; a screencap takes ~1 s, longer than a 0.5 s refresh cycle | open (a slow-mo through the lens or a decoder-side dump) |
+| T3 heal time after loss | not run | needs stills compared with a PC decode at the same RTP ts | open |
+| **T4** 4 slices, `au_aggregation` off / on | off: 4 outputs per frame; on: 1 | off 2664 outputs for 666 frames (the "broken frames" trap, confirmed at the output count; no stills); on 665 frames, decode 1.82 ms ≈ single-slice 1.5–1.9 | **PASS**: keep AU aggregation for multi-slice |
+| **T5** rebuild into a GDR-only stream | H.265 (with IDR) → H.264 no-IDR: output 22–23 ms after the rebuild's configure | 1271–1272 frames for 671 + 684 sent: ~84 frames (~1.4 s) are lost around the switch (cause not investigated) | **PASS for H.264**; H.264 → H.265 no-IDR fails as T1 H.265 |
+
+- **Consequence for the air's GDR (intra refresh) lever:** with H.264 the Quest can join and rebuild on a GDR-only stream with no IDR ever sent. With H.265 it cannot, and the app would need one IDR request per join/rebuild (R4 §B3). That costs one IDR per (re)start, not one per loss [INFERRED from T1].
+- The first frames after a GDR-only start are damaged until one refresh cycle has passed (expected); their look is T2, still open.

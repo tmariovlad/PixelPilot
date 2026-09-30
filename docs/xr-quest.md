@@ -147,7 +147,7 @@ Keep a lever's default on only after a measurement shows it helps; record result
 The dated result sections that used to follow here were moved verbatim into topic files under
 [xr/](xr/) on 2026-09-26. Headline numbers (details, method and tags in each file):
 
-- **[Decoder levers](xr/decoder-levers.md)**: [first on-device results](xr/decoder-levers.md#first-on-device-results-quest-2-2026-09-26-horizon-os-build-up1a231005007a1),
+- **[Decoder levers](xr/decoder-levers.md)**: [GDR / no-IDR cold start](xr/decoder-levers.md#gdr--no-idr-cold-start-openipc-o118-s0-2026-10-01-h264-starts-without-an-idr-h265-does-not) (O118 S0, 2026-10-01): H.264 starts and rebuilds without any IDR (first output 25–51 ms after configure), H.265 does not (0 frames), so an H.265 GDR air needs a join-IDR; AU aggregation required for multi-slice; [first on-device results](xr/decoder-levers.md#first-on-device-results-quest-2-2026-09-26-horizon-os-build-up1a231005007a1),
   [key isolation](xr/decoder-levers.md#which-low-latency-key-slows-the-quest-2-decoder-key-isolation-2026-09-26), [clean-stream recheck](xr/decoder-levers.md#clean-stream-recheck-ll-keys--operating-rate-is-fastest-2026-09-26),
   [codec, component and resolution](xr/decoder-levers.md#codec-component-and-resolution-2026-09-26),
   [live H.264 ↔ H.265 switch without an app restart + codec measurement plan](xr/decoder-levers.md#live-h264--h265-switch-without-an-app-restart-2026-09-29-code-device-check-pending).
