@@ -311,6 +311,21 @@ Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change b
   - Over capacity, nothing in wfb_tx or the driver gets near 40 ms: the floor is ~130 ms.
   - The ceiling can only be held by never running over capacity. The bitrate must stay below the link's knee for its MCS: alink must lower the bitrate before capacity is lost, and the preset tables must never pair a bitrate with an MCS it exceeds.
   - `-A 20` + a driver pool cap of 8 stay useful as a safety net: over capacity they cut the lag from ~450 to ~130 ms, and whole-frame drops replace mid-block silent losses.
+- **Quest side** (pixelpilot-xr-25) [PROVEN: [steps](data/steps-2026-09-30-gate.txt) (air SET epochs, PC−air +0.332 s, cut at air 723110 where the app stalled) · [latency](data/latency-2026-09-30-gate.txt) · [latency over time](data/latency-bins-2026-09-30-gate.txt) · [frame fate](data/frame-fate-2026-09-30-gate.txt) · [link_audit](data/audit-2026-09-30-gate.txt) · [freezes](data/freeze-gaps-2026-09-30-gate.txt) · [link](data/link-2026-09-30-gate.txt) · [bursts](data/loss-bursts-2026-09-30-gate.txt) · [large frames](data/big-frames-2026-09-30-gate.txt) · [latency within each step](data/step-jitter-2026-09-30-gate.txt)]:
+  - **Capture → last packet, ms above the clean b1m state** (hd MCS7; all hd steps share one RTP base, s0r/s0h do not and are left out). The offsets match the rig's:
+    - o192 +131 / +134 and o1m **+389 / +397** (last95 427–431), vs the rig's o1m 446 − 46 = +400;
+    - a10 **+93 / +94**, a20 +100 / +101, a40o +118 / +118, vs the rig's a10 +92;
+    - d0 +99, d8 +80, d32 +88 / +89, vs the rig's d8 +83;
+    - b10 / b20 within ±0.6 ms of b1m.
+    - The queues are stationary: [latency_bins](../../scripts/quest-latch/latency_bins.py) slopes −0.14…+0.35 ms/s in every hd step.
+  - **Where the missing frames go** (frame fate, per s):
+    - o192 / o1m: incomplete frames (edge 17–19, not decoded 8–11), decoded 58–62 fps.
+    - a*: whole frames never arrive, 5–8/s, the guard's drops (air: 4–12/s); decoded 76–78 fps.
+    - d*: ~14/s never arrive (air: 13–17/s), edge ~13/s, decoded 62–80 fps.
+    - o16k: 42–45 holes/s, decoded < 1 fps, i.e. no picture, as on the rig.
+  - **Freezes ≥ 250 ms** ([freeze_gaps](data/freeze-gaps-2026-09-30-gate.txt)): o16k 20–24 per step, ~77 s frozen of ~90 s; o192 #2 one of 24 s. Every other step has one ~2 s stall, the wfb_tx restart at its start. The guard's whole-frame drops are single-frame gaps and cause no freeze.
+  - **b10 (both) and b1m #2 show 2.5–2.6 % RTP "loss" on the Quest, and it is not the guard.** It is the ~2 s step-start restart falling inside the 5 s-guarded window: gapmax 2027–2041 ms, ~3300–3600 packets in one hole, wfb loss only 36–106 packets like the other b steps. So b* confirms "the guard costs nothing on a clean link".
+  - The app was killed at PC 723131 (low memory). The last d8 step is partial, and d0 #2 is lost.
 - **Also seen.**
   - Under MCS4 overload the air encoder itself fell to 82–86 fps (slot_watch AIR_FPS_LOW). A likely cause is CPU spent in the driver's 1.4 ms busy-wait [SPECULATION].
   - `dmesg` counted 169 `_MI_VENC_AbortFrame … generate next GOP` warnings over the night. The OpenIPC analysis is in O5-encoder-cap-abort-phase-lag.md, openipc-…-40.
