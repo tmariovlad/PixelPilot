@@ -199,6 +199,35 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### 25 Mbit/s block 2026-09-30 10:02–10:16: 720p120 25 Mbit/s holds 115–119 fps with 0.1–0.4 % after FEC on ch165; the Quest's encode→latch stays ≤ 21 ms
+
+The user asked for "25 Mbit/s AND under 40 ms". Air `mode_ab25.sh`, ABCDDCBA 100 s: q7 = 720p120 MCS7 1SS STBC FEC 8/10; q12 = 720p120 MCS12 2SS 8/10; q12b = the same with 8/12; f12 = 1080p90 MCS12 2SS 8/10. All at 25 Mbit/s, 17 dBm, ch165, alink killed, the rig on the lens.
+- **Quest.** APK c8986061, baseline prefs + `stats_log`, IDR off, ~1 m. Detached capture ab_r25c with [pid_watch.sh](../../scripts/quest/pid_watch.sh) every 60 s (the app stayed alive, pid unchanged). Steps at the plan epochs (air ≈ PC), guard 20 s for the waybeam restart.
+- **Data.** [steps](data/steps-2026-09-30-r25c.txt) · [per-step stats](data/segments-2026-09-30-r25c.txt) · [the void first try](data/r25-void-2026-09-30.txt).
+- **The first try was void** [PROVEN: [r25-void](data/r25-void-2026-09-30.txt)].
+  - On the fresh air boot, alink started after the mode script had killed it. It set MCS1 while the encoder sent 25 Mbit/s.
+  - Result: pre-FEC loss 19–32 %, post-FEC 4–10 %, 0–10 decoded fps, at an unchanged −25…−28 dBm. alink was killed and the block rerun.
+
+| step (A · A') | decoded fps | after FEC | holes/s | Quest tot50 / tot95 (ms) | RSSI A / B (dBm) |
+|---|---|---|---|---|---|
+| q7, 1SS MCS7, 8/10 | 118 · 117 | 0.1 · 0.2 % | 2.8 · 5.5 | 20.2 / 26.9 · 20.6 / 26.4 | −25 / −27 · −26 / −27 |
+| q12, 2SS MCS12, 8/10 | 116 · 115 | 0.4 · 0.4 % | 8.2 · 10.0 | 19.6 / 24.5 · 19.8 / 24.4 | −28 / −32 |
+| q12b, 2SS MCS12, 8/12 | 118.5 · 119 | 0.1 · 0.1 % | 2.0 · 1.5 | 21.2 / 35.9 · 21.3 / 39.4 | −28 / −32 |
+| f12, 1080p90 2SS MCS12, 8/10 | 86 · 85.5 (of 90) | 0.6 · 0.5 % | 14.0 · 12.8 | 25.1 / 31.2 · 24.7 / 30.9 | −28 / −32 |
+
+- **25 Mbit/s at 720p120 is nearly clean on ch165** [PROVEN: N = 2 per state]. 0.1–0.4 % after FEC and 115–119 of 120 fps, against 0.66 % after FEC at 25 Mbit/s FEC 8/10 on ch157 on 2026-09-28.
+  - MCS7 1SS 8/10 and MCS12 2SS 8/12 lose least (0.1–0.2 %).
+  - 2SS 8/10 loses 0.4 %; 8/12 brings it to 0.1 %.
+  - 1080p90 at 25 Mbit/s 2SS 8/10 loses 0.5–0.6 % and decodes 85.5–86 of 90 fps.
+- **2SS costs ~3 dB on chain A and ~5 dB on chain B** in the RSSI column (−28 / −32 vs −25 / −27 dBm for 1SS), as expected when the power is split over two streams.
+- **The Quest's encode → latch** (tot50) is 19.6–21.3 ms at 720p120 and 24.7–25.1 ms at 1080p90; tot95 reaches 36–39 ms only with 2SS 8/12.
+  - This is not the glass-to-glass figure. It excludes the sensor readout and the display scanout, which the rig's first light includes, so "under 40 ms G2G" has to be read from the rig [INFERRED: the segments' definitions, [stats-backend](stats-backend.md)].
+  - 8/12 adds ~1.5 ms at p50 and ~12 ms at p95 over 8/10 (a larger FEC block to wait for).
+- **Glass to glass on the rig** [PROVEN: latency-test-0d, relayed by the coordinator]: **720p120 at 25 Mbit/s reads 32–34 ms first light with all three radios, 1080p90 at 25 Mbit/s 43 ms.**
+  - So the user's "25 Mbit/s and under 40 ms" holds at 720p120 on ch165, with 0.1–0.4 % after FEC; 1080p90 at 25 Mbit/s misses it by ~3 ms.
+  - The air's SET epochs (751060 … 751774) are within 14 s of the plan used here, inside the 20 s guard.
+  - The air dropped input packets at 192 KB (no `-R`): q7 647 / 714, q12 538 / 496, q12b 403 / 78, f12 1941 / 1370 per step. These are bursts over the small socket, not link loss.
+
 ### Rig slot 2026-09-30 00:10–01:00: HD at 71 ms first light did not reproduce; the Quest's encode→latch was ~26 ms in every HD state
 
 The [G2G audit](research/2026-09-29-g2g-40ms-audit.md) §5 part A: the four modes (race, b2 = 720p120 2 Mbit MCS2, h8 = 720p120 8 Mbit MCS7, hd = 1080p90 16 Mbit MCS7), all at 17 dBm, FEC 4/8, ch165, with the rig (latency-test-0d) measuring optical first light on the Quest's lens.

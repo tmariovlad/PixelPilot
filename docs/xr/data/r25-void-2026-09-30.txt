@@ -1,0 +1,27 @@
+# ab_r25b (2026-09-30 ~09:57-10:01 local, PC 1790750645-750901): the first R25 try, VOID. alink had started after the mode script's kill (linkmode boot +30 s) and set the radio to MCS1 FEC 4/6 while the encoder ran 25 Mbit/s (pixelpilot-xr-66: 109k input drops on the air, no picture on the lens). PPXR_STATS every 2 s, one line per ~10 s shown (Quest epoch - 1790750000, mcs, rssiA dBm, pdata % pre-FEC, post % after FEC, fec recoveries/s, holes/s, decoded fps, frame kbit p50). Capture stopped early (perfetto SIGINT) and pulled; full lines in scripts/quest/out/qtx_r25b.raw.txt.
+648 mcs=2 rssiA=-28 pdata=1.18 post=0.00 fec=3.0 holes=0.0 fps=167.0 kb=15
+658 mcs=2 rssiA=-28 pdata=1.76 post=0.00 fec=5.5 holes=0.0 fps=166.0 kb=13
+668 mcs=1 rssiA=-28 pdata=0.00 post=0.00 fec=0.0 holes=0.0 fps=27.0 kb=2
+678 mcs=1 rssiA=-28 pdata=18.62 post=4.22 fec=121.0 holes=35.5 fps=102.0 kb=77
+688 mcs=2 rssiA=-25 pdata=24.52 post=0.00 fec=200.0 holes=0.0 fps=0.0 kb=205
+698 mcs=1 rssiA=-26 pdata=29.79 post=8.09 fec=208.0 holes=77.5 fps=7.0 kb=173
+708 mcs=1 rssiA=-26 pdata=29.71 post=7.34 fec=215.0 holes=70.5 fps=0.0 kb=170
+718 mcs=1 rssiA=-26 pdata=31.90 post=4.75 fec=277.5 holes=48.5 fps=10.0 kb=-
+728 mcs=1 rssiA=-26 pdata=32.25 post=5.83 fec=267.5 holes=59.0 fps=0.0 kb=189
+738 mcs=1 rssiA=-26 pdata=30.63 post=7.55 fec=188.0 holes=61.5 fps=2.0 kb=186
+748 mcs=1 rssiA=-26 pdata=30.43 post=7.78 fec=215.5 holes=74.0 fps=6.0 kb=184
+758 mcs=1 rssiA=-26 pdata=31.09 post=7.96 fec=189.0 holes=65.0 fps=0.0 kb=193
+768 mcs=4 rssiA=-28 pdata=8.97 post=2.12 fec=131.0 holes=40.5 fps=34.0 kb=199
+778 mcs=2 rssiA=-26 pdata=11.12 post=0.15 fec=144.0 holes=2.0 fps=26.0 kb=205
+789 mcs=1 rssiA=-26 pdata=32.30 post=4.93 fec=238.5 holes=43.0 fps=0.0 kb=-
+799 mcs=1 rssiA=-26 pdata=30.22 post=7.07 fec=219.5 holes=67.0 fps=0.0 kb=233
+809 mcs=1 rssiA=-26 pdata=32.23 post=10.06 fec=184.0 holes=83.5 fps=0.0 kb=228
+819 mcs=1 rssiA=-26 pdata=30.00 post=8.30 fec=204.0 holes=78.0 fps=0.0 kb=188
+829 mcs=1 rssiA=-26 pdata=30.35 post=5.50 fec=244.0 holes=54.0 fps=0.0 kb=214
+839 mcs=1 rssiA=-26 pdata=31.30 post=7.81 fec=192.5 holes=64.0 fps=0.0 kb=228
+849 mcs=1 rssiA=-26 pdata=31.71 post=8.55 fec=223.5 holes=82.5 fps=0.0 kb=222
+859 mcs=1 rssiA=-26 pdata=26.81 post=7.57 fec=110.5 holes=43.5 fps=0.0 kb=217
+869 mcs=1 rssiA=- pdata=- post=- fec=- holes=- fps=0.0 kb=-
+879 mcs=2 rssiA=-29 pdata=1.58 post=0.00 fec=5.5 holes=0.0 fps=167.0 kb=12
+889 mcs=2 rssiA=-29 pdata=1.49 post=0.00 fec=4.5 holes=0.0 fps=167.0 kb=13
+899 mcs=2 rssiA=-29 pdata=1.27 post=0.00 fec=4.0 holes=0.0 fps=167.0 kb=15

@@ -1,0 +1,10 @@
+# R25 rerun steps (AIR clock ~= PC this boot, pixelpilot-xr-66's plan epochs; waybeam restarts shift the real start 15-20 s, guard 20 s): 25 Mbit/s, 17 dBm, ch165, alink killed. q7 = 720p120 MCS7 1SS STBC FEC 8/10; q12 = 720p120 MCS12 2SS 8/10; q12b = 720p120 MCS12 2SS 8/12; f12 = 1080p90 MCS12 2SS 8/10.
+1790750960 q7
+1790751060 q12
+1790751160 q12b
+1790751260 f12
+1790751360 f12
+1790751460 q12b
+1790751560 q12
+1790751660 q7
+1790751760 END
