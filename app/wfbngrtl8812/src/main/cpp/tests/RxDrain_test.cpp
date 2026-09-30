@@ -2,6 +2,10 @@
 // when the front FEC block completes, the next block's fragments that already arrived in order must be released in
 // the same call, not held until one more of its fragments arrives (openipc O121 finding N3, pixelpilot-xr-4b;
 // docs/xr/fec-block-probe.md §8).
+//
+// The four drain tests are DISABLED_ while the submodule is pinned back to stock 0da5279 (2026-09-30): the Quest
+// A/B of the drain build showed ~30 % more post-FEC loss, under investigation. They pass against the fork's
+// pixelpilot-xr branch (66d4bdb); re-enable them together with the pin.
 #include "TxFrame.h"
 #include "rx_replay.h"
 
@@ -111,7 +115,7 @@ TEST(RxDrain, TheStreamHasTheExpectedFragments)
 }
 
 // R1 (FEC path): block 0 recovered through parity while block 1's first fragment is already there.
-TEST(RxDrain, AfterAFecRecoveryTheNextBlocksWaitingFragmentIsReleasedInTheSameCall)
+TEST(RxDrain, DISABLED_AfterAFecRecoveryTheNextBlocksWaitingFragmentIsReleasedInTheSameCall)
 {
     Harness h;
     EXPECT_EQ(h.feed(0, 0), V{0});
@@ -125,7 +129,7 @@ TEST(RxDrain, AfterAFecRecoveryTheNextBlocksWaitingFragmentIsReleasedInTheSameCa
 }
 
 // R2 (in-order path): block 0's last data fragment arrives after block 1's first two.
-TEST(RxDrain, AfterALateFragmentCompletesTheFrontTheNextBlocksFragmentsAreReleasedInTheSameCall)
+TEST(RxDrain, DISABLED_AfterALateFragmentCompletesTheFrontTheNextBlocksFragmentsAreReleasedInTheSameCall)
 {
     Harness h;
     for (int f = 0; f < 3; ++f) EXPECT_EQ(h.feed(0, f), V{f});
@@ -136,7 +140,7 @@ TEST(RxDrain, AfterALateFragmentCompletesTheFrontTheNextBlocksFragmentsAreReleas
     EXPECT_EQ(h.all, (V{0, 1, 2, 3, 4, 5, 6}));
 }
 
-TEST(RxDrain, AGapInTheNewFrontStopsTheReleaseAndFecRecoversItLater)
+TEST(RxDrain, DISABLED_AGapInTheNewFrontStopsTheReleaseAndFecRecoversItLater)
 {
     Harness h;
     for (int f = 0; f < 3; ++f) h.feed(0, f);
@@ -150,7 +154,7 @@ TEST(RxDrain, AGapInTheNewFrontStopsTheReleaseAndFecRecoversItLater)
 
 // A block holding k fragments takes the FEC path and flushes the older ones (rx.cpp), so a block can wait behind
 // the front with at most k - 1 fragments; the drain releases those and later fragments arrive on the normal path.
-TEST(RxDrain, WaitingFragmentsAreReleasedAndTheBlockCarriesOnNormally)
+TEST(RxDrain, DISABLED_WaitingFragmentsAreReleasedAndTheBlockCarriesOnNormally)
 {
     Harness h;
     for (int f = 0; f < 3; ++f) h.feed(0, f);
