@@ -1,0 +1,25 @@
+# hunt_timeline.py on Part A's real rig data (2026-09-30 00:17-00:30, latency-test mode-audit-2026-09-30/partA): the rig side only (no air_health / Quest / watchdog logs exist for Part A).
+# per_flash.csv built with latency-test's per_flash.py (tasks/rmem-ab-2026-09-29/per_flash.py) on a copy of partA/, schedule from its README:
+#   race@1790716660,b2@1790716754,h8@1790716840,hd@1790716960,hd@1790717040,h8@1790717154,b2@1790717240,race@1790717354,END@1790717460 (per-run medians = the README table)
+# runs_summary.txt derived from partA/stamps.txt (all 'end'; Part A predates live_capture.py).
+# The 3 events equal first_light_steps.py --fixed hd=46 on the same CSV (+24.9 / +28.4 / +26.4 ms), as in link-envelope.md's detector note.
+# python3 scripts/quest-latch/hunt_timeline.py per_flash.csv --fixed hd=46 --runs runs_summary.txt --pc-minus-air-s -0.14
+# hunt_timeline: rig per_flash.csv (200 ok flashes, --fixed hd=46) | runs runs_summary.txt | air_health - | snaps 0 | quest - | wd - | PC-air -0.14 s | Quest-PC +0 s
+# 3 step event(s); 16 context rows read
+=== STEP hd 1790716973.1-1790716985.3 (12 s) n=8 median 70.9 ms vs 46.0 ms (+24.9); context +-60 s, t = s from the step start (PC clock)
+    +0.0         >>> step start
+    +0.0  rig    run04 start
+   +12.2         <<< step end (last high flash)
+   +39.1  rig    run04 end
+
+=== STEP hd 1790716990.4-1790717010.4 (20 s) n=12 median 74.4 ms vs 46.0 ms (+28.4); context +-60 s, t = s from the step start (PC clock)
+   -17.3  rig    run04 start
+    +0.0         >>> step start
+   +20.0         <<< step end (last high flash)
+   +21.8  rig    run04 end
+
+=== STEP hd 1790717073.0-1790717110.0 (37 s) n=20 median 72.4 ms vs 46.0 ms (+26.4); context +-60 s, t = s from the step start (PC clock)
+    +0.0         >>> step start
+    +0.0  rig    run05 start
+   +37.0         <<< step end (last high flash)
+   +38.8  rig    run05 end
