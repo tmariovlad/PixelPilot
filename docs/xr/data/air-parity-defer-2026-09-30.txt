@@ -1,0 +1,70 @@
+# Air log: -Y (parity defer) A/B, 2026-09-30 13:57-14:13 (PC local), air .132 fresh boot ~13:50, ch165, race REC 480p167 2M MCS2 FEC 4/8, 17 dBm.
+# y_ab.sh 2c641026, merged wfb_tx b0469029 (OpenIPC o121-age-merge) via wfbtx_swap.sh 008b1045; n = -A 10000, y = -A 10000 -Y; payload 1400 (r14) / 2400 (r24).
+# PC-air +0.76 s (slot_watch AIR_CLOCK). Quest APK 3b37a562 (xr-native 5669151 = 0c790f4, RX drain on). PARITY_DEFER lines per step below.
+
+PRE epoch=1790765543 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=12.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1386 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 wlan0 ] tx_dropped=6 temp=37 tbs_path=/proc/net/rtl88x2eu/wlan0/tx_buf_stat
+KILLED late alink/vmoded pids=1529
+SWAP [-A 10000] -> O4=OK pid=2527 tx 284380->287070 extra=[-A 10000] log=/tmp/o4/wfbtx-o4.log
+SET r14n epoch=1790765871 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2527 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP r14n epoch=1790765871 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r14n 510927	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+  AG r14n 511927	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG r14n 512927	AGE_GUARD	0:0:1:0:0:167:0:0:0:167:0:0:0:0
+  AG r14n 513927	AGE_GUARD	0:0:0:0:0:166:0:0:0:166:0:0:0:0
+SWAP [-A 10000 -Y] -> O4=OK pid=801 tx 375986->378859 extra=[-A 10000 -Y] log=/tmp/o4/wfbtx-o4.log
+SET r14y epoch=1790765970 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=801 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 -Y wlan0 ]
+STEP r14y epoch=1790765970 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r14y 632721	AGE_GUARD	0:0:1:0:0:167:0:0:0:167:0:0:0:0
+  AG r14y 632721	PARITY_DEFER	78:0:0:0
+  AG r14y 633721	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG r14y 633721	PARITY_DEFER	77:1:0:0
+SWAP [-A 10000] -> O4=OK pid=3313 tx 487204->490057 extra=[-A 10000] log=/tmp/o4/wfbtx-o4.log
+SET r14n epoch=1790766090 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=3313 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP r14n epoch=1790766090 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r14n 750681	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG r14n 751681	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+  AG r14n 752681	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG r14n 753681	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+SWAP [-A 10000 -Y] -> O4=OK pid=2042 tx 597217->600120 extra=[-A 10000 -Y] log=/tmp/o4/wfbtx-o4.log
+SET r14y epoch=1790766210 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2042 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 -Y wlan0 ]
+STEP r14y epoch=1790766210 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r14y 872781	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG r14y 872781	PARITY_DEFER	79:1:0:0
+  AG r14y 873781	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+  AG r14y 873781	PARITY_DEFER	75:0:0:0
+SWAP [-A 10000] -> O4=OK pid=761 tx 707853->710774 extra=[-A 10000] log=/tmp/o4/wfbtx-o4.log
+SET r24n epoch=1790766330 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=761 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP r24n epoch=1790766330 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r24n 990716	AGE_GUARD	0:0:1:0:0:167:0:0:0:167:0:0:0:0
+  AG r24n 991716	AGE_GUARD	0:0:0:0:0:166:0:0:0:166:0:0:0:0
+  AG r24n 992716	AGE_GUARD	0:0:1:0:0:167:0:0:0:167:0:0:0:0
+  AG r24n 993717	AGE_GUARD	0:0:0:0:0:166:0:0:0:166:0:0:0:0
+SWAP [-A 10000 -Y] -> O4=OK pid=3275 tx 789426->791458 extra=[-A 10000 -Y] log=/tmp/o4/wfbtx-o4.log
+SET r24y epoch=1790766450 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=3275 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 -Y wlan0 ]
+STEP r24y epoch=1790766450 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r24y 1112693	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG r24y 1112693	PARITY_DEFER	42:1:0:0
+  AG r24y 1113693	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+  AG r24y 1113693	PARITY_DEFER	41:0:0:0
+SWAP [-A 10000] -> O4=OK pid=2000 tx 870153->872178 extra=[-A 10000] log=/tmp/o4/wfbtx-o4.log
+SET r24n epoch=1790766570 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2000 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP r24n epoch=1790766570 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r24n 1230724	AGE_GUARD	0:0:0:0:0:166:0:0:0:166:0:0:0:0
+  AG r24n 1231724	AGE_GUARD	0:0:1:0:0:167:0:0:0:167:0:0:0:0
+  AG r24n 1232724	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG r24n 1233724	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+SWAP [-A 10000 -Y] -> O4=OK pid=723 tx 950789->952823 extra=[-A 10000 -Y] log=/tmp/o4/wfbtx-o4.log
+SET r24y epoch=1790766690 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=723 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 -Y wlan0 ]
+STEP r24y epoch=1790766690 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG r24y 1352585	AGE_GUARD	0:0:0:0:0:166:0:0:0:166:0:0:0:0
+  AG r24y 1352585	PARITY_DEFER	42:0:0:0
+  AG r24y 1353585	AGE_GUARD	0:0:1:0:0:167:0:0:0:167:0:0:0:0
+  AG r24y 1353585	PARITY_DEFER	43:0:0:0
+REVERT -> O4=REVERTED pid=3247 exe=/opt/linkmode/wfb_tx log=/tmp/wfbtx.log
+END epoch=1790766821 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=12.00 rmem=196608/524288 tbs=0:64:64:64 vpid=3247 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 wlan0 ] tx_dropped=48 temp=43
+
+## /tmp/waybeam-watchdog.log (air local = UTC)
+[wd 10:51:42] boot-delay 120s (aștept bring-up de boot)
+[wd 10:53:42] ===== WATCHDOG START =====
+[wd 10:53:42] poll=20s window=3s ratio_bad=150%(x100) confirm=2 cooldown=90s breaker=10/1800s
+[wd 10:57:36] SKIP [STALLED] dVsync=0 (<200) dFrameDone=0 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
