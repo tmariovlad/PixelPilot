@@ -45,6 +45,98 @@ def relative(times, values, window_ns):
     return out
 
 
+def theil_sen(xs, ys):
+    """Median of the pairwise slopes: robust to a minority (< ~29 %) of lifted points."""
+    s = sorted((ys[j] - ys[i]) / (xs[j] - xs[i]) for i in range(len(xs)) for j in range(i + 1, len(xs))
+               if xs[j] != xs[i])
+    if not s:
+        return 0.0
+    m = len(s) // 2
+    return s[m] if len(s) % 2 else (s[m - 1] + s[m]) / 2
+
+
+class LiveBase:
+    """The live reference signal (docs/xr/stats-backend.md §7.2), causal, one frame at a time:
+    rel = (v - d * t) - min over the trailing window_s of (v - d * t), with d the air/Quest clock drift in ms per s.
+    d = Theil-Sen slope of the per-block (block_s) minima of v over the last horizon_s, once min_blocks blocks are
+    complete, else prior; it changes only when a block completes, and then the window's minimum is rebuilt. After
+    that bootstrap a block joins the fit only if its minimum lies within accept_ms of the current line (median
+    intercept): a standing queue lifts minima above the line and must not be learnt as drift.
+    A step of more than jump_ms between consecutive frames (the RTP base moved: a waybeam restart) clears
+    everything, drift back to prior. t in ns, v and rel in ms. The app's port must match this on the vectors in
+    testdata/owd/."""
+
+    def __init__(self, window_s=60.0, block_s=10.0, horizon_s=300.0, prior=0.07, min_blocks=6, jump_ms=1000.0,
+                 accept_ms=2.0):
+        self.win_ns, self.blk_ns = window_s * 1e9, block_s * 1e9
+        self.block_s, self.horizon_s, self.prior = block_s, horizon_s, prior
+        self.min_blocks, self.jump_ms, self.accept_ms = min_blocks, jump_ms, accept_ms
+        self.reset()
+
+    def reset(self):
+        self.d = self.prior
+        self.blocks = {}                 # block index -> minimum v in it
+        self.raw = deque()               # (t, v) in the window, for a rebuild
+        self.dq = deque()                # (t, v - d * t_s), increasing keys: the window minimum at the front
+        self.cur_block = self.cur_min = self.prev_v = None
+
+    def _key(self, t, v):
+        return v - self.d * t / 1e9
+
+    def _append_key(self, t, v):
+        key = self._key(t, v)
+        while self.dq and self.dq[-1][1] >= key:
+            self.dq.pop()
+        self.dq.append((t, key))
+        return key
+
+    def _on_line(self, x, y):
+        """Whether block minimum y at x (s) lies within accept_ms above the current fit (always, during bootstrap)."""
+        if len(self.blocks) < self.min_blocks:
+            return True
+        a = sorted(v - self.d * k * self.block_s for k, v in self.blocks.items())
+        return y - (a[len(a) // 2] + self.d * x) <= self.accept_ms
+
+    def _complete_block(self, b):
+        if self._on_line(self.cur_block * self.block_s, self.cur_min):
+            self.blocks[self.cur_block] = self.cur_min
+        for k in [k for k in self.blocks if (b - k) * self.block_s > self.horizon_s]:
+            del self.blocks[k]
+        if len(self.blocks) < self.min_blocks:
+            return
+        ks = sorted(self.blocks)
+        d = theil_sen([k * self.block_s for k in ks], [self.blocks[k] for k in ks])
+        if d != self.d:
+            self.d = d
+            self.dq.clear()
+            for tt, vv in self.raw:
+                self._append_key(tt, vv)
+
+    def push(self, t, v):
+        if self.prev_v is not None and abs(v - self.prev_v) > self.jump_ms:
+            self.reset()
+        self.prev_v = v
+        b = int(t // self.blk_ns)
+        if self.cur_block is not None and b != self.cur_block:
+            self._complete_block(b)
+            self.cur_min = None
+        self.cur_block = b
+        self.cur_min = v if self.cur_min is None else min(self.cur_min, v)
+        self.raw.append((t, v))
+        while self.raw[0][0] <= t - self.win_ns:
+            self.raw.popleft()
+        key = self._append_key(t, v)
+        while self.dq[0][0] <= t - self.win_ns:
+            self.dq.popleft()
+        return key - self.dq[0][1]
+
+
+def live_rel(times, values, **params):
+    """LiveBase over a whole series."""
+    base = LiveBase(**params)
+    return [base.push(t, v) for t, v in zip(times, values)]
+
+
 def windows(times, values, win_ns, min_n=10):
     """[{start, n, p50, p90}] per fixed window (by time), windows with fewer than min_n frames skipped."""
     out, cur, start = [], [], None

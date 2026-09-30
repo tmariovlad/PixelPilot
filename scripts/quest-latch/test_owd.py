@@ -68,6 +68,79 @@ class Drift(unittest.TestCase):
         self.assertAlmostEqual(owd.drift(rows, step_idx), 0.07)
 
 
+class LiveBase(unittest.TestCase):
+    """The live reference (live_rel): a long drift-corrected minimum, as the app's port must compute it."""
+
+    @staticmethod
+    def series(seconds, fps=10, drift=0.07, queue=None):
+        """Frames at fps: OWD = 5 + drift * t (+ queue_ms inside [q0, q1) s)."""
+        t, v = [], []
+        for i in range(seconds * fps):
+            x = i / fps
+            q = queue[2] if queue and queue[0] <= x < queue[1] else 0.0
+            t.append(int(x * 1e9))
+            v.append(5.0 + drift * x + q)
+        return t, v
+
+    def test_theil_sen_ignores_a_lifted_minority(self):
+        xs = list(range(10))
+        ys = [0.07 * x for x in xs]
+        ys[4] += 30.0
+        ys[5] += 30.0                      # a standing queue lifting 2 of 10 block minima
+        self.assertAlmostEqual(owd.theil_sen(xs, ys), 0.07)
+
+    def test_pure_drift_reads_zero_once_the_drift_is_known(self):
+        t, v = self.series(400)
+        rel = owd.live_rel(t, v, prior=0.07)
+        self.assertLess(max(rel), 1e-9)                         # a plain 60 s minimum would read 0.07 * 60 = 4.2 ms
+
+    def test_the_drift_is_learnt_from_the_blocks(self):
+        t, v = self.series(400, drift=0.05)
+        rel = owd.live_rel(t, v, prior=0.0)                     # wrong prior: 60 s x 0.05 = 3 ms until learnt
+        self.assertGreater(max(rel[:500]), 1.0)
+        self.assertLess(max(rel[-500:]), 1e-6)                  # after 6 blocks the estimate is exact
+
+    def test_a_standing_queue_is_seen_for_the_whole_window(self):
+        t, v = self.series(400, queue=(200, 250, 50.0))         # +50 ms for 50 s, inside the 60 s base window
+        rel = owd.live_rel(t, v, prior=0.07)
+        during = [r for x, r in zip(t, rel) if 210e9 <= x < 250e9]
+        self.assertAlmostEqual(min(during), 50.0, places=6)
+        plain = owd.relative(t, v, 2e9)
+        self.assertLess(max(p for x, p in zip(t, plain) if 210e9 <= x < 250e9), 1.0)   # a 2 s minimum hides it
+
+    def test_a_queue_longer_than_the_window_is_kept_by_an_unbounded_base_without_biasing_the_drift(self):
+        # +50 ms standing for 150 s: half of the 300 s drift horizon. The drift must not learn it (blocks lifted
+        # above the current line are left out of the fit), so the unbounded base reads the full 50 ms.
+        t, v = self.series(400, queue=(100, 250, 50.0))
+        rel = owd.live_rel(t, v, window_s=float("inf"), prior=0.07)
+        during = [r for x, r in zip(t, rel) if 120e9 <= x < 250e9]
+        self.assertAlmostEqual(min(during), 50.0, places=6)
+        self.assertAlmostEqual(max(during), 50.0, places=6)
+
+    def test_an_rtp_base_jump_resets_the_base(self):
+        t, v = self.series(300)
+        v = [x if i < 1500 else x + 5000.0 for i, x in enumerate(v)]   # waybeam restart: +5 s RTP base jump
+        rel = owd.live_rel(t, v, prior=0.07)
+        self.assertLess(max(rel[1500:]), 1e-9)                  # without the reset: 5000 ms for 60 s
+
+
+class Vectors(unittest.TestCase):
+    def test_the_committed_synthetic_vectors_match_the_reference(self):
+        # testdata/owd/synthetic.csv is what the app's port is checked against: it must stay the reference's output
+        import math
+        import os
+        import owd_vectors
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "testdata", "owd", "synthetic.csv")
+        rows = [l.split(",") for l in open(path, encoding="utf-8") if not l.startswith("#")][1:]
+        t, v = owd_vectors.synthetic()
+        w60, winf = owd.live_rel(t, v, window_s=60.0), owd.live_rel(t, v, window_s=math.inf)
+        self.assertEqual(len(rows), len(t))
+        for r, a, b, c, d in zip(rows, t, v, w60, winf):
+            self.assertEqual(int(r[0]), a)
+            for got, want in zip(map(float, r[1:]), (b, c, d)):
+                self.assertAlmostEqual(got, want, places=8)
+
+
 class Frames(unittest.TestCase):
     def test_owd_first_and_last_and_the_size_slope(self):
         fr = [Frame(capture=i * 10 * MS, first=i * 10 * MS + 5 * MS, last=i * 10 * MS + 5 * MS + n * MS,

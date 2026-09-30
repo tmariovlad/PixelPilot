@@ -185,3 +185,43 @@ p90 / p99 of the window p90.
   0.2 s of the switch, where the reconfiguration itself drops packets, so they cannot time a lead. Measuring the lead
   properly needs a slow bitrate ramp through the knee, without a switch [SPECULATION until run].
 
+### 7.2 The live signal: reference algorithm and test vectors for the app's port (2026-09-30)
+
+§7.1 showed that a short running minimum hides a standing queue. openipc-1f adopted a base held since the last rate
+decrease, with the drift subtracted, plus persistence over N windows. The Quest-side value it consumes is computed
+by the reference `owd.LiveBase` in [owd.py](../../scripts/quest-latch/owd.py). A port (pixelpilot-xr-25's RtpTag
+first-packet + owd50/owd95 in PPXR_STATS) must match it on the vectors below.
+
+**Algorithm**, per frame, causal. `v` = first-packet arrival − RTP ts (ms), `t` = arrival (ns):
+- `rel = (v − d·t) − min over the trailing window of (v − d·t)`, where `d` is the air/Quest clock drift (ms per s).
+- `d` = Theil-Sen slope of the per-10 s block minima of `v` over the last 300 s:
+  - Until 6 blocks are complete, the prior 0.07 ms/s is used (§7.1: +0.069…+0.073 in five captures).
+  - `d` changes only when a block completes; the window minimum is then rebuilt with the new `d`.
+  - After that bootstrap, a block joins the fit only if its minimum is at most 2 ms above the current line. A
+    standing queue lifts the minima; without this gate, a 150 s queue was learnt as drift and read 15 ms instead of
+    50 (test `test_a_queue_longer_than_the_window_...`).
+- **Reset:** a step of more than 1000 ms between consecutive frames (the RTP base moved: a waybeam restart) clears
+  all state, drift back to the prior.
+
+**Which window.** The value sent to the air should use the **unbounded** window (`window_s = inf`: the minimum
+since the last reset, drift-corrected). The air then applies its own minimum since the last rate decrease on top. A
+Quest-side window of 60 s would already have absorbed a queue standing longer than 60 s, and the air could not get
+it back [PROVEN: synthetic vector, 250–400 s: W = 60 s median 0.71 ms vs W = ∞ 50.5 ms].
+
+**Limits** [INFERRED from the algorithm]:
+- A floor rise of more than 2 ms that is not a queue (e.g. a mode change with a slower encoder, without an RTP
+  restart) is treated as a queue until the next reset. So a mode change should reset the base.
+- A queue that stands longer than the 300 s horizon leaves fewer than 6 blocks on the line, and the fit
+  bootstraps from the queued minima. The rate control must never let a queue stand that long.
+
+**Test vectors** in [testdata/owd/](../../scripts/quest-latch/testdata/owd/), written by
+[owd_vectors.py](../../scripts/quest-latch/owd_vectors.py). CSV columns: `t_ns, first_ms, rel_w60_ms, rel_winf_ms`,
+with `#` header lines giving the parameters.
+- `synthetic.csv`: 6000 frames at 10 fps. Drift 0.06 ms/s (so `d` must be learnt), a 0–1 ms ripple, +50 ms standing
+  250–400 s, and a +5000 ms RTP jump at 500 s.
+- `g56_m6.csv`: 10,947 real frames of g56's first two steps. m7b25f46, clean: median 1.45 ms. Then m6b25f46: median
+  55.6 ms at W = 60 s and at W = ∞, matching link-envelope's +55 ms.
+- `test_owd.py` checks that `synthetic.csv` still equals the reference's output (tolerance 1e-8).
+- A port should match `rel_*` to about 1e-6 ms, float vs double.
+
+
