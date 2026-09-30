@@ -16,8 +16,11 @@
 // The pre-flight channel survey's lifecycle (docs/xr/channel-survey-design.md §7): one run on its own thread, the
 // device reached only through the injected SurveyOps, so the run is host-testable with a fake device.
 // - The RX thread hands every received frame to frame() while active(); it is counted only inside a dwell.
-// - done(outcome) is called once, on the survey thread, at the end: Completed (the caller starts the uplink),
-//   Aborted (stopAndJoin(): no retune back, no uplink) or RetuneBackFailed (the retune back failed twice).
+// - done(outcome) is called once, on the survey thread, at the end (survey::Outcome; survey::starts_uplink() says
+//   whether the caller starts the uplink). A device error mid-sweep without a stop is Failed: the RTL still goes back
+//   to the link channel (25's re-review, B3). A stop that lands during the retune back is Aborted.
+// - ifActive(f) runs f under the same lock that ends the survey, so a setting stored by f while active() is seen by
+//   done(), and one after it finds ifActive() false (25's S1: a TX power set racing the end of the survey).
 // - stopAndJoin() is the teardown barrier: when it returns, the thread has ended and no SurveyOps call follows.
 //   WfbngLink::release_link calls it before the device goes (pixelpilot-xr-25's review, B1). Not from the survey
 //   thread itself (done() must not call it).
@@ -52,6 +55,14 @@ class SurveyRunner {
     }
 
     bool active() const { return active_.load(std::memory_order_acquire); }
+
+    // f() runs, and true is returned, only while the survey is active; done() runs after the last such f().
+    template <class F> bool ifActive(F f) {
+        std::lock_guard<std::mutex> lock(ctl_mu_);
+        if (!active_.load()) return false;
+        f();
+        return true;
+    }
 
     // RX thread: one decoded frame (own = one of our wfb channels).
     void frame(bool own, int rssi_raw, int snr_raw, uint16_t desc_rate, uint32_t len, uint8_t bw, bool sgi) {
@@ -143,28 +154,36 @@ class SurveyRunner {
         try {
             outcome = sweep(ops, cands, plan, log, t, dwells);
         } catch (const std::exception &) {
-            outcome = SurveyOutcome::Aborted;
+            outcome = cut() ? SurveyOutcome::Aborted : SurveyOutcome::Failed;
         }
         {
             std::lock_guard<std::mutex> lock(mu_);
             observing_ = false;
         }
         int recommended = 0;
-        if (outcome == SurveyOutcome::Completed) {
-            if (!retuneBack(ops)) outcome = SurveyOutcome::RetuneBackFailed;
-            if (!dwells.empty()) {
+        const bool swept = outcome == SurveyOutcome::Completed;
+        if (survey::starts_uplink(outcome)) {
+            if (!retuneBack(ops))
+                outcome = SurveyOutcome::RetuneBackFailed;
+            else if (cut())
+                outcome = SurveyOutcome::Aborted;   // stopped during the retune back: the link is being torn down
+            if (swept && !dwells.empty()) {
                 const survey::Result r = survey::recommend(dwells, cands, plan, link_channel, nowMs());
                 log(survey::ranking_line(r.decision));
                 recommended = r.recommended;
             }
         }
         log(survey::result_line(recommended, link_channel, dwells.size(), outcome));
-        active_ = false;
+        {
+            std::lock_guard<std::mutex> lock(ctl_mu_);
+            active_ = false;
+        }
         done(outcome);
     }
 
     std::atomic<bool> active_{false};
     std::atomic<bool> abort_{false};
+    std::mutex ctl_mu_;   // ifActive() vs the end of run()
     std::mutex mu_;   // guards dwell_ and observing_ (the RX thread's frame() vs the survey thread)
     survey::DwellBuilder dwell_;
     bool observing_ = false;

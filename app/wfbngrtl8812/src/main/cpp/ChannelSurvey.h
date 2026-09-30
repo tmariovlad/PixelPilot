@@ -218,13 +218,19 @@ inline std::string start_line(uint32_t plan, size_t channels, int link_channel) 
 }
 
 // How a survey ended: Completed (the uplink may start), Aborted (stop / teardown: no uplink, no retune back),
-// RetuneBackFailed (the RTL could not return to the link channel after one retry: no uplink, the link restarts).
-enum class Outcome { Completed, Aborted, RetuneBackFailed };
+// Failed (a device error mid-sweep nobody asked for: back on the link channel, no ranking, the uplink starts;
+// pixelpilot-xr-25's re-review B3), RetuneBackFailed (the RTL could not return to the link channel after one retry:
+// no uplink, the link restarts).
+enum class Outcome { Completed, Aborted, Failed, RetuneBackFailed };
+
+// The RTL is back on the link channel and the link is not being torn down: the caller starts the uplink.
+inline bool starts_uplink(Outcome o) { return o == Outcome::Completed || o == Outcome::Failed; }
 
 inline const char *outcome_name(Outcome o) {
     switch (o) {
     case Outcome::Completed: return "completed";
     case Outcome::Aborted: return "aborted";
+    case Outcome::Failed: return "failed";
     default: return "retune_back_failed";
     }
 }

@@ -198,10 +198,27 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
     before the uplink starts: devourer allows one control thread (IRtlDevice.h:110-117).
   - **M1:** `survey_on_start` is an `std::atomic<bool>`, consumed with `exchange(false)`.
   - An aborted survey does no retune back and starts no uplink (the device is being torn down).
-  - `survey.result` carries `outcome` = completed / aborted / retune_back_failed.
+  - `survey.result` carries `outcome` = completed / aborted / retune_back_failed (and `failed` since the re-review below).
   - Mutations: dropping the retry fails the two retune-back tests; a `stopAndJoin` without the abort flag fails the
     join test.
   - Tests: host 85/85, JVM app 156 / videonative 22 / xr 134, test_channel_survey 3.
+- **After 25's re-review of 9c10829 (2026-10-01):**
+  - **B3 (a regression from 9c10829):** a device exception mid-sweep that nobody asked for (to20 / retune-to-20 /
+    energy throwing, no stop) had become `aborted`. That meant no retune back and no uplink: the RX loop stayed on a
+    survey channel and the video stayed dead until a manual restart. Now `run()` tells the two cases apart: an
+    exception with `cut()` set is still `aborted`; without it the outcome is **`failed`**. A failed survey goes back to
+    the link channel (with one retry, then `retune_back_failed`) and logs no ranking. `survey::starts_uplink()`
+    (Completed or Failed) tells `WfbngLink`'s done callback to start the uplink.
+    [PROVEN: `SurveyRunner_test.cpp` ADeviceErrorMidSweep… (energy throws on its 3rd call: `back` ≥ 1, outcome
+    failed) and …WhoseRetuneBackAlsoFails… (retune_back_failed)]
+  - **S1 residue:** `SurveyRunner::ifActive(f)` runs `f` under the lock that `run()` also takes to clear `active_`
+    before `done()`. `nativeSetTxPower` stores `tx_power_pending` through it, so a set either lands during the survey
+    (done() applies it) or after it (applied at once). It can no longer fall between the two.
+  - **Nit:** a stop that lands during the retune back now ends as `aborted`, with no uplink for `release_link` to tear
+    down.
+  - Mutations: an exception mapped to aborted fails both B3 tests; `ifActive` ignoring `active_` fails the ifActive
+    test; dropping the `cut()` check after the retune back fails the stop-during-back test.
+  - Tests: host 90/90 (SurveyRunner 10); `assembleDebug` builds (APK md5 4ed809d5).
 - **Not yet verified** [SPECULATION until a slot]:
   - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
     (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);

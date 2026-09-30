@@ -375,7 +375,10 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
                 ops.energy = [current_device](bool nhm) { return survey_energy(current_device->GetRxEnergy(nhm)); };
                 ops.back = [current_device, link] { current_device->SetMonitorChannel(link); };
                 survey.start(ops, link.Channel, survey_log, [this, current_device, fd](SurveyOutcome o) {
-                    if (o == SurveyOutcome::Completed) {
+                    if (survey::starts_uplink(o)) {
+                        if (o == SurveyOutcome::Failed)
+                            __android_log_print(ANDROID_LOG_WARN, TAG, "survey: device error mid-sweep; back on ch %d",
+                                                link_channel_of(current_device));
                         if (tx_power_pending.exchange(false)) current_device->SetTxPower(adaptive_tx_power);
                         start_uplink(current_device, fd);
                     } else if (o == SurveyOutcome::RetuneBackFailed) {
@@ -813,12 +816,10 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     if (link->adaptive_tx_power == power) return;
 
     link->adaptive_tx_power = power;
-    if (link->survey.active()) {
-        // The survey thread is the device's control thread now (devourer IRtlDevice.h:110-117: no control call
-        // concurrently with a channel set); applied when it completes, before the uplink starts.
-        link->tx_power_pending = true;
-        return;
-    }
+    // The survey thread is the device's control thread now (devourer IRtlDevice.h:110-117: no control call
+    // concurrently with a channel set); stored under the survey's end lock and applied when it completes, before the
+    // uplink starts. After the survey ifActive() is false and the power is applied here (25's S1).
+    if (link->survey.ifActive([link] { link->tx_power_pending = true; })) return;
     if (link->current_fd != -1 && link->rtl_devices.find(link->current_fd) != link->rtl_devices.end()) {
         link->rtl_devices.at(link->current_fd)->SetTxPower(power);
     }
