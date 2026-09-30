@@ -276,6 +276,7 @@ openipc-4b's `wfb_tx -Y` (parity defer; merged binary b0469029, coordinator's `y
 All in ms. Spread = first → last packet of a frame; last / last95 / decoded are above the r14n drift line (latency.py); lnk and tot are per-step medians of PPXR_STATS (sidecar); "5-pkt frames" are the p98 frames at 2400 (~120 per step, big_frames.py; at 1400 the p98 is 2 packets, i.e. most frames).
 
 - **At 1400, -Y works as predicted and replicates exactly** [PROVEN: table, both pairs]. Spread 0.74 → 0.22 ms, frame complete (last) −0.53 ms, its p95 3.3 → 0.74 ms, decoded −0.54 ms, lnk95 6.5–6.8 → 4.2 ms, tot50 −0.45 ms, tot95 −1.3 ms. Each step is flat over time (latency bins ~1.0 ms for n, ~0.45 ms for y), so this is not drift.
+  - openipc-4b predicted −0.51 ms mean / −2.45 ms p95 for this step (their E2 plan, openipc repo `e2/00-PLAN-y-ab.md` §4.3); measured −0.53 / −2.55.
   - The rig's first light agrees: y − n = −0.46 ± 0.50 ms (latency-test-0d, N 76 per arm), against the Quest's −0.54 ms decoded and −0.45 ms tot50.
 - **At 2400, frames already fit one packet (1.03 pkt/frame), so -Y has little left to do** [PROVEN: table]. On all frames it is −0.02 ms on last once the block's downward trend is fitted (steps 0.42 / 0.38 / 0.37 / 0.31: trend −0.03 ms per step, -Y −0.02) [INFERRED: least squares on the 4 step means]. The rig's +0.12 ± 0.48 ms agrees with ~0.
   - It does help the few multi-packet frames (the p98, 5 packets, ~1 per second): last 7.5–7.9 → 5.0–5.1 ms, p95 20–22 → 15.5–15.8 ms, in both pairs.
