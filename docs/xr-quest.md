@@ -170,6 +170,7 @@ The dated result sections that used to follow here were moved verbatim into topi
   `createFlags = 0` on the surface swapchain violates the spec. Keywords: display refresh rate, 72/90/120 Hz, compositor
   latch, decode-to-photon, motion-to-photon, thermal throttle, Phase Sync, TimeWarp, USE_TIMESTAMPS, SYNCHRONOUS.
 - **[Phase-lock protocol](xr/phase-lock-protocol.md)**: the PPXR1 report (format, rate, reference points, destination over the wfb tunnel) and the reference PI controller, for an air-side implementation (AU-04); the source must run at the display rate (119.70 fps) for a lock.
+- **[Current G2G per mode, 2026-09-30](xr/g2g-budget.md#current-g2g-per-mode-2026-09-30)**: one table against the 40 ms ceiling, rig first light + Quest tot50/tot95 per mode (race ~28, 720p120 8M 33.1, 25M 32–34, 1080p90 16M 45–48 / 71, over capacity ≥ ~130 ms), the deployed levers (payload 2400, -Y, crop fix), the closed ones (S2 360p, HDP p3900, L6) and the open ones (-Z, rate control, the HD 71 ms state), each cited. Keywords: current latency, latență curentă, G2G per mode, glass to glass.
 - **[G2G budget per branch](xr/g2g-budget.md)** ([section](xr/g2g-budget.md#g2g-budget-on-the-real-link-branch-by-branch-2026-09-26)): total ≈ 30.7 ms
   (≈ 23–40 range) at 166.6 fps with 0 packets lost. B2 (2.91 ms mean) is MCS2 airtime of ~1357 B packets plus FEC parity
   landing inside the next frame (corrected 2026-09-27); realistic floor on Quest 2 with the open levers ≈ 25–27 ms (slice sending closed), 20 ms not reachable.
