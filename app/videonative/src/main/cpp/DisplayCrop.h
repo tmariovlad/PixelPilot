@@ -19,4 +19,15 @@ inline DisplayCrop displayCrop(int codedW, int codedH, bool hasCrop, int left, i
     return {0, 0, codedW, codedH};
 }
 
+// Which output-format keys carry the crop: the Rect key "crop" (AMEDIAFORMAT_KEY_DISPLAY_CROP) first, which is what the
+// Quest 2's decoder publishes ("crop: Rect(0, 0, 639, 359)", logcat 2026-09-30), then the four inclusive int keys
+// crop-left/top/right/bottom that other decoders publish. getRect(l, t, r, b) and getInt(key, v) wrap AMediaFormat.
+template <typename GetRect, typename GetInt>
+bool readCropKeys(GetRect getRect, GetInt getInt, int* left, int* top, int* right, int* bottom)
+{
+    if (getRect(left, top, right, bottom)) return true;
+    return getInt("crop-left", left) && getInt("crop-top", top) && getInt("crop-right", right) &&
+           getInt("crop-bottom", bottom);
+}
+
 #endif  // PIXELPILOT_DISPLAYCROP_H

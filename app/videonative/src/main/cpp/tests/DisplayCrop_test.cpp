@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <string>
 
 TEST(DisplayCrop, Res360CropsThePaddingRows)
 {
@@ -55,4 +56,45 @@ TEST(DisplayCrop, AnInvalidCropFallsBackToTheWholeBuffer)
         EXPECT_EQ(c.width, 640);
         EXPECT_EQ(c.height, 368);
     }
+}
+
+// readCropKeys: which keys carry the crop. The Quest 2's decoder publishes one Rect key, "crop: Rect(0, 0, 639, 359)"
+// (logcat 2026-09-30), not the four crop-left/top/right/bottom ints; other decoders publish the ints.
+TEST(DisplayCrop, TheRectKeyIsReadFirst)
+{
+    int        l = -9, t = -9, r = -9, b = -9;
+    const bool ok = readCropKeys(
+        [](int* a, int* bb, int* c, int* d) { *a = 0; *bb = 0; *c = 639; *d = 359; return true; },
+        [](const char*, int*) { return false; }, &l, &t, &r, &b);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(r, 639);
+    EXPECT_EQ(b, 359);
+}
+
+TEST(DisplayCrop, TheIntKeysAreTheFallback)
+{
+    int        l = -9, t = -9, r = -9, b = -9;
+    const bool ok = readCropKeys([](int*, int*, int*, int*) { return false; },
+                                 [](const char* key, int* v)
+                                 {
+                                     const std::string k = key;
+                                     *v = k == "crop-right" ? 1919 : k == "crop-bottom" ? 1079 : 0;
+                                     return true;
+                                 },
+                                 &l, &t, &r, &b);
+    EXPECT_TRUE(ok);
+    EXPECT_EQ(l, 0);
+    EXPECT_EQ(r, 1919);
+    EXPECT_EQ(b, 1079);
+}
+
+TEST(DisplayCrop, NoKeyMeansNoCrop)
+{
+    int l = 0, t = 0, r = 0, b = 0;
+    EXPECT_FALSE(readCropKeys([](int*, int*, int*, int*) { return false; }, [](const char*, int*) { return false; }, &l,
+                              &t, &r, &b));
+    // one int key missing is no crop either
+    EXPECT_FALSE(readCropKeys([](int*, int*, int*, int*) { return false; },
+                              [](const char* key, int* v) { *v = 1; return std::string(key) != "crop-top"; }, &l, &t,
+                              &r, &b));
 }
