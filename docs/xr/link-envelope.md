@@ -288,7 +288,6 @@ openipc-4b's HD payload lever, run by the coordinator (openipc repo `slot/00-SLO
   - It copies no logic. The drift line is now one helper, `ab_segments.baseline_line`, used by ab_segments, zflush and zslot. zflush.air_per_step now also sums the interval ms.
   - **Validated on this slot** [PROVEN: [zslot-hdp-validation-2026-09-30.txt](data/zslot-hdp-validation-2026-09-30.txt)]: every ab_fit effect equals hdp-fit, last/last95/spread equal the latency table, and the recovered share/wait/held equal the zflush steps summed per state. The refactored zflush.py and ab_segments.py reproduce this slot's committed outputs byte for byte.
   - FRAME_FLUSH is tested on synthetic air lines only (stock TX here, and the air log was lost).
-  - Correction to the table above: its lnk and tot rows mix the two drift models. p3000's lnk50 −0.43 / lnk95 +0.55 / tot −0.18 / +0.24 are the quadratic fit; p3900's are the linear one. Linear for p3000: lnk50 −0.32 ± 0.08, lnk95 +0.72 ± 0.29, tot50 −0.08, tot95 +0.37. The coordinator has asked pixelpilot-xr-25 to requote the table with the linear fit.
 
 ### MFE clock on race (O121 L6) 2026-09-30 20:20–20:33: encode +0.356 ms per ns of clock period; the whole air hung ~1 s after the second switch to 384 MHz
 
