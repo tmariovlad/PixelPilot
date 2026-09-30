@@ -38,11 +38,14 @@ def _complete_lines(path):
     return text.split("\n")[:-1]
 
 
+_RUN = re.compile(r"^run\d+$")   # stamps.raw also carries "cal start/end" lines, which are not measurement runs
+
+
 def _starts(run_dir):
     starts = {}
     for line in _complete_lines(os.path.join(run_dir, "stamps.raw")):
         w = line.split()
-        if len(w) >= 3 and w[1] == "start":
+        if len(w) >= 3 and w[1] == "start" and _RUN.match(w[0]):
             starts[w[0]] = float(w[2])
     return starts
 

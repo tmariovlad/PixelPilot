@@ -59,6 +59,32 @@ def test_runs_without_a_file_yet_and_several_runs_are_read():
     assert fl[3][0] == 1100.0
 
 
+def test_calibration_stamps_are_not_runs():
+    # latency-test's stamps.raw also carries "cal start/end" lines (latency-test-0d); only runNN are measurement runs
+    d = _dir([("run01", 1000.0, [45.0] * 3, ())])
+    with open(os.path.join(d, "stamps.raw"), "a", newline="\n") as fh:
+        fh.write("cal start 990.0\ncal end 995.0\nrun01 end 1010.0\n")
+    with open(os.path.join(d, "cal.txt"), "w", newline="\n") as fh:
+        fh.write(_run_text([99.0] * 3))                               # must not be read as flashes
+    fl = ff.read_flashes(d, "hd")
+    assert [v for _, _, v in fl] == [45.0, 45.0, 45.0], fl
+
+
+def test_a_run_that_appears_mid_follow_is_picked_up_and_can_fire():
+    fired = []
+    d = _dir([("run01", 1000.0, [46.0] * 20, ())])
+    f = ff.Follower(d, "hd", {"hd": 46.0}, on_step="snap", dry_run=False,
+                    runner=lambda cmd, env: fired.append(cmd), log=lambda s: None)
+    f.poll(now=1030.0)
+    assert fired == []
+    with open(os.path.join(d, "stamps.raw"), "a", newline="\n") as fh:
+        fh.write("run02 start 1062.0\n")
+    with open(os.path.join(d, "run02.txt"), "w", newline="\n") as fh:
+        fh.write(_run_text([72.0] * 12, timeouts={3}))                 # the state, with a TIMEOUT + retry inside
+    f.poll(now=1080.0)
+    assert fired == ["snap"], fired
+
+
 def test_a_sustained_step_fires_once_and_dry_run_only_prints():
     fired, printed = [], []
     d = _dir([("run01", 1000.0, [46.0] * 5 + [72.0] * 12, ())])
