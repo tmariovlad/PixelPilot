@@ -1,0 +1,33 @@
+# Air log: 25 Mbit/s block rerun, 2026-09-30 09:40-10:16 (PC local), air .132 fresh boot ~09:41, ch165, 17 dBm, rmem 192K (no -R).
+# mode_ab25.sh 5ad5d0e7. Try 1 (T0 750663) is VOID: alink started ~30 s after boot, after the script's one-time kill, and set MCS1 FEC 4/6 under 25 Mbit/s (drop 109k/step).
+# Try 2 (T0 750960) after killing alink. Scripts now kill a late alink/vmoded at every step (late_kill: mode_ab a327d9c5, mode_ab25 7b9866cd, gate_a 5980411a).
+
+## try 1 (void)
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790750543 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1393 wb=1356 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=3 temp=37
+SET q7 epoch=1790750677 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2829 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q7 epoch=1790750677 drop=109023 inj=127230 ant_drop=0 tx_dropped_d=35133 temp=48 ch=165 mcs_index=1 k=4 n=6 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2829 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET q12 epoch=1790750766 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2829 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+ABORT_SIGNAL epoch=1790750856
+END epoch=1790750876 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1393 wb=1377 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=73847 temp=46
+
+## try 2
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790750884 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1393 wb=1377 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=73847 temp=44
+SET q7 epoch=1790750975 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2488 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q7 epoch=1790750975 drop=647 inj=237455 ant_drop=0 tx_dropped_d=6 temp=46 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2488 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET q12 epoch=1790751060 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2488 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q12 epoch=1790751060 drop=538 inj=285738 ant_drop=0 tx_dropped_d=2 temp=46 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2488 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET q12b epoch=1790751160 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2488 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q12b epoch=1790751160 drop=403 inj=343226 ant_drop=0 tx_dropped_d=0 temp=46 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2488 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET f12 epoch=1790751274 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2215 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP f12 epoch=1790751274 drop=1941 inj=243913 ant_drop=0 tx_dropped_d=0 temp=48 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2215 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET f12 epoch=1790751360 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2215 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP f12 epoch=1790751360 drop=1370 inj=290006 ant_drop=0 tx_dropped_d=0 temp=48 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=2215 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET q12b epoch=1790751474 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=838 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q12b epoch=1790751474 drop=78 inj=295150 ant_drop=0 tx_dropped_d=0 temp=46 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=838 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET q12 epoch=1790751560 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=838 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q12 epoch=1790751560 drop=496 inj=287345 ant_drop=0 tx_dropped_d=2 temp=46 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=838 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+SET q7 epoch=1790751660 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=838 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q7 epoch=1790751660 drop=714 inj=286010 ant_drop=0 tx_dropped_d=2 temp=46 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=838 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+END epoch=1790751774 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1393 wb=548 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=76147 temp=44

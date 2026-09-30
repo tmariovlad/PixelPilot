@@ -360,7 +360,7 @@ Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change b
   - `dmesg` counted 169 `_MI_VENC_AbortFrame … generate next GOP` warnings over the night. The OpenIPC analysis is in O5-encoder-cap-abort-phase-lag.md, openipc-…-40.
 - **Lost data.**
   - The Quest XR app was killed by low memory at PC 723130.8, in d0 #2, after ~45 min of detached perfetto + logcat. am_low_memory had been rising from 723000.
-  - The rig's d8 #2 and d0 #2 are therefore partly invalid, and the 25 Mbit/s block that followed has no data. It needs a rerun.
+  - The rig's d8 #2 and d0 #2 are therefore partly invalid, and the 25 Mbit/s block that followed has no data. It needs a rerun. *(Update 2026-09-30 10:16: rerun done; see [25 Mbit/s block](#25-mbits-block-2026-09-30-10021016-720p120-25-mbits-holds-115119-fps-with-0104--after-fec-on-ch165-the-quests-encodelatch-stays--21-ms) and the [air log](data/air-r25-2026-09-30.txt). The rerun's first try was void: alink started after the script's kill and set MCS1. VPE/VENC baseline snapshots of the normal HD state: [data](data/air-vpe-venc-snap-2026-09-30.txt).)*
 
 ### Channel A/B in the operational state 2026-09-29 21:59–22:12: ch165 cuts the residual loss 3.5–6× at MCS7 16 Mbit/s
 
