@@ -248,7 +248,7 @@ capture's** Perfetto trace.
 - **Clock:** stats `t` = CLOCK_MONOTONIC ms. The trace clock is BOOTTIME, and its clock snapshot gives the difference
   (0.4 µs without a suspend).
 - **Reading it:** |d| ≈ 0 means the live signal is the reference. A gap that grows with loss is the reorder-queue hold
-  on the first-packet stamp: ce70daa4 stamps after the queue, while builds from rawfirst `ca56f1f` stamp at raw
+  on the first-packet stamp: ce70daa4 stamps after the queue, while builds from rawfirst (xr-native `15a7c83`, APK 90d3abea) stamp at raw
   arrival. A drift gap (`owdd`) points at the drift learning.
 - **Plumbing check** [PROVEN: 2026-09-30, `ab_draintog.pftrace`, 98,053 decoded frames]: stats lines synthesized from
   the offline values come back with |d| ≤ 0.008 ms (their 2-decimal rounding) and `owdd` exact.

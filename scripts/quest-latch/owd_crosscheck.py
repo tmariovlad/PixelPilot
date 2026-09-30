@@ -11,7 +11,7 @@ only frames the app decoded (ab_segments frames with a decoded mark), the same w
 interpolation. The trace clock is BOOTTIME; its clock snapshot gives MONOTONIC - BOOTTIME.
 
 Reading it: differences ~0 = the app's signal is the reference. A difference that appears with loss and not without is
-the reorder-queue hold on the first-packet stamp (builds before rawfirst ca56f1f stamp after the queue). A drift gap
+the reorder-queue hold on the first-packet stamp (builds before rawfirst, xr-native 15a7c83, stamp after the queue: ce70daa4). A drift gap
 (owdd) points at the drift learning.
 """
 import argparse
