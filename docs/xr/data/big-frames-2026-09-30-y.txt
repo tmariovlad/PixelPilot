@@ -1,0 +1,17 @@
+# ab_y, steps docs/xr/data/steps-2026-09-30-yslot.txt, --air-offset-s 1.6074 (Quest-PC 0.8474 + PC-air 0.76), --guard-s 15. -Y slot (pixelpilot-xr-66): race REC 17 dBm ch165, merged wfb_tx b0469029; n = -A 10000, y = -A 10000 -Y; payload 1400 (r14*) / 2400 (r24*); Quest APK 3b37a562 (RX drain on); PC-air +0.76 (slot_watch AIR_CLOCK, err 0.12); first step starts at SET+10 s.
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_y.pftrace docs/xr/data/steps-2026-09-30-yslot.txt --air-offset-s 1.6074 --guard-s 15 --baseline r14n
+big = npkts >= 2 (p98 of the frames in the steps); ms above the 'r14n' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 r14n           8276     2   1.23   0.47   3.30  20.97 |   2807   0.26   0.47
+ 1 r14y          11278     2   0.54   0.39   0.81  20.85 |   3607   0.24   0.40
+ 2 r14n          10753     2   1.26   0.47   3.31  22.66 |   4123   0.30   0.51
+ 3 r14y          11070     2   0.53   0.39   0.81  18.59 |   3807   0.23   0.41
+ 4 r24n            121     5   7.50   5.49  20.10  25.30 |  14765   0.37   0.52
+ 5 r24y            121     5   4.97   3.02  15.81  16.82 |  14758   0.34   0.52
+ 6 r24n            117     5   7.86   5.63  21.67  30.95 |  14771   0.31   0.45
+ 7 r24y            116     5   5.10   3.30  15.54  16.21 |  14769   0.28   0.43
+per state
+r14n             19029     2   1.25   0.47   3.31  22.66 |   6930   0.28   0.49
+r14y             22348     2   0.54   0.39   0.81  20.85 |   7414   0.23   0.41
+r24n               238     5   7.68   5.57  21.07  30.95 |  29536   0.34   0.50
+r24y               237     5   5.03   3.27  15.72  16.82 |  29527   0.31   0.48

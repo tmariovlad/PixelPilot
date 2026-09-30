@@ -1,0 +1,28 @@
+# zflush per step, ab_y, --air-offset-s 1.6074 (Quest-PC 0.8474 + PC-air 0.76), guard 15
+# python3 scripts/quest-latch/zflush.py scripts/quest/out/ab_y.pftrace docs/xr/data/steps-2026-09-30-yslot.txt scripts/quest/out/qtx_y.raw.txt --air-offset-s 1.6074 --baseline r14n --guard-s 15 --by-step
+complete = first -> last packet; capture->last = ms above the baseline drift line; n mean p95 p99
+               frames | class        n   mean    p95    p99 |    n   mean    p95    p99 | waited_next all / of recovered
+ 0 r14n         11083 | clean    10835   0.70   3.05   3.18 |10835   0.88   3.25   3.66 | 0.011 / 0.488
+                      | recovered  248   2.56  12.76  13.71 |  248   5.60  13.13  17.50
+                      | held         0                      |    0                     
+ 1 r14y         14885 | clean    14558   0.19   0.37   0.53 |14558   0.37   0.62   1.92 | 0.010 / 0.456
+                      | recovered  327   1.94  12.96  15.89 |  327   4.93  13.24  18.84
+                      | held         0                      |    0                     
+ 2 r14n         14876 | clean    14481   0.69   3.06   3.17 |14481   0.87   3.26   3.62 | 0.013 / 0.484
+                      | recovered  395   2.26  12.77  17.30 |  395   5.64  13.14  18.97
+                      | held         0                      |    0                     
+ 3 r14y         14877 | clean    14561   0.19   0.36   0.53 |14561   0.36   0.61   2.38 | 0.010 / 0.462
+                      | recovered  316   1.80  12.77  13.45 |  316   4.86  13.11  15.29
+                      | held         0                      |    0                     
+ 4 r24n         14886 | clean    14632   0.04   0.00   0.00 |14632   0.29   0.50   1.82 | 0.010 / 0.602
+                      | recovered  254   0.53   0.00  18.42 |  254   7.93  19.39  20.10
+                      | held         0                      |    0                     
+ 5 r24y         14879 | clean    14611   0.03   0.00   0.00 |14611   0.26   0.48   1.95 | 0.010 / 0.578
+                      | recovered  268   0.12   0.00   7.87 |  268   7.18  19.14  19.38
+                      | held         0                      |    0                     
+ 6 r24n         14888 | clean    14631   0.05   0.00   0.00 |14631   0.24   0.43   2.29 | 0.010 / 0.595
+                      | recovered  257   0.16   0.00   6.65 |  257   7.46  19.13  19.47
+                      | held         0                      |    0                     
+ 7 r24y         14885 | clean    14612   0.03   0.00   0.00 |14612   0.18   0.40   1.60 | 0.011 / 0.608
+                      | recovered  273   0.11   0.00   7.19 |  273   7.73  19.08  19.33
+                      | held         0                      |    0                     

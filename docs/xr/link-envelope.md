@@ -257,6 +257,34 @@ APK `c4ad7290` (branch `drain-toggle-ab` c7c3c76 + wfb-ng 148fa4e, [fec-block-pr
 - **Drift is as large as the first A/B's "regression"** [PROVEN, same table]. Post-FEC loss rose through the run in both arms (off 0.15 → 0.23 → 0.26 %, on 0.16 → 0.25 %): +70 % in 8 min with the code path unchanged. The first A/B's +30 % (B arms in the middle) fits this drift. It was also two builds.
 - **What it settles, and what not:** the drain changes nothing with stock TX, so this run cannot show what it does under `-Y`, where it is meant to act. The offline replays cover that case (identical loss/recovery counters, 3,494 payloads earlier, 0 later). Relanding it in xr-native (pixelpilot-xr-36) and opening the `-Y` gate are the coordinator's and the user's call. c8986061 was reinstalled after the run (md5 checked at 755667), and guardian and proximity were restored at 755668.
 
+### -Y parity-defer slot 2026-09-30 13:57–14:13: at payload 1400, -Y cuts frame complete −0.53 ms and its p95 from 3.3 to 0.7 ms; at 2400 it only helps the rare multi-packet frames
+
+openipc-4b's `wfb_tx -Y` (parity defer; merged binary b0469029, coordinator's `y_ab.sh` 2c641026). The Quest ran APK **3b37a562** (xr-native 5669151 = 0c790f4, RX drain 66d4bdb on), so `-Y` met its gate. Air race REC (640x480, 167 fps), 17 dBm, ch165; n = `-A 10000` (measure only), y = `-A 10000 -Y`; ABAB × 2 at payload 1400, then ABAB × 2 at 2400, 120 s per step. Each switch relaunches `wfb_tx`: the Quest saw 1.8–2.0 s of NO_PACKETS about 1 s after each T, all inside the 15 s guard; the first step starts at the coordinator's SET + 10 s. PC−air +0.76 s (slot_watch AIR_CLOCK, err 0.12). One detached capture, pid unchanged throughout ([pid_watch.sh](../../scripts/quest/pid_watch.sh)).
+- **Data.** [steps](data/steps-2026-09-30-yslot.txt) · [PPXR_STATS per step](data/stats-2026-09-30-y.txt) · [latency](data/latency-2026-09-30-y.txt) · [zflush per step](data/zflush-2026-09-30-y.txt) · [big frames](data/big-frames-2026-09-30-y.txt) · [latency over time](data/latency-bins-2026-09-30-y.txt) · [link_audit](data/audit-2026-09-30-y.txt) · [frame fate](data/frame-fate-2026-09-30-y.txt) · [jitter](data/step-jitter-2026-09-30-y.txt) · [link](data/link-2026-09-30-y.txt) · [bursts](data/loss-bursts-2026-09-30-y.txt) · [air log](data/air-parity-defer-2026-09-30.txt).
+
+| step | pkt/frame | spread | last / last95 | decoded | lnk50 / lnk95 | tot50 / tot95 | 5-pkt frames: last / p95 | pre-FEC | post-FEC | fec/s | fps |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| r14n | 1.79 | 0.74 | 0.99 / 3.28 | 2.57 | 3.8 / 6.8 | 12.1 / 16.7 | — | 0.66 % | 0 | 2.0 | 165.4 |
+| r14y | 1.80 | 0.23 | 0.47 / 0.74 | 2.03 | 3.8 / 4.2 | 11.6 / 15.4 | — | 0.70 % | 0 | 2.0 | 165.4 |
+| r14n | 1.76 | 0.73 | 1.00 / 3.29 | 2.57 | 3.7 / 6.5 | 11.9 / 16.6 | — | 0.81 % | 0 | 2.5 | 165.3 |
+| r14y | 1.78 | 0.22 | 0.45 / 0.74 | 2.03 | 3.7 / 4.2 | 11.5 / 15.3 | — | 0.66 % | 0 | 2.0 | 165.3 |
+| r24n | 1.03 | 0.05 | 0.42 / 0.56 | 2.01 | 3.7 / 4.1 | 11.6 / 15.4 | 7.50 / 20.1 | 0.68 % | 0 | 1.0 | 165.4 |
+| r24y | 1.03 | 0.03 | 0.38 / 0.57 | 1.97 | 3.7 / 4.0 | 11.5 / 15.3 | 4.97 / 15.8 | 0.75 % | 0 | 1.0 | 165.3 |
+| r24n | 1.03 | 0.05 | 0.37 / 0.49 | 1.95 | 3.7 / 4.2 | 11.5 / 15.3 | 7.86 / 21.7 | 0.68 % | 0 | 1.0 | 165.4 |
+| r24y | 1.03 | 0.03 | 0.31 / 0.47 | 1.89 | 3.8 / 4.2 | 11.6 / 15.4 | 5.10 / 15.5 | 0.72 % | 0 | 1.0 | 165.4 |
+
+All in ms. Spread = first → last packet of a frame; last / last95 / decoded are above the r14n drift line (latency.py); lnk and tot are per-step medians of PPXR_STATS (sidecar); "5-pkt frames" are the p98 frames at 2400 (~120 per step, big_frames.py; at 1400 the p98 is 2 packets, i.e. most frames).
+
+- **At 1400, -Y works as predicted and replicates exactly** [PROVEN: table, both pairs]. Spread 0.74 → 0.22 ms, frame complete (last) −0.53 ms, its p95 3.3 → 0.74 ms, decoded −0.54 ms, lnk95 6.5–6.8 → 4.2 ms, tot50 −0.45 ms, tot95 −1.3 ms. Each step is flat over time (latency bins ~1.0 ms for n, ~0.45 ms for y), so this is not drift.
+  - The rig's first light agrees: y − n = −0.46 ± 0.50 ms (latency-test-0d, N 76 per arm), against the Quest's −0.54 ms decoded and −0.45 ms tot50.
+- **At 2400, frames already fit one packet (1.03 pkt/frame), so -Y has little left to do** [PROVEN: table]. On all frames it is −0.02 ms on last once the block's downward trend is fitted (steps 0.42 / 0.38 / 0.37 / 0.31: trend −0.03 ms per step, -Y −0.02) [INFERRED: least squares on the 4 step means]. The rig's +0.12 ± 0.48 ms agrees with ~0.
+  - It does help the few multi-packet frames (the p98, 5 packets, ~1 per second): last 7.5–7.9 → 5.0–5.1 ms, p95 20–22 → 15.5–15.8 ms, in both pairs.
+- **Nothing lost:** 0 packets lost after FEC in every guarded step and 0 frame holes; pre-FEC 0.6–0.8 % in both arms. fps 165.3–165.4 everywhere.
+  - The air's two AIR_FPS_LOW samples (160 fps at 14:08:22 in r14n #2, 142 fps at 14:13:33 in r24n #1) do not show on the Quest: no FPS_LOW event there, and those steps decoded 165.3–165.4 fps. They were brief dips at most [INFERRED].
+- **1400 vs 2400 is confounded with time** (the 2400 block ran second; the rig's 2400 block reads ~1.6 ms lower). On the Quest, 2400 without -Y is already about 1400 with -Y (last 0.40 vs 0.46 ms, last95 0.53 vs 0.74 ms, tot50 11.5 vs 11.55 ms).
+- **The remaining tail is FEC-recovered frames, and -Y does not change it** [PROVEN: zflush per step]. 1.7–2.7 % of frames needed FEC recovery. They complete 4.9–5.6 ms (1400) and 7.2–7.9 ms (2400) above the line, p95 13–19 ms, in both arms; about half of them waited for the next frame's packets (waited_next of recovered 0.46–0.61). No frame was held.
+- **Decision:** the Quest keeps 3b37a562 as the new baseline (coordinator; c8986061 retired). Whether `-Y` becomes the air's default, now that payload 2400 captures almost the same gain, is the user's call.
+
 ### Payload size 2026-09-30 10:18–10:34 (O121 E0+E1 for openipc-4b): at race, a payload that fits a frame in one packet cuts the link tail 6.8 → 4.3 ms
 
 Race REC (480p167, 2 Mbit/s, MCS2, FEC 4/8, 17 dBm, ch165). waybeam `maxPayloadSize` stepped live (no restart) as a 1400 / 1800 / 2400 / 3000 palindrome, 120 s each. APK c8986061, no relaunch, guard 5 s. Quest−air +0.920 s (air ≈ PC this boot). The watcher (app pid + post-FEC stop rule) never fired.

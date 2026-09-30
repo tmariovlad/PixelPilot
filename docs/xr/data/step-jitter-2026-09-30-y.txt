@@ -1,0 +1,11 @@
+# ab_y, steps docs/xr/data/steps-2026-09-30-yslot.txt, --air-offset-s 1.6074 (Quest-PC 0.8474 + PC-air 0.76), --guard-s 15. -Y slot (pixelpilot-xr-66): race REC 17 dBm ch165, merged wfb_tx b0469029; n = -A 10000, y = -A 10000 -Y; payload 1400 (r14*) / 2400 (r24*); Quest APK 3b37a562 (RX drain on); PC-air +0.76 (slot_watch AIR_CLOCK, err 0.12); first step starts at SET+10 s.
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_y.pftrace docs/xr/data/steps-2026-09-30-yslot.txt --air-offset-s 1.6074 --guard-s 15
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 r14n           11083   0.00   3.87   6.92   20.84
+ 1 r14y           14885   0.00   2.93   6.22   19.75
+ 2 r14n           14876   0.00   4.44   7.68   21.82
+ 3 r14y           14877   0.00   2.94   5.99   19.07
+ 4 r24n           14886   0.00   2.95   8.19   26.15
+ 5 r24y           14879   0.00   2.93   7.40   21.72
+ 6 r24n           14888   0.00   2.95   8.38   28.38
+ 7 r24y           14885   0.00   2.95   8.06   21.90

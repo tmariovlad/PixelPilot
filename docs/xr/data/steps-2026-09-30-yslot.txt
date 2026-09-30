@@ -1,0 +1,10 @@
+# -Y slot (pixelpilot-xr-66, y_ab.sh 2c641026, merged wfb_tx b0469029): race REC, 17 dBm, ch165; n = wfb_tx -A 10000 (measure only), y = -A 10000 -Y; payload 1400 (r14*) then 2400 (r24*). Each switch relaunches wfb_tx (~8-10 s gap, SET after T): analyse with guard >= 15 s. Quest APK 3b37a562 (xr-native 5669151, RX drain 66d4bdb). Lines: <AIR epoch> <label>. The planned T were 765843/963/766083/203/323/443/563/683 (END 766803); the coordinator's SET (wfb_tx up) came T+7 s, except the first step (the swap to the merged binary): SET 765871, so its line is moved to 765866 (= SET + 10 s once the 15 s guard is added). Air SET epochs: 765871 765970 766090 766210 766330 766450 766570 766690, END 766821.
+1790765866 r14n
+1790765963 r14y
+1790766083 r14n
+1790766203 r14y
+1790766323 r24n
+1790766443 r24y
+1790766563 r24n
+1790766683 r24y
+1790766803 END

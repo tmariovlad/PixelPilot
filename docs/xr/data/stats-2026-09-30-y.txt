@@ -1,0 +1,12 @@
+# PPXR_STATS medians per step, ab_y (Quest-air = 1.6074), guard 15
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_y.raw.txt docs/xr/data/steps-2026-09-30-yslot.txt --quest-minus-air-s 1.6074 --guard-s 15 --keys enc50,lnk50,lnk95,dec50,dsp50,tot50,tot95,fps,pdata,post,fec,rssiA,rssiB
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   enc50   lnk50   lnk95   dec50   dsp50   tot50   tot95     fps   pdata    post     fec   rssiA   rssiB
+ 0 r14n           34     1.9     3.8     6.8     1.5     4.1    12.1    16.7   167.0     0.7     0.0     2.0   -24.0   -27.0
+ 1 r14y           45     1.9     3.8     4.2     1.5     4.2    11.6    15.4   167.0     0.7     0.0     2.0   -24.0   -27.0
+ 2 r14n           45     1.9     3.7     6.5     1.5     4.1    11.9    16.6   167.0     0.8     0.0     2.5   -24.0   -27.0
+ 3 r14y           45     1.9     3.7     4.2     1.5     4.1    11.5    15.3   167.0     0.7     0.0     2.0   -24.0   -27.0
+ 4 r24n           45     1.9     3.7     4.1     1.5     4.1    11.6    15.4   167.0     0.7     0.0     1.0   -24.0   -27.0
+ 5 r24y           44     1.9     3.7     4.0     1.5     4.1    11.5    15.3   167.0     0.7     0.0     1.0   -24.0   -27.0
+ 6 r24n           44     1.9     3.7     4.2     1.5     4.1    11.5    15.3   167.0     0.6     0.0     1.0   -24.0   -27.0
+ 7 r24y           45     1.9     3.8     4.2     1.5     4.1    11.6    15.4   167.0     0.6     0.0     1.0   -24.0   -27.0

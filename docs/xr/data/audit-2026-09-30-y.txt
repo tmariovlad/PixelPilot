@@ -1,0 +1,20 @@
+# ab_y, steps docs/xr/data/steps-2026-09-30-yslot.txt, --air-offset-s 1.6074 (Quest-PC 0.8474 + PC-air 0.76), --guard-s 15. -Y slot (pixelpilot-xr-66): race REC 17 dBm ch165, merged wfb_tx b0469029; n = -A 10000, y = -A 10000 -Y; payload 1400 (r14*) / 2400 (r24*); Quest APK 3b37a562 (RX drain on); PC-air +0.76 (slot_watch AIR_CLOCK, err 0.12); first step starts at SET+10 s.
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_y.pftrace docs/xr/data/steps-2026-09-30-yslot.txt --air-offset-s 1.6074 --guard-s 15 --logcat scripts/quest/out/logcat_y.txt
+PKT_LOST events 216, packets 217; TX DESC 17778; block overrides 0
+post-FEC gap sizes: 1:215, 2:1
+loss within 2 ms after a Quest TX: 1.9 % (control, TX shifted 50 ms: 0.5 %)
+Rayleigh Z @    1.000 Hz =      0.3
+Rayleigh Z @    4.000 Hz =     18.9  <- locked
+Rayleigh Z @    9.766 Hz =      0.8
+Rayleigh Z @   72.000 Hz =      0.0
+Rayleigh Z @   90.000 Hz =      2.2
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 r14n          19787     0   131     0    0.66   0.00    0.0    0    0    0    0    0   0.0   26.9   6.5
+ 1 r14y          26725     0   187     0    0.70   0.00    0.0    0    0    0    0    0   0.0   25.2   6.5
+ 2 r14n          26199     0   211     0    0.81   0.00    0.0    0    0    0    0    0   0.0   24.8   6.6
+ 3 r14y          26519     0   175     0    0.66   0.00    0.0    0    0    0    0    0   0.0   21.7   6.6
+ 4 r24n          15365     0   105     0    0.68   0.00    0.0    0    0    0    0    0   0.0   25.4   7.0
+ 5 r24y          15378     0   115     0    0.75   0.00    0.0    0    0    0    0    0   0.0   25.3   7.2
+ 6 r24n          15379     0   105     0    0.68   0.00    0.0    0    0    0    0    0   0.0   26.1   7.0
+ 7 r24y          15380     0   110     0    0.72   0.00    0.0    0    0    0    0    0   0.0   27.1   7.1

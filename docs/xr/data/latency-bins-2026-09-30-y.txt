@@ -1,0 +1,11 @@
+# ab_y, steps docs/xr/data/steps-2026-09-30-yslot.txt, --air-offset-s 1.6074 (Quest-PC 0.8474 + PC-air 0.76), --guard-s 15. -Y slot (pixelpilot-xr-66): race REC 17 dBm ch165, merged wfb_tx b0469029; n = -A 10000, y = -A 10000 -Y; payload 1400 (r14*) / 2400 (r24*); Quest APK 3b37a562 (RX drain on); PC-air +0.76 (slot_watch AIR_CLOCK, err 0.12); first step starts at SET+10 s.
+# python3 scripts/quest-latch/latency_bins.py scripts/quest/out/ab_y.pftrace docs/xr/data/steps-2026-09-30-yslot.txt --air-offset-s 1.6074 --guard-s 15 --baseline r14n
+ms above the 'r14n' drift line; bins of 10 s from each step's guarded start; slope in ms/s
+ 0 r14n          slope  +0.001     1.0    0.9    1.0    1.0    1.0    1.0    1.0
+ 1 r14y          slope  -0.000     0.4    0.5    0.5    0.5    0.4    0.4    0.5    0.5    0.5
+ 2 r14n          slope  -0.000     1.1    1.0    1.0    1.0    0.9    0.9    1.0    1.0    1.0
+ 3 r14y          slope  -0.001     0.4    0.5    0.5    0.5    0.4    0.5    0.4    0.4    0.4
+ 4 r24n          slope  -0.001     0.5    0.4    0.4    0.5    0.5    0.5    0.3    0.4    0.4
+ 5 r24y          slope  -0.000     0.4    0.4    0.4    0.3    0.4    0.4    0.4    0.4    0.3
+ 6 r24n          slope  -0.001     0.2    0.5    0.4    0.3    0.4    0.4    0.4    0.3    0.3
+ 7 r24y          slope  -0.000     0.3    0.3    0.3    0.3    0.3    0.3    0.4    0.3    0.3

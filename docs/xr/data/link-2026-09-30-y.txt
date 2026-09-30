@@ -1,0 +1,19 @@
+# ab_y, steps docs/xr/data/steps-2026-09-30-yslot.txt, --air-offset-s 1.6074 (Quest-PC 0.8474 + PC-air 0.76), --guard-s 15. -Y slot (pixelpilot-xr-66): race REC 17 dBm ch165, merged wfb_tx b0469029; n = -A 10000, y = -A 10000 -Y; payload 1400 (r14*) / 2400 (r24*); Quest APK 3b37a562 (RX drain on); PC-air +0.76 (slot_watch AIR_CLOCK, err 0.12); first step starts at SET+10 s.
+# python3 scripts/quest-latch/ab_link.py scripts/quest/out/ab_y.pftrace docs/xr/data/steps-2026-09-30-yslot.txt --air-offset-s 1.6074 --guard-s 15
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 r14n               -    586.3        -      2.0      0.0    100.0     86.0     83.0     17.6     18.0        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+ 1 r14y               -    590.2        -      2.1      0.0    100.0     86.0     83.0     17.5     17.9        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+ 2 r14n               -    578.2        -      2.3      0.0    100.0     86.0     83.0     17.5     17.8        -        -        -        -        -      0.8        -        -        -        -        -        -        -
+ 3 r14y               -    586.6        -      1.9      0.0    100.0     86.0     83.0     17.5     17.7        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+ 4 r24n               -    339.5        -      1.2      0.0    100.0     86.0     83.0     17.5     17.8        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+ 5 r24y               -    338.6        -      1.3      0.0    100.0     86.0     83.0     17.5     17.7        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+ 6 r24n               -    340.1        -      1.2      0.0    100.0     86.0     83.0     17.5     17.7        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+ 7 r24y               -    339.8        -      1.2      0.0    100.0     86.0     83.0     17.5     17.6        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+r14n                  -    582.2        -      2.1      0.0    100.0     86.0     83.0     17.5     17.9        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+r14y                  -    588.4        -      2.0      0.0    100.0     86.0     83.0     17.5     17.8        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+r24n                  -    339.8        -      1.2      0.0    100.0     86.0     83.0     17.5     17.7        -        -        -        -        -      0.7        -        -        -        -        -        -        -
+r24y                  -    339.2        -      1.2      0.0    100.0     86.0     83.0     17.5     17.7        -        -        -        -        -      0.7        -        -        -        -        -        -        -
