@@ -5,30 +5,39 @@ import com.openipc.xr.stats.Segment;
 import java.util.ArrayDeque;
 
 /**
- * Queueing delay from the Quest alone (docs/xr/stats-backend.md §7, §7.1): per frame, the relative one-way delay =
- * the first packet's arrival (Quest CLOCK_MONOTONIC) − its RTP timestamp / 90 kHz (the air's capture clock),
- * detrended by the air/Quest clock drift, minus its running minimum over {@link #BASELINE_NS} (RunningMin, the same
- * algorithm and vectors as scripts/quest-latch/owd.py). The unknown clock offset cancels; no sidecar and no clock sync,
- * so it does not lag behind a congested link as the sidecar's link segment does. It includes the air's encode time,
- * which varies with frame size (openipc-1f). Thread-safe.
+ * Queueing delay from the Quest alone (docs/xr/stats-backend.md §7, §7.1, §7.2): per frame, the relative one-way
+ * delay v = the first packet's arrival (Quest CLOCK_MONOTONIC) − its RTP timestamp / 90 kHz (the air's capture clock),
+ * turned into rel by LiveBase (the port of scripts/quest-latch/owd.py LiveBase: drift learnt and taken out, minimum
+ * over a trailing window), twice: over {@link #BASE_WINDOW_S} for reading, and unbounded (since the last reset), which
+ * is the one for the air's rate control (a standing queue longer than the window would otherwise be swallowed;
+ * pixelpilot-xr-36). No sidecar and no clock sync. Here only what LiveBase does not do: the 32-bit RTP timestamp unwrap,
+ * a reset on a new SSRC, and the per-window percentiles. Thread-safe.
  */
 public final class OwdWindow {
-    /** The base must be older than a standing queue: with 2 / 10 / 60 s, m6b25f46's +55 ms queue read 3.1 / 4.9 /
-     * 59.9 ms (pixelpilot-xr-36, §7.1). PPXR_STATS prints it as owdw. */
-    static final long BASELINE_NS = 60_000_000_000L;
-    /** Air/Quest clock drift, +0.07 ms/s in all 5 captures of 2026-09-30 (§7.1): taken out before the minimum, or a
-     * 60 s base would read ~4 ms on a clean link. */
-    static final double DRIFT_MS_PER_S = 0.07;
-    /** A jump this large between frames is a new RTP timestamp base (waybeam restarted), not a queue: start over. */
-    static final double RESET_JUMP_MS = 500.0;
+    /** The trailing window of the reading copy; PPXR_STATS prints it as owdw. */
+    static final double BASE_WINDOW_S = 60.0;
     private static final double RTP_TICKS_PER_MS = 90.0;
 
+    /** One snapshot: the queueing delay over the stats window, for the 60 s and the unbounded base, and the drift. */
+    public static final class Stats {
+        public final Segment windowed, unbounded;
+        public final double driftMsPerS;
+
+        Stats(Segment windowed, Segment unbounded, double driftMsPerS) {
+            this.windowed = windowed;
+            this.unbounded = unbounded;
+            this.driftMsPerS = driftMsPerS;
+        }
+    }
+
     private final long windowUs;
-    private final ArrayDeque<double[]> window = new ArrayDeque<>();   // {arrival us, queueing delay ms}
-    private RunningMin min;
+    private final LiveBase base60 = new LiveBase(BASE_WINDOW_S);
+    private final LiveBase baseAll = new LiveBase(Double.POSITIVE_INFINITY);
+    private final ArrayDeque<double[]> window = new ArrayDeque<>();   // {arrival us, rel 60 s, rel unbounded}
     private boolean have;
-    private long ssrc, lastTs;
-    private double tsUnwrapped, lastOwdMs;
+    private long ssrc;
+    private long lastTs;
+    private double tsUnwrapped;
 
     public OwdWindow(long windowUs) {
         this.windowUs = windowUs;
@@ -37,41 +46,29 @@ public final class OwdWindow {
     public synchronized void add(QuestFrame q) {
         if (q.firstNs == 0) return;
         if (!have || q.ssrc != ssrc) {
-            restart(q);
+            have = true;
+            ssrc = q.ssrc;
+            tsUnwrapped = q.rtpTs;
+            base60.reset();
+            baseAll.reset();
+            window.clear();
         } else {
             tsUnwrapped += (int) (q.rtpTs - lastTs);          // signed 32-bit step: a wrap is just the next frame
-            lastTs = q.rtpTs;
         }
-        double owd = owdMs(q);
-        if (Math.abs(owd - lastOwdMs) > RESET_JUMP_MS) {
-            restart(q);
-            owd = owdMs(q);
-        }
-        lastOwdMs = owd;
-        double queueing = min.add(q.firstNs, owd - DRIFT_MS_PER_S * (q.firstNs / 1e9));
-        window.addLast(new double[]{q.firstNs / 1000.0, queueing});
-    }
-
-    private double owdMs(QuestFrame q) {
-        return q.firstNs / 1e6 - tsUnwrapped / RTP_TICKS_PER_MS;
-    }
-
-    private void restart(QuestFrame q) {
-        min = new RunningMin(BASELINE_NS);
-        window.clear();
-        have = true;
-        ssrc = q.ssrc;
         lastTs = q.rtpTs;
-        tsUnwrapped = q.rtpTs;
-        lastOwdMs = owdMs(q);
+        double v = q.firstNs / 1e6 - tsUnwrapped / RTP_TICKS_PER_MS;
+        window.addLast(new double[]{q.firstNs / 1000.0, base60.push(q.firstNs, v), baseAll.push(q.firstNs, v)});
     }
 
-    /** p50/p95 of the queueing delay over the last windowUs before nowUs. */
-    public synchronized Segment snapshot(long nowUs) {
+    /** The queueing delay's p50/p95 over the last windowUs before nowUs. */
+    public synchronized Stats snapshot(long nowUs) {
         while (!window.isEmpty() && window.peekFirst()[0] < nowUs - windowUs) window.pollFirst();
-        double[] v = new double[window.size()];
+        double[] w = new double[window.size()], u = new double[window.size()];
         int i = 0;
-        for (double[] s : window) v[i++] = s[1];
-        return Segment.of(v);
+        for (double[] s : window) {
+            w[i] = s[1];
+            u[i++] = s[2];
+        }
+        return new Stats(Segment.of(w), Segment.of(u), baseAll.drift());
     }
 }

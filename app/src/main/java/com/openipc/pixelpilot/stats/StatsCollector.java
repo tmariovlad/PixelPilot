@@ -119,7 +119,8 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
         }
         StatsSnapshot.Builder b = new StatsSnapshot.Builder();
         latency.fill(b, nowUs, clock, inputs.display());
-        b.owd(owd.snapshot(nowUs));
+        OwdWindow.Stats o = owd.snapshot(nowUs);
+        b.owd(o.windowed, o.unbounded, o.driftMsPerS);
         link.fill(b, nowUs);
         b.fpsDecoded(fpsDecoded).levers(idrOk.perSecond(), idrFailed.perSecond(), frozen.perSecond());
         snapshot = b.build();

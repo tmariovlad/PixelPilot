@@ -227,3 +227,11 @@ with `#` header lines giving the parameters.
 - A port should match `rel_*` to about 1e-6 ms, float vs double.
 
 
+
+### 7.3 The app's live signal (branch `owd`, 2026-10-01; reviewed by pixelpilot-xr-36, not installed yet)
+
+- **First-packet time per frame** [PROVEN: host tests 121/121]. `RtpTag.firstNs` = when the first packet of the frame's RTP timestamp reached the parser (`FirstArrival` in `RtpTag.h`, set per packet in `ParseRTP::noteCurrentPacket`). `FrameTimes.firstNs` = the earliest over the frame's inputs, and the Stats drain packs 5 longs per frame (`VideoPlayer.cpp` nativeDrainFrameTimes, `QuestFrame.java`).
+- **LiveBase.java** is a method-for-method port of §7.2's `owd.LiveBase`. It matches the reference to 1e-6 ms on every frame of both vector files (synthetic.csv 6000 frames; g56_m6.csv 10,947 real frames), for the 60 s and the unbounded window [PROVEN: `LiveBaseTest`].
+- **OwdWindow.java** feeds it v = first-packet arrival − RTP timestamp / 90 kHz (32-bit unwrap; reset on a new SSRC) and folds the stats window [PROVEN: `OwdWindowTest`, 7 tests; mutants on the unwrap and the SSRC reset are killed].
+- **PPXR_STATS** gains `owd50`/`owd95` (60 s base, `owdw=60`), `owdu50`/`owdu95` (unbounded base, since the last reset: the value for the air's rate control, per §7.2) and `owdd` (the learnt drift, ms/s).
+- **Not wired into the alink report yet.** That waits for openipc-1f's design (fields 12–15). The first check on the headset is a live capture cross-checked against `owd.py` on the same trace.

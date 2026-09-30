@@ -55,7 +55,9 @@ public final class StatsLine {
         kv(b, "pkts", s.pktsPerFrameP50, "%.0f");
         kv(b, "idr", s.idrPerS, "%.2f");
         seg(b, "owd", s.owd);
-        kv(b, "owdw", (int) (OwdWindow.BASELINE_NS / 1_000_000_000L));   // the owd base window, s
+        kv(b, "owdw", (int) OwdWindow.BASE_WINDOW_S);   // owd50/95: base over the last owdw s
+        seg(b, "owdu", s.owdUnbounded);                   // base since the last reset: the rate-control signal
+        kv(b, "owdd", s.owdDriftMsPerS, "%.3f");           // learnt air/Quest clock drift, ms per s
         return b.toString();
     }
 
