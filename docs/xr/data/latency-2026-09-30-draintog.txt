@@ -1,0 +1,20 @@
+# ab_draintog, steps docs/xr/data/steps-2026-09-30-draintog.txt, --air-offset-s 0.9008 (Quest-PC 0.9008 + PC-air 0), --guard-s 5. RX drain A/B with ONE binary c4ad7290 (drain switched live by DEBUG_INPUT rx_drain broadcast, off after start), q7 720p120 25M MCS7 FEC 8/10, stock wfb_tx, 17 dBm, ch165; PC-air ~0 (air = PC, 66). Last 'on' cut at 755460 (air streamer restart ~755464).
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_draintog.pftrace docs/xr/data/steps-2026-09-30-draintog.txt --air-offset-s 0.9008 --guard-s 5 --baseline off
+1891737 packets, 98155 frames, 35144 lost before the app; 81650 frames inside the steps
+clock drift fitted on 'off': +71 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 off          13041  118.6  19.37    6.18   -4.30    1.88    5.70     3.71     3.5   0.58     2
+ 1 on           13027  118.4  19.39    6.19   -4.34    1.85    5.33     3.67     3.6   0.61     3
+ 2 off          11837  107.6  19.45    6.20   -4.49    1.72    4.77     3.53     4.9   0.81     4
+ 3 on           13015  118.3  19.40    6.20   -4.41    1.78    5.14     3.60     5.8   0.96     7
+ 4 off          12987  118.1  19.42    6.19   -4.48    1.72    4.95     3.53     5.9   0.99     3
+ 5 on            4437   88.8  19.61    6.27   -4.71    1.56    5.01     3.41     8.4   0.64     1
+ 7 post-restart   4759  119.0  19.64    6.251832425.561832431.811832433.541832433.62     2.3   0.14     1
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+off             37865  114.8  19.42    6.19   -4.42    1.77    5.09     3.59     4.8   0.79     9   +0.00     +0.00
+on              30479  108.5  19.43    6.20   -4.43    1.78    5.17     3.60     5.9   0.73    11   +0.01     +0.01
+post-restart     4759  119.0  19.64    6.251832425.561832431.811832433.541832433.62     2.3   0.14     1+1832430.04+1832430.03

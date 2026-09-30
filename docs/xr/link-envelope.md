@@ -199,7 +199,11 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
-### RX drain A/B 2026-09-30 10:43–10:53: the drain build lost ~30 % more after FEC for −0.1 ms (suspected, not proven); not deployed
+### RX drain A/B 2026-09-30: the first A/B's ~30 % extra loss did not reproduce with one APK and a live toggle (with stock TX the drain released 0 fragments); not deployed
+
+*Update 10:53–11:07 (toggle run below): with one binary and the drain switched live, drain on = off on every readout, and the drain never fired (`drained=0`). The 10:43 result below is kept as measured; its extra loss was drift or the second build, not the drain.*
+
+#### First A/B 10:43–10:53: two builds; B lost ~30 % more after FEC for −0.1 ms (suspected, not proven)
 
 openipc-4b's fix to wfb-ng's Aggregator releases the next FEC block's already-arrived fragments as soon as the front block completes, instead of after one more fragment ([fec-block-probe](fec-block-probe.md) §8, branch rx-drain). A = c8986061, B = 7f8b34c1: the same source (81643b5) plus only the drain fix (pixelpilot-xr-36).
 - **Setup.** ABBA 150 s with [pref_ab.sh](../../scripts/quest/pref_ab.sh) START_AT: install on a tag change + XR relaunch per step, guard 15 s, [pid_watch.sh](../../scripts/quest/pid_watch.sh) `ALLOW_RESTART=1`. The air held q7 (720p120, 25 Mbit/s, MCS7, FEC 8/10, 17 dBm, ch165), a state with FEC recoveries. Baseline prefs + `stats_log`, IDR off. Steps on the PC clock (air ≈ PC).
@@ -224,6 +228,34 @@ openipc-4b's fix to wfb-ng's Aggregator releases the next FEC block's already-ar
   - The two APKs are separate builds, even though their source differs only by the fix.
   - Next: one APK with a runtime toggle for the drain and a `drain_front` counter (pixelpilot-xr-36), then ABAB × 3 in the same q7 state.
 - **Decision:** 7f8b34c1 is not left installed (c8986061 stays, md5 checked after the run). The `-Y` gate, which needs a drain-capable Quest APK, stays closed until the drain fix loses no more than stock.
+
+#### Toggle run 10:53–11:07 (ab_draintog): one APK, drain switched live; on = off, and the drain never fired
+
+APK `c4ad7290` (branch `drain-toggle-ab` c7c3c76 + wfb-ng 148fa4e, [fec-block-probe §8](fec-block-probe.md)), installed once; the drain switched only by broadcast (`DEBUG_INPUT --ez rx_drain`), off/on × 3 at 120 s, no relaunch, guard 5 s. Air q7 as above (720p120, 25 Mbit/s, MCS7, FEC 8/10, stock `wfb_tx` without `-Y`, 17 dBm, ch165); air ≈ PC, Quest−PC 0.901 s. Detached capture ([ab_detached.sh](../../scripts/quest/ab_detached.sh)); the schedule was a one-off script (not committed).
+- **Data.** [steps](data/steps-2026-09-30-draintog.txt) · [PPXR_STATS per step](data/stats-2026-09-30-draintog.txt) · [zflush per step](data/zflush-2026-09-30-draintog.txt) · [latency](data/latency-2026-09-30-draintog.txt) · [link_audit](data/audit-2026-09-30-draintog.txt) · [frame fate](data/frame-fate-2026-09-30-draintog.txt) · [bursts](data/loss-bursts-2026-09-30-draintog.txt) · [link](data/link-2026-09-30-draintog.txt) · [big frames](data/big-frames-2026-09-30-draintog.txt) · [latency over time](data/latency-bins-2026-09-30-draintog.txt) · [jitter](data/step-jitter-2026-09-30-draintog.txt).
+- **The switch worked, and the drain released nothing** [PROVEN: `PPXR_RELEASE` in `scripts/quest/out/qtx_draintog.raw.txt`]. The 7 `drain_toggle` lines show `enabled=0/1/0/1/0/1/0` at the planned seconds (+1 s). The per-second `drain` line keeps `drained=0 retired=0` for the whole run, through ~6 min with the drain on.
+  - The counter is live code, not a dead field: it is `count_p_drained` of the video Aggregator, and the host test `RxDrain_test` R2 expects 2 on a reordered pattern [PROVEN: `drain-toggle-ab:app/wfbngrtl8812/src/main/cpp/WfbngLink.cpp:813-815`, `tests/RxDrain_test.cpp:190`].
+  - This is the prediction of both offline replays and openipc-4b's reading: with stock TX, block j+1 has no fragments waiting when block j completes. So on and off ran the same code path, and this run is effectively an A/A.
+
+| step | post-FEC (PKT_LOST pkts) | pre-FEC data | loss runs/s | held frames / all | recovered ∪ held | last / last95 (ms) | decoded fps | tot50 / tot95 (ms) |
+|---|---|---|---|---|---|---|---|---|
+| off | 0.15 % (382) | 0.68 % | 1.69 | 96 / 13041 | 11.4 % | 1.88 / 5.70 | 118.6 | 20.4 / 25.2 |
+| on | 0.16 % (400) | 0.67 % | 1.43 | 82 / 13027 | 11.6 % | 1.85 / 5.33 | 118.4 | 20.4 / 25.1 |
+| off | 0.23 % (534) | 0.68 % | 1.77 | 72 / 11837 | 11.5 % | 1.72 / 4.77 | 107.6 ¹ | 20.6 / 24.8 |
+| on | 0.25 % (636) | 0.69 % | 1.75 | 112 / 13015 | 11.5 % | 1.78 / 5.14 | 118.3 | 20.1 / 25.1 |
+| off | 0.26 % (652) | 0.70 % | 1.68 | 98 / 12987 | 11.8 % | 1.72 / 4.95 | 118.1 | 20.5 / 25.5 |
+| on, cut at 60 s ² | 0.48 % (418) | 0.73 % | 2.02 | 47 / 4437 | 12.1 % | 1.56 / 5.01 | 88.8 ¹ | 20.5 / 25.0 |
+| **off (3 steps)** | **0.213 %** (1568) | | | 266 / 37865 | | **1.77 / 5.09** | | |
+| **on (3 steps)** | **0.246 %** (1454); steps 1+3 only: **0.205 %** | | | 241 / 30479 | | **1.78 / 5.17** | | |
+
+¹ An air fps drop, not the app: FPS_LOW 56 fps for 4.5 s at 755092 (off step) and 58 fps for 5 s at 755432 (last on step) [PROVEN: `PPXR_EVENT` in the raw capture]. ² At ~755464 the air's streamer restarted: 2.8 s `NO_PACKETS`, then the RTP timestamp base jumped 981 M → 816 M, so the latency join is void after it. The steps file cuts at 755460 and logs the tail as `post-restart` (0.10 % after FEC, 119 fps). The last on step keeps the ~60 s before the restart, including the 58 fps spell. The air log has one STEP line for the block ([air log](data/air-morning-2026-09-30.txt)), so the restart's cause is not in our data [SPECULATION: a waybeam restart; the coordinator's air side would show it].
+
+- **No effect on any readout** [INFERRED from the PROVEN table; with `drained=0` no other result is possible]:
+  - Latency: Δlast +0.01 ms, Δdecoded +0.01 ms. Big frames 15.0 vs 15.2 ms, waited_next 0.023 in every step.
+  - Loss: post-FEC 0.205 % (both clean on steps) vs 0.213 % (off).
+  - Held frames and recovered ∪ held are within the step-to-step spread.
+- **Drift is as large as the first A/B's "regression"** [PROVEN, same table]. Post-FEC loss rose through the run in both arms (off 0.15 → 0.23 → 0.26 %, on 0.16 → 0.25 %): +70 % in 8 min with the code path unchanged. The first A/B's +30 % (B arms in the middle) fits this drift. It was also two builds.
+- **What it settles, and what not:** the drain changes nothing with stock TX, so this run cannot show what it does under `-Y`, where it is meant to act. The offline replays cover that case (identical loss/recovery counters, 3,494 payloads earlier, 0 later). Relanding it in xr-native (pixelpilot-xr-36) and opening the `-Y` gate are the coordinator's and the user's call. c8986061 was reinstalled after the run (md5 checked at 755667), and guardian and proximity were restored at 755668.
 
 ### Payload size 2026-09-30 10:18–10:34 (O121 E0+E1 for openipc-4b): at race, a payload that fits a frame in one packet cuts the link tail 6.8 → 4.3 ms
 

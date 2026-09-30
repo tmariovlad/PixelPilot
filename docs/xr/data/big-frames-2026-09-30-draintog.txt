@@ -1,0 +1,15 @@
+# ab_draintog, steps docs/xr/data/steps-2026-09-30-draintog.txt, --air-offset-s 0.9008 (Quest-PC 0.9008 + PC-air 0), --guard-s 5. RX drain A/B with ONE binary c4ad7290 (drain switched live by DEBUG_INPUT rx_drain broadcast, off after start), q7 720p120 25M MCS7 FEC 8/10, stock wfb_tx, 17 dBm, ch165; PC-air ~0 (air = PC, 66). Last 'on' cut at 755460 (air streamer restart ~755464).
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_draintog.pftrace docs/xr/data/steps-2026-09-30-draintog.txt --air-offset-s 0.9008 --guard-s 5 --baseline off
+big = npkts >= 26 (p98 of the frames in the steps); ms above the 'off' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 off             269    36  14.71  15.59  28.19  33.57 |  12772   1.61   4.32
+ 1 on              255    37  16.02  17.50  29.70  42.88 |  12772   1.56   4.18
+ 2 off             243    39  14.30  13.38  29.10  42.45 |  11594   1.45   3.80
+ 3 on              264    38  16.30  17.22  31.63  34.69 |  12751   1.48   4.05
+ 4 off             265    39  16.37  16.55  33.12  44.39 |  12722   1.41   3.97
+ 5 on              144    39  10.98   7.07  29.94  39.48 |   4293   1.25   3.01
+ 7 post-restart     45    361832443.531832439.901832459.341832461.64 |   47141832431.701832433.19
+per state
+off                777    38  15.15  15.87  30.64  44.39 |  37088   1.49   4.06
+on                 663    38  15.04  15.50  30.77  42.88 |  29816   1.48   4.00
+post-restart        45    361832443.531832439.901832459.341832461.64 |   47141832431.701832433.19

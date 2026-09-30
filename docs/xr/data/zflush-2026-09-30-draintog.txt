@@ -1,0 +1,25 @@
+# zflush per step, ab_draintog, --air-offset-s 0.9008 (Quest-PC 0.9008 + PC-air 0), guard 5; steps cut at 755460 (air streamer restart)
+# python3 scripts/quest-latch/zflush.py scripts/quest/out/ab_draintog.pftrace docs/xr/data/steps-2026-09-30-draintog.txt scripts/quest/out/qtx_draintog.raw.txt --air-offset-s 0.9008 --baseline off --guard-s 5 --by-step
+complete = first -> last packet; capture->last = ms above the baseline drift line; n mean p95 p99
+               frames | class        n   mean    p95    p99 |    n   mean    p95    p99 | waited_next all / of recovered
+ 0 off          13041 | clean    11551   6.10   7.47   9.94 |11551   1.75   5.05  21.62 | 0.023 / 0.196
+                      | recovered 1394   6.76  10.10  12.91 | 1394   2.77   9.78  22.15
+                      | held        96   6.70  10.99  21.71 |   96   4.49  20.98  28.42
+ 1 on           13027 | clean    11513   6.12   7.49  10.07 |11513   1.71   4.17  21.60 | 0.023 / 0.192
+                      | recovered 1432   6.73  10.01  14.18 | 1432   2.84  11.91  23.96
+                      | held        82   6.54  10.55  12.86 |   82   3.17   7.40  26.52
+ 2 off          11837 | clean    10470   6.11   7.49  10.30 |10470   1.56   3.30  21.62 | 0.023 / 0.189
+                      | recovered 1295   6.98  10.56  18.40 | 1295   2.91  12.68  24.40
+                      | held        72   6.80  10.66  17.11 |   72   2.44   5.54  12.28
+ 3 on           13015 | clean    11523   6.12   7.48  10.10 |11523   1.64   3.95  21.21 | 0.023 / 0.196
+                      | recovered 1380   6.81  10.23  15.40 | 1380   2.75   7.56  24.85
+                      | held       112   6.61  10.91  15.68 |  112   4.23  17.84  27.12
+ 4 off          12987 | clean    11460   6.11   7.51  10.32 |11460   1.57   3.80  20.84 | 0.025 / 0.205
+                      | recovered 1429   6.82  10.05  12.83 | 1429   2.71   7.24  26.83
+                      | held        98   6.83  10.95  13.93 |   98   3.58  19.08  25.49
+ 5 on            4437 | clean     3898   6.09   7.52  12.04 | 3898   1.35   3.14  19.24 | 0.027 / 0.203
+                      | recovered  492   7.59  17.45  30.78 |  492   3.07  12.74  28.21
+                      | held        47   7.67  17.77  18.57 |   47   3.63  12.83  13.59
+ 7 post-restart   4759 | clean     4211   6.20   7.52   8.62 | 42111832431.731832432.951832445.37 | 0.021 / 0.184
+                      | recovered  523   6.66   9.87  10.68 |  5231832432.451832435.241832442.33
+                      | held        25   5.56   9.31   9.76 |   251832432.101832434.561832435.06

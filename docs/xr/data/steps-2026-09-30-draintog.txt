@@ -1,0 +1,10 @@
+# drain A/B with one binary (c4ad7290, pixelpilot-xr-36): the drain switched live by broadcast (DEBUG_INPUT rx_drain), OFF after the app start; air q7 = 720p120 25 Mbit MCS7 FEC 8/10, stock wfb_tx (no -Y), 17 dBm, ch165. Lines: <PC epoch when the broadcast returned> <label>; steps on the PC clock (air ~= PC).
+1790754800 off
+1790754920 on
+1790755040 off
+1790755160 on
+1790755280 off
+1790755400 on
+1790755460 cut (air streamer restart at ~755464: 2.8 s NO_PACKETS, RTP timestamp base 981 M -> 816 M; 10 s before it at 58 fps)
+1790755470 post-restart (still drain on)
+1790755520 END

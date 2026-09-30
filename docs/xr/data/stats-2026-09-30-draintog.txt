@@ -1,0 +1,12 @@
+# PPXR_STATS medians per step, ab_draintog (Quest-air = Quest-PC 0.9008 + PC-air 0), guard 5 s
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_draintog.raw.txt docs/xr/data/steps-2026-09-30-draintog.txt --quest-minus-air-s 0.9008 --keys enc50,lnk50,lnk95,dec50,dsp50,tot50,tot95,fps,pdata,post,rssiA,rssiB
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   enc50   lnk50   lnk95   dec50   dsp50   tot50   tot95     fps   pdata    post   rssiA   rssiB
+ 0 off            55     3.8     9.9    13.4     1.7     4.2    20.4    25.2   119.0     0.7     0.1   -25.0   -27.0
+ 1 on             55     3.8     9.9    12.8     1.7     4.2    20.4    25.1   119.0     0.7     0.1   -25.0   -27.0
+ 2 off            55     3.8    10.0    12.0     1.7     4.2    20.6    24.8   119.0     0.7     0.1   -25.0   -27.0
+ 3 on             55     3.8     9.8    13.1     1.7     4.1    20.1    25.1   119.0     0.7     0.1   -25.0   -27.0
+ 4 off            54     3.8    10.0    13.4     1.7     4.1    20.5    25.5   119.0     0.7     0.1   -25.0   -27.0
+ 5 on             25     3.8    10.1    13.6     1.7     4.2    20.5    25.0   115.0     0.7     0.1   -25.0   -27.0
+ 6 cut             0       -       -       -       -       -       -       -       -       -       -       -       -
+ 7 post-restart   20     3.8     9.9    11.8     1.7     3.8    20.2    24.6   119.0     0.7     0.1   -25.0   -27.0

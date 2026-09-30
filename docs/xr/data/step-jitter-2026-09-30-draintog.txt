@@ -1,0 +1,10 @@
+# ab_draintog, steps docs/xr/data/steps-2026-09-30-draintog.txt, --air-offset-s 0.9008 (Quest-PC 0.9008 + PC-air 0), --guard-s 5. RX drain A/B with ONE binary c4ad7290 (drain switched live by DEBUG_INPUT rx_drain broadcast, off after start), q7 720p120 25M MCS7 FEC 8/10, stock wfb_tx, 17 dBm, ch165; PC-air ~0 (air = PC, 66). Last 'on' cut at 755460 (air streamer restart ~755464).
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_draintog.pftrace docs/xr/data/steps-2026-09-30-draintog.txt --air-offset-s 0.9008 --guard-s 5
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 off            13041   0.00   5.60  19.63   31.90
+ 1 on             13027   0.00   5.58  19.63   39.88
+ 2 off            11837   0.00   4.87  19.75   41.97
+ 3 on             13015   0.00   5.14  19.95   34.36
+ 4 off            12987   0.00   5.04  19.32   44.30
+ 5 on              4437   0.00   3.99  18.87   38.83
+ 7 post-restart    4759   0.00   2.48  12.44   28.94
