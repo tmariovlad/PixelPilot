@@ -199,7 +199,7 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
-### RX drain A/B 2026-09-30 10:43–10:53: the drain build loses ~30 % more after FEC for −0.1 ms; not deployed
+### RX drain A/B 2026-09-30 10:43–10:53: the drain build lost ~30 % more after FEC for −0.1 ms (suspected, not proven); not deployed
 
 openipc-4b's fix to wfb-ng's Aggregator releases the next FEC block's already-arrived fragments as soon as the front block completes, instead of after one more fragment ([fec-block-probe](fec-block-probe.md) §8, branch rx-drain). A = c8986061, B = 7f8b34c1: the same source (81643b5) plus only the drain fix (pixelpilot-xr-36).
 - **Setup.** ABBA 150 s with [pref_ab.sh](../../scripts/quest/pref_ab.sh) START_AT: install on a tag change + XR relaunch per step, guard 15 s, [pid_watch.sh](../../scripts/quest/pid_watch.sh) `ALLOW_RESTART=1`. The air held q7 (720p120, 25 Mbit/s, MCS7, FEC 8/10, 17 dBm, ch165), a state with FEC recoveries. Baseline prefs + `stats_log`, IDR off. Steps on the PC clock (air ≈ PC).
@@ -213,10 +213,16 @@ openipc-4b's fix to wfb-ng's Aggregator releases the next FEC block's already-ar
 | B 7f8b34c1 | 0.57 % | 2.33 % | 815 | 3.9 | 364 | 3366 | 1.63 / 4.70 | 115.5 |
 | A c8986061 | 0.37 % | 1.55 % | 650 | 3.1 | 273 | 3690 | 1.71 / 4.83 | 116.4 |
 
-- **B loses more after FEC in both of its steps** [PROVEN: ABBA, a linear drift cancels]. Radio loss 1668 vs 1366 packets in equal time (Poisson z ≈ 5.5), post-FEC 0.50–0.57 vs 0.37–0.40 %, loss runs 3.9 vs 3.1–3.3/s, decoded 115.5 vs 116.3 fps. Loss before FEC is the same (1.55–1.81 vs 1.64–1.68 %).
+- **B lost more after FEC in both of its steps** [INFERRED, suspected; see the caveat below]. Radio loss 1668 vs 1366 packets in equal time (Poisson z ≈ 5.5), post-FEC 0.50–0.57 vs 0.37–0.40 %, loss runs 3.9 vs 3.1–3.3/s, decoded 115.5 vs 116.3 fps. Loss before FEC is the same (1.55–1.81 vs 1.64–1.68 %).
 - **The latency gain is ~0.1 ms** (last 1.63–1.79 vs 1.71–1.86 ms, last95 4.70–4.94 vs 4.83–4.97 ms), with no trend in any step.
 - **Held frames rose in B (+28 %: 364–384 vs 273–314), against the prediction that they would drop**, while recovered ∪ held stayed about equal.
   - One possible reading is that the drain releases or flushes a front block before fragments that would still have arrived, turning a later recovery into a loss [SPECULATION; the fix's release path in `rx.cpp` would show it].
+- **Caveat, 2026-09-30 (coordinator + openipc-4b's code reading): the regression is suspected, not proven.**
+  - With stock TX (`-Y` off), the drain should be a near no-op: block j+1 has no fragments yet when j completes.
+  - ABBA with the B arms in the middle cancels a linear drift only; a hump-shaped drift over the 10 min fits the data too.
+  - The z ≈ 5.5 on packets assumes independent losses, but they come in bursts. Counted as loss runs (independent events), it is ~768 (A) vs ~936 (B) in equal time, z ≈ 4.1. Still large, but it does not exclude the drift.
+  - The two APKs are separate builds, even though their source differs only by the fix.
+  - Next: one APK with a runtime toggle for the drain and a `drain_front` counter (pixelpilot-xr-36), then ABAB × 3 in the same q7 state.
 - **Decision:** 7f8b34c1 is not left installed (c8986061 stays, md5 checked after the run). The `-Y` gate, which needs a drain-capable Quest APK, stays closed until the drain fix loses no more than stock.
 
 ### Payload size 2026-09-30 10:18–10:34 (O121 E0+E1 for openipc-4b): at race, a payload that fits a frame in one packet cuts the link tail 6.8 → 4.3 ms
