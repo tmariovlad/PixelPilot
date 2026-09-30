@@ -47,6 +47,7 @@ home of all Quest work.
   [loss_bursts.py](scripts/quest-latch/loss_bursts.py) (post-FEC loss runs: length, ms, 102.4 ms beacon lock),
   [rtp_holes.py](scripts/quest-latch/rtp_holes.py) (each RTP hole: pre-FEC air input vs post-FEC radio, with a circular time-shift control; air log via [air_drops.py](scripts/quest-latch/air_drops.py)),
   [zflush.py](scripts/quest-latch/zflush.py) (-Z: per frame FEC-recovered / held / waited for the next frame, completion delay per class, air FRAME_FLUSH per state),
+  [zslot.py](scripts/quest-latch/zslot.py) (one table per arm for a -Z × payload slot: lnk/tot/post-FEC ab_fit effects linear + quadratic, last/last95/spread, FEC-recovered share and wait, FRAME_FLUSH fillers/s; imports ab_fit / ab_segments / zflush),
   [drop_seconds.py](scripts/quest-latch/drop_seconds.py) (radio post-FEC loss and IDR requests/frames in the air's input-drop seconds vs the rest, and per step),
   [big_frames.py](scripts/quest-latch/big_frames.py) (latency of the largest frames, e.g. scene changes / IDR, apart from the rest)),
   [tsv_steps.py](scripts/quest-latch/tsv_steps.py) (rows of a probe TSV, e.g. rtp_holes / fec_blocks --tsv, per air step and class),

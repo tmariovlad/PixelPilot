@@ -84,13 +84,20 @@ def fit_drift(points):
     return slope, my - slope * mx
 
 
+def baseline_line(frames, steps, end, guard, baseline):
+    """(slope, intercept) of capture -> last over the baseline state's frames inside their guarded windows: the drift
+    line every delay here is measured against (last - capture - line(last))."""
+    return fit_drift([(f.last, f.last - f.capture) for f in frames
+                      if (i := step_of(f.first, steps, end, guard)) is not None and steps[i][1] == baseline])
+
+
 def analyze(frames, steps, end, guard, baseline, pkts=None):
     """steps: [(start_ns, label)] sorted. Returns (per_step rows, per_state rows, slope) with delays in ms,
     each relative to the baseline's drift line. With pkts ([(arrival_ns, seq, rtp_ts)]) each row also gets the
     RTP packets lost inside the step's guarded window ("lost", "lost_per_s", "lost_pct" = lost / (received + lost))."""
     tagged = [(f, step_of(f.first, steps, end, guard)) for f in frames]
     tagged = [(f, i) for f, i in tagged if i is not None]
-    slope, icpt = fit_drift([(f.last, f.last - f.capture) for f, i in tagged if steps[i][1] == baseline])
+    slope, icpt = baseline_line(frames, steps, end, guard, baseline)
     line = lambda t: slope * t + icpt
 
     def stats(fs):

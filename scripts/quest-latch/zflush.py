@@ -25,7 +25,7 @@ in slot order): its block could only close with the next frame's data or with pa
 import argparse
 import statistics as st
 
-from ab_segments import RTP_HZ, fit_drift, frames_from_packets, load_trace, pct, read_steps, step_of
+from ab_segments import RTP_HZ, baseline_line, frames_from_packets, load_trace, pct, read_steps, step_of
 from air_drops import parse_intervals
 from stats_log import parse_kv
 
@@ -108,15 +108,17 @@ def rows(frames, flags, steps, end, guard_ns, line, by_step=False):
 
 
 def air_per_step(intervals, to_trace_ns, steps, end, guard_ns, by_step=False):
-    """FRAME_FLUSH counters summed per state (or step), each interval assigned by its end time."""
+    """FRAME_FLUSH counters summed per state (or step), each interval assigned by its end time; "ms" sums the
+    intervals' own lengths (end - start, air ms), for rates."""
     out = {}
-    for _, e, c in intervals:
+    for b, e, c in intervals:
         i = step_of(to_trace_ns(e), steps, end, guard_ns)
         if i is None or len(c) < 3:
             continue
         s = out.setdefault(f"{i:2d} {steps[i][1]}" if by_step else steps[i][1],
-                           {"intervals": 0, **{k: 0 for k in FLUSH_FIELDS}})
+                           {"intervals": 0, "ms": 0, **{k: 0 for k in FLUSH_FIELDS}})
         s["intervals"] += 1
+        s["ms"] += e - b
         for k, v in zip(FLUSH_FIELDS, c):
             s[k] += int(v)
     return out
@@ -145,9 +147,7 @@ def main():
     guard = a.guard_s * 1e9
     with open(a.capture, encoding="utf-8", errors="replace") as fh:
         flags = frame_flags(fh)
-    tagged = [(f, step_of(f.first, steps, end, guard)) for f in frames]
-    slope, icpt = fit_drift([(f.last, f.last - f.capture) for f, i in tagged
-                             if i is not None and steps[i][1] == a.baseline])
+    slope, icpt = baseline_line(frames, steps, end, guard, a.baseline)
     line = lambda t: slope * t + icpt
     print("complete = first -> last packet; capture->last = ms above the baseline drift line; n mean p95 p99")
     print(f"{'':14s}{'frames':>7s} | {'class':9s}{'n':>5s}{'mean':>7s}{'p95':>7s}{'p99':>7s} |"

@@ -280,6 +280,15 @@ openipc-4b's HD payload lever, run by the coordinator (openipc repo `slot/00-SLO
 - **The tail is FEC-block completion** [PROVEN: zflush]. At 3900 more of the FEC-recovered frames (12–15 % of all) waited for the next frame's packets to close their 8/10 block (0.34 vs 0.25), and each such frame is ~0.6 ms later (mean 4.4 vs 3.8 ms, p95 10.3 vs 9.8). The all-frames p95 falls inside that group, so it moves by +4.6 ms.
 - **3000 loses more after FEC**: 200–273 frames held per 120 s block vs 60–102 at 2400 and 35–69 at 3900 [PROVEN: zflush], at about the same loss before FEC. That is how 10 packets per frame fill 8/10 blocks [INFERRED], not the radio.
 - **Decision (coordinator, 2026-09-30):** HD stays at payload 2400, because the p95 tail matters more under the 40 ms ceiling. 3900's median gain goes to openipc-40's -Z slot (the FEC block closed at each frame end), which should keep it without the tail [INFERRED].
+- **Analysis for the -Z slot, ready before it runs** (pixelpilot-xr-bc, 2026-09-30, for the coordinator): [zslot.py](../../scripts/quest-latch/zslot.py) prints one table per arm (stock / -Z × payload 2400 / 3900) from the capture, the trace and the air's logs:
+  - lnk50/95, tot50/95 and post-FEC come from ab_fit, linear drift first, quadratic as a sensitivity check. `*` marks arms where the two differ by more than the larger SE; here that is lnk50 and tot50 in both arms, plus tot95 at 3900.
+  - last/last95/spread come from ab_segments.
+  - The FEC-recovered share, its own wait and waited_next come from zflush.
+  - FRAME_FLUSH fillers/s come from the wfbtx log.
+  - It copies no logic. The drift line is now one helper, `ab_segments.baseline_line`, used by ab_segments, zflush and zslot. zflush.air_per_step now also sums the interval ms.
+  - **Validated on this slot** [PROVEN: [zslot-hdp-validation-2026-09-30.txt](data/zslot-hdp-validation-2026-09-30.txt)]: every ab_fit effect equals hdp-fit, last/last95/spread equal the latency table, and the recovered share/wait/held equal the zflush steps summed per state. The refactored zflush.py and ab_segments.py reproduce this slot's committed outputs byte for byte.
+  - FRAME_FLUSH is tested on synthetic air lines only (stock TX here, and the air log was lost).
+  - Correction to the table above: its lnk and tot rows mix the two drift models. p3000's lnk50 −0.43 / lnk95 +0.55 / tot −0.18 / +0.24 are the quadratic fit; p3900's are the linear one. Linear for p3000: lnk50 −0.32 ± 0.08, lnk95 +0.72 ± 0.29, tot50 −0.08, tot95 +0.37. The coordinator has asked pixelpilot-xr-25 to requote the table with the linear fit.
 
 ### MFE clock on race (O121 L6) 2026-09-30 20:20–20:33: encode +0.356 ms per ns of clock period; the whole air hung ~1 s after the second switch to 384 MHz
 

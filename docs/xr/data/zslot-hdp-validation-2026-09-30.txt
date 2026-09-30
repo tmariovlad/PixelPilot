@@ -1,0 +1,24 @@
+# zslot.py validated on the O121 HDP slot (2026-09-30), 25's inputs and parameters; every number below equals the committed outputs:
+#   ab_fit rows = hdp-fit-2026-09-30.txt (linear and quadratic, all 5 keys); last/last95/spread = latency-2026-09-30-hdp.txt per state;
+#   rec%/recW/wNext/held = zflush-2026-09-30-hdp.txt summed over each state's 4 steps (recW p2400 3.78 vs 3.79 re-averaged from 2-dp step means).
+#   No wfbtx log (stock TX, and the air's log was lost), so fill/s is '-'. The '*' rows: the drift models differ by > the larger SE.
+# python3 scripts/quest-latch/zslot.py scripts/quest/out/ab_hdp.pftrace docs/xr/data/steps-2026-09-30-hdp.txt scripts/quest/out/qtx_hdp.raw.txt --air-log docs/xr/data/ab_hdp_quest-2026-09-30.log --ref p2400 --quest-minus-air-s -0.2801 --guard-s 15 --fps-min 0
+# zslot: scripts/quest/out/ab_hdp.pftrace | steps docs/xr/data/steps-2026-09-30-hdp.txt | air log docs/xr/data/ab_hdp_quest-2026-09-30.log | ref p2400 | Quest-air -0.2801 s | guard 15 s | fps-min 0 | no wfbtx log: FRAME_FLUSH not read
+ab_fit: 12 blocks, 0 void
+
+per arm, own values (PPXR_STATS mean of the used 2 s samples; frame times ms above the ref's drift line)
+arm       lnk50  lnk95  tot50  tot95  post% |   last last95 spread |  rec%   recW recW95 wNext  held |  fill/s
+p2400      8.64  11.18  18.77  23.32  0.134 |   1.63   3.46   4.49 |  15.5   3.78   9.83 0.252   344 |-
+p3000      8.32  11.91  18.70  23.69  0.388 |   1.47   7.64   4.19 |  14.5   4.21  10.19 0.299   938 |-
+p3900      8.02  12.72  18.24  23.72  0.083 |   1.13   8.09   3.67 |  14.0   4.45  10.34 0.344   207 |-
+
+ab_fit effects vs p2400 (OLS; '*' = linear and quadratic differ by more than the larger SE)
+vs p2400                             p3000                             p3900
+                   linear        quadratic           linear        quadratic
+lnk50        -0.324±0.080    -0.426±0.076*     -0.628±0.080    -0.781±0.078*
+lnk95        +0.724±0.285    +0.550±0.286      +1.538±0.285    +1.277±0.290 
+tot50        -0.075±0.108    -0.183±0.106*     -0.536±0.108    -0.698±0.107*
+tot95        +0.369±0.148    +0.236±0.146      +0.402±0.148    +0.203±0.149*
+post         +0.255±0.016    +0.250±0.016      -0.051±0.016    -0.059±0.017 
+
+frame complete vs p2400 (ab_segments): p3000 Δlast -0.15 Δlast95 +4.18  p3900 Δlast -0.50 Δlast95 +4.63

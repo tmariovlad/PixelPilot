@@ -2,7 +2,7 @@
 jitter must come back as the injected deltas. Run: python3 test_ab_segments.py"""
 import random
 
-from ab_segments import Frame, analyze, fit_offset, frames_from_packets
+from ab_segments import Frame, analyze, baseline_line, fit_offset, frames_from_packets
 
 FPS, STEP_S, DRIFT_PPM = 167.0, 12.0, 96.0
 PLAN = ["A", "B", "A", "C", "A", "B", "A", "C", "A"]
@@ -43,6 +43,17 @@ def test_recovers_injected_deltas():
         assert abs((s[lab]["decoded_ms"] - s["A"]["decoded_ms"]) - EXTRA_MS[lab]) < 0.1
         assert abs(s[lab]["pkt_per_frame"] - PKTS[lab]) < 1e-9
         assert abs(s[lab]["fps"] - FPS) < 1.0, s[lab]["fps"]
+
+
+def test_baseline_line_is_the_drift_analyze_fits():
+    frames, steps, end = synth()
+    slope, icpt = baseline_line(frames, steps, end, 2e9, "A")
+    assert abs(slope * 1e6 - DRIFT_PPM) < 5, slope
+    assert slope == analyze(frames, steps, end, 2e9, "A")[2]
+    # fit_drift's line is the baseline frames' lower envelope (5th percentile per 1 s window), not their mean
+    res = sorted(f.last - f.capture - (slope * f.last + icpt) for f in frames
+                 if steps[0][0] + 2e9 <= f.first < steps[1][0] - 2e9)
+    assert abs(res[len(res) // 20]) < 0.2e6, res[len(res) // 20]
 
 
 def test_guard_drops_switch_frames():

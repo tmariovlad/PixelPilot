@@ -90,8 +90,9 @@ class AirFrameFlush(unittest.TestCase):
         to_trace = lambda air_ms: (air_ms - 5000000) * 1e6          # air ms -> trace ns, for the test
         steps, end = [(0.0, "Z"), (1500e6, "noZ")], 3000e6
         s = zflush.air_per_step(iv, to_trace, steps, end, 0.0)
-        self.assertEqual(s["Z"], {"intervals": 1, "frame_ends": 90, "blocks_closed": 85, "fillers": 280})
-        self.assertEqual(s["noZ"], {"intervals": 1, "frame_ends": 90, "blocks_closed": 0, "fillers": 0})
+        # "ms" = the intervals' own length (end - start), so the counters become rates (zslot fillers/s)
+        self.assertEqual(s["Z"], {"intervals": 1, "ms": 1000, "frame_ends": 90, "blocks_closed": 85, "fillers": 280})
+        self.assertEqual(s["noZ"], {"intervals": 1, "ms": 1000, "frame_ends": 90, "blocks_closed": 0, "fillers": 0})
 
 
 if __name__ == "__main__":
