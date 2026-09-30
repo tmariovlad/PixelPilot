@@ -15,7 +15,8 @@ FIRST=$(qadb shell pidof "$PKG" | tr -d '\r')
 echo "$(date +%s) pid=${FIRST:-none} (start)"
 [ -n "$FIRST" ] || { echo "$(date +%s) GONE at start"; exit 1; }
 while [ "$(date +%s)" -lt "$UNTIL" ]; do
-  sleep "$STEP"
+  LEFT=$(( UNTIL - $(date +%s) ))
+  sleep $(( LEFT < STEP ? LEFT : STEP ))   # never past <until> (a 60 s interval once overshot a 5 s watch by 56 s)
   P=$(qadb shell pidof "$PKG" | tr -d '\r')
   echo "$(date +%s) pid=${P:-none}"
   if [ -z "$P" ]; then
