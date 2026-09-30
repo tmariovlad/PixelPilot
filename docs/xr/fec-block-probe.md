@@ -212,7 +212,7 @@ existing tools (`ab_segments.py` loss per step, `rtp_holes.py`).
 **Headset check (to do).** Install a build with PPXR_RELEASE. In the -Z slot, record a Perfetto trace (as for
 big_frames) plus a detached capture (ab_detached.sh has the tag) and the air's step log and `/tmp/wfbtx.log`.
 
-## 8. RX: the next block waits after the front block completes (wfb-ng Aggregator fix, not yet landed)
+## 8. RX: the next block waits after the front block completes (wfb-ng Aggregator fix)
 
 Found by openipc-4b (O121, `repos/tasks/air-latency-30pct-2026-09-30/02-IMPLEMENTATION-PLAN.md` N3, §4.3); the same code
 is in upstream wfb-ng HEAD and on the GS.
@@ -248,6 +248,4 @@ It releases the new front's in-order prefix, retires it if it is complete, and s
 
 **Gate: no `wfb_tx -Y` toward the Quest before the drain is in the installed APK.** Without it, a loss in a frame spanning 2 blocks keeps that frame's tail until the next frame (openipc-4b's T3, red without the drain) [PROVEN on the GS copy by 4b, wfb-ng o121-parity-defer `8e61b2b`; the same R1/R2 red/green and the same mutant result as ours].
 
-**Not landed yet.** The wfb-ng submodule tracks upstream `svpcom/wfb-ng`, so the fix needs a home: a
-`tmariovlad/wfb-ng` fork like devourer's (a GitHub fork plus a push, the user's decision) or a build-time patch. Until
-then the test lives on the `rx-drain` branch, not in xr-native, where it would be red against the stock submodule.
+**Landed (2026-09-30).** The wfb-ng submodule now comes from the fork [tmariovlad/wfb-ng](https://github.com/tmariovlad/wfb-ng), branch `pixelpilot-xr` = upstream `0da5279` + `66d4bdb` (this fix), the user's choice over a build-time patch. The test stays in this repo (it needs our Transmitter). Red → green on landing: RxDrain against `0da5279` fails 4 of 5, against `66d4bdb` passes, whole wfb host suite green. A Quest A/B of the effect is pending (APK 7f8b34c1 vs c8986061).
