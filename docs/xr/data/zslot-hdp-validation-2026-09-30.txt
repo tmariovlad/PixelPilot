@@ -1,7 +1,7 @@
 # zslot.py validated on the O121 HDP slot (2026-09-30), 25's inputs and parameters; every number below equals the committed outputs:
 #   ab_fit rows = hdp-fit-2026-09-30.txt (linear and quadratic, all 5 keys); last/last95/spread = latency-2026-09-30-hdp.txt per state;
 #   rec%/recW/wNext/held = zflush-2026-09-30-hdp.txt summed over each state's 4 steps (recW p2400 3.78 vs 3.79 re-averaged from 2-dp step means).
-#   No wfbtx log (stock TX, and the air's log was lost), so fill/s is '-'. The '*' rows: the drift models differ by > the larger SE.
+#   --air-log is the Quest-side stand-in (quest_airlog.py; the air's own ab_hdp.log was lost in the power cycle). No wfbtx log (stock TX), so fill/s is '-'. The '*' rows: the drift models differ by > the larger SE.
 # python3 scripts/quest-latch/zslot.py scripts/quest/out/ab_hdp.pftrace docs/xr/data/steps-2026-09-30-hdp.txt scripts/quest/out/qtx_hdp.raw.txt --air-log docs/xr/data/ab_hdp_quest-2026-09-30.log --ref p2400 --quest-minus-air-s -0.2801 --guard-s 15 --fps-min 0
 # zslot: scripts/quest/out/ab_hdp.pftrace | steps docs/xr/data/steps-2026-09-30-hdp.txt | air log docs/xr/data/ab_hdp_quest-2026-09-30.log | ref p2400 | Quest-air -0.2801 s | guard 15 s | fps-min 0 | no wfbtx log: FRAME_FLUSH not read
 ab_fit: 12 blocks, 0 void
