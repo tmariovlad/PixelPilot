@@ -128,11 +128,13 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
 - **O123, approved by the coordinator 2026-10-01 (with openipc-…-1f): the air's channel is the truth.**
   - **Rule 1 (built, `ChannelFollow`, branch `o123-chfollow`):** a VMODE1 state beacon's `ch=` updates the stored
     channel (`wifi-channel`, `VideoActivity.storeChannel`) when it is legal (`LegalChannels`), settled
-    (`phase` ok / reverted / failed) and carries no `ch_to=`. It is logged, nothing is sent to the air, the radio is
-    not touched (a heard beacon means the RTL is already on that channel), and the next link start tunes to it.
+    (`phase` ok / reverted; of vmoded's six phases, `sm.c:36-44`, confirmed by -1f) and carries no `ch_to=`. Not
+    `failed`: a failed channel revert keeps vmoded's `ch` at the switch target (`sw_chan.c` TX_REV_WFB → `ext_failed`,
+    which does not re-read it; 36's review). It is logged, nothing is sent to the air, the radio is
+    not touched (over the default wfb target a heard beacon means the RTL is already on that channel), and the next link start tunes to it.
     Every settled beacon counts, not only the first after a reconnect, so the store step after a completed switch
     (rule 2) is the same code. A v1 beacon has no `ch=` (EXT only: vmoded `sm.c:466-467`) and is ignored
-    [PROVEN: `ChannelFollowTest`, 8 tests; 4 mutants killed (the ch_to, phase, verb and DFS checks)].
+    [PROVEN: `ChannelFollowTest`, 8 tests; 5 mutants killed (the ch_to, phase, failed, verb and DFS checks)].
   - **`LegalChannels`** (36–48, 149–165) is the app's one copy of the air's `lim_channel_allowed()` (OpenIPC
     `repos/tools/air-common/src/limits.c:225`), pinned by `LegalChannelsTest` against the same rule.
   - **Rule 2 (follow `ch_to=` at `switch_in_ms`, live RTL retune, app-side revert):** not built; after the

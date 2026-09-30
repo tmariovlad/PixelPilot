@@ -98,18 +98,20 @@ public class ChannelFollowTest {
     public void onlyASettledPhaseIsStored() {
         // During a switch the air may still revert (no commit within revert_s): storing its channel then would
         // leave the app on a channel the air leaves again.
-        for (String phase : new String[] {"applying", "pending", "reverting"}) {
+        // failed: a failed channel revert (vmoded sw_chan.c TX_REV_WFB -> ext_failed) keeps v->ch = the switch target,
+        // not a verified channel (36's review of 2d43757).
+        for (String phase : new String[] {"applying", "pending", "reverting", "failed"}) {
             VmodeProtocol.Reply r = VmodeProtocol.parse("VMODE1 state seq=9 preset=race phase=" + phase
                     + " ch=157 codec=h265");
             assertFalse(phase, follow.onReply(r));
         }
         assertTrue(store.writes.isEmpty());
-        for (String phase : new String[] {"ok", "reverted", "failed"}) {
+        for (String phase : new String[] {"ok", "reverted"}) {
             store.channel = 165;
             assertTrue(phase, follow.onReply(VmodeProtocol.parse("VMODE1 state seq=9 preset=race phase=" + phase
                     + " ch=157 codec=h265")));
         }
-        assertEquals(List.of(157, 157, 157), store.writes);
+        assertEquals(List.of(157, 157), store.writes);
     }
 
     @Test
