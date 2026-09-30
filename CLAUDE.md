@@ -49,6 +49,7 @@ home of all Quest work.
   [owd.py](scripts/quest-latch/owd.py) (relative one-way delay per frame, first packet vs completion: clean-link floor per 250 ms window, payload/frame-size effect, loss-locked profile; [stats-backend §7.1](docs/xr/stats-backend.md)),
   [zflush.py](scripts/quest-latch/zflush.py) (-Z: per frame FEC-recovered / held / waited for the next frame, completion delay per class, air FRAME_FLUSH per state),
   [hunt_timeline.py](scripts/quest-latch/hunt_timeline.py) (HD 71 ms hunt, post-run: each rig first-light step event with ±60 s of air_health EV/SNAP, snapshots, Quest PPXR_EVENT/STATS and watchdog lines on the PC clock),
+  [air_log_mirror.sh](scripts/quest-latch/air_log_mirror.sh) (PC-side, every air slot: mirror the air's /tmp logs every 60 s, keep the last good copy, `.pre` on a reboot, HANG?/BACK events),
   [zslot.py](scripts/quest-latch/zslot.py) (one table per arm for a -Z × payload slot: lnk/tot/post-FEC ab_fit effects linear + quadratic, last/last95/spread, FEC-recovered share and wait, FRAME_FLUSH fillers/s; imports ab_fit / ab_segments / zflush),
   [drop_seconds.py](scripts/quest-latch/drop_seconds.py) (radio post-FEC loss and IDR requests/frames in the air's input-drop seconds vs the rest, and per step),
   [big_frames.py](scripts/quest-latch/big_frames.py) (latency of the largest frames, e.g. scene changes / IDR, apart from the rest)),
