@@ -126,7 +126,7 @@ survey::Energy survey_energy(const RxEnergy &e) {
     return s;
 }
 
-int link_channel_of(IRtlDevice *dev) { return dev->GetSelectedChannel().Channel; }
+int link_channel_of(DeviceControlT<IRtlDevice> &ctl, IRtlDevice *dev) { return ctl.selectedChannel(dev).Channel; }
 
 void survey_log(const std::string &line) { __android_log_print(ANDROID_LOG_INFO, "PPXR_SURVEY", "%s", line.c_str()); }
 }  // namespace
@@ -354,7 +354,7 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             // At 40 MHz the primary must be explicit (it was DONT_CARE): it sets the RX primary and the sub-channel
             // of the 20 MHz uplink. In 5 GHz the channel's pair fixes it, e.g. 157 = HT40+ (primary lower, center 159)
             // (devourer ChannelCenter.h; docs/xr/research/2026-09-28-ht40-channel-center.md).
-            current_device->InitWrite(SelectedChannel{
+            devctl.initWrite(current_device, SelectedChannel{
                 .Channel = static_cast<uint8_t>(wifiChannel),
                 .ChannelOffset = bandWidth == CHANNEL_WIDTH_40 ? devourer::ht40_offset(wifiChannel)
                                                                : devourer::kPrimeDontCare,
@@ -365,25 +365,27 @@ int WfbngLink::run(JNIEnv *env, jobject context, jint wifiChannel, jint bw, jint
             // RX loop below feeds it; the uplink starts only when it completes, so no uplink frame goes out on a
             // surveyed channel. A failed retune back stops the RX loop: run() returns and the Java side restarts the link.
             if (survey_on_start.exchange(false)) {
-                const SelectedChannel link = current_device->GetSelectedChannel();
+                const SelectedChannel link = devctl.selectedChannel(current_device);
                 SurveyOps ops;
-                ops.to20 = [current_device](uint8_t ch) {
-                    current_device->SetMonitorChannel(SelectedChannel{
+                ops.to20 = [this, current_device](uint8_t ch) {
+                    devctl.setMonitorChannel(current_device, SelectedChannel{
                         .Channel = ch, .ChannelOffset = devourer::kPrimeDontCare, .ChannelWidth = CHANNEL_WIDTH_20});
                 };
-                ops.retune = [current_device](uint8_t ch) { current_device->FastRetune(ch); };
-                ops.energy = [current_device](bool nhm) { return survey_energy(current_device->GetRxEnergy(nhm)); };
-                ops.back = [current_device, link] { current_device->SetMonitorChannel(link); };
+                ops.retune = [this, current_device](uint8_t ch) { devctl.fastRetune(current_device, ch); };
+                ops.energy = [this, current_device](bool nhm) {
+                    return survey_energy(devctl.rxEnergy(current_device, nhm));
+                };
+                ops.back = [this, current_device, link] { devctl.setMonitorChannel(current_device, link); };
                 survey.start(ops, link.Channel, survey_log, [this, current_device, fd](SurveyOutcome o) {
                     if (survey::starts_uplink(o)) {
                         if (o == SurveyOutcome::Failed)
                             __android_log_print(ANDROID_LOG_WARN, TAG, "survey: device error mid-sweep; back on ch %d",
-                                                link_channel_of(current_device));
-                        if (tx_power_pending.exchange(false)) current_device->SetTxPower(adaptive_tx_power);
+                                                link_channel_of(devctl, current_device));
+                        if (tx_power_pending.exchange(false)) devctl.setTxPower(current_device, adaptive_tx_power.load());
                         start_uplink(current_device, fd);
                     } else if (o == SurveyOutcome::RetuneBackFailed) {
                         __android_log_print(ANDROID_LOG_ERROR, TAG, "survey: no retune back to ch %d; restarting the link",
-                                            link_channel_of(current_device));
+                                            link_channel_of(devctl, current_device));
                         current_device->StopRxLoop();
                     }
                 });
@@ -785,7 +787,7 @@ void WfbngLink::start_link_quality_thread(int fd) {
     };
 
     init_thread(link_quality_thread, [=]() { return std::make_unique<std::thread>(thread_func); });
-    rtl_devices.at(fd)->SetTxPower(adaptive_tx_power);
+    devctl.setTxPower(rtl_devices.at(fd).get(), adaptive_tx_power.load());
 }
 
 extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_nativeSetAdaptiveLinkEnabled(
@@ -821,7 +823,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_openipc_wfbngrtl8812_WfbNgLink_native
     // uplink starts. After the survey ifActive() is false and the power is applied here (25's S1).
     if (link->survey.ifActive([link] { link->tx_power_pending = true; })) return;
     if (link->current_fd != -1 && link->rtl_devices.find(link->current_fd) != link->rtl_devices.end()) {
-        link->rtl_devices.at(link->current_fd)->SetTxPower(power);
+        link->devctl.setTxPower(link->rtl_devices.at(link->current_fd).get(), power);
     }
     // If adaptive mode is enabled and the adaptive thread is not running, restart it.
     if (link->adaptive_link_enabled) {

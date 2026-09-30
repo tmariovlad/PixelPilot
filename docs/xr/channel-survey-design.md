@@ -251,6 +251,29 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
     (SetTxPower in nativeSetTxPower); same lines in the fork's master]. The fix is one control lock around every
     device control call in WfbngLink. That is a separate item, and not survey-specific.
   - Tests: host 90/90; `assembleDebug` builds (APK md5 176588d6, not installed).
+- **Device control lock (2026-10-01, 66's priority after 25's finding; branch devctl):**
+  - Every control-plane call to the RTL in WfbngLink now goes through `DeviceControl.h` (`devctl`, one mutex):
+    InitWrite, GetSelectedChannel, the survey's SetMonitorChannel / FastRetune / GetRxEnergy, and SetTxPower from
+    done(), from the uplink start and from nativeSetTxPower. This covers the run thread, the survey thread and the
+    JNI threads.
+  - **A lock, not a control-thread queue:** devourer ties nothing to a thread's identity (the only `thread_local` is
+    log scratch, Event.h:233), and its contract asks for sequencing (IRtlDevice.h:110-117). A queue would make
+    nativeSetTxPower asynchronous and add a thread.
+  - The lock is held only around the one device call and is always innermost, so it has no ordering with
+    thread_mutex or SurveyRunner's locks.
+  - Not routed through it:
+    - StartRxLoop: it blocks on the run thread;
+    - StopRxLoop: the cross-thread stop signal;
+    - send_packet: the TX data path. The survey keeps the uplink off while it hops.
+  - The survey's `tx_power_pending` stays. Its reason is now semantic (applied after the sweep, before the uplink),
+    not safety.
+  - Tests (`tests/DeviceControl_test.cpp`, red first):
+    - a fake device counts calls inside it at once: 8 threads × 100 mixed control calls give 0 overlaps;
+    - a positive control shows the same fake sees overlaps when nothing sequences the calls;
+    - a structural scan of WfbngLink.cpp fails on any raw control-plane call. It was red first and listed the 10
+      raw calls; its regex is self-checked.
+  - Mutants killed: no lock; one lock per method instead of one shared; a raw SetTxPower put back.
+  - 20/20 repeats stable. Host 94/94; `assembleDebug` builds (APK md5 27301198, not installed).
 - **Not yet verified** [SPECULATION until a slot]:
   - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
     (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);

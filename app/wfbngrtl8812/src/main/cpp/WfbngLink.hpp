@@ -18,6 +18,7 @@ extern "C" {
 #include "devourer/src/WiFiDriver.h"
 #include "wfb-ng/src/rx.hpp"
 #include "VideoTapAggregator.h"
+#include "DeviceControl.h"
 #include "SurveyRunner.h"
 #include <atomic>
 #include <cstdint>
@@ -65,6 +66,9 @@ class WfbngLink {
     std::atomic<bool> survey_on_start{false};
     std::atomic<bool> tx_power_pending{false};   // a TX power set during a survey, applied when it completes
     SurveyRunner survey;
+    // Every control-plane call to the RTL goes through devctl: one lock sequences the run, survey and JNI threads
+    // (devourer IRtlDevice.h:110-117; DeviceControl.h).
+    DeviceControlT<IRtlDevice> devctl;
     void survey_frame(const Packet &packet, uint8_t *video_id, uint8_t *mavlink_id, uint8_t *udp_id);
     void start_uplink(IRtlDevice *current_device, int fd);
     RtpHoleProbe video_rtp_probe;      // PPXR_RTPHOLE per hole in the delivered RTP sequence; guarded by agg_mutex

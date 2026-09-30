@@ -102,3 +102,11 @@ add_executable(channel_survey_test ChannelSurvey_test.cpp SurveyRunner_test.cpp 
 target_include_directories(channel_survey_test PRIVATE ${SRC} ${SRC}/devourer/src)
 target_link_libraries(channel_survey_test GTest::gtest_main pthread)
 gtest_discover_tests(channel_survey_test)
+
+# One lock sequences every control-plane call to the RTL (devourer IRtlDevice.h:110-117); the structural test scans
+# WfbngLink.cpp for calls that bypass it.
+add_executable(device_control_test DeviceControl_test.cpp)
+target_include_directories(device_control_test PRIVATE ${SRC})
+target_compile_definitions(device_control_test PRIVATE WFBNGLINK_CPP="${SRC}/WfbngLink.cpp")
+target_link_libraries(device_control_test GTest::gtest_main pthread)
+gtest_discover_tests(device_control_test)
