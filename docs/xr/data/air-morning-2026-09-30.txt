@@ -1,0 +1,83 @@
+# Air logs, 2026-09-30 10:23-11:14 (PC local), air .132 (boot ~09:41), ch165, 17 dBm, rmem 192K. alink killed (late_kill).
+# 1) O121 E0+E1 race REC payload 1400/1800/2400/3000 palindrome (payload_ab.sh 45ac31a2); live waybeam outgoing.maxPayloadSize.
+# 2) Drain A/B (APK c8986061 vs 7f8b34c1) at q7 = 720p120 25M MCS7 FEC 8/10 (mode_ab25.sh 7b9866cd, stock wfb_tx).
+# 3) q7 payload 1400 (q7n) vs 2400 (q7p) ABAB x3 (y_ab.sh 2c641026, merged wfb_tx b0469029 measure-only -A 10000, no -Y).
+#    From /tmp/o4/wfbtx-o4.log PKT (windows SET+10..SET+115): q7n 2187-2299 pkt/s in, 1370-1436 B/pkt, 18.3-19.2 pkt/frame, 2729-2870 injected/s;
+#    q7p 1356-1375 pkt/s, 2288-2313 B/pkt, 11.3-11.5 pkt/frame, 1691-1718 injected/s (-40 % packets on air).
+# 4) Drain toggle ABAB x3 (one APK c4ad7290, live broadcast) at q7 (mode_ab25.sh, stock wfb_tx).
+
+## /tmp/payload_ab.log (block 1)
+PRE epoch=1790751818 mcs_index=2 k=4 n=8 payload=1400 mtu=4032 txp=17.00 tx_dropped=76147 temp=42
+SET p1400 epoch=1790751967 mcs_index=2 k=4 n=8 payload=1400 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p1400 epoch=1790751967 drop=0 inj=69077 inj_bytes=83924837 temp=43 mcs_index=2 k=4 n=8 payload=1400 mtu=4032 txp=17.00 tx_dropped=76147
+SET p1800 epoch=1790752087 mcs_index=2 k=4 n=8 payload=1800 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p1800 epoch=1790752087 drop=0 inj=49615 inj_bytes=79483206 temp=42 mcs_index=2 k=4 n=8 payload=1800 mtu=4032 txp=17.00 tx_dropped=76147
+SET p2400 epoch=1790752207 mcs_index=2 k=4 n=8 payload=2400 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p2400 epoch=1790752207 drop=0 inj=40985 inj_bytes=72709437 temp=42 mcs_index=2 k=4 n=8 payload=2400 mtu=4032 txp=17.00 tx_dropped=76147
+SET p3000 epoch=1790752327 mcs_index=2 k=4 n=8 payload=3000 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p3000 epoch=1790752327 drop=0 inj=40914 inj_bytes=74455239 temp=42 mcs_index=2 k=4 n=8 payload=3000 mtu=4032 txp=17.00 tx_dropped=76147
+SET p3000 epoch=1790752447 mcs_index=2 k=4 n=8 payload=3000 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p3000 epoch=1790752447 drop=0 inj=40862 inj_bytes=74038899 temp=43 mcs_index=2 k=4 n=8 payload=3000 mtu=4032 txp=17.00 tx_dropped=76147
+SET p2400 epoch=1790752567 mcs_index=2 k=4 n=8 payload=2400 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p2400 epoch=1790752567 drop=0 inj=40993 inj_bytes=74312091 temp=42 mcs_index=2 k=4 n=8 payload=2400 mtu=4032 txp=17.00 tx_dropped=76147
+SET p1800 epoch=1790752687 mcs_index=2 k=4 n=8 payload=1800 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p1800 epoch=1790752687 drop=0 inj=58438 inj_bytes=87724957 temp=43 mcs_index=2 k=4 n=8 payload=1800 mtu=4032 txp=17.00 tx_dropped=76147
+SET p1400 epoch=1790752807 mcs_index=2 k=4 n=8 payload=1400 mtu=4032 txp=17.00 tx_dropped=76147
+STEP p1400 epoch=1790752807 drop=0 inj=71809 inj_bytes=86360193 temp=43 mcs_index=2 k=4 n=8 payload=1400 mtu=4032 txp=17.00 tx_dropped=76147
+END epoch=1790752927 mcs_index=2 k=4 n=8 payload=1400 mtu=4032 txp=12.00 tx_dropped=76147 temp=43
+
+## /tmp/mode_ab25_drainab.log (block 2, drain A/B)
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790752929 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1393 wb=548 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=76147 temp=43
+SET q7 epoch=1790752975 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=3334 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q7 epoch=1790752975 drop=2038 inj=1855896 ant_drop=0 tx_dropped_d=13 temp=47 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1393 wb=3334 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+END epoch=1790753640 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1393 wb=2938 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=78186 temp=43
+
+## /tmp/y_ab_q7pay.log (block 3)
+PRE epoch=1790753820 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=12.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1393 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 wlan0 ] tx_dropped=78186 temp=43 tbs_path=/proc/net/rtl88x2eu/wlan0/tx_buf_stat
+SWAP [-A 10000] -> O4=OK pid=1016 tx 6220872->6225761 extra=[-A 10000] log=/tmp/o4/wfbtx-o4.log
+SET q7n epoch=1790753966 mcs_index=7 k=8 n=10 mode=6 br=25000 txp=17.00 rmem=196608/524288 tbs=0:64:63:64 vpid=1016 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP q7n epoch=1790753966 rxq=0 udp_drops=10903 udp_drops_d=462 tx_dropped_d=4 temp=47
+  AG q7n 3608855	AGE_GUARD	0:0:1:0:0:120:0:0:0:120:0:0:0:0
+  AG q7n 3609856	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7n 3610856	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7n 3611855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+SET q7p epoch=1790754060 mcs_index=7 k=8 n=10 mode=6 br=25000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1016 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP q7p epoch=1790754060 rxq=0 udp_drops=11277 udp_drops_d=374 tx_dropped_d=0 temp=47
+  AG q7p 3728856	AGE_GUARD	0:0:0:0:0:119:0:0:0:119:0:0:0:0
+  AG q7p 3729855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7p 3730855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7p 3731855	AGE_GUARD	0:0:1:0:0:120:0:0:0:120:0:0:0:0
+SET q7n epoch=1790754180 mcs_index=7 k=8 n=10 mode=6 br=25000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1016 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP q7n epoch=1790754180 rxq=0 udp_drops=11674 udp_drops_d=397 tx_dropped_d=0 temp=47
+  AG q7n 3848855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7n 3849855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7n 3850856	AGE_GUARD	0:0:0:0:0:119:0:0:0:119:0:0:0:0
+  AG q7n 3851855	AGE_GUARD	0:0:1:0:0:120:0:0:0:120:0:0:0:0
+SET q7p epoch=1790754300 mcs_index=7 k=8 n=10 mode=6 br=25000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1016 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP q7p epoch=1790754300 rxq=0 udp_drops=11972 udp_drops_d=298 tx_dropped_d=0 temp=47
+  AG q7p 3968856	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7p 3969856	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7p 3970855	AGE_GUARD	0:0:1:0:0:120:0:0:0:120:0:0:0:0
+  AG q7p 3971855	AGE_GUARD	0:0:0:0:0:119:0:0:0:119:0:0:0:0
+SET q7n epoch=1790754420 mcs_index=7 k=8 n=10 mode=6 br=25000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1016 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP q7n epoch=1790754420 rxq=0 udp_drops=12248 udp_drops_d=276 tx_dropped_d=0 temp=47
+  AG q7n 4088855	AGE_GUARD	0:0:0:0:0:119:0:0:0:119:0:0:0:0
+  AG q7n 4089855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7n 4090855	AGE_GUARD	0:0:0:0:0:120:0:0:0:120:0:0:0:0
+  AG q7n 4091855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+SET q7p epoch=1790754540 mcs_index=7 k=8 n=10 mode=6 br=25000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1016 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP q7p epoch=1790754540 rxq=5632 udp_drops=12392 udp_drops_d=144 tx_dropped_d=0 temp=47
+  AG q7p 4208855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7p 4209856	AGE_GUARD	0:0:1:0:0:120:0:0:0:120:0:0:0:0
+  AG q7p 4210855	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+  AG q7p 4211856	AGE_GUARD	0:0:1:0:0:119:0:0:0:119:0:0:0:0
+REVERT -> O4=REVERTED pid=1832 exe=/opt/linkmode/wfb_tx log=/tmp/wfbtx.log
+END epoch=1790754685 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=12.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1832 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 wlan0 ] tx_dropped=85638 temp=43
+
+## /tmp/mode_ab25.log (block 4, drain toggle)
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790754687 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1832 wb=1873 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=85638 temp=43
+SET q7 epoch=1790754795 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1832 wb=3155 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+STEP q7 epoch=1790754795 drop=3038 inj=2354413 ant_drop=0 tx_dropped_d=253 temp=48 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1832 wb=3022 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10"
+END epoch=1790755654 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1832 wb=1218 bcn="1790750534 bcn_off 0x550 0x18 -> 0x10" json=3d8a1456 tx_dropped=88245 temp=44
