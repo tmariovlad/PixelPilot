@@ -185,6 +185,7 @@ The dated result sections that used to follow here were moved verbatim into topi
   N = 2 each): APFPV through the Quest's own Wi-Fi has 0 vs 1–7 RTP losses, jitter p95 1.4–2.2 vs 9.0–12.8 ms, a frame on the air
   in ~0.13 vs ~7.8 ms (wfb MCS2). Boot default still wfb (range and higher wfb MCS untested); APFPV through the RTL needs devourer station mode
   ([station mode](xr/station-mode.md): the W0 hardware-ACK gate is GO; [scope](xr/research/2026-09-27-devourer-station-scope.md)).
+- **[Channel survey before a flight (design)](xr/channel-survey-design.md)** (2026-09-30, design for review, no code): an RTL sweep of 36-48 + 149-165 through devourer (CCA/NHM busy time, foreign frames and RSSI, bad FCS, own link separated) plus the Quest's Wi-Fi scan (neighbour BSS width/load), a per-channel cost, a bar graph in the menu, the move via VMODE1 `apply ch=` (air side exists, app side not built), and an A/B validation plan. Keywords: channel survey, spectrum, busy time, NHM, neighbour AP, calibrare canal, canal liber.
 - **[Unrecoverable FEC blocks (PPXR_FECBLK)](xr/fec-block-probe.md)** (2026-09-29, built + host-tested, not yet on the
   headset): one line per video FEC block wfb-ng gave up on (mirrors its Aggregator: flush / ring), with the fragment
   bitmap, per-fragment RSSI, span, the longest inter-frame gap (the outage) and bad-FCS frames around it
