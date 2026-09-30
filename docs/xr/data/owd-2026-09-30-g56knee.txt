@@ -1,0 +1,64 @@
+# python3 scripts/quest-latch/owd.py scripts/quest/out/ab_g56.pftrace docs/xr/data/steps-2026-09-29-g56.txt --air-offset-s 1.284 --guard-s 4 --min-s 2,60 --states m7b20f48,m6b25f46 --loss
+scripts/quest/out/ab_g56.pftrace: 107976 frames; drift (median per-step slope of the per-second minimum of first): +0.0729 ms/s
+
+== running minimum over 2 s; windows of 250 ms ==
+state      sig     win  p50med  p90med  p90p90  p90p99  p90max |   mean    p50    p95 |  ms/pkt
+m6b25f46   first   422    3.07    4.52   10.29   19.24   32.56 |   3.83   3.14   9.50 |  -0.115
+m6b25f46   last    422    2.99    4.49   10.11   19.42   32.59 |   3.82   3.12   9.61 |  +0.277
+m7b20f48   first   209    8.22   10.10   14.64   18.20   19.28 |   8.02   8.10  14.77 |  -0.241
+m7b20f48   last    209    8.48   10.29   14.88   18.13   19.37 |   8.23   8.39  14.99 |  +0.258
+
+loss bursts in the steps: 329 (1331 packets); relative OWD first (ms) by bin before the onset, vs 20 shifted-onset controls (mean / max)
+  [-1000, -950) ms   4.634   control  4.866 /  6.290
+  [ -950, -900) ms   4.695   control  4.859 /  6.195
+  [ -900, -850) ms   4.801   control  4.899 /  6.097
+  [ -850, -800) ms   4.750   control  4.897 /  6.374
+  [ -800, -750) ms   4.693   control  4.876 /  6.388
+  [ -750, -700) ms   4.646   control  4.835 /  6.231
+  [ -700, -650) ms   4.629   control  4.839 /  6.119
+  [ -650, -600) ms   4.521   control  4.829 /  5.957
+  [ -600, -550) ms   4.496   control  4.817 /  6.114
+  [ -550, -500) ms   4.447   control  4.803 /  6.098
+  [ -500, -450) ms   4.416   control  4.836 /  6.173
+  [ -450, -400) ms   4.516   control  4.832 /  6.133
+  [ -400, -350) ms   4.586   control  4.805 /  6.197
+  [ -350, -300) ms   4.599   control  4.761 /  6.090
+  [ -300, -250) ms   4.571   control  4.795 /  5.960
+  [ -250, -200) ms   4.536   control  4.839 /  6.204
+  [ -200, -150) ms   4.472   control  4.773 /  6.097
+  [ -150, -100) ms   4.516   control  4.749 /  6.126
+  [ -100,  -50) ms   4.502   control  4.765 /  6.169
+  [  -50,   +0) ms   4.745   control  4.762 /  6.264
+  [   +0,  +50) ms   4.843   control  4.787 /  6.269
+  [  +50, +100) ms   4.856   control  4.824 /  6.229
+
+== running minimum over 60 s; windows of 250 ms ==
+state      sig     win  p50med  p90med  p90p90  p90p99  p90max |   mean    p50    p95 |  ms/pkt
+m6b25f46   first   422   59.88   61.28   66.19   68.60   71.91 |  60.25  59.91  64.06 |  -0.088
+m6b25f46   last    422   61.59   62.94   67.85   70.66   72.97 |  61.92  61.62  65.68 |  +0.303
+m7b20f48   first   209   22.03   23.65   47.48   51.91   52.61 |  25.37  22.15  48.45 |  -0.241
+m7b20f48   last    209   25.79   27.66   52.37   57.11   58.03 |  29.53  26.01  53.59 |  +0.268
+
+loss bursts in the steps: 329 (1331 packets); relative OWD first (ms) by bin before the onset, vs 20 shifted-onset controls (mean / max)
+  [-1000, -950) ms  54.418   control 50.917 / 60.057
+  [ -950, -900) ms  54.499   control 50.849 / 60.278
+  [ -900, -850) ms  54.666   control 50.935 / 60.397
+  [ -850, -800) ms  54.602   control 50.902 / 60.156
+  [ -800, -750) ms  54.579   control 50.917 / 60.179
+  [ -750, -700) ms  54.443   control 50.770 / 60.029
+  [ -700, -650) ms  54.470   control 50.860 / 60.123
+  [ -650, -600) ms  54.207   control 50.778 / 60.000
+  [ -600, -550) ms  54.334   control 50.829 / 60.198
+  [ -550, -500) ms  54.071   control 50.781 / 60.604
+  [ -500, -450) ms  54.332   control 50.839 / 60.609
+  [ -450, -400) ms  54.254   control 50.752 / 60.442
+  [ -400, -350) ms  54.560   control 50.778 / 60.030
+  [ -350, -300) ms  54.223   control 50.654 / 60.172
+  [ -300, -250) ms  54.513   control 50.759 / 60.154
+  [ -250, -200) ms  54.230   control 50.766 / 60.287
+  [ -200, -150) ms  54.319   control 50.673 / 60.024
+  [ -150, -100) ms  54.324   control 50.633 / 59.947
+  [ -100,  -50) ms  54.509   control 50.622 / 60.193
+  [  -50,   +0) ms  54.381   control 50.661 / 60.055
+  [   +0,  +50) ms  54.802   control 50.665 / 60.046
+  [  +50, +100) ms  54.630   control 50.665 / 60.129

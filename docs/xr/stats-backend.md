@@ -113,3 +113,75 @@ openipc-1f designs air-side rate control for the 40 ms ceiling over capacity: th
   - Tunnel one-way: ~2.5–3 ms [INFERRED: ClockSync round trip 4.8–5.9 ms over the same tunnel, PPXR_STATS `rtt` 2026-09-30].
   - alink: reads at once, and its policy ticks every 100 ms (`config.c` tick_ms, openipc-1f).
   - **Total ~0.3–0.6 s**, or ~0.3–0.4 s with the change sent as news.
+
+### 7.1 Offline check: relative one-way delay per frame (item 5 for openipc-1f, 2026-09-30)
+
+This tests the signal proposed above against today's traces.
+- **Tool:** [owd.py](../../scripts/quest-latch/owd.py) (test `test_owd.py`, 9 tests).
+- **Signal, per frame:** `first` = first-packet arrival − RTP ts, and `last` = completion − RTP ts. Each is made
+  relative to its own trailing running minimum over W seconds, as a live receiver would compute it.
+- **Windows:** 250 ms, cut per step, inside the steps' guard bands.
+- **Data:** [HDP](data/owd-2026-09-30-hdp.txt), [L6](data/owd-2026-09-30-l6.txt), [-Y slot](data/owd-2026-09-30-y.txt),
+  [S2](data/owd-2026-09-30-s2.txt), and the MCS knee run g56 ([all states](data/owd-2026-09-30-g56.txt),
+  [knee loss profile](data/owd-2026-09-30-g56knee.txt)). The exact command is in each file's first line.
+
+**Clock drift is +0.069…+0.073 ms/s in all five captures** [PROVEN: the median per-step slope of the per-second
+minimum]. Per step, because a waybeam restart moves the RTP base between steps (a whole-run fit read up to −1658
+ms/s). The trailing minimum therefore lags by about drift × W: the W = 10 s floor sits ~0.6 ms above W = 2 s in every
+capture.
+
+**(a) Clean-link floor** (W = 2 s, `first`, ms). Per state: the median of the 250 ms window p50, then the median /
+p90 / p99 of the window p90.
+
+| capture, state | windows | p50 | p90 median | p90 p90 | p90 p99 |
+|---|---|---|---|---|---|
+| L6 race 167 fps, f320 / f216 / f384 | 484 / 242 / 121 | 0.67–0.68 | 0.93–0.95 | 1.74–2.26 | 8.0–8.2 |
+| -Y slot race, r14n / r14y / r24n / r24y | 630–722 | 0.62–0.73 | 0.73–0.97 | 1.16–1.38 | 2.7–5.3 |
+| S2 race, r480 / r360 | 2404 each | 1.15 / 0.96 | 1.32 / 1.11 | 1.69 / 1.59 | 4.0 / 7.9 |
+| g56 1080p90, clean m7b16f48 / m7b20f46 | 210 / 216 | 0.33–0.36 | 1.39–1.50 | 2.7–2.9 | 3.1–8.6 |
+| HDP 720p120 25M q7, p2400 / p3000 / p3900 | 1440 each | 0.58–0.65 | 1.06–1.09 | 4.6–5.2 | 5.4–5.7 |
+| **knee** g56 m7b20f48 (+19.8 ms queue) | 209 | 8.22 | **10.10** | 14.64 | 18.2 |
+
+- A typical clean window has p90 ≈ 1 ms. One window in ten reaches 1.2–2.3 ms on race, and ~5 ms on HDP's 25M.
+- The 1-in-100 window reaches 3–8.6 ms.
+- At 4 windows/s, a single-window threshold under ~9 ms would fire every ~25 s on a clean link. A threshold therefore
+  needs persistence (several consecutive windows) or a per-mode floor [INFERRED from the table].
+- **Caveat:** HDP ran with the race wfb_tx flags (`-Y`, no `-R`) against an APK without the RX drain
+  ([link-envelope](link-envelope.md) HDP caveat). Its higher p90 p90 may be frames held behind gaps until the next
+  frame [SPECULATION].
+
+**(b) Payload and frame size** [PROVEN: HDP file].
+- `first` median is flat across payloads: 0.65 / 0.60 / 0.58 ms at 2400 / 3000 / 3900.
+- Its p95 rises 4.02 → 4.71 → 4.78 ms. That is +0.69 ms at 3000, like lnk95's +0.72, but only +0.76 at 3900, where
+  lnk95 rose +1.54 ([hdp-fit](data/hdp-fit-2026-09-30.txt)).
+- `last` p95 carries the completion tail: 3.90 → 8.23 → 8.79 ms.
+- **First-packet removes the frame-size effect.** The slope of relative OWD vs packets per frame is:
+  - `first`: −0.24…+0.13 ms/packet in every capture (~0 on HDP: +0.005…+0.012);
+  - `last`: +0.16…+1.7 ms/packet.
+- As openipc-1f noted, `first` still includes the air's encode time, since the RTP ts is the capture time.
+
+**(c) Does delay lead post-FEC loss?**
+- **No transient rise before individual loss bursts** [PROVEN: loss-locked mean in 50 ms bins over the second before
+  each burst, vs 20 shifted-onset controls]:
+  - HDP, 796 bursts / 2579 packets: every pre-onset bin is within the control range (one bin at −300 ms is 0.99 vs
+    the controls' max 0.97, about what 20 bins give by chance). The only rise is +0…+50 ms, after the loss (frames
+    held behind the gap).
+  - g56 knee states, 329 bursts: the same, at W = 2 s and at W = 60 s.
+  - So at these operating points the loss is radio loss. It is not preceded by a queue spike.
+- **Over capacity, the queue is standing, and a short running minimum hides it** [PROVEN: g56]. Median of the window
+  p50 of `first`:
+
+| state (queue vs the clean drift line, link-envelope) | W = 2 s | W = 10 s | W = 60 s |
+|---|---|---|---|
+| m6b25f46 (+55 ms) | 3.1 | 4.9 | **59.9** |
+| m7b20f48 (+19.8 ms) | 8.1 | 15.4 | **22.2** |
+| m7b25f46 (clean) | 1.3 | 1.9 | 4.6 |
+
+  - A live signal needs a base older than the queue: a long-window minimum with the drift subtracted (the drift is
+    stable, +0.07 ms/s, so it can be estimated), or the minimum held since the last rate decrease.
+  - W = 2 s still separates m7b20f48 (p90 median 10.1 ms) from the clean states, but not m6b25f46 (4.5 ms).
+- **Lead time from a switch into over-capacity: N = 1.** In g56's m7b20f48 step, the W = 2 s window p50 passed 3 ms
+  0.07 s after the switch, and the first post-FEC loss came 1.98 s later. Every other step's first losses fall within
+  0.2 s of the switch, where the reconfiguration itself drops packets, so they cannot time a lead. Measuring the lead
+  properly needs a slow bitrate ramp through the knee, without a switch [SPECULATION until run].
+

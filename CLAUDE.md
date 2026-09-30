@@ -46,6 +46,7 @@ home of all Quest work.
   [freeze_gaps.py](scripts/quest-latch/freeze_gaps.py) (each VIDEO STALLED gap: link gap vs freeze vs decoder),
   [loss_bursts.py](scripts/quest-latch/loss_bursts.py) (post-FEC loss runs: length, ms, 102.4 ms beacon lock),
   [rtp_holes.py](scripts/quest-latch/rtp_holes.py) (each RTP hole: pre-FEC air input vs post-FEC radio, with a circular time-shift control; air log via [air_drops.py](scripts/quest-latch/air_drops.py)),
+  [owd.py](scripts/quest-latch/owd.py) (relative one-way delay per frame, first packet vs completion: clean-link floor per 250 ms window, payload/frame-size effect, loss-locked profile; [stats-backend §7.1](docs/xr/stats-backend.md)),
   [zflush.py](scripts/quest-latch/zflush.py) (-Z: per frame FEC-recovered / held / waited for the next frame, completion delay per class, air FRAME_FLUSH per state),
   [hunt_timeline.py](scripts/quest-latch/hunt_timeline.py) (HD 71 ms hunt, post-run: each rig first-light step event with ±60 s of air_health EV/SNAP, snapshots, Quest PPXR_EVENT/STATS and watchdog lines on the PC clock),
   [zslot.py](scripts/quest-latch/zslot.py) (one table per arm for a -Z × payload slot: lnk/tot/post-FEC ab_fit effects linear + quadratic, last/last95/spread, FEC-recovered share and wait, FRAME_FLUSH fillers/s; imports ab_fit / ab_segments / zflush),
