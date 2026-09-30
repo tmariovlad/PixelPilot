@@ -21,7 +21,7 @@ Measure every method at the same position with the same tools (loss, decode fps,
 
 ## Open items, most valuable first
 
-- **Air day 2026-10-01 runs from one runbook: [slot-plan-2026-10-01.md](slot-plan-2026-10-01.md)** (HD hunt → -Z × payload → L1 → RC probe → super-frame cap → O118 S2 (GO on 25's T1, H.264 only; never h265 with GDR); owners, md5s, launch lines, captures, pulls, analysis, stop rules, reverts). No TBDs left (2026-10-01 ~00:30).
+- **Air day 2026-10-01 runs from one runbook: [slot-plan-2026-10-01.md](slot-plan-2026-10-01.md)** (HD hunt → -Z × payload → L1 → RC probe → super-frame cap → O118 S2 (GO on 25's T1, H.264 only; never h265 with GDR); owners, md5s, launch lines, captures, pulls, analysis, stop rules, reverts). Open TBD: the optional slot 7's APK 4ed809d5 is not on disk yet (25/36). §8 records lever_gdr on HD (dc), not scheduled.
 
 - **2026-09-30 evening (Quest side, pixelpilot-xr-25):**
   - HD payload: 3900 wins the median by 0.5 ms but loses the p95 by 4.6 ms (FEC-block fill), and 3000 loses 3× more after FEC. HD stays at 2400; 3900's median goes to -40's -Z slot ([section](link-envelope.md)).
