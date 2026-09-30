@@ -20,6 +20,7 @@ class RxReplay {
     std::vector<std::vector<uint8_t>> feed(const std::vector<uint8_t> &packet);
 
     uint32_t fecRecovered() const;
+    uint32_t lost() const;   // count_p_lost: data slots wfb-ng gave up on
 
   private:
     struct Impl;

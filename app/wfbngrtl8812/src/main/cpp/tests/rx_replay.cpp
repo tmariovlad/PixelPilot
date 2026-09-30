@@ -35,3 +35,5 @@ std::vector<std::vector<uint8_t>> RxReplay::feed(const std::vector<uint8_t> &pac
 }
 
 uint32_t RxReplay::fecRecovered() const { return impl_->agg.count_p_fec_recovered; }
+
+uint32_t RxReplay::lost() const { return impl_->agg.count_p_lost; }
