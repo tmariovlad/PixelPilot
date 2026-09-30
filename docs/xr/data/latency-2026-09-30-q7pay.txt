@@ -1,0 +1,18 @@
+# ab_q7pay, steps docs/xr/data/steps-2026-09-30-q7pay.txt, --air-offset-s 0.9073 (Quest-PC 0.9073 + PC-air 0), --guard-s 5. ~10:39-10:51 local; q7 payload 1400 vs 2400 for openipc-4b: 720p120 25M MCS7 FEC 8/10, 17 dBm, ch165, 4b's merged wfb_tx measure-only (-A 10000); NPNPNP 120 s; APK c8986061, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_q7pay.pftrace docs/xr/data/steps-2026-09-30-q7pay.txt --air-offset-s 0.9073 --guard-s 5 --baseline n1400
+1280423 packets, 87180 frames, 24549 lost before the app; 84644 frames inside the steps
+clock drift fitted on 'n1400': -6 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 n1400        12768  116.1  17.15    6.46   -0.03    6.43  201.54   -10.43   174.4  22.64  1166
+ 1 p2400        13006  118.3  11.42    5.04  -24.56  -19.52  -15.04   -17.67     6.0   0.99     9
+ 2 n1400        13015  118.3  19.40    6.20  -15.24   -9.04   -4.32    -7.16     5.9   0.98     7
+ 3 p2400        12999  118.2  11.57    5.02   -6.14   -1.12    3.41     0.70     3.9   0.65     3
+ 4 n1400        13019  118.4  19.29    6.20    3.40    9.60   14.90    11.44     5.1   0.84     3
+ 5 p2400        13038  118.5  11.58    5.03   12.27   17.30   21.76    19.13     2.6   0.44     0
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+n1400           38802  117.6  18.62    6.29   -3.98    2.31  107.36    -1.73    61.8   9.40  1176   +0.00     +0.00
+p2400           39043  118.3  11.52    5.03   -6.13   -1.10   20.32     0.74     4.2   0.69    12   -3.41     +2.47

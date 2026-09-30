@@ -1,0 +1,18 @@
+# ab_q7pay, steps docs/xr/data/steps-2026-09-30-q7pay.txt, --air-offset-s 0.9073 (Quest-PC 0.9073 + PC-air 0), --guard-s 5. ~10:39-10:51 local; q7 payload 1400 vs 2400 for openipc-4b: 720p120 25M MCS7 FEC 8/10, 17 dBm, ch165, 4b's merged wfb_tx measure-only (-A 10000); NPNPNP 120 s; APK c8986061, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/link_audit.py scripts/quest/out/ab_q7pay.pftrace docs/xr/data/steps-2026-09-30-q7pay.txt --air-offset-s 0.9073 --guard-s 5 --logcat scripts/quest/out/logcat_q7pay.txt
+PKT_LOST events 1514, packets 2543; TX DESC 15158; block overrides 0
+post-FEC gap sizes: 1:992, 2:180, 3:229, 4:74, 5:29, 6:7, 7:3
+loss within 2 ms after a Quest TX: 1.7 % (control, TX shifted 50 ms: 2.4 %)
+Rayleigh Z @    1.000 Hz =      0.1
+Rayleigh Z @    4.000 Hz =      4.3
+Rayleigh Z @    9.766 Hz =      3.6
+Rayleigh Z @   72.000 Hz =     11.7
+Rayleigh Z @   90.000 Hz =      5.2
+TRACE LOSS: none (stats table clean)
+                    rx  lost   fec wlost p_data%  post% runs/s   r1   r2   r3   r4  r5+ 5+sh% gapmax gap99
+ 0 n1400        218931 19185  6238   729    2.93   8.06   14.3  185   64  151   38 1135  95.2 1895.8   3.5
+ 1 p2400        148523   656  1755   282    1.37   0.44    1.3   34   29   31   20   30  59.6   24.5   4.4
+ 2 n1400        252545   646  1600   249    0.73   0.26    1.8  128   10   21   14   25  58.7   23.1   3.1
+ 3 p2400        150335   428  1178   130    0.87   0.28    0.8   25   16   16    8   21  68.0   24.6   4.2
+ 4 n1400        251165   557  2137   281    0.96   0.22    1.8  113   15   28   14   32  49.2   22.2   2.9
+ 5 p2400        151029   288  1081   144    0.81   0.19    0.7   26   13   24    4   11  51.4   23.7   4.2

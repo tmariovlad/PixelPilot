@@ -1,0 +1,9 @@
+# ab_q7pay, steps docs/xr/data/steps-2026-09-30-q7pay.txt, --air-offset-s 0.9073 (Quest-PC 0.9073 + PC-air 0), --guard-s 5. ~10:39-10:51 local; q7 payload 1400 vs 2400 for openipc-4b: 720p120 25M MCS7 FEC 8/10, 17 dBm, ch165, 4b's merged wfb_tx measure-only (-A 10000); NPNPNP 120 s; APK c8986061, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_q7pay.pftrace docs/xr/data/steps-2026-09-30-q7pay.txt --air-offset-s 0.9073 --guard-s 5
+                 runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77
+ 0 n1400          14.32  187   64  151   38  138  997       10    0.7    6.4 1895.8     0.0
+ 1 p2400           1.31   34   29   31   20   15   15        3    8.0   13.4   20.1     0.3
+ 2 n1400           1.80  128   10   21   14   14   11        1    0.3    7.6   11.2     1.9
+ 3 p2400           0.78   25   16   16    8    8   13        3    7.6   12.9   17.6     1.8
+ 4 n1400           1.84  113   15   28   14   25    7        1    3.1    7.7    9.0     0.5
+ 5 p2400           0.71   26   13   24    4    5    6        3    8.1   12.5   14.5     1.7

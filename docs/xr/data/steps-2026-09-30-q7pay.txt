@@ -1,0 +1,8 @@
+# q7 payload steps (AIR clock ~= PC this boot; pixelpilot-xr-66's schedule): q7 = 720p120 25 Mbit MCS7 FEC 8/10, 17 dBm, ch165, openipc-4b's merged wfb_tx in measure-only mode (-A 10000); maxPayloadSize 1400 (n) vs 2400 (p), 120 s each, NPNPNP; the first step also holds the wfb_tx swap gap.
+1790753940 n1400
+1790754060 p2400
+1790754180 n1400
+1790754300 p2400
+1790754420 n1400
+1790754540 p2400
+1790754660 END

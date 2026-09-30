@@ -1,0 +1,13 @@
+# ab_q7pay, steps docs/xr/data/steps-2026-09-30-q7pay.txt, --air-offset-s 0.9073 (Quest-PC 0.9073 + PC-air 0), --guard-s 5. ~10:39-10:51 local; q7 payload 1400 vs 2400 for openipc-4b: 720p120 25M MCS7 FEC 8/10, 17 dBm, ch165, 4b's merged wfb_tx measure-only (-A 10000); NPNPNP 120 s; APK c8986061, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_q7pay.pftrace docs/xr/data/steps-2026-09-30-q7pay.txt --air-offset-s 0.9073 --guard-s 5 --baseline n1400
+big = npkts >= 23 (p98 of the frames in the steps); ms above the 'n1400' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 n1400           541    30 -14.45 -22.34   4.26 204.80 |  12227   7.36 201.67
+ 1 p2400            75    33  -5.44  -5.52   5.89  11.86 |  12931 -19.60 -15.21
+ 2 n1400           380    33   0.95  -1.23  19.60  37.06 |  12635  -9.34  -4.82
+ 3 p2400            78    33  13.27  12.48  25.83  28.69 |  12921  -1.21   3.27
+ 4 n1400           649    29  17.68  13.83  35.98  50.17 |  12370   9.17  13.75
+ 5 p2400            57    33  31.41  31.29  43.75  44.99 |  12981  17.23  21.61
+per state
+n1400             1570    30   2.56   6.10  30.51 204.80 |  37232   2.30 107.62
+p2400              210    33  11.51  10.87  36.96  44.99 |  38833  -1.17  20.28

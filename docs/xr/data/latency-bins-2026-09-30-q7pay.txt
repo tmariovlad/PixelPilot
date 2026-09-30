@@ -1,0 +1,9 @@
+# ab_q7pay, steps docs/xr/data/steps-2026-09-30-q7pay.txt, --air-offset-s 0.9073 (Quest-PC 0.9073 + PC-air 0), --guard-s 5. ~10:39-10:51 local; q7 payload 1400 vs 2400 for openipc-4b: 720p120 25M MCS7 FEC 8/10, 17 dBm, ch165, 4b's merged wfb_tx measure-only (-A 10000); NPNPNP 120 s; APK c8986061, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/latency_bins.py scripts/quest/out/ab_q7pay.pftrace docs/xr/data/steps-2026-09-30-q7pay.txt --air-offset-s 0.9073 --guard-s 5 --baseline n1400
+ms above the 'n1400' drift line; bins of 10 s from each step's guarded start; slope in ms/s
+ 0 n1400         slope  -1.423   124.2  201.1   -7.0  -28.3  -27.4  -26.7  -25.7  -25.7  -25.4  -24.6  -23.8
+ 1 p2400         slope  +0.075   -23.4  -22.6  -21.6  -21.0  -20.3  -19.4  -18.8  -18.0  -17.2  -16.5  -15.9
+ 2 n1400         slope  +0.077   -13.2  -12.4  -11.3  -10.3   -9.6   -9.1   -7.5   -7.1   -7.1   -6.3   -5.4
+ 3 p2400         slope  +0.076    -5.0   -4.3   -3.3   -2.6   -1.9   -1.0   -0.4    0.6    1.1    1.9    2.6
+ 4 n1400         slope  +0.078     5.2    6.0    7.6    8.6    8.7   10.1   10.9   11.6   11.3   12.1   13.5
+ 5 p2400         slope  +0.076    13.4   14.2   14.9   15.8   16.6   17.3   18.3   18.9   19.6   20.2   21.0

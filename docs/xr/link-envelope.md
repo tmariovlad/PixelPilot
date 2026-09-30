@@ -239,7 +239,12 @@ Race REC (480p167, 2 Mbit/s, MCS2, FEC 4/8, 17 dBm, ch165). waybeam `maxPayloadS
 
 - **At 2400 a race frame fits in one packet, and the frame's tail and the link's p95 shrink** [PROVEN: N = 2 per state, palindrome]: spread 0.04 vs 0.26–0.79 ms, last95 0.8–1.0 vs 3.3–3.9 ms, link p95 4.3 vs 6.8–7.6 ms, tot50 −0.5 ms. FEC recoveries also fall (2.2–2.6 vs 3.1–4.7/s): fewer packets per frame, fewer to lose.
 - 3000 adds nothing over 2400 at this rate. Pre-FEC loss is unchanged, and post-FEC is 0.00–0.01 % everywhere, so the larger packet costs nothing here.
-- This is race at 2 Mbit/s. At HD rates a frame spans many packets anyway; the air's packet-size cap (≤ 3900 B, wlan0 MTU) still applies.
+- This is race at 2 Mbit/s. At HD rates a frame spans many packets anyway; the air's packet-size cap (≤ 3900 B, wlan0 MTU) still applies at any rate.
+- **At 25 Mbit/s (q7: 720p120 MCS7 FEC 8/10, 10:39–10:51) 2400 also helps** [PROVEN: N = 3 p / 2 n, step 0 excluded (it holds the wfb_tx swap: 19,185 RTP lost, post-FEC 8 %)] ([steps](data/steps-2026-09-30-q7pay.txt) · [latency on the p2400 line](data/latency-p2400-2026-09-30-q7pay.txt) · [per-step stats](data/segments-2026-09-30-q7pay.txt) · [link_audit](data/audit-2026-09-30-q7pay.txt)):
+  - frame complete 1.21–1.42 vs 2.65–2.76 ms (−1.35 ms); decoded 3.03–3.27 vs 4.52–4.61 ms; last95 4.80–5.40 vs 5.72–6.20 ms; spread 5.0 vs 6.2 ms with 11.5 vs 19.3 packets per frame;
+  - lnk50 9.0–9.2 vs 9.8–10.0 ms, tot50 19.1–19.6 vs 20.4 ms;
+  - loss unchanged: post-FEC 0.19–0.44 vs 0.22–0.26 %, pre-FEC 0.8–1.4 vs 0.7–1.0 %, 118 fps in both.
+  - The standard latency file uses n1400 as the drift baseline and is skewed by step 0. The p2400 refit is the one to read.
 
 ### 25 Mbit/s block 2026-09-30 10:02–10:16: 720p120 25 Mbit/s holds 115–119 fps with 0.1–0.4 % after FEC on ch165; the Quest's encode→latch stays ≤ 21 ms
 

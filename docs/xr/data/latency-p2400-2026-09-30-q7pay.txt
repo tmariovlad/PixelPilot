@@ -1,0 +1,18 @@
+# ab_q7pay latency on the p2400 drift line (steps 1/3/5 clean); step 0 (n1400) holds the wfb_tx swap gap (19185 RTP lost) and is warm-up only. Quest-air 0.9073 s, guard 5 s.
+# python3 scripts/quest-latch/ab_segments.py scripts/quest/out/ab_q7pay.pftrace docs/xr/data/steps-2026-09-30-q7pay.txt --air-offset-s 0.9073 --guard-s 5 --baseline p2400
+1280423 packets, 87180 frames, 24549 lost before the app; 84644 frames inside the steps
+clock drift fitted on 'p2400': +71 ppm
+
+per step (ms vs the baseline drift line; 'last' = frame complete, 'decoded' = decoder output)
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec
+ 0 n1400        12768  116.1  17.15    6.46   30.11   36.57  234.84    19.39   174.4  22.64  1166
+ 1 p2400        13006  118.3  11.42    5.04   -3.63    1.42    5.40     3.27     6.0   0.99     9
+ 2 n1400        13015  118.3  19.40    6.20   -3.56    2.65    5.72     4.52     5.9   0.98     7
+ 3 p2400        12999  118.2  11.57    5.02   -3.72    1.30    5.01     3.13     3.9   0.65     3
+ 4 n1400        13019  118.4  19.29    6.20   -3.43    2.76    6.20     4.61     5.1   0.84     3
+ 5 p2400        13038  118.5  11.58    5.03   -3.82    1.21    4.80     3.03     2.6   0.44     0
+
+per state
+               frames    fps  pkt/f  spread   first    last  last95  decoded  lost/s  lost% undec   Δlast  Δdecoded
+n1400           38802  117.6  18.62    6.29    7.56   13.85  141.35     9.14    61.8   9.40  1176  +12.54     +5.99
+p2400           39043  118.3  11.52    5.03   -3.72    1.31    5.08     3.14     4.2   0.69    12   +0.00     +0.00
