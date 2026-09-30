@@ -47,12 +47,22 @@ struct DecodingInfo
     bool operator!=(const DecodingInfo& d2) const { return !(*this == d2); }
 };
 
+// width/height: the visible picture (the decoder's display crop, DisplayCrop.h); codedWidth/codedHeight: the decoded
+// buffer it sits in, at cropLeft/cropTop (360 visible rows come in a 368-row buffer, 1080 in 1088).
 struct VideoRatio
 {
-    int width  = 0;
-    int height = 0;
+    int width       = 0;
+    int height      = 0;
+    int codedWidth  = 0;
+    int codedHeight = 0;
+    int cropLeft    = 0;
+    int cropTop     = 0;
 
-    bool operator==(const VideoRatio& b) const { return width == b.width && height == b.height; }
+    bool operator==(const VideoRatio& b) const
+    {
+        return width == b.width && height == b.height && codedWidth == b.codedWidth && codedHeight == b.codedHeight &&
+               cropLeft == b.cropLeft && cropTop == b.cropTop;
+    }
 
     bool operator!=(const VideoRatio& b) const { return !(*this == b); }
 };

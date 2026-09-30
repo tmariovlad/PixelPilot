@@ -316,6 +316,15 @@ public class VideoPlayer implements IVideoParamsChanged {
     // called by native code via NDK
     @Override
     @SuppressWarnings({"UnusedDeclaration"})
+    public void onVideoCodedSizeChanged(int codedW, int codedH, int cropLeft, int cropTop) {
+        if (mVideoParamsChanged != null) {
+            mVideoParamsChanged.onVideoCodedSizeChanged(codedW, codedH, cropLeft, cropTop);
+        }
+    }
+
+    // called by native code via NDK
+    @Override
+    @SuppressWarnings({"UnusedDeclaration"})
     public void onVideoRatioChanged(int videoW, int videoH) {
         if (mVideoParamsChanged != null) {
             mVideoParamsChanged.onVideoRatioChanged(videoW, videoH);

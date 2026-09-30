@@ -36,12 +36,16 @@ public final class LayerLayout {
     public final float statsWidthM, statsHeightM, statsY, statsZ;
     /** The menu quad: size, centre, and the yaw that turns it toward the eye. */
     public final float menuWidthM, menuHeightM, menuX, menuY, menuZ, menuYawRad;
-    public final int imageW, imageH;
+    /** The video's visible rect in the swapchain image (the decoder's display crop) and the swapchain's own size (the
+     * decoded buffer). H.264 codes whole 16-row macroblocks, so 360 visible rows come in a 368-row buffer and 1080 in
+     * 1088; sizing the layer to the buffer drew the padding rows (2026-09-30, docs/xr/link-envelope.md, S2). */
+    public final int imageW, imageH, bufferW, bufferH, rectX, rectY;
 
     private LayerLayout(boolean cylinder, boolean flip, float videoWidthM, float videoHeightM, float videoZ,
                         float cylRadius, float cylAngleRad, float cylAspect, float statsWidthM,
                         float statsHeightM, float statsY, float statsZ, float menuWidthM, float menuHeightM,
-                        float menuX, float menuZ, int imageW, int imageH) {
+                        float menuX, float menuZ, int imageW, int imageH, int bufferW, int bufferH, int rectX,
+                        int rectY) {
         this.cylinder = cylinder;
         this.flip = flip;
         this.videoWidthM = videoWidthM;
@@ -62,6 +66,21 @@ public final class LayerLayout {
         this.menuYawRad = (float) -Math.atan2(menuX, -menuZ);
         this.imageW = imageW;
         this.imageH = imageH;
+        this.bufferW = bufferW;
+        this.bufferH = bufferH;
+        this.rectX = rectX;
+        this.rectY = rectY;
+    }
+
+    /** This layout with the decoded buffer's size and the visible rect's origin in it. A buffer that cannot hold the
+     * visible rect at that origin (a crop reported before its buffer, or a bad one) is ignored. */
+    public LayerLayout withBuffer(int bufferW, int bufferH, int rectX, int rectY) {
+        final boolean fits = rectX >= 0 && rectY >= 0 && rectX + imageW <= bufferW && rectY + imageH <= bufferH;
+        final boolean bufferFits = bufferW >= imageW && bufferH >= imageH;
+        final int bw = bufferFits ? bufferW : imageW, bh = bufferFits ? bufferH : imageH;
+        return new LayerLayout(cylinder, flip, videoWidthM, videoHeightM, videoZ, cylRadius, cylAngleRad, cylAspect,
+                statsWidthM, statsHeightM, statsY, statsZ, menuWidthM, menuHeightM, menuX, menuZ, imageW, imageH, bw, bh,
+                fits ? rectX : 0, fits ? rectY : 0);
     }
 
     public static LayerLayout compute(int videoW, int videoH, float fovDeg, float distanceM,
@@ -90,6 +109,6 @@ public final class LayerLayout {
         final float edgeX = distanceM * (float) Math.tan(Math.toRadians(MENU_EDGE_DEG));
         final float menuX = Math.min(videoHalfX + MENU_GAP_PER_M * distanceM + menuW / 2f, edgeX - menuW / 2f);
         return new LayerLayout(cylinder, flip, width, height, -distanceM, distanceM, fovRad, aspect,
-                statsW, statsH, statsY, -distanceM, menuW, menuH, menuX, -distanceM, w, h);
+                statsW, statsH, statsY, -distanceM, menuW, menuH, menuX, -distanceM, w, h, w, h, 0, 0);
     }
 }

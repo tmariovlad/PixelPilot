@@ -21,11 +21,11 @@ XrPosef poseYaw(float x, float y, float z, float yawRad)
     return p;
 }
 
-XrSwapchainSubImage subImage(XrSwapchain swapchain, int w, int h)
+XrSwapchainSubImage subImage(XrSwapchain swapchain, int w, int h, int x = 0, int y = 0)
 {
     XrSwapchainSubImage s{};
     s.swapchain       = swapchain;
-    s.imageRect       = {{0, 0}, {w, h}};
+    s.imageRect       = {{x, y}, {w, h}};
     s.imageArrayIndex = 0;
     return s;
 }
@@ -45,7 +45,7 @@ void XrLayers::build(const LayerConfig& c, XrSpace viewSpace, XrSwapchain video,
         mVideoCylinder.layerFlags    = 0;
         mVideoCylinder.space         = viewSpace;
         mVideoCylinder.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
-        mVideoCylinder.subImage      = subImage(video, c.imageW, c.imageH);
+        mVideoCylinder.subImage      = subImage(video, c.imageW, c.imageH, c.rectX, c.rectY);
         mVideoCylinder.pose          = pose(0.f, 0.f, 0.f);
         mVideoCylinder.radius        = c.cylRadius;
         mVideoCylinder.centralAngle  = c.cylAngleRad;
@@ -58,7 +58,7 @@ void XrLayers::build(const LayerConfig& c, XrSpace viewSpace, XrSwapchain video,
         mVideoQuad.layerFlags    = 0;
         mVideoQuad.space         = viewSpace;
         mVideoQuad.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
-        mVideoQuad.subImage      = subImage(video, c.imageW, c.imageH);
+        mVideoQuad.subImage      = subImage(video, c.imageW, c.imageH, c.rectX, c.rectY);
         mVideoQuad.pose          = pose(0.f, 0.f, c.videoZ);
         mVideoQuad.size          = {c.videoWidthM, c.videoHeightM};
         mPtrs[0] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&mVideoQuad);

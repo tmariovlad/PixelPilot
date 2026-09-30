@@ -18,8 +18,12 @@ struct LayerConfig
     float statsHeightM = 0.40f;
     float statsY       = -0.92f;
     float statsZ       = -2.f;
-    int   imageW       = 1280;
+    int   imageW       = 1280;   // the video's visible rect in the swapchain image (the decoder's display crop)
     int   imageH       = 720;
+    int   bufferW      = 1280;   // the swapchain's size = the decoded buffer (e.g. 1088 rows for 1080 visible)
+    int   bufferH      = 720;
+    int   rectX        = 0;      // the visible rect's origin in the buffer
+    int   rectY        = 0;
     int   statsImageW  = 512;
     int   statsImageH  = 256;
     // The menu quad (docs/xr/menu-design.md), submitted only while menuVisible.

@@ -94,7 +94,7 @@ public final class XrBridge {
                 l.statsWidthM, l.statsHeightM, l.statsY, l.statsZ, LayerLayout.STATS_IMAGE_W,
                 LayerLayout.STATS_IMAGE_H, l.menuWidthM, l.menuHeightM, l.menuX, l.menuY, l.menuZ, l.menuYawRad,
                 LayerLayout.MENU_IMAGE_W, LayerLayout.MENU_IMAGE_H};
-        nativeSetLayout(handle, l.cylinder, l.flip, v, l.imageW, l.imageH);
+        nativeSetLayout(handle, l.cylinder, l.flip, v, l.imageW, l.imageH, l.bufferW, l.bufferH, l.rectX, l.rectY);
     }
 
     /**
@@ -157,7 +157,8 @@ public final class XrBridge {
     private native Object nativeStatsSurface(long h);
     private native Object nativeMenuSurface(long h);
     private native void nativeSetMenuVisible(long h, boolean visible);
-    private native void nativeSetLayout(long h, boolean cylinder, boolean flip, float[] values, int imageW, int imageH);
+    private native void nativeSetLayout(long h, boolean cylinder, boolean flip, float[] values, int imageW, int imageH,
+                                        int bufferW, int bufferH, int rectX, int rectY);
     private native float[] nativeInfo(long h);
     private native long[] nativeDisplayGrid(long h);
     private native void nativeSetWorkerThreads(long h, int[] threadIds);

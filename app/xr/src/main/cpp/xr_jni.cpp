@@ -62,7 +62,8 @@ XR_JNI(void, nativeSetMenuVisible)(JNIEnv*, jobject, jlong h, jboolean visible)
 }
 
 XR_JNI(void, nativeSetLayout)
-(JNIEnv* env, jobject, jlong h, jboolean cylinder, jboolean flip, jfloatArray values, jint imageW, jint imageH)
+(JNIEnv* env, jobject, jlong h, jboolean cylinder, jboolean flip, jfloatArray values, jint imageW, jint imageH,
+ jint bufferW, jint bufferH, jint rectX, jint rectY)
 {
     jfloat v[20];
     env->GetFloatArrayRegion(values, 0, 20, v);
@@ -91,6 +92,10 @@ XR_JNI(void, nativeSetLayout)
     c.menuImageH   = static_cast<int>(v[19]);
     c.imageW       = imageW;
     c.imageH       = imageH;
+    c.bufferW      = bufferW;
+    c.bufferH      = bufferH;
+    c.rectX        = rectX;
+    c.rectY        = rectY;
     handle(h)->runtime.setLayerConfig(c);
 }
 

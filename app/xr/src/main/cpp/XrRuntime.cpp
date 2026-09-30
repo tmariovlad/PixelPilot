@@ -65,7 +65,7 @@ void XrRuntime::stop()
 void XrRuntime::setLayerConfig(const LayerConfig& c)
 {
     std::lock_guard<std::mutex> lock(mMutex);
-    mResizePending = mResizePending || c.imageW != mLayerConfig.imageW || c.imageH != mLayerConfig.imageH;
+    mResizePending = mResizePending || c.bufferW != mLayerConfig.bufferW || c.bufferH != mLayerConfig.bufferH;
     mLayerConfig   = c;
 }
 
@@ -272,7 +272,7 @@ bool XrRuntime::setup(JNIEnv* env)
         std::lock_guard<std::mutex> lock(mMutex);
         initial = mLayerConfig;
     }
-    jobject video = createSurface(env, initial.imageW, initial.imageH, mCfg.useTimestamps, mVideoChain);
+    jobject video = createSurface(env, initial.bufferW, initial.bufferH, mCfg.useTimestamps, mVideoChain);
     jobject stats = video ? createSurface(env, initial.statsImageW, initial.statsImageH, false, mStatsChain) : nullptr;
     jobject menu  = stats ? createSurface(env, initial.menuImageW, initial.menuImageH, false, mMenuChain) : nullptr;
     if (stats && !menu) XLOGE("menu surface swapchain creation failed; running without the menu");
@@ -487,8 +487,8 @@ void XrRuntime::renderFrame()
     if (resize && pfnUpdateSwapchain)
     {
         XrSwapchainStateAndroidSurfaceDimensionsFB dims{XR_TYPE_SWAPCHAIN_STATE_ANDROID_SURFACE_DIMENSIONS_FB};
-        dims.width  = static_cast<uint32_t>(config.imageW);
-        dims.height = static_cast<uint32_t>(config.imageH);
+        dims.width  = static_cast<uint32_t>(config.bufferW);
+        dims.height = static_cast<uint32_t>(config.bufferH);
         pfnUpdateSwapchain(mVideoChain, reinterpret_cast<const XrSwapchainStateBaseHeaderFB*>(&dims));
     }
 

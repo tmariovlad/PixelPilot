@@ -100,3 +100,8 @@ add_executable(frame_timeline_test FrameTimeline_test.cpp)
 target_include_directories(frame_timeline_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
 target_link_libraries(frame_timeline_test GTest::gtest_main)
 gtest_discover_tests(frame_timeline_test)
+
+add_executable(display_crop_test DisplayCrop_test.cpp)
+target_include_directories(display_crop_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../)
+target_link_libraries(display_crop_test GTest::gtest_main)
+gtest_discover_tests(display_crop_test)

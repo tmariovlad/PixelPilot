@@ -11,6 +11,7 @@
 #include <ctime>
 #include <sstream>
 #include "AndroidThreadPrioValues.hpp"
+#include "DisplayCrop.h"
 #include "helper/AndroidMediaFormatHelper.h"
 #include "helper/NDKThreadHelper.hpp"
 
@@ -401,10 +402,18 @@ void VideoDecoder::checkOutputLoop(int idx)
             int  width = 0, height = 0;
             AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_WIDTH, &width);
             AMediaFormat_getInt32(format, AMEDIAFORMAT_KEY_HEIGHT, &height);
-            MLOGD << "Actual Width and Height in output " << width << "," << height;
+            // The crop keys are MediaCodec's inclusive corners of the visible picture in the decoded buffer.
+            int        cl = 0, ct = 0, cr = -1, cb = -1;
+            const bool hasCrop = AMediaFormat_getInt32(format, "crop-left", &cl) &&
+                                 AMediaFormat_getInt32(format, "crop-top", &ct) &&
+                                 AMediaFormat_getInt32(format, "crop-right", &cr) &&
+                                 AMediaFormat_getInt32(format, "crop-bottom", &cb);
+            const DisplayCrop crop = displayCrop(width, height, hasCrop, cl, ct, cr, cb);
+            MLOGD << "Actual Width and Height in output " << width << "," << height << " visible " << crop.width
+                  << "x" << crop.height << " at " << crop.left << "," << crop.top;
             if (idx == 0 && onDecoderRatioChangedCallback != nullptr && width != 0 && height != 0)
             {
-                onDecoderRatioChangedCallback({width, height});
+                onDecoderRatioChangedCallback({crop.width, crop.height, width, height, crop.left, crop.top});
             }
             MLOGD << "AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED " << width << " " << height << " "
                   << AMediaFormat_toString(format);

@@ -613,6 +613,15 @@ extern "C"
             jclass jClassExtendsIVideoParamsChanged = env->GetObjectClass(videoParamsChangedI);
             if (p->latestVideoRatioChanged)
             {
+                // The buffer first, so a listener that lays out on the ratio already has the buffer it goes with.
+                jmethodID onCodedJAVA =
+                    env->GetMethodID(jClassExtendsIVideoParamsChanged, "onVideoCodedSizeChanged", "(IIII)V");
+                env->CallVoidMethod(videoParamsChangedI,
+                                    onCodedJAVA,
+                                    (jint) p->latestVideoRatio.codedWidth,
+                                    (jint) p->latestVideoRatio.codedHeight,
+                                    (jint) p->latestVideoRatio.cropLeft,
+                                    (jint) p->latestVideoRatio.cropTop);
                 jmethodID onVideoRatioChangedJAVA =
                     env->GetMethodID(jClassExtendsIVideoParamsChanged, "onVideoRatioChanged", "(II)V");
                 env->CallVoidMethod(

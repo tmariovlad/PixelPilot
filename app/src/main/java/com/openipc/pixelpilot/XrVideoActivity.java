@@ -84,6 +84,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private boolean panelOverVideo;
     private final PanelMode panelMode = new PanelMode();   // controller-driven: detailed / compact / hidden. UI thread.        // the panel sits over the video while signal.needsAction(). UI thread.
     private volatile int videoW, videoH;
+    /** The decoded buffer around the visible picture (onVideoCodedSizeChanged); 0 until the decoder reports it. */
+    private volatile int codedW, codedH, cropLeft, cropTop;
     // The in-headset menu (docs/xr/menu-design.md), right thumbstick only, and the VMODE1 session with the air unit
     // (docs/xr/presets-design.md) behind its Air lines. UI thread.
     private static final long MENU_PERIOD_MS = 50;
@@ -523,7 +525,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private LayerLayout currentLayout() {
         return LayerLayout.compute(videoW, videoH, experiments.xrFovDeg, LayerLayout.DEFAULT_DISTANCE_M,
                 experiments.xrLayerShape == LatencyExperiments.LayerShape.CYLINDER, experiments.xrFlipVertical,
-                panelOverVideo);
+                panelOverVideo).withBuffer(codedW, codedH, cropLeft, cropTop);
     }
 
     private void applyLayout() {
@@ -531,6 +533,14 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     }
 
     // ---- callbacks from the player / link (background threads) ------------------------------
+
+    @Override
+    public void onVideoCodedSizeChanged(int w, int h, int left, int top) {
+        codedW = w;
+        codedH = h;
+        cropLeft = left;
+        cropTop = top;
+    }
 
     @Override
     public void onVideoRatioChanged(int w, int h) {

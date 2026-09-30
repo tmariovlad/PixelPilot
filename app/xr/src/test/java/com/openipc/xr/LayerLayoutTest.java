@@ -91,4 +91,48 @@ public class LayerLayoutTest {
         assertTrue(l.menuX > 0);
         assertEquals(-Math.atan2(l.menuX, -l.menuZ), l.menuYawRad, 1e-4);
     }
+
+    // H.264 codes whole 16-row macroblocks: 360 visible rows arrive in a 368-row buffer and 1080 in 1088. The layer
+    // shows the visible rows at their own aspect; the swapchain keeps the buffer's size (2026-09-30, O121 S2 stills).
+    @Test public void bufferGeometryKeepsTheVisibleRectAndAspect() {
+        LayerLayout l = LayerLayout.compute(640, 360, 60f, 2f, false, true).withBuffer(640, 368, 0, 0);
+        assertEquals(640, l.imageW);
+        assertEquals(360, l.imageH);
+        assertEquals(640, l.bufferW);
+        assertEquals(368, l.bufferH);
+        assertEquals(0, l.rectX);
+        assertEquals(0, l.rectY);
+        assertEquals(640f / 360f, l.videoWidthM / l.videoHeightM, EPS);
+        LayerLayout hd = LayerLayout.compute(1920, 1080, 60f, 2f, true, true).withBuffer(1920, 1088, 0, 0);
+        assertEquals(1080, hd.imageH);
+        assertEquals(1088, hd.bufferH);
+        assertEquals(1920f / 1080f, hd.cylAspect, EPS);
+    }
+
+    @Test public void withoutBufferGeometryTheBufferIsTheImage() {
+        LayerLayout l = LayerLayout.compute(1280, 720, 60f, 2f, false, true);
+        assertEquals(1280, l.bufferW);
+        assertEquals(720, l.bufferH);
+        assertEquals(0, l.rectX);
+        assertEquals(0, l.rectY);
+    }
+
+    @Test public void aCropOriginThatFitsIsKept() {
+        LayerLayout l = LayerLayout.compute(640, 360, 60f, 2f, false, true).withBuffer(640, 480, 0, 60);
+        assertEquals(60, l.rectY);
+        assertEquals(480, l.bufferH);
+        LayerLayout x = LayerLayout.compute(624, 472, 60f, 2f, false, true).withBuffer(640, 480, 8, 4);
+        assertEquals(8, x.rectX);
+        assertEquals(4, x.rectY);
+    }
+
+    @Test public void aBufferSmallerThanTheImageIsIgnored() {
+        // a crop reported before its buffer (or a bad one) must not shrink the swapchain below the picture
+        LayerLayout l = LayerLayout.compute(640, 360, 60f, 2f, false, true).withBuffer(640, 300, 0, 0);
+        assertEquals(640, l.bufferW);
+        assertEquals(360, l.bufferH);
+        LayerLayout off = LayerLayout.compute(640, 360, 60f, 2f, false, true).withBuffer(640, 368, 0, 12);
+        assertEquals(368, off.bufferH);
+        assertEquals(0, off.rectY);   // 12 + 360 > 368: the origin does not fit, so the rect starts at the top
+    }
 }
