@@ -257,6 +257,32 @@ APK `c4ad7290` (branch `drain-toggle-ab` c7c3c76 + wfb-ng 148fa4e, [fec-block-pr
 - **Drift is as large as the first A/B's "regression"** [PROVEN, same table]. Post-FEC loss rose through the run in both arms (off 0.15 → 0.23 → 0.26 %, on 0.16 → 0.25 %): +70 % in 8 min with the code path unchanged. The first A/B's +30 % (B arms in the middle) fits this drift. It was also two builds.
 - **What it settles, and what not:** the drain changes nothing with stock TX, so this run cannot show what it does under `-Y`, where it is meant to act. The offline replays cover that case (identical loss/recovery counters, 3,494 payloads earlier, 0 later). Relanding it in xr-native (pixelpilot-xr-36) and opening the `-Y` gate are the coordinator's and the user's call. c8986061 was reinstalled after the run (md5 checked at 755667), and guardian and proximity were restored at 755668.
 
+### Sensor mode 640×360 vs 640×480 at race (O121 S2) 2026-09-30 18:07–18:31: tot50 −0.81 ms, of which encode −0.22 and link −0.52 (the encoder makes 13 % smaller frames); the Quest draws the 8 padding rows
+
+openipc-4b's IMX415 module `ab705038` adds RES_360 (640×360@167, the central 360 of the 480 rows); the coordinator ran it as one `ab_run.sh` with `lever_s2.sh`: race REC (2 Mbit/s, bitrate and radio unchanged), **r480 / r360 ABAB × 4, 180 s blocks**, waybeam restarted at each step (~3 s without video). All 8 blocks valid: 120 air samples, none below 160 fps, ISP errors 0 (coordinator). Quest APK 3b37a562, one detached capture, pid unchanged. Plan and predictions: openipc repo `repos/tasks/air-latency-30pct-2026-09-30/s2/00-IMPL-res360.md` §5.
+- **Data.** [ab_fit per PPXR_STATS key](data/s2-fit-2026-09-30.txt) (OLS on every 2 s sample, arm + linear/quadratic drift, first 15 s of each block dropped; `--quest-minus-air-s 0.774`) · [steps](data/steps-2026-09-30-s2.txt) · [stills graded](data/quality-2026-09-30-s2-res360.md) · air log `ab_s2.log` in the openipc slot folder above.
+
+| key (PPXR_STATS) | r480 block medians | r360 block medians | r360 − r480 (OLS) | z | predicted |
+|---|---|---|---|---|---|
+| enc50 | 1.87–1.88 | 1.64 | **−0.220 ± 0.001** | −153 | −0.38 (PTS at frame end) or −0.97 (at frame start) |
+| enc95 | 1.97 | 1.73–1.75 | −0.227 ± 0.002 | −111 | |
+| lnk50 | | | **−0.524 ± 0.030** | −17.6 | 0 |
+| dec50 | | | −0.105 ± 0.002 | −59 | |
+| dsp50 | | | +0.034 ± 0.009 | +4.0 | |
+| **tot50** | 11.78–11.91 | 10.92–11.02 | **−0.808 ± 0.031** | −26 | ≈ enc50 |
+| tot95 | 15.59–15.74 | 14.74–14.85 | −0.52 ± 0.48 | −1.1 | |
+| kb (encoded frame, kbit, median) | 15 | 13 | −2.07 ± 0.04 | −48 | 0 (same bitrate) |
+| pkts per frame (median) | 1 | 1 | 0 | | |
+| post-FEC / pre-FEC | | | −0.001 / −0.03 % | −0.2 / −0.7 | 0 |
+
+- **tot50 −0.81 ms is real and replicates in all 4 pairs** [PROVEN: table; block medians alternate with no overlap]. The parts add up: enc −0.22 + lnk −0.52 + dec −0.105 + dsp +0.03 = −0.81.
+- **The encode gain is −0.22 ms, below both predictions** [PROVEN]. `enc` is air-clock only (PTS → frame ready), so it has no clock-sync error. −0.22 ms for 25 % fewer pixels is ~2.9 ms/Mpx, not the 4.9 ms/Mpx fit. It rules out "PTS at frame start" (−0.97) [INFERRED: that would put the 0.59 ms readout of 120 lines inside `enc`].
+- **The link gain was not predicted: the encoder makes 13 % smaller frames at r360** [PROVEN: `kb` from the air's own ENC_INFO, 15 → 13 kbit, z −48]. At race REC the encoder is not bitrate-bound, so fewer pixels give fewer bits, and each frame spends less time on the air; `lnk` (ClockSync-based) moves with it [INFERRED: bytes per frame and lnk50 move together, pkts median stays 1]. Loss before and after FEC does not change.
+- **Picture** ([graded by a subagent](data/quality-2026-09-30-s2-res360.md), a dark static room, overall 3/10 in both arms) [INFERRED: visual grading]: r360 keeps the full width and ~75 % of the height; the 16:9 layer is not stretched.
+  - The stills also show the **8 padding rows** of the 368-row coded height at the bottom of the r360 picture. The app sizes the swapchain, the layer's imageRect and its aspect from the decoder's output width/height (640×368), not from the display crop [PROVEN: `XrRuntime.cpp:490`, `XrLayers.cpp:28`, `LayerLayout.compute`; P2's log `Actual Width and Height in output 640,368`]. 1080p (1088 coded rows) is affected the same way. Fix: pending (after the alink uplink fix, the coordinator's order).
+  - The picture looked top-heavy on the Quest (~3:1 rows lost at the top vs the bottom), but the air frames are centred (coordinator: IMX415 window registers and a normalised cross-correlation of the r360 frame inside the r480 frame peak at 60 rows, symmetric). So the offset is in the Quest's rendering path [INFERRED], to be checked with the padding fix.
+- **Decision:** the coordinator reverted the air to the live module `6e637e75` after P4. Keeping RES_360 for race (−0.8 ms, −25 % of the picture height) is the user's call.
+
 ### -Y parity-defer slot 2026-09-30 13:57–14:13: at payload 1400, -Y cuts frame complete −0.53 ms and its p95 from 3.3 to 0.7 ms; at 2400 it only helps the rare multi-packet frames
 
 openipc-4b's `wfb_tx -Y` (parity defer; merged binary b0469029, coordinator's `y_ab.sh` 2c641026). The Quest ran APK **3b37a562** (xr-native 5669151 = 0c790f4, RX drain 66d4bdb on), so `-Y` met its gate. Air race REC (640x480, 167 fps), 17 dBm, ch165; n = `-A 10000` (measure only), y = `-A 10000 -Y`; ABAB × 2 at payload 1400, then ABAB × 2 at 2400, 120 s per step. Each switch relaunches `wfb_tx`: the Quest saw 1.8–2.0 s of NO_PACKETS about 1 s after each T, all inside the 15 s guard; the first step starts at the coordinator's SET + 10 s. PC−air +0.76 s (slot_watch AIR_CLOCK, err 0.12). One detached capture, pid unchanged throughout ([pid_watch.sh](../../scripts/quest/pid_watch.sh)).

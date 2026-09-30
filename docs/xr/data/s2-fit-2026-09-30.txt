@@ -1,0 +1,281 @@
+# O121 S2 P4 (IMX415 RES_360 vs RES_8 at race REC), Quest side: ab_fit.py per PPXR_STATS key; --quest-minus-air-s 0.774 (Quest-PC 1.7738 from ab_s2.meta + PC-air -1 from the coordinator); guard 15 s, ref r480; air log = openipc repos/tasks/air-latency-30pct-2026-09-30/s2/slot-2026-09-30/ab_s2.log
+
+## --key enc50
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key enc50 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (enc50)
+  block 0 r480   1790780850-1790781030 n=   81 median=1.880
+  block 1 r360   1790781030-1790781210 n=   82 median=1.640
+  block 2 r480   1790781210-1790781390 n=   81 median=1.880
+  block 3 r360   1790781390-1790781570 n=   81 median=1.640
+  block 4 r480   1790781570-1790781750 n=   82 median=1.880
+  block 5 r360   1790781750-1790781930 n=   81 median=1.640
+  block 6 r480   1790781930-1790782110 n=   81 median=1.870
+  block 7 r360   1790782110-1790782301 n=   86 median=1.640
+
+OLS linear drift: residual sd 0.018 ms, dof 652, drift +0.0003 ± 0.0001 ms/min
+  r360     vs r480: -0.220 ± 0.001 ms  z=-152.8
+           N per arm for a 2-SE result at 0.22 ms: 1
+
+OLS quadratic drift: residual sd 0.018 ms, dof 651, drift -0.0003 ± 0.0004 ms/min
+  r360     vs r480: -0.220 ± 0.001 ms  z=-152.9
+           N per arm for a 2-SE result at 0.22 ms: 1
+
+## --key enc95
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key enc95 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (enc95)
+  block 0 r480   1790780850-1790781030 n=   81 median=1.970
+  block 1 r360   1790781030-1790781210 n=   82 median=1.730
+  block 2 r480   1790781210-1790781390 n=   81 median=1.970
+  block 3 r360   1790781390-1790781570 n=   81 median=1.730
+  block 4 r480   1790781570-1790781750 n=   82 median=1.970
+  block 5 r360   1790781750-1790781930 n=   81 median=1.750
+  block 6 r480   1790781930-1790782110 n=   81 median=1.970
+  block 7 r360   1790782110-1790782301 n=   86 median=1.730
+
+OLS linear drift: residual sd 0.025 ms, dof 652, drift +0.0005 ± 0.0001 ms/min
+  r360     vs r480: -0.227 ± 0.002 ms  z=-111.3
+           N per arm for a 2-SE result at 0.23 ms: 1
+
+OLS quadratic drift: residual sd 0.025 ms, dof 651, drift -0.0001 ± 0.0006 ms/min
+  r360     vs r480: -0.227 ± 0.002 ms  z=-111.3
+           N per arm for a 2-SE result at 0.23 ms: 1
+
+## --key tot50
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key tot50 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (tot50)
+  block 0 r480   1790780850-1790781030 n=   81 median=11.900
+  block 1 r360   1790781030-1790781210 n=   82 median=10.955
+  block 2 r480   1790781210-1790781390 n=   81 median=11.910
+  block 3 r360   1790781390-1790781570 n=   81 median=10.920
+  block 4 r480   1790781570-1790781750 n=   82 median=11.895
+  block 5 r360   1790781750-1790781930 n=   81 median=11.010
+  block 6 r480   1790781930-1790782110 n=   81 median=11.780
+  block 7 r360   1790782110-1790782301 n=   86 median=11.015
+
+OLS linear drift: residual sd 0.386 ms, dof 652, drift +0.0042 ± 0.0022 ms/min
+  r360     vs r480: -0.808 ± 0.031 ms  z=-26.1
+           N per arm for a 2-SE result at 0.81 ms: 2
+
+OLS quadratic drift: residual sd 0.386 ms, dof 651, drift +0.0052 ± 0.0086 ms/min
+  r360     vs r480: -0.808 ± 0.031 ms  z=-26.1
+           N per arm for a 2-SE result at 0.81 ms: 2
+
+## --key tot95
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key tot95 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (tot95)
+  block 0 r480   1790780850-1790781030 n=   81 median=15.720
+  block 1 r360   1790781030-1790781210 n=   82 median=14.735
+  block 2 r480   1790781210-1790781390 n=   81 median=15.740
+  block 3 r360   1790781390-1790781570 n=   81 median=14.740
+  block 4 r480   1790781570-1790781750 n=   82 median=15.740
+  block 5 r360   1790781750-1790781930 n=   81 median=14.840
+  block 6 r480   1790781930-1790782110 n=   81 median=15.590
+  block 7 r360   1790782110-1790782301 n=   86 median=14.845
+
+OLS linear drift: residual sd 5.987 ms, dof 652, drift +0.0559 ± 0.0345 ms/min
+  r360     vs r480: -0.516 ± 0.480 ms  z=-1.1
+           N per arm for a 2-SE result at 0.52 ms: 1076
+
+OLS quadratic drift: residual sd 5.971 ms, dof 651, drift -0.2120 ± 0.1331 ms/min
+  r360     vs r480: -0.529 ± 0.479 ms  z=-1.1
+           N per arm for a 2-SE result at 0.53 ms: 1019
+
+## --key dec50
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key dec50 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (dec50)
+  block 0 r480   1790780850-1790781030 n=   81 median=1.470
+  block 1 r360   1790781030-1790781210 n=   82 median=1.370
+  block 2 r480   1790781210-1790781390 n=   81 median=1.470
+  block 3 r360   1790781390-1790781570 n=   81 median=1.360
+  block 4 r480   1790781570-1790781750 n=   82 median=1.475
+  block 5 r360   1790781750-1790781930 n=   81 median=1.370
+  block 6 r480   1790781930-1790782110 n=   81 median=1.450
+  block 7 r360   1790782110-1790782301 n=   86 median=1.360
+
+OLS linear drift: residual sd 0.022 ms, dof 652, drift -0.0007 ± 0.0001 ms/min
+  r360     vs r480: -0.105 ± 0.002 ms  z=-59.4
+           N per arm for a 2-SE result at 0.10 ms: 1
+
+OLS quadratic drift: residual sd 0.022 ms, dof 651, drift +0.0016 ± 0.0005 ms/min
+  r360     vs r480: -0.104 ± 0.002 ms  z=-60.3
+           N per arm for a 2-SE result at 0.10 ms: 1
+
+## --key lnk50
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key lnk50 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (lnk50)
+  block 0 r480   1790780850-1790781030 n=   81 median=4.230
+  block 1 r360   1790781030-1790781210 n=   82 median=3.560
+  block 2 r480   1790781210-1790781390 n=   81 median=4.280
+  block 3 r360   1790781390-1790781570 n=   81 median=3.570
+  block 4 r480   1790781570-1790781750 n=   82 median=4.235
+  block 5 r360   1790781750-1790781930 n=   81 median=3.650
+  block 6 r480   1790781930-1790782110 n=   81 median=4.170
+  block 7 r360   1790782110-1790782301 n=   86 median=3.650
+
+OLS linear drift: residual sd 0.370 ms, dof 652, drift +0.0051 ± 0.0021 ms/min
+  r360     vs r480: -0.524 ± 0.030 ms  z=-17.6
+           N per arm for a 2-SE result at 0.52 ms: 5
+
+OLS quadratic drift: residual sd 0.371 ms, dof 651, drift +0.0089 ± 0.0083 ms/min
+  r360     vs r480: -0.523 ± 0.030 ms  z=-17.6
+           N per arm for a 2-SE result at 0.52 ms: 5
+
+## --key lnk95
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key lnk95 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (lnk95)
+  block 0 r480   1790780850-1790781030 n=   81 median=4.510
+  block 1 r360   1790781030-1790781210 n=   82 median=3.795
+  block 2 r480   1790781210-1790781390 n=   81 median=4.550
+  block 3 r360   1790781390-1790781570 n=   81 median=3.800
+  block 4 r480   1790781570-1790781750 n=   82 median=4.490
+  block 5 r360   1790781750-1790781930 n=   81 median=3.940
+  block 6 r480   1790781930-1790782110 n=   81 median=4.430
+  block 7 r360   1790782110-1790782301 n=   86 median=3.935
+
+OLS linear drift: residual sd 6.140 ms, dof 652, drift +0.0587 ± 0.0353 ms/min
+  r360     vs r480: -0.219 ± 0.492 ms  z=-0.4
+           N per arm for a 2-SE result at 0.22 ms: 6261
+
+OLS quadratic drift: residual sd 6.125 ms, dof 651, drift -0.2131 ± 0.1365 ms/min
+  r360     vs r480: -0.232 ± 0.491 ms  z=-0.5
+           N per arm for a 2-SE result at 0.23 ms: 5555
+
+## --key dsp50
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key dsp50 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (dsp50)
+  block 0 r480   1790780850-1790781030 n=   81 median=4.110
+  block 1 r360   1790781030-1790781210 n=   82 median=4.125
+  block 2 r480   1790781210-1790781390 n=   81 median=4.090
+  block 3 r360   1790781390-1790781570 n=   81 median=4.120
+  block 4 r480   1790781570-1790781750 n=   82 median=4.080
+  block 5 r360   1790781750-1790781930 n=   81 median=4.110
+  block 6 r480   1790781930-1790782110 n=   81 median=4.070
+  block 7 r360   1790782110-1790782301 n=   86 median=4.110
+
+OLS linear drift: residual sd 0.106 ms, dof 652, drift -0.0005 ± 0.0006 ms/min
+  r360     vs r480: +0.034 ± 0.009 ms  z=+4.0
+           N per arm for a 2-SE result at 0.03 ms: 77
+
+OLS quadratic drift: residual sd 0.106 ms, dof 651, drift -0.0054 ± 0.0024 ms/min
+  r360     vs r480: +0.034 ± 0.009 ms  z=+4.0
+           N per arm for a 2-SE result at 0.03 ms: 78
+
+## --key post
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key post --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (post)
+  block 0 r480   1790780850-1790781030 n=   81 median=0.000
+  block 1 r360   1790781030-1790781210 n=   82 median=0.000
+  block 2 r480   1790781210-1790781390 n=   81 median=0.000
+  block 3 r360   1790781390-1790781570 n=   81 median=0.000
+  block 4 r480   1790781570-1790781750 n=   82 median=0.000
+  block 5 r360   1790781750-1790781930 n=   81 median=0.000
+  block 6 r480   1790781930-1790782110 n=   81 median=0.000
+  block 7 r360   1790782110-1790782301 n=   86 median=0.000
+
+OLS linear drift: residual sd 0.049 ms, dof 652, drift +0.0003 ± 0.0003 ms/min
+  r360     vs r480: -0.001 ± 0.004 ms  z=-0.2
+           N per arm for a 2-SE result at 0.00 ms: 21130
+
+OLS quadratic drift: residual sd 0.049 ms, dof 651, drift +0.0015 ± 0.0011 ms/min
+  r360     vs r480: -0.001 ± 0.004 ms  z=-0.2
+           N per arm for a 2-SE result at 0.00 ms: 23667
+
+## --key pdata
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key pdata --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (pdata)
+  block 0 r480   1790780850-1790781030 n=   81 median=0.850
+  block 1 r360   1790781030-1790781210 n=   82 median=0.980
+  block 2 r480   1790781210-1790781390 n=   81 median=0.850
+  block 3 r360   1790781390-1790781570 n=   81 median=0.850
+  block 4 r480   1790781570-1790781750 n=   82 median=0.980
+  block 5 r360   1790781750-1790781930 n=   81 median=0.850
+  block 6 r480   1790781930-1790782110 n=   81 median=0.850
+  block 7 r360   1790782110-1790782301 n=   86 median=0.670
+
+OLS linear drift: residual sd 0.468 ms, dof 652, drift -0.0045 ± 0.0027 ms/min
+  r360     vs r480: -0.027 ± 0.038 ms  z=-0.7
+           N per arm for a 2-SE result at 0.03 ms: 2395
+
+OLS quadratic drift: residual sd 0.468 ms, dof 651, drift +0.0057 ± 0.0104 ms/min
+  r360     vs r480: -0.027 ± 0.038 ms  z=-0.7
+           N per arm for a 2-SE result at 0.03 ms: 2483
+
+## --key fps
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key fps --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 735 samples read, 655 used (fps)
+  block 0 r480   1790780850-1790781030 n=   81 median=167.000
+  block 1 r360   1790781030-1790781210 n=   82 median=167.000
+  block 2 r480   1790781210-1790781390 n=   81 median=167.000
+  block 3 r360   1790781390-1790781570 n=   81 median=167.000
+  block 4 r480   1790781570-1790781750 n=   82 median=167.000
+  block 5 r360   1790781750-1790781930 n=   81 median=167.000
+  block 6 r480   1790781930-1790782110 n=   81 median=167.000
+  block 7 r360   1790782110-1790782301 n=   86 median=167.000
+
+OLS linear drift: residual sd 8.638 ms, dof 652, drift -0.1027 ± 0.0497 ms/min
+  r360     vs r480: -0.582 ± 0.693 ms  z=-0.8
+           N per arm for a 2-SE result at 0.58 ms: 1763
+
+OLS quadratic drift: residual sd 8.591 ms, dof 651, drift +0.4283 ± 0.1915 ms/min
+  r360     vs r480: -0.557 ± 0.689 ms  z=-0.8
+           N per arm for a 2-SE result at 0.56 ms: 1905
+
+## --key kb
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key kb --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (kb)
+  block 0 r480   1790780850-1790781030 n=   81 median=15.000
+  block 1 r360   1790781030-1790781210 n=   82 median=13.000
+  block 2 r480   1790781210-1790781390 n=   81 median=15.000
+  block 3 r360   1790781390-1790781570 n=   81 median=13.000
+  block 4 r480   1790781570-1790781750 n=   82 median=15.000
+  block 5 r360   1790781750-1790781930 n=   81 median=13.000
+  block 6 r480   1790781930-1790782110 n=   81 median=15.000
+  block 7 r360   1790782110-1790782301 n=   86 median=13.000
+
+OLS linear drift: residual sd 0.539 ms, dof 652, drift -0.0107 ± 0.0031 ms/min
+  r360     vs r480: -2.070 ± 0.043 ms  z=-47.9
+           N per arm for a 2-SE result at 2.07 ms: 1
+
+OLS quadratic drift: residual sd 0.531 ms, dof 651, drift +0.0399 ± 0.0118 ms/min
+  r360     vs r480: -2.067 ± 0.043 ms  z=-48.5
+           N per arm for a 2-SE result at 2.07 ms: 1
+
+## --key pkts
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key pkts --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (pkts)
+  block 0 r480   1790780850-1790781030 n=   81 median=1.000
+  block 1 r360   1790781030-1790781210 n=   82 median=1.000
+  block 2 r480   1790781210-1790781390 n=   81 median=1.000
+  block 3 r360   1790781390-1790781570 n=   81 median=1.000
+  block 4 r480   1790781570-1790781750 n=   82 median=1.000
+  block 5 r360   1790781750-1790781930 n=   81 median=1.000
+  block 6 r480   1790781930-1790782110 n=   81 median=1.000
+  block 7 r360   1790782110-1790782301 n=   86 median=1.000
+
+OLS linear drift: residual sd 0.000 ms, dof 652, drift -0.0000 ± 0.0000 ms/min
+  r360     vs r480: -0.000 ± 0.000 ms  z=-0.4
+           N per arm for a 2-SE result at 0.00 ms: 9255
+
+OLS quadratic drift: residual sd 0.000 ms, dof 651, drift -0.0000 ± 0.0000 ms/min
+  r360     vs r480: +0.000 ± 0.000 ms  z=+2.8
+           N per arm for a 2-SE result at 0.00 ms: 155
+
+## --key snd50
+# python3 ab_fit.py --air-log ab_s2.log --quest scripts/quest/out/qtx_s2.raw.txt --key snd50 --quest-minus-air-s 0.774 --ref r480 --guard-s 15
+8 blocks, 0 void; 730 samples read, 655 used (snd50)
+  block 0 r480   1790780850-1790781030 n=   81 median=0.090
+  block 1 r360   1790781030-1790781210 n=   82 median=0.090
+  block 2 r480   1790781210-1790781390 n=   81 median=0.090
+  block 3 r360   1790781390-1790781570 n=   81 median=0.090
+  block 4 r480   1790781570-1790781750 n=   82 median=0.090
+  block 5 r360   1790781750-1790781930 n=   81 median=0.090
+  block 6 r480   1790781930-1790782110 n=   81 median=0.090
+  block 7 r360   1790782110-1790782301 n=   86 median=0.090
+
+OLS linear drift: residual sd 0.001 ms, dof 652, drift -0.0000 ± 0.0000 ms/min
+  r360     vs r480: +0.000 ± 0.000 ms  z=+0.0
+           N per arm for a 2-SE result at 0.00 ms: 2057065774
+
+OLS quadratic drift: residual sd 0.001 ms, dof 651, drift +0.0000 ± 0.0000 ms/min
+  r360     vs r480: +0.000 ± 0.000 ms  z=+0.0
+           N per arm for a 2-SE result at 0.00 ms: 1400131565

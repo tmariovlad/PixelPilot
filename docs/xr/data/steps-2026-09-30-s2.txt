@@ -1,0 +1,10 @@
+# O121 S2 P4 (pixelpilot-xr-66, ab_run.sh + lever_s2.sh, IMX415 module ab705038): race REC 640 wide, sensor mode r480 (RES_8, 640x480) vs r360 (RES_360, 640x360), 180 s blocks, ABAB x4; waybeam restarts at every step (~3 s without video): guard 15 s. Quest APK 3b37a562. Lines: <AIR epoch> <label>; PC = air - 1 s (coordinator's back-to-back reads).
+1790780850 r480
+1790781030 r360
+1790781210 r480
+1790781390 r360
+1790781570 r480
+1790781750 r360
+1790781930 r480
+1790782110 r360
+1790782290 END
