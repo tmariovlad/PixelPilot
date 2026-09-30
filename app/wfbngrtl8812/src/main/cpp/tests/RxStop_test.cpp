@@ -13,6 +13,7 @@
 #include <chrono>
 #include <functional>
 #include <future>
+#include <stdexcept>
 #include <thread>
 
 using devourer::RxStopLatch;
@@ -117,6 +118,25 @@ TEST(RxStop, TheExitConsumesTheStopSoTheDeviceIsRestartable)
     EXPECT_TRUE(returnsWithin(latch, second, 2000ms));
     stopper.join();
     EXPECT_GE(std::chrono::steady_clock::now() - t0, 90ms) << "a consumed stop ended the next run early";
+}
+
+TEST(RxStop, ALoopThatThrowsStillConsumesTheStopSoTheNextRunIsNotCutShort)
+{
+    // 25's note: consume on every way out, not only a normal return, or "restartable" breaks for other embedders.
+    RxStopLatch latch;
+    latch.request();
+    EXPECT_THROW(latch.run([](const std::function<bool()>&) { throw std::runtime_error("usb gone"); }),
+                 std::runtime_error);
+    EXPECT_FALSE(latch.requested());
+    FakeLoop next;
+    std::thread stopper([&] {
+        std::this_thread::sleep_for(100ms);
+        latch.request();
+    });
+    const auto t0 = std::chrono::steady_clock::now();
+    EXPECT_TRUE(returnsWithin(latch, next, 2000ms));
+    stopper.join();
+    EXPECT_GE(std::chrono::steady_clock::now() - t0, 90ms) << "a stop left latched by the throw ended the next run";
 }
 
 TEST(RxStop, TheProcessWideSignalFlagStillEndsTheLoop)

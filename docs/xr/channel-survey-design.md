@@ -332,6 +332,13 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
           test. 20/20 repeats stable.
         - Jaguar2 and Kestrel are not in the Android build, so a native WSL build of the devourer library compiled
           all four generations.
+        - It also fixes the survey's own stop (25): done(RetuneBackFailed) → StopRxLoop can land before
+          StartRxLoop, e.g. when to20 throws at once and both retune-backs fail. The old contract wiped it, and the
+          RX loop would then have sat on the wrong channel forever.
+        - After 25's review, the request is also consumed when the loop throws. A scope guard in `RxStopLatch::run`
+          (devourer `d04a72c` on top of `abe9d7a`, local) keeps the device restartable for other embedders. Test:
+          `ALoopThatThrowsStillConsumesTheStop…`; a mutant with a guard that does not consume fails it and the
+          restart test.
       - **attach.** It refuses an fd that already has a device and hands the new device back; WfbngLink logs
         `fd=N already has a device (another run); not starting` and returns. Replacing would free a device the other
         run still uses. `detach(fd, expected, …)` removes only the device the caller attached, so the refused run's
