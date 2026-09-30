@@ -33,7 +33,9 @@ public final class OwdWindow {
     private final long windowUs;
     private final LiveBase base60 = new LiveBase(BASE_WINDOW_S);
     private final LiveBase baseAll = new LiveBase(Double.POSITIVE_INFINITY);
-    private final ArrayDeque<double[]> window = new ArrayDeque<>();   // {arrival us, rel 60 s, rel unbounded}
+    // {arrival us, rel 60 s, rel unbounded}; pruned only in snapshot(), which StatsCollector calls every TICK_MS, so it
+    // holds ~one stats window of frames. A caller that stops snapshotting must stop adding too.
+    private final ArrayDeque<double[]> window = new ArrayDeque<>();
     private boolean have;
     private long ssrc;
     private long lastTs;

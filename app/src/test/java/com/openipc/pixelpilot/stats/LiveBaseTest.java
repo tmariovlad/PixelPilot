@@ -53,6 +53,16 @@ public class LiveBaseTest {
         assertTrue(replay("g56_m6.csv") > 10_000);
     }
 
+    @Test public void theUnboundedBaseKeepsABoundedState() {
+        // test_owd.py test_the_unbounded_base_keeps_a_bounded_state: hours of frames since the last reset must not pile
+        // up. The unbounded base keeps only the lower convex hull of (t, v), on which min(v − d·t) lies for every d.
+        LiveBase base = new LiveBase(Double.POSITIVE_INFINITY, 0.0);   // a wrong prior: keys trend upward until learnt
+        for (int i = 0; i < 100_000; i++) {
+            base.push((long) (i * 1e7), 5.0 + 0.07 * i / 100 + ((i * 37) % 11) / 10.0);
+        }
+        assertTrue("stored " + base.stored(), base.stored() < 200);
+    }
+
     @Test public void theilSenIsTheMedianPairwiseSlope() {
         // one lifted point of five: 4 of the 10 pairwise slopes use it, the median stays the line's
         assertEquals(1.0, LiveBase.theilSen(new double[]{0, 1, 2, 3, 4}, new double[]{0, 1, 2, 3, 100}), 1e-12);
