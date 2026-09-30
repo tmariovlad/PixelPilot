@@ -90,7 +90,8 @@ class WfbngLink {
     int current_fd;
     bool adaptive_link_enabled;
     bool adaptive_link_should_stop{false};
-    int adaptive_tx_power;
+    // atomic: the JNI thread writes it, the survey thread's done() and the uplink start read it (25's note)
+    std::atomic<int> adaptive_tx_power;
 
     // Runtime configurable PHY parameters
     bool ldpc_enabled{true};

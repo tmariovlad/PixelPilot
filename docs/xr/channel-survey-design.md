@@ -240,6 +240,17 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
   - Mutations: an exception mapped to aborted fails both B3 tests; `ifActive` ignoring `active_` fails the ifActive
     test; dropping the `cut()` check after the retune back fails the stop-during-back test.
   - Tests: host 90/90 (SurveyRunner 10); `assembleDebug` builds (APK md5 4ed809d5).
+- **25's notes on 1b8c741 (not blockers, 2026-10-01):**
+  - `adaptive_tx_power` is now an `std::atomic<int>` (WfbngLink.hpp). The JNI thread writes it while the survey
+    thread's done() and the uplink start read it, which was a formal data race.
+  - **Not changed: two SetTxPower calls on two threads. The overlap predates the survey.** 25 proposed applying
+    the pending power inside run() under the survey's end lock. That would not make devourer's one-control-thread
+    rule (IRtlDevice.h:110-117) hold. `start_link_quality_thread` calls `SetTxPower(adaptive_tx_power)` on the link's
+    run thread, and `nativeSetTxPower` calls it on the Java thread, and both happen without a survey.
+    [PROVEN: OpenIPC master WfbngLink.cpp:246 (run → start_link_quality_thread), :536 (SetTxPower in it), :568
+    (SetTxPower in nativeSetTxPower); same lines in the fork's master]. The fix is one control lock around every
+    device control call in WfbngLink. That is a separate item, and not survey-specific.
+  - Tests: host 90/90; `assembleDebug` builds (APK md5 176588d6, not installed).
 - **Not yet verified** [SPECULATION until a slot]:
   - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
     (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);
