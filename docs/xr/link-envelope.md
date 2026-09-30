@@ -282,6 +282,42 @@ Does the 1 MB wfb_tx input buffer (the new HD default, chosen for scene-change b
     - (P3) the same gate at 16 KB / 192 KB / 1 MB (predicted ~120 / 180 / 430 ms first light if the downstream queue is real);
     - optional (P4) `max_tx_buf_len` over capacity, to bound the driver pool (earlier found inert only below capacity).
 
+### Age-guard gate 2026-09-30 01:28–02:14: over capacity nothing in wfb_tx or the driver holds 40 ms (floor ~130 ms); on a clean link the guard costs nothing
+
+- **Question.** With the user's ceiling of G2G ≤ 40 ms in every state: how much of the over-capacity lag can the `wfb_tx -A` age guard remove, plus the driver pool cap? Probes P1–P3 of the [bloat review](research/2026-09-29-bloat-review.md).
+- **Setup.**
+  - Air .132, ch165, 17 dBm, FEC 4/8; `gate_a.sh` swaps in the age-guard build (OpenIPC o4-age-guard, md5 47ff323e) per step, RAM only.
+  - HD 1080p90 16 Mbit/s. Overload = MCS4; clean = MCS7 with the rig flashing.
+  - Rig on the lens (latency-test-0d, HD calibration); Quest capture ab_gate (pixelpilot-xr-25).
+  - [Air log with per-second AGE_GUARD](data/air-gate-2026-09-30.txt) · [1 Hz samples: rx_queue, tx_dropped, tx_buf_stat](data/air-gate-samples-2026-09-30.txt).
+- **Results.** Rig first light, medians of N = 2 per state (the d-block only half-valid, see below). max_age and rx_queue are from the air [PROVEN].
+
+| state | wfb_tx input | rig first light | air: max frame age / socket queue / silent driver drops per step |
+|---|---|---|---|
+| s0r / s0h | clean, measure only | 28.2 / 46.6 ms | 0–1 ms / 0 / 0–77 |
+| o16k | 16 KB socket | **no picture** (0 valid) | the socket can't hold one frame: 51–61k input drops per step |
+| o192 | 192 KB | 181 ms | ~60 ms / 170 KB / 26–29k |
+| o1m | 1 MB | 446 ms | **309–332 ms** / 0.97–1.04 MB / 27–31k |
+| a10 / a20 / a40o | 1 MB + age limit 10 / 20 / 40 (+IDR kick) | **138 / 149 / 165 ms** | 11–15 / 22–30 / 40–47 ms; 4–12 whole frames dropped/s; 28k silent drops |
+| b1m / b10 / b20 | clean MCS7, 1 MB, flashes | 46.1 / 46.7 / 47.2 ms | 0–1 ms; **0 frames dropped by the guard** |
+| d0 / d8 / d32 | 1 MB + A20 + `-J 100 -E 500` + driver pool cap 0 / 8 / 32 | ~151 / ~129 / 139–146 ms | 21–40 ms; **silent drops 24–29k → 0 with the cap**; 13–17 frames/s dropped whole instead |
+
+- **The review's socket arithmetic holds exactly** [PROVEN: P1]. At 1 MB the socket holds ~1 MB and frames wait 309–332 ms (predicted 321); at 192 KB, ~170 KB and ~60 ms (predicted 60).
+- **The age guard bounds the socket part to X** [PROVEN]: max_age 11–15 ms at A10. It cuts over-capacity first light from 446 to 138 ms.
+- **The ~90 ms left is downstream** [INFERRED]: 138 − 46.6 clean ≈ 91 ms, of which ≤ ~15 ms is socket. So ~75–80 ms sits in the driver/chip/USB TX path, and the guard cannot see it (as the review predicted, 65–74 ms).
+- **The driver pool cap** (`tx_buf_stat` 8 with `-J`) turns the silent driver drops into visible whole-frame drops and takes ~20 ms more off: d8 ~129 vs d0 ~151 ms [INFERRED: first halves only]. ~60 ms remains in the chip FIFO / USB.
+- **On a clean link the guard costs nothing** [PROVEN]: b10/b20 dropped 0 frames and read the same as b1m / s0h. The flash-frame backlog is not in the socket.
+- **Consequence for the 40 ms ceiling.**
+  - Over capacity, nothing in wfb_tx or the driver gets near 40 ms: the floor is ~130 ms.
+  - The ceiling can only be held by never running over capacity. The bitrate must stay below the link's knee for its MCS: alink must lower the bitrate before capacity is lost, and the preset tables must never pair a bitrate with an MCS it exceeds.
+  - `-A 20` + a driver pool cap of 8 stay useful as a safety net: over capacity they cut the lag from ~450 to ~130 ms, and whole-frame drops replace mid-block silent losses.
+- **Also seen.**
+  - Under MCS4 overload the air encoder itself fell to 82–86 fps (slot_watch AIR_FPS_LOW). A likely cause is CPU spent in the driver's 1.4 ms busy-wait [SPECULATION].
+  - `dmesg` counted 169 `_MI_VENC_AbortFrame … generate next GOP` warnings over the night. The OpenIPC analysis is in O5-encoder-cap-abort-phase-lag.md, openipc-…-40.
+- **Lost data.**
+  - The Quest XR app was killed by low memory at PC 723130.8, in d0 #2, after ~45 min of detached perfetto + logcat. am_low_memory had been rising from 723000.
+  - The rig's d8 #2 and d0 #2 are therefore partly invalid, and the 25 Mbit/s block that followed has no data. It needs a rerun.
+
 ### Channel A/B in the operational state 2026-09-29 21:59–22:12: ch165 cuts the residual loss 3.5–6× at MCS7 16 Mbit/s
 
 The follow-up of the MCS4 channel A/B below, in the state we fly: 1080p90 16 Mbit/s MCS7 FEC 4/8, 17 dBm, 1 MB input buffer, no rig. ABBA 157 / 165 / 165 / 157, **180 s** each, the same shared-schedule method (air `chan_ab7.sh`, Quest [pref_ab.sh](../../scripts/quest/pref_ab.sh) `START_AT`, XR relaunch per step, guard 15 s). The Quest stays ~1 m from the air. Air drops 0; PC−air +0.98 s (AIR_CLOCK); steps on the PC clock.

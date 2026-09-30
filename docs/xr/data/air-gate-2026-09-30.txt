@@ -1,0 +1,166 @@
+# Air log: -A age-guard gate, 2026-09-30 01:28-02:14 (PC local), air .132, ch165, 17 dBm, FEC 4/8. gate_a.sh 76ec6fee, /tmp/o4/wfb_tx 47ff323e (OpenIPC o4-age-guard, commit 2f61668f) via wfbtx_swap.sh 008b1045.
+# PC-air +0.332 s (slot_watch AIR_CLOCK 01:32). Labels: see the script header below (s0 clean / o overload socket bracket / a overload age limit / b clean MCS7 age limit / d overload driver pool cap).
+# AGE_GUARD fields: frames_dropped:pkts_dropped:max_age_ms:clock_skew:no_stamp:frames_checked:kicks_sent:kicks_skipped:kicks_failed:age_0_5:age_5_10:age_10_20:age_20_40:age_40_up (per 1 s).
+# STEP rxq = /proc/net/udp rx_queue bytes of :15E0 at step end (P1); tx_dropped_d = wlan0 silent driver drops in the step (P2); tbs = tx_buf_stat MaxTxBufLen:free_xframe_ext:free_xmit_extbuf:NR_XMIT_EXTBUFF.
+# The Quest XR app was killed by low memory at PC 723130.8 (in d0 #2); rig data after PC ~723088 is invalid (display dark).
+
+PRE epoch=1790720309 mcs_index=2 k=4 n=8 mode= br= txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1404 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 wlan0 ] tx_dropped=11601 temp=40 tbs_path=/proc/net/rtl88x2eu/wlan0/tx_buf_stat
+SWAP [-A 10000] -> O4=OK pid=2636 tx 6137050->6139969 extra=[-A 10000] log=/tmp/o4/wfbtx-o4.log
+SET s0r epoch=1790720507 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2636 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP s0r epoch=1790720507 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=42
+  AG s0r 4491926	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+  AG s0r 4492926	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG s0r 4493926	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+SET s0h epoch=1790720583 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:8:64 vpid=2636 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP s0h epoch=1790720583 rxq=0 udp_drops=732 udp_drops_d=398 tx_dropped_d=77 temp=48
+  AG s0h 4581927	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG s0h 4582926	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG s0h 4583926	AGE_GUARD	0:0:1:0:0:90:0:0:0:90:0:0:0:0
+SET s0h epoch=1790720660 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2636 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP s0h epoch=1790720660 rxq=0 udp_drops=949 udp_drops_d=217 tx_dropped_d=41 temp=50
+  AG s0h 4671927	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG s0h 4672926	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG s0h 4673926	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+SET s0r epoch=1790720763 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2636 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -A 10000 wlan0 ]
+STEP s0r epoch=1790720763 rxq=0 udp_drops=949 udp_drops_d=0 tx_dropped_d=0 temp=43
+  AG s0r 4761926	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+  AG s0r 4762926	AGE_GUARD	0:0:1:0:0:166:0:0:0:166:0:0:0:0
+  AG s0r 4763926	AGE_GUARD	0:0:0:0:0:167:0:0:0:167:0:0:0:0
+SWAP [-R 8192 -A 10000] -> O4=OK pid=2241 tx 6836890->6841622 extra=[-R 8192 -A 10000] log=/tmp/o4/wfbtx-o4.log
+SET o16k epoch=1790720861 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2241 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 8192 -A 10000 wlan0 ]
+STEP o16k epoch=1790720861 rxq=0 udp_drops=55199 udp_drops_d=51305 tx_dropped_d=27 temp=48
+  AG o16k 4861406	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG o16k 4862406	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG o16k 4863407	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+SWAP [-R 98304 -A 10000] -> O4=OK pid=313 tx 6995394->7003317 extra=[-R 98304 -A 10000] log=/tmp/o4/wfbtx-o4.log
+SET o192 epoch=1790720949 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:5:64 vpid=313 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 98304 -A 10000 wlan0 ]
+STEP o192 epoch=1790720949 rxq=170752 udp_drops=10164 udp_drops_d=8045 tx_dropped_d=29329 temp=51
+  AG o192 4961109	AGE_GUARD	0:0:61:0:0:90:0:0:0:0:0:0:0:90
+  AG o192 4962108	AGE_GUARD	0:0:60:0:0:91:0:0:0:0:0:0:0:91
+  AG o192 4963108	AGE_GUARD	0:0:56:0:0:90:0:0:0:0:0:0:0:90
+SWAP [-R 524288 -A 10000] -> O4=OK pid=2492 tx 7261706->7269653 extra=[-R 524288 -A 10000] log=/tmp/o4/wfbtx-o4.log
+SET o1m epoch=1790721051 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:0:64 vpid=2492 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10000 wlan0 ]
+STEP o1m epoch=1790721051 rxq=965376 udp_drops=11461 udp_drops_d=9567 tx_dropped_d=26868 temp=51
+  AG o1m 5062154	AGE_GUARD	0:0:309:0:0:87:0:0:0:0:0:0:0:87
+  AG o1m 5063153	AGE_GUARD	0:0:323:0:0:92:0:0:0:0:0:0:0:92
+  AG o1m 5064152	AGE_GUARD	0:0:312:0:0:88:0:0:0:0:0:0:0:88
+SET o1m epoch=1790721141 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:2:64 vpid=2492 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10000 wlan0 ]
+STEP o1m epoch=1790721141 rxq=1040640 udp_drops=21214 udp_drops_d=9753 tx_dropped_d=31090 temp=51
+  AG o1m 5161153	AGE_GUARD	0:0:332:0:0:93:0:0:0:0:0:0:0:93
+  AG o1m 5162151	AGE_GUARD	0:0:321:0:0:89:0:0:0:0:0:0:0:89
+  AG o1m 5163152	AGE_GUARD	0:0:328:0:0:91:0:0:0:0:0:0:0:91
+SWAP [-R 98304 -A 10000] -> O4=OK pid=2937 tx 7791123->7799037 extra=[-R 98304 -A 10000] log=/tmp/o4/wfbtx-o4.log
+SET o192 epoch=1790721251 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:0:64 vpid=2937 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 98304 -A 10000 wlan0 ]
+STEP o192 epoch=1790721251 rxq=168192 udp_drops=11408 udp_drops_d=9287 tx_dropped_d=26008 temp=51
+  AG o192 5261198	AGE_GUARD	0:0:59:0:0:91:0:0:0:0:0:0:0:91
+  AG o192 5262197	AGE_GUARD	0:0:60:0:0:91:0:0:0:0:0:0:0:91
+  AG o192 5263198	AGE_GUARD	0:0:60:0:0:90:0:0:0:0:0:0:0:90
+SWAP [-R 8192 -A 10000] -> O4=OK pid=1234 tx 8047345->8053114 extra=[-R 8192 -A 10000] log=/tmp/o4/wfbtx-o4.log
+SET o16k epoch=1790721348 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1234 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 8192 -A 10000 wlan0 ]
+STEP o16k epoch=1790721348 rxq=0 udp_drops=64070 udp_drops_d=60643 tx_dropped_d=0 temp=50
+  AG o16k 5361242	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG o16k 5362242	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG o16k 5363242	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+SWAP [-R 524288 -A 10] -> O4=OK pid=3378 tx 8230324->8238265 extra=[-R 524288 -A 10] log=/tmp/o4/wfbtx-o4.log
+SET a10 epoch=1790721447 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:63:5:64 vpid=3378 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10 wlan0 ]
+STEP a10 epoch=1790721447 rxq=12800 udp_drops=0 udp_drops_d=0 tx_dropped_d=27885 temp=51
+  AG a10 5462128	AGE_GUARD	8:134:15:0:0:91:0:0:0:39:44:8:0:0
+  AG a10 5463127	AGE_GUARD	6:100:14:0:0:90:0:0:0:47:37:6:0:0
+  AG a10 5464127	AGE_GUARD	4:67:11:0:0:91:0:0:0:50:37:4:0:0
+SWAP [-R 524288 -A 20] -> O4=OK pid=1771 tx 8493399->8501381 extra=[-R 524288 -A 20] log=/tmp/o4/wfbtx-o4.log
+SET a20 epoch=1790721549 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:1:64 vpid=1771 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 wlan0 ]
+STEP a20 epoch=1790721549 rxq=73728 udp_drops=0 udp_drops_d=0 tx_dropped_d=28289 temp=51
+  AG a20 5561335	AGE_GUARD	6:100:27:0:0:91:0:0:0:0:18:67:6:0
+  AG a20 5562336	AGE_GUARD	6:101:22:0:0:91:0:0:0:3:20:62:6:0
+  AG a20 5563334	AGE_GUARD	6:100:30:0:0:90:0:0:0:4:30:50:6:0
+SWAP [-R 524288 -A 40 -O 80:500] -> O4=OK pid=3891 tx 8757666->8765620 extra=[-R 524288 -A 40 -O 80:500] log=/tmp/o4/wfbtx-o4.log
+SET a40o epoch=1790721650 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:4:64 vpid=3891 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 40 -O 80:500 wlan0 ]
+STEP a40o epoch=1790721650 rxq=147712 udp_drops=0 udp_drops_d=0 tx_dropped_d=27721 temp=51
+  AG a40o 5661385	AGE_GUARD	7:120:47:0:0:90:2:5:0:0:0:0:83:7
+  AG a40o 5662385	AGE_GUARD	6:104:41:0:0:90:1:5:0:0:0:0:84:6
+  AG a40o 5663385	AGE_GUARD	8:136:43:0:0:91:2:6:0:0:0:0:83:8
+SET a40o epoch=1790721740 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:0:64 vpid=3891 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 40 -O 80:500 wlan0 ]
+STEP a40o epoch=1790721740 rxq=132608 udp_drops=0 udp_drops_d=0 tx_dropped_d=32554 temp=51
+  AG a40o 5761385	AGE_GUARD	5:79:45:0:0:90:1:4:0:0:0:0:85:5
+  AG a40o 5762385	AGE_GUARD	5:87:40:0:0:91:2:3:0:0:0:1:85:5
+  AG a40o 5763385	AGE_GUARD	12:200:44:0:0:90:1:11:0:0:0:0:78:12
+SWAP [-R 524288 -A 20] -> O4=OK pid=628 tx 9289567->9297516 extra=[-R 524288 -A 20] log=/tmp/o4/wfbtx-o4.log
+SET a20 epoch=1790721850 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:1:64 vpid=628 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 wlan0 ]
+STEP a20 epoch=1790721850 rxq=78336 udp_drops=0 udp_drops_d=0 tx_dropped_d=28847 temp=51
+  AG a20 5861445	AGE_GUARD	5:78:24:0:0:90:0:0:0:0:11:74:5:0
+  AG a20 5862444	AGE_GUARD	4:75:27:0:0:91:0:0:0:16:30:41:4:0
+  AG a20 5863444	AGE_GUARD	4:67:22:0:0:90:0:0:0:0:21:65:4:0
+SWAP [-R 524288 -A 10] -> O4=OK pid=2731 tx 9549788->9557780 extra=[-R 524288 -A 10] log=/tmp/o4/wfbtx-o4.log
+SET a10 epoch=1790721948 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:0:64 vpid=2731 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10 wlan0 ]
+STEP a10 epoch=1790721948 rxq=41472 udp_drops=0 udp_drops_d=0 tx_dropped_d=26825 temp=51
+  AG a10 5961494	AGE_GUARD	5:85:16:0:0:90:0:0:0:51:34:5:0:0
+  AG a10 5962495	AGE_GUARD	5:83:14:0:0:91:0:0:0:65:21:5:0:0
+  AG a10 5963492	AGE_GUARD	8:130:14:0:0:91:0:0:0:40:43:8:0:0
+SWAP [-R 524288 -A 10000] -> O4=OK pid=1093 tx 9810225->9818146 extra=[-R 524288 -A 10000] log=/tmp/o4/wfbtx-o4.log
+SET b1m epoch=1790722049 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1093 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10000 wlan0 ]
+STEP b1m epoch=1790722049 rxq=0 udp_drops=1878 udp_drops_d=6 tx_dropped_d=327 temp=50
+  AG b1m 6061394	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG b1m 6062394	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG b1m 6063395	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+SWAP [-R 524288 -A 10] -> O4=OK pid=3234 tx 10112823->10122233 extra=[-R 524288 -A 10] log=/tmp/o4/wfbtx-o4.log
+SET b10 epoch=1790722147 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=3234 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10 wlan0 ]
+STEP b10 epoch=1790722147 rxq=14592 udp_drops=0 udp_drops_d=0 tx_dropped_d=28 temp=51
+  AG b10 6161162	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG b10 6162161	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG b10 6163161	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+SWAP [-R 524288 -A 20] -> O4=OK pid=1646 tx 10422158->10431657 extra=[-R 524288 -A 20] log=/tmp/o4/wfbtx-o4.log
+SET b20 epoch=1790722248 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1646 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 wlan0 ]
+STEP b20 epoch=1790722248 rxq=16128 udp_drops=0 udp_drops_d=0 tx_dropped_d=51 temp=50
+  AG b20 6261301	AGE_GUARD	0:0:1:0:0:90:0:0:0:90:0:0:0:0
+  AG b20 6262301	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG b20 6263302	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+SET b20 epoch=1790722340 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1646 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 wlan0 ]
+STEP b20 epoch=1790722340 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=64 temp=50
+  AG b20 6361302	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG b20 6362301	AGE_GUARD	0:0:1:0:0:90:0:0:0:90:0:0:0:0
+  AG b20 6363301	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+SWAP [-R 524288 -A 10] -> O4=OK pid=2308 tx 11042161->11051660 extra=[-R 524288 -A 10] log=/tmp/o4/wfbtx-o4.log
+SET b10 epoch=1790722447 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2308 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10 wlan0 ]
+STEP b10 epoch=1790722447 rxq=0 udp_drops=0 udp_drops_d=0 tx_dropped_d=23 temp=50
+  AG b10 6461332	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG b10 6462332	AGE_GUARD	0:0:0:0:0:91:0:0:0:91:0:0:0:0
+  AG b10 6463332	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+SWAP [-R 524288 -A 10000] -> O4=OK pid=689 tx 11351259->11361381 extra=[-R 524288 -A 10000] log=/tmp/o4/wfbtx-o4.log
+SET b1m epoch=1790722548 mcs_index=7 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=689 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 10000 wlan0 ]
+STEP b1m epoch=1790722548 rxq=0 udp_drops=1493 udp_drops_d=0 tx_dropped_d=44 temp=51
+  AG b1m 6562151	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+  AG b1m 6563151	AGE_GUARD	0:0:1:0:0:91:0:0:0:91:0:0:0:0
+  AG b1m 6564153	AGE_GUARD	0:0:0:0:0:90:0:0:0:90:0:0:0:0
+SWAP [-R 524288 -A 20 -J 100 -E 500] -> O4=OK pid=2871 tx 11659374->11668826 extra=[-R 524288 -A 20 -J 100 -E 500] log=/tmp/o4/wfbtx-o4.log
+SET d0 epoch=1790722648 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:64:64 vpid=2871 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 -J 100 -E 500 wlan0 ]
+STEP d0 epoch=1790722648 rxq=80896 udp_drops=0 udp_drops_d=0 tx_dropped_d=28639 temp=51
+  AG d0 6661354	AGE_GUARD	3:52:22:0:0:91:0:0:0:0:21:67:3:0
+  AG d0 6662355	AGE_GUARD	7:117:24:0:0:89:0:0:0:0:19:63:7:0
+  AG d0 6663353	AGE_GUARD	4:67:21:0:0:91:0:0:0:0:31:56:4:0
+SET d8 epoch=1790722740 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=8:64:57:64 vpid=2871 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 -J 100 -E 500 wlan0 ]
+STEP d8 epoch=1790722740 rxq=63488 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=51
+  AG d8 6761353	AGE_GUARD	14:235:23:0:0:90:0:0:0:0:9:67:14:0
+  AG d8 6762354	AGE_GUARD	16:269:35:0:0:91:0:0:0:0:5:70:16:0
+  AG d8 6763353	AGE_GUARD	15:254:25:0:0:91:0:0:0:0:5:71:15:0
+SET d32 epoch=1790722840 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=32:64:32:64 vpid=2871 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 -J 100 -E 500 wlan0 ]
+STEP d32 epoch=1790722840 rxq=43776 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=51
+  AG d32 6861355	AGE_GUARD	14:237:23:0:0:90:0:0:0:0:8:68:14:0
+  AG d32 6862354	AGE_GUARD	16:267:24:0:0:91:0:0:0:0:3:72:16:0
+  AG d32 6863353	AGE_GUARD	14:236:23:0:0:90:0:0:0:0:6:70:14:0
+SET d32 epoch=1790722940 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=32:64:42:64 vpid=2871 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 -J 100 -E 500 wlan0 ]
+STEP d32 epoch=1790722940 rxq=79616 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=51
+  AG d32 6961354	AGE_GUARD	15:240:28:0:0:92:0:0:0:0:10:67:15:0
+  AG d32 6962355	AGE_GUARD	14:229:23:0:0:89:0:0:0:0:7:68:14:0
+  AG d32 6963353	AGE_GUARD	17:288:27:0:0:91:0:0:0:0:8:66:17:0
+SET d8 epoch=1790723040 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=8:64:57:64 vpid=2871 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 -J 100 -E 500 wlan0 ]
+STEP d8 epoch=1790723040 rxq=55040 udp_drops=0 udp_drops_d=0 tx_dropped_d=0 temp=51
+  AG d8 7061353	AGE_GUARD	13:231:25:0:0:92:0:0:0:0:9:70:13:0
+  AG d8 7062353	AGE_GUARD	13:219:23:0:0:89:0:0:0:0:12:64:13:0
+  AG d8 7063354	AGE_GUARD	14:236:31:0:0:91:0:0:0:0:9:68:14:0
+SET d0 epoch=1790723140 mcs_index=4 k=4 n=8 mode=2 br=16000 txp=17.00 rmem=196608/524288 tbs=0:64:0:64 vpid=2871 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 -R 524288 -A 20 -J 100 -E 500 wlan0 ]
+STEP d0 epoch=1790723140 rxq=46080 udp_drops=0 udp_drops_d=0 tx_dropped_d=24039 temp=51
+  AG d0 7161353	AGE_GUARD	8:168:40:0:0:89:0:0:0:40:15:26:7:1
+  AG d0 7162353	AGE_GUARD	0:0:16:0:0:91:0:0:0:65:11:15:0:0
+  AG d0 7163353	AGE_GUARD	0:0:15:0:0:90:0:0:0:69:18:3:0:0
+REVERT -> O4=REVERTED pid=1019 exe=/opt/linkmode/wfb_tx log=/tmp/wfbtx.log
+END epoch=1790723260 mcs_index=2 k=4 n=8 mode=7 br=2000 txp=12.00 rmem=196608/524288 tbs=0:64:64:64 vpid=1019 args=[-B 20 -M 2 -S 1 -L 1 -k 4 -n 8 -C 9000 wlan0 ] tx_dropped=388177 temp=47

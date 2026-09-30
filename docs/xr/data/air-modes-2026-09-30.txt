@@ -91,3 +91,50 @@ END epoch=1790719074 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2
 [wd 21:55:02] SKIP [STALLED] dVsync=-7797 (<200) dFrameDone=-7823 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
 [wd 21:56:11] SKIP [STALLED] dVsync=-9135 (<200) dFrameDone=-9138 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
 [wd 21:57:43] SKIP [STALLED] dVsync=-6930 (<200) dFrameDone=-6946 — senzor/pipeline down, NU race de fază — nu e degradare de fază 2:1 (NU restart; cere diagnostic separat)
+
+## /tmp/mode_ab.log, Part C (channel ABBA + APK ABBA in race; mode_ab.next.sh e14087f7)
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790719089 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1404 wb=2019 bcn="1790716162 bcn_off 0x550 0x18 -> 0x10" fec=k=4 n=8  tx_dropped=11579 temp=44
+CHAN -> 157 took=1s verdict=AIR_STATE=wfb FREQ=5785 CH=157 BCN=0x10
+SET c157 epoch=1790719264 ch=157 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719263 bcn_off 0x550 0x10 -> 0x10"
+STEP c157 epoch=1790719264 drop=0 inj=62732 ant_drop=0 tx_dropped_d=0 temp=43 ch=157 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719263 bcn_off 0x550 0x10 -> 0x10"
+CHAN -> 165 took=0s verdict=AIR_STATE=wfb FREQ=5825 CH=165 BCN=0x10
+SET c165 epoch=1790719370 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719370 bcn_off 0x550 0x10 -> 0x10"
+STEP c165 epoch=1790719370 drop=0 inj=73220 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719370 bcn_off 0x550 0x10 -> 0x10"
+SET c165 epoch=1790719490 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719370 bcn_off 0x550 0x10 -> 0x10"
+STEP c165 epoch=1790719490 drop=0 inj=74995 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719370 bcn_off 0x550 0x10 -> 0x10"
+CHAN -> 157 took=0s verdict=AIR_STATE=wfb FREQ=5785 CH=157 BCN=0x10
+SET c157 epoch=1790719610 ch=157 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719610 bcn_off 0x550 0x10 -> 0x10"
+STEP c157 epoch=1790719610 drop=0 inj=73419 ant_drop=0 tx_dropped_d=0 temp=43 ch=157 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719610 bcn_off 0x550 0x10 -> 0x10"
+CHAN -> 165 took=0s verdict=AIR_STATE=wfb FREQ=5825 CH=165 BCN=0x10
+SET c165 epoch=1790719730 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP c165 epoch=1790719730 drop=0 inj=56898 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET c165 epoch=1790719820 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP c165 epoch=1790719820 drop=0 inj=72608 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET c165 epoch=1790719940 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP c165 epoch=1790719940 drop=0 inj=72920 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET c165 epoch=1790720060 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP c165 epoch=1790720060 drop=0 inj=72273 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET c165 epoch=1790720180 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP c165 epoch=1790720180 drop=0 inj=71959 ant_drop=0 tx_dropped_d=0 temp=43 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=17.00 rmem=196608/524288 vpid=1404 wb=1108 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+
+## /tmp/mode_ab25.log, 25 Mbit/s block (mode_ab25.sh 5ad5d0e7) - NO G2G DATA: the Quest app was killed at PC 723130.8 before it began; rerun needed
+JSON 1080=4164fb6f race=3d8a1456 720=c1a80fdb diff=0
+PRE epoch=1790723260 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1019 wb=1100 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10" fec=k=4 n=8  tx_dropped=388177 temp=47
+SET q7 epoch=1790723436 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=3807 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP q7 epoch=1790723436 drop=4834 inj=228853 ant_drop=0 tx_dropped_d=12 temp=46 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=3807 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET q12 epoch=1790723520 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=3807 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP q12 epoch=1790723520 drop=4677 inj=273767 ant_drop=0 tx_dropped_d=11 temp=46 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=3807 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET q12b epoch=1790723620 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=3807 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP q12b epoch=1790723620 drop=6839 inj=320155 ant_drop=0 tx_dropped_d=21 temp=46 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=3807 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET f12 epoch=1790723734 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=1149 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP f12 epoch=1790723734 drop=3427 inj=238898 ant_drop=0 tx_dropped_d=12 temp=47 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=1149 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET f12 epoch=1790723820 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=1149 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP f12 epoch=1790723820 drop=3857 inj=281218 ant_drop=0 tx_dropped_d=4 temp=48 ch=165 mcs_index=12 k=8 n=10 mode=2 size=1920x1080 fps=90 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=1149 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET q12b epoch=1790723934 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=596 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP q12b epoch=1790723934 drop=6347 inj=277874 ant_drop=0 tx_dropped_d=22 temp=46 ch=165 mcs_index=12 k=8 n=12 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=596 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET q12 epoch=1790724020 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=596 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP q12 epoch=1790724020 drop=5597 inj=271957 ant_drop=0 tx_dropped_d=11 temp=46 ch=165 mcs_index=12 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=596 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+SET q7 epoch=1790724120 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=596 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+STEP q7 epoch=1790724120 drop=5112 inj=264128 ant_drop=0 tx_dropped_d=0 temp=46 ch=165 mcs_index=7 k=8 n=10 mode=6 size=1280x720 fps=120 br=25000 txp=17.00 rmem=196608/524288 vpid=1019 wb=596 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10"
+END epoch=1790724234 ch=165 mcs_index=2 k=4 n=8 mode=7 size=640x480 fps=167 br=2000 txp=12.00 rmem=196608/524288 vpid=1019 wb=1689 bcn="1790719730 bcn_off 0x550 0x10 -> 0x10" json=3d8a1456 tx_dropped=390048 temp=44
