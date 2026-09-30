@@ -250,7 +250,7 @@ It releases the new front's in-order prefix, retires it if it is complete, and s
 
 **Landed, then pinned back (2026-09-30).** The wfb-ng submodule comes from the fork [tmariovlad/wfb-ng](https://github.com/tmariovlad/wfb-ng), whose branch `pixelpilot-xr` = upstream `0da5279` + `66d4bdb` (this fix). xr-native pinned `66d4bdb` in `02b16d4`. After the Quest A/B below it pins **`0da5279` again** (stock code, same fork URL), so no new build carries the drain, and the four drain tests are `DISABLED_` until the pin moves back. Red → green when it landed: RxDrain against `0da5279` failed 4 of 5; against `66d4bdb` all 70 host tests passed.
 
-**Quest A/B: a loss regression, under investigation** (pixelpilot-xr-25, [link-envelope.md "RX drain A/B"](link-envelope.md), `792dc78`). c8986061 vs 7f8b34c1, ABBA 150 s, 720p120 25M MCS7 FEC 8/10. The drain build lost more after FEC in both of its steps: 0.50 / 0.57 vs 0.40 / 0.37 %, wfb PKT_LOST 1668 vs 1366 packets. Held frames rose 28 %, and latency improved only 0.1 ms. The mechanism above predicts no change in what is delivered, only in when, so either the drain has a path the tests miss or the link differed.
+**Quest A/B: a suspected loss regression, refuted below** (pixelpilot-xr-25, [link-envelope.md "RX drain A/B"](link-envelope.md), `792dc78`). c8986061 vs 7f8b34c1, ABBA 150 s, 720p120 25M MCS7 FEC 8/10. The drain build lost more after FEC in both of its steps: 0.50 / 0.57 vs 0.40 / 0.37 %, wfb PKT_LOST 1668 vs 1366 packets. Held frames rose 28 %, and latency improved only 0.1 ms. The mechanism above predicts no change in what is delivered, only in when, so either the drain has a path the tests miss or the link differed.
 
 **Differential fuzz: the drain changes only when, never what** [PROVEN: `tests/rxfuzz/run.sh`, 2026-09-30]. The same random patterns go through stock `0da5279` and drain `66d4bdb` rx.cpp: our Transmitter into the real Aggregator, 20,000 cases, FEC 4/8, 8/10, 8/12, 2/4, 3–8 blocks, 0–40 % drop, local reordering in 2 of 3 cases.
 - `count_p_lost` (the app's radio PKT_LOST) and `count_p_fec_recovered`: identical in all 20,000 cases.
@@ -259,6 +259,13 @@ It releases the new front's in-order prefix, retires it if it is complete, and s
 - openipc-4b's replay agrees: 240 Gilbert-Elliott runs, 1.82 M packets, byte-identical ids, on their `993120d` base (their `c1/drain_replay_test.cpp`).
 
 So the A/B's extra loss came from the link or the setup (drift, two different builds), not from the drain [INFERRED: the counters depend only on the arrival sequence]. It stays pinned to stock until a single-APK toggle A/B settles it in the field.
+
+**Verdict: no regression** [PROVEN: pixelpilot-xr-25's toggle run, [link-envelope.md "Toggle run 10:53–11:07"](link-envelope.md), `892c7c5`, data `docs/xr/data/*-2026-09-30-draintog.txt`]. One APK (c4ad7290), the drain switched live, ABAB × 3 at q7 25M, stock air TX.
+- The drain **never fired**: `drained=0 retired=0` in every step, ~6 min switched on.
+- On vs off: post-FEC 0.205 vs 0.213 %, Δlast +0.01 ms; held and recovered ∪ held within the step spread; waited_next 0.023 in every step.
+- Post-FEC loss drifted +70 % over 8 min in both arms, which explains the first A/B's +30 %.
+
+With the stock TX the drain is a no-op, as the mechanism and the fuzz predicted. Its benefit needs reordering or the air's `-Y`.
 
 **Toggle A/B build (not in xr-native).** APK **`c4ad7290`** (`scripts/quest/out/apks/app-debug-draintoggle-c7c3c76-c4ad7290.apk`) = 81643b5 (the source of c8986061 and 7f8b34c1) + wfb-ng `148fa4e`. `148fa4e` is local, on branch `pixelpilot-xr-drain-toggle` = 66d4bdb + a `drain_enabled` switch and the counters `count_p_drained` and `count_b_drain_retired`; the full diff from stock is saved next to the APK as `wfbng-0da5279..148fa4e-drain+toggle.diff`, md5 `c10fb7d7`. The app side is on branch `drain-toggle-ab` (`c7c3c76`) in ../ppxr-stats: host tests 72/72, including toggle-off = stock; app JVM 139/0.
 - **Switch, live:** `adb shell am broadcast -a com.openipc.pixelpilot.xr.DEBUG_INPUT --ez rx_drain true|false`. The RX thread uses it from the next packet. **Default off** at every app start, so an XR relaunch returns to stock.
