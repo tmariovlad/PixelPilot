@@ -96,3 +96,28 @@ TEST(FrameTimeline, ResetForgetsPendingInputs)
     t.onDecoded(1000, 2);
     EXPECT_TRUE(t.drain().empty());
 }
+
+// The first packet's arrival of a frame (RtpTag::firstNs), for a relative one-way delay that a large frame's longer
+// completion does not inflate (docs/xr/stats-backend.md §7).
+TEST(FrameTimeline, FirstIsTheEarliestFirstPacketOfTheFramesInputs)
+{
+    FrameTimeline t;
+    RtpTag a{0xABCD, 9000, 5'000'000, true, 4'100'000};
+    RtpTag b{0xABCD, 9000, 5'800'000, true, 4'000'000};
+    t.onQueued(1000, a);
+    t.onQueued(1001, b);
+    t.onDecoded(1000, 7'000'000);
+    auto out = t.drain();
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0].firstNs, 4'000'000);
+    EXPECT_EQ(out[0].completeNs, 5'800'000);
+}
+
+TEST(FirstArrival, TheFirstPacketOfAnRtpTimestampSetsItsTime)
+{
+    FirstArrival f;
+    EXPECT_EQ(f.onPacket(0xABCD, 9000, 100), 100);
+    EXPECT_EQ(f.onPacket(0xABCD, 9000, 150), 100);   // a later packet of the same frame
+    EXPECT_EQ(f.onPacket(0xABCD, 10500, 200), 200);  // the next frame
+    EXPECT_EQ(f.onPacket(0x1234, 10500, 250), 250);  // a new stream with the same timestamp
+}

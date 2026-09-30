@@ -17,6 +17,7 @@ struct FrameTimes
     uint32_t ts;
     int64_t  completeNs;
     int64_t  decodedNs;
+    int64_t  firstNs;   // the first packet's arrival (RtpTag::firstNs), earliest over the frame's inputs
 };
 
 // Links MediaCodec's output back to the RTP frame it came from. Each input buffer's presentation time (unique per
@@ -53,11 +54,15 @@ class FrameTimeline
         if (hit == nullptr) return;
         const uint32_t ssrc = hit->tag.ssrc, ts = hit->tag.ts;
         if (mHaveLast && ssrc == mLastSsrc && ts == mLastTs) return;  // a second output of the same frame
-        int64_t complete = hit->tag.completeNs;
+        int64_t complete = hit->tag.completeNs, first = hit->tag.firstNs;
         for (const Pending& p : mPending)
-            if (p.tag.ssrc == ssrc && p.tag.ts == ts && p.tag.completeNs > complete) complete = p.tag.completeNs;
+        {
+            if (p.tag.ssrc != ssrc || p.tag.ts != ts) continue;
+            if (p.tag.completeNs > complete) complete = p.tag.completeNs;
+            if (p.tag.firstNs != 0 && (first == 0 || p.tag.firstNs < first)) first = p.tag.firstNs;
+        }
         if (mDone.size() == mDoneCapacity) mDone.pop_front();
-        mDone.push_back({ssrc, ts, complete, decodedNs});
+        mDone.push_back({ssrc, ts, complete, decodedNs, first});
         mHaveLast = true;
         mLastSsrc = ssrc;
         mLastTs   = ts;

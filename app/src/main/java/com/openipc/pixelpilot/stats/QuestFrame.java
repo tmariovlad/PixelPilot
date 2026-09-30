@@ -14,20 +14,27 @@ public final class QuestFrame {
     public final long rtpTs;
     public final long completeNs;
     public final long decodedNs;
+    /** When the frame's first RTP packet reached the parser (CLOCK_MONOTONIC ns); 0 = unknown. */
+    public final long firstNs;
 
     public QuestFrame(long ssrc, long rtpTs, long completeNs, long decodedNs) {
+        this(ssrc, rtpTs, completeNs, decodedNs, 0);
+    }
+
+    public QuestFrame(long ssrc, long rtpTs, long completeNs, long decodedNs, long firstNs) {
         this.ssrc = ssrc;
         this.rtpTs = rtpTs;
         this.completeNs = completeNs;
         this.decodedNs = decodedNs;
+        this.firstNs = firstNs;
     }
 
-    /** Frames from VideoPlayer.drainFrameTimes(): 4 longs each (ssrc, RTP timestamp, complete ns, decoded ns). */
+    /** Frames from VideoPlayer.drainFrameTimes(): 5 longs each (ssrc, RTP timestamp, complete ns, decoded ns, first ns). */
     public static List<QuestFrame> unpack(long[] packed) {
-        if (packed == null || packed.length < 4) return Collections.emptyList();
-        List<QuestFrame> out = new ArrayList<>(packed.length / 4);
-        for (int i = 0; i + 3 < packed.length; i += 4) {
-            out.add(new QuestFrame(packed[i], packed[i + 1], packed[i + 2], packed[i + 3]));
+        if (packed == null || packed.length < 5) return Collections.emptyList();
+        List<QuestFrame> out = new ArrayList<>(packed.length / 5);
+        for (int i = 0; i + 4 < packed.length; i += 5) {
+            out.add(new QuestFrame(packed[i], packed[i + 1], packed[i + 2], packed[i + 3], packed[i + 4]));
         }
         return out;
     }

@@ -97,6 +97,11 @@ class RTPDecoder
     // RTP SSRC and timestamp of the packet being parsed; forwarded as the RtpTag of every NALU it completes.
     uint32_t                         m_current_ssrc = 0;
     uint32_t                         m_current_ts   = 0;
+    // When the first packet of the current RTP timestamp reached the parser (RtpTag::firstNs).
+    FirstArrival                     m_first_arrival;
+    int64_t                          m_current_first_ns = 0;
+    // Marker, SSRC, timestamp and first arrival of the packet being parsed.
+    void noteCurrentPacket(const RTP::RTPPacket& rtpPacket);
 
   private:
     // TDOD: What shall we do if a start, middle or end of fu-a is missing ?

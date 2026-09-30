@@ -16,6 +16,8 @@ public final class StatsSnapshot {
 
     // latency
     public final Segment encode, airSend, link, decode, toDisplay, total;
+    /** Queueing delay from the Quest alone (relative one-way delay above its running minimum; OwdWindow). */
+    public final Segment owd;
     public final int matchedFrames;
     public final boolean clockSynced;
     public final double clockRttMs;
@@ -50,6 +52,7 @@ public final class StatsSnapshot {
         decode = b.decode;
         toDisplay = b.toDisplay;
         total = b.total;
+        owd = b.owd;
         matchedFrames = b.matchedFrames;
         clockSynced = b.clockSynced;
         clockRttMs = b.clockRttMs;
@@ -83,7 +86,7 @@ public final class StatsSnapshot {
 
     public static final class Builder {
         private Segment encode = Segment.NONE, airSend = Segment.NONE, link = Segment.NONE, decode = Segment.NONE,
-                toDisplay = Segment.NONE, total = Segment.NONE;
+                toDisplay = Segment.NONE, total = Segment.NONE, owd = Segment.NONE;
         private int matchedFrames;
         private boolean clockSynced;
         private double clockRttMs = Double.NaN, sidecarAgeMs = Double.NaN;
@@ -103,6 +106,7 @@ public final class StatsSnapshot {
         public Builder link(Segment s) { link = s; return this; }
         public Builder decode(Segment s) { decode = s; return this; }
         public Builder toDisplay(Segment s) { toDisplay = s; return this; }
+        public Builder owd(Segment s) { owd = s; return this; }
         public Builder total(Segment s) { total = s; return this; }
 
         public Builder matching(int frames, boolean synced, double rttMs, double sidecarAgeMs) {

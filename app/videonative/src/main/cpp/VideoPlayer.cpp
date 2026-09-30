@@ -493,20 +493,22 @@ extern "C"
         return out;
     }
 
-    // Decoded frames for the Stats page, 4 longs each: ssrc, RTP timestamp, complete ns, decoded ns (CLOCK_MONOTONIC).
+    // Decoded frames for the Stats page, 5 longs each: ssrc, RTP timestamp, complete ns, decoded ns, first-packet ns
+    // (CLOCK_MONOTONIC).
     JNI_METHOD(jlongArray, nativeDrainFrameTimes)
     (JNIEnv* env, jclass jclass1, jlong nativeInstance)
     {
         VideoPlayer*                  p      = native(nativeInstance);
         const std::vector<FrameTimes> frames = p ? p->drainFrameTimes() : std::vector<FrameTimes>{};
         std::vector<jlong>            packed;
-        packed.reserve(frames.size() * 4);
+        packed.reserve(frames.size() * 5);
         for (const FrameTimes& f : frames)
         {
             packed.push_back(f.ssrc);
             packed.push_back(f.ts);
             packed.push_back(f.completeNs);
             packed.push_back(f.decodedNs);
+            packed.push_back(f.firstNs);
         }
         jlongArray out = env->NewLongArray(static_cast<jsize>(packed.size()));
         if (!packed.empty()) env->SetLongArrayRegion(out, 0, static_cast<jsize>(packed.size()), packed.data());

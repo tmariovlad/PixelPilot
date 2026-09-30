@@ -35,6 +35,7 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
     private final SidecarClient sidecar;
     private final ClockSync clock;
     private final LatencyWindow latency;
+    private final OwdWindow owd;
     private final LinkWindow link;
     private final CounterRate idrOk, idrFailed, frozen;
     private volatile float fpsDecoded = Float.NaN;
@@ -52,6 +53,7 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
         this.sidecar = sidecar;
         this.clock = sidecar != null ? sidecar.clock() : new ClockSync(16);
         latency = new LatencyWindow(windowUs);
+        owd = new OwdWindow(windowUs);
         link = new LinkWindow(windowUs);
         idrOk = new CounterRate(windowUs);
         idrFailed = new CounterRate(windowUs);
@@ -104,7 +106,10 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
 
     /** One refresh; the ticker calls it every TICK_MS, tests call it directly. */
     synchronized void tick(long nowUs) {
-        for (QuestFrame q : QuestFrame.unpack(inputs.drainFrameTimes())) latency.addQuest(q);
+        for (QuestFrame q : QuestFrame.unpack(inputs.drainFrameTimes())) {
+            latency.addQuest(q);
+            owd.add(q);
+        }
         link.addRxRate(inputs.takeRxRate());
         long[] levers = inputs.leverCounters();
         if (levers != null && levers.length >= 3) {
@@ -114,6 +119,7 @@ public final class StatsCollector implements StatsSource, AutoCloseable {
         }
         StatsSnapshot.Builder b = new StatsSnapshot.Builder();
         latency.fill(b, nowUs, clock, inputs.display());
+        b.owd(owd.snapshot(nowUs));
         link.fill(b, nowUs);
         b.fpsDecoded(fpsDecoded).levers(idrOk.perSecond(), idrFailed.perSecond(), frozen.perSecond());
         snapshot = b.build();

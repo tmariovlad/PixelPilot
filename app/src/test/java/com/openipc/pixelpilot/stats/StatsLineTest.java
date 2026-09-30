@@ -18,8 +18,11 @@ public class StatsLineTest {
                 .rate(2, 1, 20, false, true, true, 97.5)
                 .rssi(-58, -61)
                 .loss(3.9, 0.8, 72.2, 18.5)
+                .owd(Segment.of(new double[]{2.0, 3.0}))
                 .build();
         String line = StatsLine.format(s, 123_456_789L);
+        assertTrue(line, line.contains(" owd50=2.50 owd95="));
+        assertTrue(line, line.contains(" owdw=60"));
         assertTrue(line.startsWith("t=123456789 "));
         assertTrue(line.contains(" enc50=4.50 enc95=4.95 "));
         assertTrue(line.contains(" n=12 sync=1 rtt=1.25 "));

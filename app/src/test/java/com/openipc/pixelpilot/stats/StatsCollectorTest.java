@@ -56,7 +56,7 @@ public class StatsCollectorTest {
         f.frameReadyUs = t0 + 4_000;
         f.lastPktSendUs = t0 + 5_000;
         c.onSidecarFrame(f, t0 + 6_000);
-        in.frames.add(new long[]{7, 900, (t0 + 8_000) * 1000, (t0 + 9_500) * 1000});
+        in.frames.add(new long[]{7, 900, (t0 + 8_000) * 1000, (t0 + 9_500) * 1000, (t0 + 7_000) * 1000});
         c.onLinkStats(t0, 1000, 50, 10, 1, 74, 70, 50, 40);
         c.onDecodedFps(166.5f);
         c.tick(t0 + 10_000);
@@ -65,6 +65,8 @@ public class StatsCollectorTest {
         c.tick(t0 + 1_010_000);
         StatsSnapshot s = c.snapshot();
         assertEquals(1, s.matchedFrames);
+        assertEquals(1, s.owd.n);                          // the first-packet time reaches OwdWindow
+        assertEquals(0.0, s.owd.p50Ms, 1e-9);
         assertEquals(4.0, s.encode.p50Ms, 1e-9);
         assertEquals(3.0, s.link.p50Ms, 1e-9);
         assertEquals(1.5, s.decode.p50Ms, 1e-9);

@@ -54,6 +54,8 @@ public final class StatsLine {
         kv(b, "kb", s.frameKbP50, "%.0f");
         kv(b, "pkts", s.pktsPerFrameP50, "%.0f");
         kv(b, "idr", s.idrPerS, "%.2f");
+        seg(b, "owd", s.owd);
+        kv(b, "owdw", (int) (OwdWindow.BASELINE_NS / 1_000_000_000L));   // the owd base window, s
         return b.toString();
     }
 
