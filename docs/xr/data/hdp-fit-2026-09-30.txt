@@ -1,0 +1,245 @@
+# O121 HDP (HD payload on q7), Quest side: ab_fit.py per PPXR_STATS key on a Quest-rebuilt air log (the air's ab_hdp.log was lost in the power cycle): quest_airlog.py (SET = planned T); --quest-minus-air-s -0.2801 (ab_hdp.meta, PC ~ air); guard 15 s, ref p2400.
+# --fps-min 0: no block voided. The Quest's decoded fps dips with loss (3 of 4 p3000 blocks read 56-82 fps somewhere), which is the effect under test; the air itself held 119.22-119.25 fps in every block (coordinator's ab_hdp.RECONSTRUCTED.log STEP lines), so no block was an HB-57 halving.
+
+## --key lnk50
+12 blocks, 0 void; 740 samples read, 616 used (lnk50)
+  block 0 p2400  1790787300-1790787420 n=   51 median=8.750
+  block 1 p3000  1790787420-1790787540 n=   51 median=6.930
+  block 2 p3900  1790787540-1790787660 n=   51 median=8.240
+  block 3 p3900  1790787660-1790787780 n=   52 median=8.420
+  block 4 p3000  1790787780-1790787900 n=   52 median=9.120
+  block 5 p2400  1790787900-1790788020 n=   51 median=8.860
+  block 6 p2400  1790788020-1790788140 n=   51 median=9.010
+  block 7 p3000  1790788140-1790788260 n=   51 median=8.660
+  block 8 p3900  1790788260-1790788380 n=   51 median=8.300
+  block 9 p3900  1790788380-1790788500 n=   52 median=8.230
+  block 10 p3000  1790788500-1790788620 n=   52 median=8.420
+  block 11 p2400  1790788620-1790788740 n=   51 median=8.790
+
+OLS linear drift: residual sd 0.808 ms, dof 612, drift +0.0118 ± 0.0047 ms/min
+  p3000    vs p2400: -0.324 ± 0.080 ms  z=-4.1
+           N per arm for a 2-SE result at 0.32 ms: 50
+  p3900    vs p2400: -0.628 ± 0.080 ms  z=-7.9
+           N per arm for a 2-SE result at 0.63 ms: 14
+
+OLS quadratic drift: residual sd 0.764 ms, dof 611, drift +0.1637 ± 0.0181 ms/min
+  p3000    vs p2400: -0.426 ± 0.076 ms  z=-5.6
+           N per arm for a 2-SE result at 0.43 ms: 26
+  p3900    vs p2400: -0.781 ± 0.078 ms  z=-10.1
+           N per arm for a 2-SE result at 0.78 ms: 8
+
+## --key lnk95
+12 blocks, 0 void; 740 samples read, 616 used (lnk95)
+  block 0 p2400  1790787300-1790787420 n=   51 median=10.070
+  block 1 p3000  1790787420-1790787540 n=   51 median=8.980
+  block 2 p3900  1790787540-1790787660 n=   51 median=10.240
+  block 3 p3900  1790787660-1790787780 n=   52 median=11.690
+  block 4 p3000  1790787780-1790787900 n=   52 median=11.420
+  block 5 p2400  1790787900-1790788020 n=   51 median=10.540
+  block 6 p2400  1790788020-1790788140 n=   51 median=10.450
+  block 7 p3000  1790788140-1790788260 n=   51 median=12.510
+  block 8 p3900  1790788260-1790788380 n=   51 median=11.630
+  block 9 p3900  1790788380-1790788500 n=   52 median=11.735
+  block 10 p3000  1790788500-1790788620 n=   52 median=10.765
+  block 11 p2400  1790788620-1790788740 n=   51 median=10.340
+
+OLS linear drift: residual sd 2.890 ms, dof 612, drift +0.0673 ± 0.0168 ms/min
+  p3000    vs p2400: +0.724 ± 0.285 ms  z=+2.5
+           N per arm for a 2-SE result at 0.72 ms: 128
+  p3900    vs p2400: +1.538 ± 0.285 ms  z=+5.4
+           N per arm for a 2-SE result at 1.54 ms: 29
+
+OLS quadratic drift: residual sd 2.857 ms, dof 611, drift +0.3254 ± 0.0679 ms/min
+  p3000    vs p2400: +0.550 ± 0.286 ms  z=+1.9
+           N per arm for a 2-SE result at 0.55 ms: 216
+  p3900    vs p2400: +1.277 ± 0.290 ms  z=+4.4
+           N per arm for a 2-SE result at 1.28 ms: 41
+
+## --key tot50
+12 blocks, 0 void; 740 samples read, 616 used (tot50)
+  block 0 p2400  1790787300-1790787420 n=   51 median=18.940
+  block 1 p3000  1790787420-1790787540 n=   51 median=17.810
+  block 2 p3900  1790787540-1790787660 n=   51 median=17.650
+  block 3 p3900  1790787660-1790787780 n=   52 median=18.475
+  block 4 p3000  1790787780-1790787900 n=   52 median=19.425
+  block 5 p2400  1790787900-1790788020 n=   51 median=18.710
+  block 6 p2400  1790788020-1790788140 n=   51 median=19.110
+  block 7 p3000  1790788140-1790788260 n=   51 median=19.160
+  block 8 p3900  1790788260-1790788380 n=   51 median=18.440
+  block 9 p3900  1790788380-1790788500 n=   52 median=18.500
+  block 10 p3000  1790788500-1790788620 n=   52 median=18.765
+  block 11 p2400  1790788620-1790788740 n=   51 median=18.220
+
+OLS linear drift: residual sd 1.092 ms, dof 612, drift +0.0123 ± 0.0064 ms/min
+  p3000    vs p2400: -0.075 ± 0.108 ms  z=-0.7
+           N per arm for a 2-SE result at 0.08 ms: 1689
+  p3900    vs p2400: -0.536 ± 0.108 ms  z=-5.0
+           N per arm for a 2-SE result at 0.54 ms: 34
+
+OLS quadratic drift: residual sd 1.056 ms, dof 611, drift +0.1727 ± 0.0251 ms/min
+  p3000    vs p2400: -0.183 ± 0.106 ms  z=-1.7
+           N per arm for a 2-SE result at 0.18 ms: 266
+  p3900    vs p2400: -0.698 ± 0.107 ms  z=-6.5
+           N per arm for a 2-SE result at 0.70 ms: 19
+
+## --key tot95
+12 blocks, 0 void; 740 samples read, 616 used (tot95)
+  block 0 p2400  1790787300-1790787420 n=   51 median=23.180
+  block 1 p3000  1790787420-1790787540 n=   51 median=21.890
+  block 2 p3900  1790787540-1790787660 n=   51 median=22.680
+  block 3 p3900  1790787660-1790787780 n=   52 median=23.445
+  block 4 p3000  1790787780-1790787900 n=   52 median=24.265
+  block 5 p2400  1790787900-1790788020 n=   51 median=23.270
+  block 6 p2400  1790788020-1790788140 n=   51 median=23.450
+  block 7 p3000  1790788140-1790788260 n=   51 median=23.820
+  block 8 p3900  1790788260-1790788380 n=   51 median=24.010
+  block 9 p3900  1790788380-1790788500 n=   52 median=23.405
+  block 10 p3000  1790788500-1790788620 n=   52 median=23.590
+  block 11 p2400  1790788620-1790788740 n=   51 median=23.260
+
+OLS linear drift: residual sd 1.502 ms, dof 612, drift +0.0369 ± 0.0087 ms/min
+  p3000    vs p2400: +0.369 ± 0.148 ms  z=+2.5
+           N per arm for a 2-SE result at 0.37 ms: 133
+  p3900    vs p2400: +0.402 ± 0.148 ms  z=+2.7
+           N per arm for a 2-SE result at 0.40 ms: 112
+
+OLS quadratic drift: residual sd 1.463 ms, dof 611, drift +0.2336 ± 0.0348 ms/min
+  p3000    vs p2400: +0.236 ± 0.146 ms  z=+1.6
+           N per arm for a 2-SE result at 0.24 ms: 308
+  p3900    vs p2400: +0.203 ± 0.149 ms  z=+1.4
+           N per arm for a 2-SE result at 0.20 ms: 415
+
+## --key post
+12 blocks, 0 void; 740 samples read, 616 used (post)
+  block 0 p2400  1790787300-1790787420 n=   51 median=0.070
+  block 1 p3000  1790787420-1790787540 n=   51 median=0.290
+  block 2 p3900  1790787540-1790787660 n=   51 median=0.000
+  block 3 p3900  1790787660-1790787780 n=   52 median=0.000
+  block 4 p3000  1790787780-1790787900 n=   52 median=0.355
+  block 5 p2400  1790787900-1790788020 n=   51 median=0.140
+  block 6 p2400  1790788020-1790788140 n=   51 median=0.120
+  block 7 p3000  1790788140-1790788260 n=   51 median=0.370
+  block 8 p3900  1790788260-1790788380 n=   51 median=0.000
+  block 9 p3900  1790788380-1790788500 n=   52 median=0.110
+  block 10 p3000  1790788500-1790788620 n=   52 median=0.385
+  block 11 p2400  1790788620-1790788740 n=   51 median=0.120
+
+OLS linear drift: residual sd 0.163 ms, dof 612, drift +0.0030 ± 0.0009 ms/min
+  p3000    vs p2400: +0.255 ± 0.016 ms  z=+15.8
+           N per arm for a 2-SE result at 0.25 ms: 4
+  p3900    vs p2400: -0.051 ± 0.016 ms  z=-3.2
+           N per arm for a 2-SE result at 0.05 ms: 82
+
+OLS quadratic drift: residual sd 0.163 ms, dof 611, drift +0.0106 ± 0.0039 ms/min
+  p3000    vs p2400: +0.250 ± 0.016 ms  z=+15.4
+           N per arm for a 2-SE result at 0.25 ms: 4
+  p3900    vs p2400: -0.059 ± 0.017 ms  z=-3.6
+           N per arm for a 2-SE result at 0.06 ms: 62
+
+## --key pdata
+12 blocks, 0 void; 740 samples read, 616 used (pdata)
+  block 0 p2400  1790787300-1790787420 n=   51 median=1.090
+  block 1 p3000  1790787420-1790787540 n=   51 median=1.480
+  block 2 p3900  1790787540-1790787660 n=   51 median=1.410
+  block 3 p3900  1790787660-1790787780 n=   52 median=1.540
+  block 4 p3000  1790787780-1790787900 n=   52 median=1.750
+  block 5 p2400  1790787900-1790788020 n=   51 median=1.460
+  block 6 p2400  1790788020-1790788140 n=   51 median=1.510
+  block 7 p3000  1790788140-1790788260 n=   51 median=1.930
+  block 8 p3900  1790788260-1790788380 n=   51 median=1.730
+  block 9 p3900  1790788380-1790788500 n=   52 median=1.710
+  block 10 p3000  1790788500-1790788620 n=   52 median=1.770
+  block 11 p2400  1790788620-1790788740 n=   51 median=1.550
+
+OLS linear drift: residual sd 0.349 ms, dof 612, drift +0.0175 ± 0.0020 ms/min
+  p3000    vs p2400: +0.360 ± 0.034 ms  z=+10.5
+           N per arm for a 2-SE result at 0.36 ms: 8
+  p3900    vs p2400: +0.175 ± 0.034 ms  z=+5.1
+           N per arm for a 2-SE result at 0.18 ms: 32
+
+OLS quadratic drift: residual sd 0.339 ms, dof 611, drift +0.0638 ± 0.0081 ms/min
+  p3000    vs p2400: +0.329 ± 0.034 ms  z=+9.7
+           N per arm for a 2-SE result at 0.33 ms: 9
+  p3900    vs p2400: +0.128 ± 0.034 ms  z=+3.7
+           N per arm for a 2-SE result at 0.13 ms: 57
+
+## --key enc50
+12 blocks, 0 void; 740 samples read, 616 used (enc50)
+  block 0 p2400  1790787300-1790787420 n=   51 median=3.840
+  block 1 p3000  1790787420-1790787540 n=   51 median=3.850
+  block 2 p3900  1790787540-1790787660 n=   51 median=3.850
+  block 3 p3900  1790787660-1790787780 n=   52 median=3.850
+  block 4 p3000  1790787780-1790787900 n=   52 median=3.850
+  block 5 p2400  1790787900-1790788020 n=   51 median=3.850
+  block 6 p2400  1790788020-1790788140 n=   51 median=3.850
+  block 7 p3000  1790788140-1790788260 n=   51 median=3.840
+  block 8 p3900  1790788260-1790788380 n=   51 median=3.840
+  block 9 p3900  1790788380-1790788500 n=   52 median=3.850
+  block 10 p3000  1790788500-1790788620 n=   52 median=3.850
+  block 11 p2400  1790788620-1790788740 n=   51 median=3.840
+
+OLS linear drift: residual sd 0.010 ms, dof 612, drift -0.0001 ± 0.0001 ms/min
+  p3000    vs p2400: -0.000 ± 0.001 ms  z=-0.1
+           N per arm for a 2-SE result at 0.00 ms: 80548
+  p3900    vs p2400: +0.002 ± 0.001 ms  z=+2.0
+           N per arm for a 2-SE result at 0.00 ms: 204
+
+OLS quadratic drift: residual sd 0.010 ms, dof 611, drift +0.0005 ± 0.0002 ms/min
+  p3000    vs p2400: -0.000 ± 0.001 ms  z=-0.5
+           N per arm for a 2-SE result at 0.00 ms: 3406
+  p3900    vs p2400: +0.001 ± 0.001 ms  z=+1.4
+           N per arm for a 2-SE result at 0.00 ms: 401
+
+## --key pkts
+12 blocks, 0 void; 740 samples read, 616 used (pkts)
+  block 0 p2400  1790787300-1790787420 n=   51 median=12.000
+  block 1 p3000  1790787420-1790787540 n=   51 median=10.000
+  block 2 p3900  1790787540-1790787660 n=   51 median=7.000
+  block 3 p3900  1790787660-1790787780 n=   52 median=8.000
+  block 4 p3000  1790787780-1790787900 n=   52 median=10.000
+  block 5 p2400  1790787900-1790788020 n=   51 median=12.000
+  block 6 p2400  1790788020-1790788140 n=   51 median=12.000
+  block 7 p3000  1790788140-1790788260 n=   51 median=10.000
+  block 8 p3900  1790788260-1790788380 n=   51 median=7.000
+  block 9 p3900  1790788380-1790788500 n=   52 median=8.000
+  block 10 p3000  1790788500-1790788620 n=   52 median=10.000
+  block 11 p2400  1790788620-1790788740 n=   51 median=12.000
+
+OLS linear drift: residual sd 0.290 ms, dof 612, drift +0.0005 ± 0.0017 ms/min
+  p3000    vs p2400: -2.000 ± 0.029 ms  z=-69.8
+           N per arm for a 2-SE result at 2.00 ms: 1
+  p3900    vs p2400: -4.500 ± 0.029 ms  z=-157.1
+           N per arm for a 2-SE result at 4.50 ms: 1
+
+OLS quadratic drift: residual sd 0.290 ms, dof 611, drift -0.0004 ± 0.0069 ms/min
+  p3000    vs p2400: -1.999 ± 0.029 ms  z=-68.9
+           N per arm for a 2-SE result at 2.00 ms: 1
+  p3900    vs p2400: -4.499 ± 0.029 ms  z=-152.7
+           N per arm for a 2-SE result at 4.50 ms: 1
+
+## --key kb
+12 blocks, 0 void; 740 samples read, 616 used (kb)
+  block 0 p2400  1790787300-1790787420 n=   51 median=219.000
+  block 1 p3000  1790787420-1790787540 n=   51 median=219.000
+  block 2 p3900  1790787540-1790787660 n=   51 median=218.000
+  block 3 p3900  1790787660-1790787780 n=   52 median=218.000
+  block 4 p3000  1790787780-1790787900 n=   52 median=218.000
+  block 5 p2400  1790787900-1790788020 n=   51 median=218.000
+  block 6 p2400  1790788020-1790788140 n=   51 median=219.000
+  block 7 p3000  1790788140-1790788260 n=   51 median=219.000
+  block 8 p3900  1790788260-1790788380 n=   51 median=218.000
+  block 9 p3900  1790788380-1790788500 n=   52 median=218.000
+  block 10 p3000  1790788500-1790788620 n=   52 median=218.000
+  block 11 p2400  1790788620-1790788740 n=   51 median=219.000
+
+OLS linear drift: residual sd 0.512 ms, dof 612, drift -0.0052 ± 0.0030 ms/min
+  p3000    vs p2400: -0.102 ± 0.051 ms  z=-2.0
+           N per arm for a 2-SE result at 0.10 ms: 201
+  p3900    vs p2400: -0.238 ± 0.051 ms  z=-4.7
+           N per arm for a 2-SE result at 0.24 ms: 37
+
+OLS quadratic drift: residual sd 0.511 ms, dof 611, drift -0.0226 ± 0.0121 ms/min
+  p3000    vs p2400: -0.090 ± 0.051 ms  z=-1.8
+           N per arm for a 2-SE result at 0.09 ms: 256
+  p3900    vs p2400: -0.221 ± 0.052 ms  z=-4.3
+           N per arm for a 2-SE result at 0.22 ms: 43

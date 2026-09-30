@@ -1,0 +1,22 @@
+# ab_hdp, steps docs/xr/data/steps-2026-09-30-hdp.txt, --air-offset-s -0.2801 (Quest-PC -0.2801 + PC-air 0), --guard-s 15. O121 HDP: HD payload on q7 = 720p120 25M MCS7 FEC 8/10 17 dBm ch165; payload 2400/3000/3900 ABC-CBA x2; Quest APK 086a64aa; PC-air ~0 (coordinator); steps = planned T (the air log was lost).
+# python3 scripts/quest-latch/ab_link.py scripts/quest/out/ab_hdp.pftrace docs/xr/data/steps-2026-09-30-hdp.txt --air-offset-s -0.2801 --guard-s 15
+per step (link side, guarded windows)
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+ 0 p2400              -   1732.1        -     14.4      1.2    100.0     84.9     83.0     25.0     24.7        -        -        -        -        -      1.1        -        -        -        -        -        -        -
+ 1 p3000              -   1425.6        -     13.5      3.9    100.0     84.8     83.0     25.2     25.0        -        -        -        -        -      1.5        -        -        -        -        -        -        -
+ 2 p3900              -   1086.6        -     11.5      0.6    100.0     84.8     83.0     25.3     25.0        -        -        -        -        -      1.4        -        -        -        -        -        -        -
+ 3 p3900              -   1084.2        -     13.5      0.6    100.0     84.2     83.0     25.0     25.0        -        -        -        -        -      1.6        -        -        -        -        -        -        -
+ 4 p3000              -   1419.7        -     16.5      4.2    100.0     84.0     82.8     25.0     25.0        -        -        -        -        -      1.8        -        -        -        -        -        -        -
+ 5 p2400              -   1720.2        -     19.7      2.0    100.0     84.0     82.0     25.0     25.0        -        -        -        -        -      1.5        -        -        -        -        -        -        -
+ 6 p2400              -   1726.3        -     18.5      2.3    100.0     84.0     82.3     25.1     25.0        -        -        -        -        -      1.5        -        -        -        -        -        -        -
+ 7 p3000              -   1418.3        -     17.8      5.4    100.0     84.0     82.0     25.0     24.9        -        -        -        -        -      2.0        -        -        -        -        -        -        -
+ 8 p3900              -   1083.3        -     13.9      0.8    100.0     84.0     82.0     25.0     24.9        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+ 9 p3900              -   1082.5        -     14.1      1.0    100.0     84.0     82.0     25.0     25.0        -        -        -        -        -      1.7        -        -        -        -        -        -        -
+10 p3000              -   1420.2        -     16.4      4.7    100.0     84.0     82.0     25.0     25.0        -        -        -        -        -      1.8        -        -        -        -        -        -        -
+11 p2400              -   1725.3        -     19.4      1.9    100.0     84.0     82.0     25.0     25.0        -        -        -        -        -      1.5        -        -        -        -        -        -        -
+
+per state
+                   tx/s     rx/s  preFEC%    fec/s   lost/s     rssi   rssi A   rssi B  snrA dB  snrB dB   Q tx/s    air°C  Q cpu°C     Q st     batt dataFEC%    crc/s usbEmp/susbDrop/s minArmed cbMax us usbCpl/s    icv/s
+p2400                 -   1726.0        -     18.0      1.9    100.0     84.2     82.3     25.0     24.9        -        -        -        -        -      1.4        -        -        -        -        -        -        -
+p3000                 -   1421.0        -     16.0      4.6    100.0     84.2     82.4     25.1     25.0        -        -        -        -        -      1.8        -        -        -        -        -        -        -
+p3900                 -   1084.2        -     13.2      0.7    100.0     84.2     82.5     25.1     25.0        -        -        -        -        -      1.6        -        -        -        -        -        -        -

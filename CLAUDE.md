@@ -51,7 +51,9 @@ home of all Quest work.
   [big_frames.py](scripts/quest-latch/big_frames.py) (latency of the largest frames, e.g. scene changes / IDR, apart from the rest)),
   [tsv_steps.py](scripts/quest-latch/tsv_steps.py) (rows of a probe TSV, e.g. rtp_holes / fec_blocks --tsv, per air step and class),
   [stats_steps.py](scripts/quest-latch/stats_steps.py) (median PPXR_STATS fields per step, e.g. RSSI dBm),
-  [latency_bins.py](scripts/quest-latch/latency_bins.py) (latency over time within each step: a building queue)).
+  [latency_bins.py](scripts/quest-latch/latency_bins.py) (latency over time within each step: a building queue),
+  [first_light_steps.py](scripts/quest-latch/first_light_steps.py) (the rig-side detector: a sustained first-light step on latency-test's per-flash CSV, e.g. the HD 71 ms state),
+  [quest_airlog.py](scripts/quest-latch/quest_airlog.py) (an ab_run-style air log rebuilt from the Quest, for ab_fit.py when the air's log is lost)).
 - Doc restructure log: [docs/xr/RESTRUCTURE-REPORT-2026-09-26.md](docs/xr/RESTRUCTURE-REPORT-2026-09-26.md).
 
 New results go into the matching `docs/xr/` topic file (raw data into `docs/xr/data/`), with a one-line summary

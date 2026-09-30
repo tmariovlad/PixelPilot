@@ -1,0 +1,151 @@
+# O121 L6 (MFE clock on race), Quest side: ab_fit.py per key on a Quest-rebuilt air log (ab_l6.log lost; the air hung ~1 s after the second f384 SET at 789220, so that block is excluded by END=789221); --quest-minus-air-s -0.2417; guard 15 s, ref f320, dose = clock period in ns (f216=4.63, f320=3.125, f384=2.604).
+
+## --key enc50
+8 blocks, 0 void; 216 samples read, 151 used (enc50)
+  block 0 f320   1790788800-1790788860 n=   21 median=1.880
+  block 1 f216   1790788860-1790788920 n=   21 median=2.430
+  block 2 f320   1790788920-1790788980 n=   21 median=1.880
+  block 3 f384   1790788980-1790789040 n=   22 median=1.710
+  block 4 f320   1790789040-1790789100 n=   22 median=1.880
+  block 5 f216   1790789100-1790789160 n=   22 median=2.420
+  block 6 f320   1790789160-1790789220 n=   22 median=1.880
+  block 7 f384   1790789220-1790789221 n=    0 median=-
+
+OLS linear drift: residual sd 0.005 ms, dof 147, drift -0.0002 ± 0.0002 ms/min
+  f216     vs f320: +0.542 ± 0.001 ms  z=+595.4
+           N per arm for a 2-SE result at 0.54 ms: 1
+  f384     vs f320: -0.172 ± 0.001 ms  z=-147.3
+           N per arm for a 2-SE result at 0.17 ms: 1
+
+OLS quadratic drift: residual sd 0.005 ms, dof 146, drift +0.0006 ± 0.0009 ms/min
+  f216     vs f320: +0.542 ± 0.001 ms  z=+589.2
+           N per arm for a 2-SE result at 0.54 ms: 1
+  f384     vs f320: -0.172 ± 0.001 ms  z=-129.9
+           N per arm for a 2-SE result at 0.17 ms: 1
+
+dose fit (linear drift): slope +0.356 ± 0.001 ms per dose unit, z=+469.7, residual sd 0.007
+
+## --key enc95
+8 blocks, 0 void; 216 samples read, 151 used (enc95)
+  block 0 f320   1790788800-1790788860 n=   21 median=1.980
+  block 1 f216   1790788860-1790788920 n=   21 median=2.520
+  block 2 f320   1790788920-1790788980 n=   21 median=1.980
+  block 3 f384   1790788980-1790789040 n=   22 median=1.800
+  block 4 f320   1790789040-1790789100 n=   22 median=1.980
+  block 5 f216   1790789100-1790789160 n=   22 median=2.520
+  block 6 f320   1790789160-1790789220 n=   22 median=1.980
+  block 7 f384   1790789220-1790789221 n=    0 median=-
+
+OLS linear drift: residual sd 0.009 ms, dof 147, drift -0.0003 ± 0.0004 ms/min
+  f216     vs f320: +0.543 ± 0.002 ms  z=+314.6
+           N per arm for a 2-SE result at 0.54 ms: 1
+  f384     vs f320: -0.175 ± 0.002 ms  z=-79.1
+           N per arm for a 2-SE result at 0.17 ms: 1
+
+OLS quadratic drift: residual sd 0.009 ms, dof 146, drift +0.0014 ± 0.0016 ms/min
+  f216     vs f320: +0.543 ± 0.002 ms  z=+311.5
+           N per arm for a 2-SE result at 0.54 ms: 1
+  f384     vs f320: -0.176 ± 0.003 ms  z=-70.0
+           N per arm for a 2-SE result at 0.18 ms: 1
+
+dose fit (linear drift): slope +0.358 ± 0.001 ms per dose unit, z=+325.6, residual sd 0.010
+
+## --key tot50
+8 blocks, 0 void; 216 samples read, 151 used (tot50)
+  block 0 f320   1790788800-1790788860 n=   21 median=10.890
+  block 1 f216   1790788860-1790788920 n=   21 median=12.080
+  block 2 f320   1790788920-1790788980 n=   21 median=11.750
+  block 3 f384   1790788980-1790789040 n=   22 median=11.500
+  block 4 f320   1790789040-1790789100 n=   22 median=11.615
+  block 5 f216   1790789100-1790789160 n=   22 median=12.110
+  block 6 f320   1790789160-1790789220 n=   22 median=11.535
+  block 7 f384   1790789220-1790789221 n=    0 median=-
+
+OLS linear drift: residual sd 0.343 ms, dof 147, drift +0.0826 ± 0.0139 ms/min
+  f216     vs f320: +0.493 ± 0.064 ms  z=+7.7
+           N per arm for a 2-SE result at 0.49 ms: 4
+  f384     vs f320: -0.030 ± 0.082 ms  z=-0.4
+           N per arm for a 2-SE result at 0.03 ms: 1048
+
+OLS quadratic drift: residual sd 0.307 ms, dof 146, drift +0.4075 ± 0.0547 ms/min
+  f216     vs f320: +0.444 ± 0.058 ms  z=+7.7
+           N per arm for a 2-SE result at 0.44 ms: 4
+  f384     vs f320: -0.273 ± 0.083 ms  z=-3.3
+           N per arm for a 2-SE result at 0.27 ms: 11
+
+dose fit (linear drift): slope +0.295 ± 0.037 ms per dose unit, z=+7.9, residual sd 0.345
+
+## --key dec50
+8 blocks, 0 void; 216 samples read, 151 used (dec50)
+  block 0 f320   1790788800-1790788860 n=   21 median=1.500
+  block 1 f216   1790788860-1790788920 n=   21 median=1.470
+  block 2 f320   1790788920-1790788980 n=   21 median=1.470
+  block 3 f384   1790788980-1790789040 n=   22 median=1.480
+  block 4 f320   1790789040-1790789100 n=   22 median=1.470
+  block 5 f216   1790789100-1790789160 n=   22 median=1.480
+  block 6 f320   1790789160-1790789220 n=   22 median=1.480
+  block 7 f384   1790789220-1790789221 n=    0 median=-
+
+OLS linear drift: residual sd 0.024 ms, dof 147, drift -0.0014 ± 0.0010 ms/min
+  f216     vs f320: -0.006 ± 0.004 ms  z=-1.3
+           N per arm for a 2-SE result at 0.01 ms: 145
+  f384     vs f320: +0.003 ± 0.006 ms  z=+0.6
+           N per arm for a 2-SE result at 0.00 ms: 371
+
+OLS quadratic drift: residual sd 0.023 ms, dof 146, drift -0.0165 ± 0.0040 ms/min
+  f216     vs f320: -0.003 ± 0.004 ms  z=-0.8
+           N per arm for a 2-SE result at 0.00 ms: 377
+  f384     vs f320: +0.015 ± 0.006 ms  z=+2.4
+           N per arm for a 2-SE result at 0.01 ms: 19
+
+dose fit (linear drift): slope -0.004 ± 0.003 ms per dose unit, z=-1.6, residual sd 0.024
+
+## --key lnk50
+8 blocks, 0 void; 216 samples read, 151 used (lnk50)
+  block 0 f320   1790788800-1790788860 n=   21 median=2.990
+  block 1 f216   1790788860-1790788920 n=   21 median=3.690
+  block 2 f320   1790788920-1790788980 n=   21 median=3.870
+  block 3 f384   1790788980-1790789040 n=   22 median=3.715
+  block 4 f320   1790789040-1790789100 n=   22 median=3.780
+  block 5 f216   1790789100-1790789160 n=   22 median=3.745
+  block 6 f320   1790789160-1790789220 n=   22 median=3.715
+  block 7 f384   1790789220-1790789221 n=    0 median=-
+
+OLS linear drift: residual sd 0.332 ms, dof 147, drift +0.0916 ± 0.0135 ms/min
+  f216     vs f320: -0.048 ± 0.062 ms  z=-0.8
+           N per arm for a 2-SE result at 0.05 ms: 384
+  f384     vs f320: +0.096 ± 0.079 ms  z=+1.2
+           N per arm for a 2-SE result at 0.10 ms: 96
+
+OLS quadratic drift: residual sd 0.291 ms, dof 146, drift +0.4290 ± 0.0519 ms/min
+  f216     vs f320: -0.099 ± 0.055 ms  z=-1.8
+           N per arm for a 2-SE result at 0.10 ms: 70
+  f384     vs f320: -0.156 ± 0.079 ms  z=-2.0
+           N per arm for a 2-SE result at 0.16 ms: 28
+
+dose fit (linear drift): slope -0.050 ± 0.036 ms per dose unit, z=-1.4, residual sd 0.332
+
+## --key post
+C:\xampp\htdocs\openipc-low-latency-and-others-video\repos\tasks\air-latency-30pct-2026-09-30\slot\ab_fit.py:176: RuntimeWarning: invalid value encountered in scalar divide
+  print(f"  {x:8s} vs {ref}: {b:+.3f} ± {se:.3f} ms  z={b / se:+.1f}")
+C:\xampp\htdocs\openipc-low-latency-and-others-video\repos\tasks\air-latency-30pct-2026-09-30\slot\ab_fit.py:185: RuntimeWarning: invalid value encountered in scalar divide
+  print(f"\ndose fit (linear drift): slope {k:+.3f} ± {kse:.3f} ms per dose unit, z={k / kse:+.1f}, residual sd {r['sd']:.3f}")
+8 blocks, 0 void; 216 samples read, 151 used (post)
+  block 0 f320   1790788800-1790788860 n=   21 median=0.000
+  block 1 f216   1790788860-1790788920 n=   21 median=0.000
+  block 2 f320   1790788920-1790788980 n=   21 median=0.000
+  block 3 f384   1790788980-1790789040 n=   22 median=0.000
+  block 4 f320   1790789040-1790789100 n=   22 median=0.000
+  block 5 f216   1790789100-1790789160 n=   22 median=0.000
+  block 6 f320   1790789160-1790789220 n=   22 median=0.000
+  block 7 f384   1790789220-1790789221 n=    0 median=-
+
+OLS linear drift: residual sd 0.000 ms, dof 147, drift +0.0000 ± 0.0000 ms/min
+  f216     vs f320: +0.000 ± 0.000 ms  z=+nan
+  f384     vs f320: +0.000 ± 0.000 ms  z=+nan
+
+OLS quadratic drift: residual sd 0.000 ms, dof 146, drift +0.0000 ± 0.0000 ms/min
+  f216     vs f320: +0.000 ± 0.000 ms  z=+nan
+  f384     vs f320: +0.000 ± 0.000 ms  z=+nan
+
+dose fit (linear drift): slope +0.000 ± 0.000 ms per dose unit, z=+nan, residual sd 0.000

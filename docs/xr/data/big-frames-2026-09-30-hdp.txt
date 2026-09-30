@@ -1,0 +1,20 @@
+# ab_hdp, steps docs/xr/data/steps-2026-09-30-hdp.txt, --air-offset-s -0.2801 (Quest-PC -0.2801 + PC-air 0), --guard-s 15. O121 HDP: HD payload on q7 = 720p120 25M MCS7 FEC 8/10 17 dBm ch165; payload 2400/3000/3900 ABC-CBA x2; Quest APK 086a64aa; PC-air ~0 (coordinator); steps = planned T (the air log was lost).
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_hdp.pftrace docs/xr/data/steps-2026-09-30-hdp.txt --air-offset-s -0.2801 --guard-s 15 --baseline p2400
+big = npkts >= 12 (p98 of the frames in the steps); ms above the 'p2400' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 p2400          9180    12   1.68   1.58   2.73  11.19 |   1551   0.72   7.04
+ 1 p3000            45    17   4.54   4.00  10.05  10.51 |  10686   1.38   3.25
+ 2 p3900            43    14   4.50   3.94   9.84  10.68 |  10688   1.10   3.16
+ 3 p3900            45    14   4.02   3.88   5.46  10.53 |  10686   1.12   8.73
+ 4 p3000            45    17   4.57   4.00   7.96  11.39 |  10686   1.49   7.97
+ 5 p2400          9204    12   1.81   1.65   3.27  13.83 |   1527   0.95   8.05
+ 6 p2400          9173    12   1.79   1.64   3.16  11.15 |   1558   0.88   8.08
+ 7 p3000            44    17   4.20   3.98   5.19   8.54 |  10687   1.53   8.81
+ 8 p3900            45    14   4.50   3.87   9.84  10.46 |  10686   1.12   8.77
+ 9 p3900            45    14   4.32   3.90   9.73  11.53 |  10686   1.11   8.77
+10 p3000            43    17   4.58   3.99   9.60  10.41 |  10688   1.44   7.80
+11 p2400          9172    12   1.76   1.57   3.80  12.34 |   1559   0.78   7.60
+per state
+p2400            36729    12   1.76   1.60   3.08  13.83 |   6195   0.83   7.77
+p3000              177    17   4.47   3.99   8.54  11.39 |  42747   1.46   7.64
+p3900              178    14   4.33   3.90   9.78  11.53 |  42746   1.11   7.71

@@ -1,0 +1,12 @@
+# PPXR_STATS medians per step, ab_l6 (Quest-air = Quest-PC -0.2417 + PC-air 0), guard 15 s
+# python3 scripts/quest-latch/stats_steps.py scripts/quest/out/qtx_l6.raw.txt docs/xr/data/steps-2026-09-30-l6.txt --quest-minus-air-s -0.2417 --guard-s 15 --keys enc50,lnk50,lnk95,dec50,tot50,tot95,kb,pkts,pdata,post,fps
+per step: median of the PPXR_STATS samples (every 2 s)
+                   n   enc50   lnk50   lnk95   dec50   tot50   tot95      kb    pkts   pdata    post     fps
+ 0 f320           15     1.9     2.9     3.6     1.5    10.8    14.7    12.0     1.0     1.7     0.0   167.0
+ 1 f216           15     2.4     3.7     5.0     1.5    12.1    16.1    12.0     1.0     1.9     0.0   167.0
+ 2 f320           15     1.9     3.9     4.4     1.5    11.7    15.6    12.0     1.0     1.6     0.0   167.0
+ 3 f384           15     1.7     3.7     4.7     1.5    11.5    15.5    12.0     1.0     2.0     0.0   167.0
+ 4 f320           15     1.9     3.8     4.5     1.5    11.6    15.4    12.0     1.0     1.4     0.0   167.0
+ 5 f216           15     2.4     3.8     4.5     1.5    12.2    16.1    12.0     1.0     1.6     0.0   167.0
+ 6 f320           15     1.9     3.7     4.4     1.5    11.5    15.5    12.0     1.0     1.6     0.0   167.0
+ 7 f384            0       -       -       -       -       -       -       -       -       -       -       -

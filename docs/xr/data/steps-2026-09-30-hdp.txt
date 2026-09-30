@@ -1,0 +1,14 @@
+# O121 HDP (pixelpilot-xr-66, openipc slot/00-SLOTS.md §7): q7 = 720p120 25 Mbit MCS7 FEC 8/10 17 dBm ch165, wfb payload per step (bytes); lever_pre switched to q7 at air 786913 (coordinator; one waybeam restart), payload 1400 until 787300. Quest APK 086a64aa. Lines: <AIR epoch> <label>; PC ~ air (coordinator).
+1790787300 p2400
+1790787420 p3000
+1790787540 p3900
+1790787660 p3900
+1790787780 p3000
+1790787900 p2400
+1790788020 p2400
+1790788140 p3000
+1790788260 p3900
+1790788380 p3900
+1790788500 p3000
+1790788620 p2400
+1790788740 END

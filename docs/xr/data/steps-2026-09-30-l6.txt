@@ -1,0 +1,10 @@
+# O121 L6 (pixelpilot-xr-66, 4b's variant): race 640x480 167 fps, MFE (VENC) clock per step in MHz, 60 s blocks (changed from 180 s during the slot); the last f384 was to run to 1790789880 as stability, but the air's radio went silent ~1 s after its SET at 1790789220 (Quest VIDEO_STALLED 789220.9, never recovered). Quest APK 086a64aa. Lines: <AIR epoch> <label>; PC ~ air; Quest = PC - 0.24 s (ab_l6.meta, rtt 228 ms).
+1790788800 f320
+1790788860 f216
+1790788920 f320
+1790788980 f384
+1790789040 f320
+1790789100 f216
+1790789160 f320
+1790789220 f384
+1790789221 END

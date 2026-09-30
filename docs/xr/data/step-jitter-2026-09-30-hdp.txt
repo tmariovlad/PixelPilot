@@ -1,0 +1,15 @@
+# ab_hdp, steps docs/xr/data/steps-2026-09-30-hdp.txt, --air-offset-s -0.2801 (Quest-PC -0.2801 + PC-air 0), --guard-s 15. O121 HDP: HD payload on q7 = 720p120 25M MCS7 FEC 8/10 17 dBm ch165; payload 2400/3000/3900 ABC-CBA x2; Quest APK 086a64aa; PC-air ~0 (coordinator); steps = planned T (the air log was lost).
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_hdp.pftrace docs/xr/data/steps-2026-09-30-hdp.txt --air-offset-s -0.2801 --guard-s 15
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 p2400          10731   0.00   3.48   9.24   11.79
+ 1 p3000          10731   0.00   4.10  10.24   18.28
+ 2 p3900          10731   0.00   4.56  11.00   17.86
+ 3 p3900          10731   0.00   5.91  11.04   20.32
+ 4 p3000          10731   0.00   5.48  10.50   18.13
+ 5 p2400          10731   0.00   3.85   9.57   14.25
+ 6 p2400          10731   0.00   3.66   9.57   12.21
+ 7 p3000          10731   0.00   6.32  10.68   19.37
+ 8 p3900          10731   0.00   6.30  11.14   25.50
+ 9 p3900          10731   0.00   6.25  11.02   19.50
+10 p3000          10731   0.00   5.63  10.36   15.73
+11 p2400          10731   0.00   3.92   9.63   11.81
