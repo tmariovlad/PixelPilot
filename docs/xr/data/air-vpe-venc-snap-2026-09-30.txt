@@ -1,5 +1,10 @@
 # mi_vpe0 + mi_venc0 snapshots in the NORMAL 1080p90 state (f12: 1080p90 25M 2SS MCS12 FEC 8/10, rig ~43 ms), air epochs 1790751325-751346.
-# Baseline for the pre-VENC lag detector proposed by openipc-...-40 (O5-encoder-cap-abort-phase-lag.md): VENC chn0 BindInQ_cnt = 3 in all 6.
+# Baseline for the pre-VENC lag detector proposed by openipc-...-40 (O5-encoder-cap-abort-phase-lag.md §3b, OpenIPC commit 5da1ae6).
+# [CORRECTED 2026-09-30, -40's tabulation] The '3' first read as VENC BindInQ is the VPE INPUT port (bound to mi_vif, RealTime):
+#   EnqCnt - DeqCnt = 3 = the real-time VIF->VPE pass in flight. The VENC input port reads BindInQ 0-1, curWorkingQ 0.
+# Normal state: VPE FinDMADispatch avg 11.17-11.18 ms = VENC OnPreProcessInputTask avg 11.12-11.13 ms (no VPE->VENC queue);
+#   encode ~6.3 ms (Dequeue 17.46 - Barrier 11.19). A VPE->VENC standing queue would show OnPreProcess ~33 / GetStream ~40 ms.
+#   Avg columns are running averages since channel start (reset by a waybeam restart); read Diff too.
 
 # snapshot f12 (1080p90 25M) air epoch 1790751325, normal state
 ## mi_vpe0
