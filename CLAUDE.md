@@ -49,6 +49,7 @@ home of all Quest work.
   [loss_bursts.py](scripts/quest-latch/loss_bursts.py) (post-FEC loss runs: length, ms, 102.4 ms beacon lock),
   [rtp_holes.py](scripts/quest-latch/rtp_holes.py) (each RTP hole: pre-FEC air input vs post-FEC radio, with a circular time-shift control; air log via [air_drops.py](scripts/quest-latch/air_drops.py)),
   [owd.py](scripts/quest-latch/owd.py) (relative one-way delay per frame, first packet vs completion: clean-link floor per 250 ms window, payload/frame-size effect, loss-locked profile; [stats-backend §7.1](docs/xr/stats-backend.md)),
+  [owd_crosscheck.py](scripts/quest-latch/owd_crosscheck.py) (the app's PPXR_STATS owd vs the reference LiveBase on the same capture; stats-backend §7.4),
   [zflush.py](scripts/quest-latch/zflush.py) (-Z: per frame FEC-recovered / held / waited for the next frame, completion delay per class, air FRAME_FLUSH per state),
   [hunt_timeline.py](scripts/quest-latch/hunt_timeline.py) (HD 71 ms hunt, post-run: each rig first-light step event with ±60 s of air_health EV/SNAP, snapshots, Quest PPXR_EVENT/STATS and watchdog lines on the PC clock),
   [air_log_mirror.sh](scripts/quest-latch/air_log_mirror.sh) (PC-side, every air slot: mirror the air's /tmp logs every 60 s, keep the last good copy, `.pre` on a reboot, HANG?/BACK events),

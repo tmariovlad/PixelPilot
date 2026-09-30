@@ -237,3 +237,24 @@ with `#` header lines giving the parameters.
 - **The unbounded base keeps a bounded state** [PROVEN: `LiveBaseTest.theUnboundedBaseKeepsABoundedState`, the twin of test_owd.py's]. It stores only the lower convex hull of (t, v) (owd.py 8b5b879): 100,000 frames with a wrong prior leave < 200 points, where the first port kept all 100,004. The outputs are unchanged, and the vectors still match to 1e-6.
 - **Where `firstNs` is taken: on raw arrival, before the reorder queue** (since the `rawfirst` change; pixelpilot-xr-36's review). `VideoPlayer::onNewRTPData` notes each video packet's (ssrc, RTP ts) in an `ArrivalBook` (`RtpTag.h`, a 256-frame ring, first sighting wins) before `BufferedPacketQueue`, and the parser stamps `firstNs` from it. It falls back to its own first sighting only when an entry was forgotten. The first version stamped it after the queue, where a frame whose first packet waited behind a lost one read as a queue spike right after every loss, and would have triggered false rate decreases. `firstNs` is now on the same side of the queue as `owd.py`'s trace counters [PROVEN: host tests `ArrivalBook.*`, `ParseRtpTest.FirstNsIsTheBooksRawArrivalWhenABookIsSet`; mutants on the book lookup and the first-sighting rule killed].
 - **Not wired into the alink report yet.** That waits for openipc-1f's design (fields 12–15). The first check on the headset is a live capture cross-checked against `owd.py` on the same trace.
+
+### 7.4 Live vs offline cross-check (owd_crosscheck.py, for the first capture with the owd build)
+
+[owd_crosscheck.py](../../scripts/quest-latch/owd_crosscheck.py) (test `test_owd_crosscheck.py`, 5) puts the app's
+PPXR_STATS `owd50/95`, `owdu50/95` and `owdd` next to the reference `owd.LiveBase` recomputed from the **same
+capture's** Perfetto trace.
+- **Offline side:** per decoded frame, the raw first-packet arrival (the `ppxr_rtp_seq/ts` counters) − RTP ts; the same
+  2 s window per stats line; `Segment`'s linear percentile.
+- **Clock:** stats `t` = CLOCK_MONOTONIC ms. The trace clock is BOOTTIME, and its clock snapshot gives the difference
+  (0.4 µs without a suspend).
+- **Reading it:** |d| ≈ 0 means the live signal is the reference. A gap that grows with loss is the reorder-queue hold
+  on the first-packet stamp: ce70daa4 stamps after the queue, while builds from rawfirst `ca56f1f` stamp at raw
+  arrival. A drift gap (`owdd`) points at the drift learning.
+- **Plumbing check** [PROVEN: 2026-09-30, `ab_draintog.pftrace`, 98,053 decoded frames]: stats lines synthesized from
+  the offline values come back with |d| ≤ 0.008 ms (their 2-decimal rounding) and `owdd` exact.
+- **Slot requirements:**
+  - pref `stats_log` = true (`general`), or PPXR_STATS is written only while the Stats page is open
+    (`XrVideoActivity.java:232`);
+  - a detached capture with the trace (ab_detached.sh).
+- **Command:** `python3 scripts/quest-latch/owd_crosscheck.py scripts/quest/out/ab_<label>.pftrace
+  scripts/quest/out/qtx_<label>.raw.txt`.
