@@ -91,6 +91,8 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     private static final long MENU_PERIOD_MS = 50;
     private VmodeClient vmodeClient;
     private VmodeSession vmode;
+    /** O123: the stored channel follows the air's beacon (no retune, nothing sent). */
+    private ChannelFollow channelFollow;
     private PresetCatalog airCatalog;
     private MenuNavigator menu;
     private MenuRenderer menuText;
@@ -415,11 +417,23 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
     /** One VMODE1 client per XR activity; its callbacks are handed to the UI thread. */
     private void startPresets() {
         vmode = new VmodeSession((verb, build) -> vmodeClient.request(verb, build), c -> airCatalog = c);
+        channelFollow = new ChannelFollow(new ChannelFollow.Store() {
+            @Override
+            public int channel() {
+                return VideoActivity.getChannel(XrVideoActivity.this);
+            }
+
+            @Override
+            public void setChannel(int ch) {
+                VideoActivity.storeChannel(XrVideoActivity.this, ch);
+            }
+        }, msg -> Log.i(TAG, msg));
         vmodeClient = new VmodeClient(VmodeClient.target(getSharedPreferences("general", MODE_PRIVATE)
                 .getString(VmodeClient.PREF_TARGET, "")), new VmodeClient.Listener() {
             @Override
             public void onReply(VmodeProtocol.Reply reply) {
                 ui.post(() -> {
+                    if (channelFollow != null) channelFollow.onReply(reply);
                     if (vmode != null) vmode.onReply(reply);
                 });
             }
@@ -453,6 +467,7 @@ public class XrVideoActivity extends Activity implements IVideoParamsChanged, Wf
         if (vmodeClient != null) vmodeClient.close();
         vmodeClient = null;
         vmode = null;
+        channelFollow = null;
         detachVideo();          // stop writing before the session ends (no callback round-trip)
         if (xr != null) {
             xr.stop();

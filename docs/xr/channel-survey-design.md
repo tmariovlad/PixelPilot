@@ -125,6 +125,25 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
     `channel=` [PROVEN: `A6a:148-151`]. The app's preference persists, so after an air reboot the two can disagree.
     Fix: the app follows the VMODE1 beacon's `ch=` when it has no video, or the switch also persists the channel on the
     air (`save_default`) [design choice for the OpenIPC side].
+- **O123, approved by the coordinator 2026-10-01 (with openipc-…-1f): the air's channel is the truth.**
+  - **Rule 1 (built, `ChannelFollow`, branch `o123-chfollow`):** a VMODE1 state beacon's `ch=` updates the stored
+    channel (`wifi-channel`, `VideoActivity.storeChannel`) when it is legal (`LegalChannels`), settled
+    (`phase` ok / reverted / failed) and carries no `ch_to=`. It is logged, nothing is sent to the air, the radio is
+    not touched (a heard beacon means the RTL is already on that channel), and the next link start tunes to it.
+    Every settled beacon counts, not only the first after a reconnect, so the store step after a completed switch
+    (rule 2) is the same code. A v1 beacon has no `ch=` (EXT only: vmoded `sm.c:466-467`) and is ignored
+    [PROVEN: `ChannelFollowTest`, 8 tests; 4 mutants killed (the ch_to, phase, verb and DFS checks)].
+  - **`LegalChannels`** (36–48, 149–165) is the app's one copy of the air's `lim_channel_allowed()` (OpenIPC
+    `repos/tools/air-common/src/limits.c:225`), pinned by `LegalChannelsTest` against the same rule.
+  - **Rule 2 (follow `ch_to=` at `switch_in_ms`, live RTL retune, app-side revert):** not built; after the
+    2026-10-01 slots.
+  - **Save:** no new verb. The existing `save_default` also persists the channel on the air (`/etc/linkmode.chan`),
+    new error `state=error reason=chan_fail` [from -1f, commit pending].
+  - **Find the air (approved follow-up after rule 2):** when a volatile retune is lost to an air reboot, the app
+    listens on the wrong channel, hears no beacon, and rule 1 cannot fire. After ~10 s with no beacon and no video,
+    hop the legal set, RX-only (uplink and alink reports paused), starting with the last saved default, then the
+    stored channel, then the rest; settle on the first channel with our link id, then rule 1 stores it. The survey's
+    single-control-thread rules apply, and each hop is logged.
 
 ## 5. Validation plan (before the score drives anything)
 

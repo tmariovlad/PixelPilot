@@ -178,9 +178,17 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         editor.commit();
     }
 
+    /** The stored link channel, the one the next link start tunes to. */
+    static final String PREF_CHANNEL = "wifi-channel";
+
     public static int getChannel(Context context) {
         return context.getSharedPreferences("general",
-                Context.MODE_PRIVATE).getInt("wifi-channel", context.getResources().getInteger(R.integer.default_wifi_channel));
+                Context.MODE_PRIVATE).getInt(PREF_CHANNEL, context.getResources().getInteger(R.integer.default_wifi_channel));
+    }
+
+    /** Stores the link channel without touching the running link. */
+    static void storeChannel(Context context, int channel) {
+        context.getSharedPreferences("general", Context.MODE_PRIVATE).edit().putInt(PREF_CHANNEL, channel).apply();
     }
 
     /** Set by XrVideoActivity when XR could not start: shown here, where a dialog is visible, and no autostart. */
@@ -1685,10 +1693,7 @@ public class VideoActivity extends AppCompatActivity implements IVideoParamsChan
         if (currentChannel == channel) {
             return;
         }
-        SharedPreferences prefs = getSharedPreferences("general", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putInt("wifi-channel", channel);
-        editor.apply();
+        storeChannel(this, channel);
         wfbLinkManager.stopAdapters();
         wfbLinkManager.setChannel(channel);
         wfbLinkManager.startAdapters();
