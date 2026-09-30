@@ -1,0 +1,10 @@
+# O121 E0+E1 payload steps (AIR clock ~= PC this boot; pixelpilot-xr-66's schedule): race REC 480p167 2 Mbit MCS2 FEC 4/8, 17 dBm, ch165, waybeam maxPayloadSize stepped live (no restart), 120 s each, palindrome.
+1790751967 p1400
+1790752087 p1800
+1790752207 p2400
+1790752327 p3000
+1790752447 p3000
+1790752567 p2400
+1790752687 p1800
+1790752807 p1400
+1790752927 END

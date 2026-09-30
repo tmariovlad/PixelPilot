@@ -1,0 +1,17 @@
+# ab_payload, steps docs/xr/data/steps-2026-09-30-payload.txt, --air-offset-s 0.9199 (Quest-PC 0.9199 + PC-air 0), --guard-s 5. ~10:18-10:34 local; O121 E0+E1 for openipc-4b: race REC 480p167 2M MCS2 FEC 4/8, maxPayloadSize 1400/1800/2400/3000 palindrome, 120 s each, live (no restart); APK c8986061, baseline + stats_log, IDR off, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/big_frames.py scripts/quest/out/ab_payload.pftrace docs/xr/data/steps-2026-09-30-payload.txt --air-offset-s 0.9199 --guard-s 5 --baseline p1400
+big = npkts >= 2 (p98 of the frames in the steps); ms above the 'p1400' drift line
+                 big n  pkts   last    p50    p95    max | rest n   last    p95
+ 0 p1400         12485     2   1.33   0.44   3.28  45.82 |   5709   0.34   0.54
+ 1 p1800          3888     2   1.72   0.46   4.09  20.65 |  14353   0.47   0.63
+ 2 p2400           144     4   5.30   5.06  13.47  15.33 |  18094   0.50   0.67
+ 3 p3000           112     6   8.18   6.71  17.73  25.49 |  18096   0.51   0.76
+ 4 p3000           107     5   7.36   6.33  15.96  24.69 |  18110   0.48   0.67
+ 5 p2400           137     5   6.36   5.23  15.68  21.16 |  18092   0.51   0.70
+ 6 p1800          8007     2   1.58   0.44   3.97  23.93 |  10210   0.39   0.79
+ 7 p1400         14033     2   1.29   0.41   3.28  24.87 |   4184   0.26   0.51
+per state
+p1400            26518     2   1.31   0.42   3.28  45.82 |   9893   0.31   0.54
+p1800            11895     2   1.62   0.45   4.01  23.93 |  24563   0.43   0.65
+p2400              281     5   5.82   5.13  14.47  21.16 |  36186   0.51   0.69
+p3000              219     5   7.78   6.34  17.14  25.49 |  36206   0.50   0.71

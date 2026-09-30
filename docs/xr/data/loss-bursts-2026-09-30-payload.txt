@@ -1,0 +1,11 @@
+# ab_payload, steps docs/xr/data/steps-2026-09-30-payload.txt, --air-offset-s 0.9199 (Quest-PC 0.9199 + PC-air 0), --guard-s 5. ~10:18-10:34 local; O121 E0+E1 for openipc-4b: race REC 480p167 2M MCS2 FEC 4/8, maxPayloadSize 1400/1800/2400/3000 palindrome, 120 s each, live (no restart); APK c8986061, baseline + stats_log, IDR off, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/loss_bursts.py scripts/quest/out/ab_payload.pftrace docs/xr/data/steps-2026-09-30-payload.txt --air-offset-s 0.9199 --guard-s 5
+                 runs/s    1    2    3    4  5-8   9+ pkts p50 ms p50 ms p95 ms max  Z 9.77
+ 0 p1400           0.00    0    0    0    0    0    0        -      -      -      -     0.0
+ 1 p1800           0.01    0    1    0    0    0    0        2   25.0   25.0   25.0     1.0
+ 2 p2400           0.00    0    0    0    0    0    0        -      -      -      -     0.0
+ 3 p3000           0.00    0    0    0    0    0    0        -      -      -      -     0.0
+ 4 p3000           0.00    0    0    0    0    0    0        -      -      -      -     0.0
+ 5 p2400           0.00    0    0    0    0    0    0        -      -      -      -     0.0
+ 6 p1800           0.00    0    0    0    0    0    0        -      -      -      -     0.0
+ 7 p1400           0.00    0    0    0    0    0    0        -      -      -      -     0.0

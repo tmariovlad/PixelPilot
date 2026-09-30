@@ -199,6 +199,22 @@ Question (OpenIPC beacon-rhythm B1/B4): the loss spike locked at 9.766 Hz comes 
   - Two SSIDs on one radio give two beacon frames per TBTT, which fits B1's ~2.2 lost packets per gap.
   - The fix on our side is a channel with no BSS (149/153/161/165). The next test is R3: an A/B of 157 against a free channel, checking that the 9.766 Hz lock disappears. (Correction 2026-09-28: of those, only 165 is outside the neighbour's 80 MHz; see above and R3 below.)
 
+### Payload size 2026-09-30 10:18–10:34 (O121 E0+E1 for openipc-4b): at race, a payload that fits a frame in one packet cuts the link tail 6.8 → 4.3 ms
+
+Race REC (480p167, 2 Mbit/s, MCS2, FEC 4/8, 17 dBm, ch165). waybeam `maxPayloadSize` stepped live (no restart) as a 1400 / 1800 / 2400 / 3000 palindrome, 120 s each. APK c8986061, no relaunch, guard 5 s. Quest−air +0.920 s (air ≈ PC this boot). The watcher (app pid + post-FEC stop rule) never fired.
+- **Data.** [steps](data/steps-2026-09-30-payload.txt) · [per-step stats](data/segments-2026-09-30-payload.txt) · [latency (first / last / spread)](data/latency-2026-09-30-payload.txt) · [link_audit](data/audit-2026-09-30-payload.txt) · [link](data/link-2026-09-30-payload.txt) · [frame fate](data/frame-fate-2026-09-30-payload.txt). openipc-4b fixed its model predictions before the run and receives the raw per-step numbers.
+
+| payload (A · A') | packets per frame | frame spread (ms) | last95 (ms) | link p95 (ms) | Quest tot50 (ms) | FEC recoveries/s | pre-FEC / post-FEC |
+|---|---|---|---|---|---|---|---|
+| 1400 | 1.73 · 1.80 | 0.72 · 0.79 | 3.26 · 3.26 | 6.8 · 6.8 | 12.1 · 12.2 | 3.9 · 4.7 | 1.4–1.6 % / 0.00 % |
+| 1800 | 1.24 · 1.47 | 0.26 · 0.50 | 3.84 · 3.88 | 7.3 · 7.6 | 11.7 · 12.2 | 3.1 · 4.3 | 1.5–1.8 % / ≤ 0.01 % |
+| 2400 | 1.03 · 1.03 | 0.04 · 0.04 | 0.83 · 0.96 | 4.3 · 4.4 | 11.6 · 11.7 | 2.3 · 2.6 | 1.4–1.5 % / 0.00 % |
+| 3000 | 1.03 · 1.03 | 0.04 · 0.04 | 0.99 · 0.78 | 4.3 · 4.3 | 11.6 · 11.5 | 2.5 · 2.2 | 1.3–1.4 % / 0.00 % |
+
+- **At 2400 a race frame fits in one packet, and the frame's tail and the link's p95 shrink** [PROVEN: N = 2 per state, palindrome]: spread 0.04 vs 0.26–0.79 ms, last95 0.8–1.0 vs 3.3–3.9 ms, link p95 4.3 vs 6.8–7.6 ms, tot50 −0.5 ms. FEC recoveries also fall (2.2–2.6 vs 3.1–4.7/s): fewer packets per frame, fewer to lose.
+- 3000 adds nothing over 2400 at this rate. Pre-FEC loss is unchanged, and post-FEC is 0.00–0.01 % everywhere, so the larger packet costs nothing here.
+- This is race at 2 Mbit/s. At HD rates a frame spans many packets anyway; the air's packet-size cap (≤ 3900 B, wlan0 MTU) still applies.
+
 ### 25 Mbit/s block 2026-09-30 10:02–10:16: 720p120 25 Mbit/s holds 115–119 fps with 0.1–0.4 % after FEC on ch165; the Quest's encode→latch stays ≤ 21 ms
 
 The user asked for "25 Mbit/s AND under 40 ms". Air `mode_ab25.sh`, ABCDDCBA 100 s: q7 = 720p120 MCS7 1SS STBC FEC 8/10; q12 = 720p120 MCS12 2SS 8/10; q12b = the same with 8/12; f12 = 1080p90 MCS12 2SS 8/10. All at 25 Mbit/s, 17 dBm, ch165, alink killed, the rig on the lens.

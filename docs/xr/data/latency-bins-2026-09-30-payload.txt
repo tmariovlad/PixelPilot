@@ -1,0 +1,11 @@
+# ab_payload, steps docs/xr/data/steps-2026-09-30-payload.txt, --air-offset-s 0.9199 (Quest-PC 0.9199 + PC-air 0), --guard-s 5. ~10:18-10:34 local; O121 E0+E1 for openipc-4b: race REC 480p167 2M MCS2 FEC 4/8, maxPayloadSize 1400/1800/2400/3000 palindrome, 120 s each, live (no restart); APK c8986061, baseline + stats_log, IDR off, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/latency_bins.py scripts/quest/out/ab_payload.pftrace docs/xr/data/steps-2026-09-30-payload.txt --air-offset-s 0.9199 --guard-s 5 --baseline p1400
+ms above the 'p1400' drift line; bins of 10 s from each step's guarded start; slope in ms/s
+ 0 p1400         slope  +0.001     1.0    1.0    0.9    0.9    1.1    1.1    1.0    1.0    1.0    1.1    1.1
+ 1 p1800         slope  -0.000     0.8    0.8    0.7    0.7    0.7    0.7    0.7    0.8    0.8    0.7    0.8
+ 2 p2400         slope  +0.000     0.5    0.5    0.5    0.6    0.6    0.6    0.6    0.7    0.5    0.5    0.5
+ 3 p3000         slope  +0.000     0.6    0.5    0.5    0.5    0.5    0.6    0.6    0.6    0.5    0.6    0.6
+ 4 p3000         slope  -0.001     0.5    0.5    0.5    0.6    0.6    0.6    0.6    0.5    0.6    0.4    0.4
+ 5 p2400         slope  -0.000     0.6    0.5    0.5    0.6    0.5    0.5    0.7    0.5    0.5    0.5    0.5
+ 6 p1800         slope  +0.000     1.0    1.0    0.7    0.9    1.1    0.8    0.9    0.8    0.9    1.1    1.0
+ 7 p1400         slope  +0.001     1.0    1.1    1.0    1.1    1.0    1.0    1.0    1.1    1.1    1.1    1.0

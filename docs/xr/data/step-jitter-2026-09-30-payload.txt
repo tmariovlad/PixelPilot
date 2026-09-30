@@ -1,0 +1,11 @@
+# ab_payload, steps docs/xr/data/steps-2026-09-30-payload.txt, --air-offset-s 0.9199 (Quest-PC 0.9199 + PC-air 0), --guard-s 5. ~10:18-10:34 local; O121 E0+E1 for openipc-4b: race REC 480p167 2M MCS2 FEC 4/8, maxPayloadSize 1400/1800/2400/3000 palindrome, 120 s each, live (no restart); APK c8986061, baseline + stats_log, IDR off, no relaunch; air ~= PC.
+# python3 scripts/quest-latch/step_jitter.py scripts/quest/out/ab_payload.pftrace docs/xr/data/steps-2026-09-30-payload.txt --air-offset-s 0.9199 --guard-s 5
+                 frames    p50    p95    p99     max   (ms around the step's own median)
+ 0 p1400          18194   0.00   5.17   9.60   45.27
+ 1 p1800          18241   0.00   3.86  10.12   22.45
+ 2 p2400          18238   0.00   3.58  10.90   22.48
+ 3 p3000          18208   0.00   3.61  11.83   25.79
+ 4 p3000          18217   0.00   3.54  10.88   24.67
+ 5 p2400          18229   0.00   3.60  11.81   33.19
+ 6 p1800          18217   0.00   5.36   9.98   23.89
+ 7 p1400          18217   0.00   5.03   8.48   23.09
