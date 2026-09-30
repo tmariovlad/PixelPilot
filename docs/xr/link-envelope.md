@@ -263,15 +263,18 @@ openipc-4b's HD payload lever, run by the coordinator (openipc repo `slot/00-SLO
 - **The air's log was lost** in the power cycle after L6 (below). The fit uses a Quest-side stand-in, [quest_airlog.py](../../scripts/quest-latch/quest_airlog.py): block starts = the planned T, 15 s guard. Its decoded-fps void check was switched off (`--fps-min 0`): it voided 3 of the 4 p3000 blocks for loss dips (56–82 fps), which is the effect under test, while the air held 119.22–119.25 fps in every block (coordinator's reconstructed STEP lines, openipc `slot/run-2026-09-30/ab_hdp.RECONSTRUCTED.log`). Block starts: the planned T of the plan (not the air's SET lines, which that reconstruction prints ~7 s later, from the coordinator's ssh output); the 15 s guard covers the difference.
 - **Data.** [steps](data/steps-2026-09-30-hdp.txt) · [Quest-rebuilt air log](data/ab_hdp_quest-2026-09-30.log) · [ab_fit per key](data/hdp-fit-2026-09-30.txt) · [PPXR_STATS per step](data/stats-2026-09-30-hdp.txt) · [frame latency](data/latency-2026-09-30-hdp.txt) · [zflush per step](data/zflush-2026-09-30-hdp.txt) · [link_audit](data/audit-2026-09-30-hdp.txt) · [frame fate](data/frame-fate-2026-09-30-hdp.txt) · [bursts](data/loss-bursts-2026-09-30-hdp.txt) · [big frames](data/big-frames-2026-09-30-hdp.txt) · [latency over time](data/latency-bins-2026-09-30-hdp.txt) · [jitter](data/step-jitter-2026-09-30-hdp.txt) · [link](data/link-2026-09-30-hdp.txt).
 
-| vs p2400 (ms, ab_fit OLS, all 12 blocks) | p3000 | p3900 |
-|---|---|---|
-| packets per frame (2400: 11.7) | 9.7 | 7.4 |
-| lnk50 | −0.43 ± 0.08 | **−0.63 ± 0.08** |
-| lnk95 | +0.55 ± 0.29 | **+1.54 ± 0.29** |
-| tot50 / tot95 | −0.18 / +0.24 | −0.54 / +0.40 |
-| frame complete last / last95 (2400: 1.63 / 3.46) | 1.47 / 7.64 | 1.13 / **8.09** |
-| post-FEC % | **+0.25 (z 15)** | −0.05 |
-| pre-FEC % | +0.33 | +0.18 |
+| vs p2400 (ab_fit OLS, all 12 blocks, **linear drift**) | p3000 | p3900 | quadratic drift (sensitivity; where it differs by > 1 SE) |
+|---|---|---|---|
+| packets per frame (2400: 11.7) | 9.7 | 7.4 | |
+| lnk50 (ms) | −0.32 ± 0.08 | **−0.63 ± 0.08** | p3000 −0.43, p3900 −0.78 |
+| lnk95 (ms) | +0.72 ± 0.29 | **+1.54 ± 0.29** | |
+| tot50 (ms) | −0.08 ± 0.11 | −0.54 ± 0.11 | p3000 −0.18, p3900 −0.70 |
+| tot95 (ms) | +0.37 ± 0.15 | +0.40 ± 0.15 | p3900 +0.20 |
+| frame complete last / last95 (ms; 2400: 1.63 / 3.46; latency.py, per state) | 1.47 / 7.64 | 1.13 / **8.09** | |
+| post-FEC % | **+0.26 (z 16)** | −0.05 | |
+| pre-FEC % | +0.36 | +0.18 | p3900 +0.13 |
+
+*Correction 2026-09-30 23:5x (spotted by pixelpilot-xr-bc): the first version of this table mixed the two drift models (p3000's lnk/tot from the quadratic fit, p3900's from the linear one). All fit rows are now the linear fit, with the quadratic one as a sensitivity column where the two differ by more than 1 SE (the project's rule from now on). No conclusion changes: 3900's median gain and its tail, and 3000's extra post-FEC loss, hold in both models; only 3900's tot95 penalty is not resolved under the quadratic model (+0.20 ± 0.15), while its frame-level last95 (+4.6 ms, which does not depend on the fit) stands.*
 
 - **3900 wins the median and loses the tail** [PROVEN: table]. The median gain is the clean frames (~84 %): 0.5–0.6 ms above the line vs 1.2 at 2400 (zflush per step).
 - **The tail is FEC-block completion** [PROVEN: zflush]. At 3900 more of the FEC-recovered frames (12–15 % of all) waited for the next frame's packets to close their 8/10 block (0.34 vs 0.25), and each such frame is ~0.6 ms later (mean 4.4 vs 3.8 ms, p95 10.3 vs 9.8). The all-frames p95 falls inside that group, so it moves by +4.6 ms.
