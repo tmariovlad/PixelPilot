@@ -157,6 +157,8 @@ TEST(ChannelSurvey, TheStartAndResultLinesFrameTheRun)
     const std::string s = survey::start_line(survey::plan_hash(c), c.size(), 165);
     EXPECT_TRUE(has(s, "\"ev\":\"survey.start\"")) << s;
     EXPECT_TRUE(has(s, "\"channels\":9,\"rounds\":3,\"dwell_ms\":1000,\"link\":165")) << s;
-    const std::string r = survey::result_line(149, 165, 27, false);
-    EXPECT_EQ(r, "{\"ev\":\"survey.result\",\"recommended\":149,\"link\":165,\"dwells\":27,\"aborted\":0}");
+    const std::string r = survey::result_line(149, 165, 27, survey::Outcome::Completed);
+    EXPECT_EQ(r, "{\"ev\":\"survey.result\",\"recommended\":149,\"link\":165,\"dwells\":27,"
+                 "\"outcome\":\"completed\",\"aborted\":0}");
+    EXPECT_TRUE(has(survey::result_line(0, 165, 27, survey::Outcome::RetuneBackFailed), "\"outcome\":\"retune_back_failed\""));
 }

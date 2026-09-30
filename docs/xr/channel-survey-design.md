@@ -185,6 +185,23 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
   - JVM app 156 / videonative 22 / xr 134;
   - `test_channel_survey.py` 3;
   - mutation: counting own frames as other fails the attribution and the ranking tests.
+- **After pixelpilot-xr-25's review (2026-10-01):**
+  - The lifecycle lives in `SurveyRunner.h`: the thread, the abort flag and the dwell loop, with the device injected
+    as `SurveyOps`. Host tests (`SurveyRunner_test.cpp`, 5) run it on a fake device.
+  - **B1:** `release_link()` calls `survey.stopAndJoin()` first, on every way out of `run()`, including a throwing RX
+    loop. After it returns no device call follows (test: nothing recorded 100 ms after the join; the abort lands within
+    200 ms).
+  - **B2:** the retune back is retried once. If it fails again, outcome `retune_back_failed`: no uplink, and
+    `StopRxLoop()`, so `run()` returns and `WfbLinkManager.checkHealth` restarts the link (RestartPolicy backoff). The
+    one-shot flag keeps the survey from repeating.
+  - **S1:** a TX power set during a survey is only stored (`tx_power_pending`) and applied when the survey completes,
+    before the uplink starts: devourer allows one control thread (IRtlDevice.h:110-117).
+  - **M1:** `survey_on_start` is an `std::atomic<bool>`, consumed with `exchange(false)`.
+  - An aborted survey does no retune back and starts no uplink (the device is being torn down).
+  - `survey.result` carries `outcome` = completed / aborted / retune_back_failed.
+  - Mutations: dropping the retry fails the two retune-back tests; a `stopAndJoin` without the abort flag fails the
+    join test.
+  - Tests: host 85/85, JVM app 156 / videonative 22 / xr 134, test_channel_survey 3.
 - **Not yet verified** [SPECULATION until a slot]:
   - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
     (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);

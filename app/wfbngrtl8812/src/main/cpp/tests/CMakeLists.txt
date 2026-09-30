@@ -98,7 +98,7 @@ target_link_libraries(rx_drain_test PkgConfig::sodium PkgConfig::pcap GTest::gte
 gtest_discover_tests(rx_drain_test)
 
 # The pre-flight channel survey's app side on devourer's chanmig library (docs/xr/channel-survey-design.md, phase 1).
-add_executable(channel_survey_test ChannelSurvey_test.cpp ${SRC}/devourer/src/chanmig/ChannelScore.cpp)
+add_executable(channel_survey_test ChannelSurvey_test.cpp SurveyRunner_test.cpp ${SRC}/devourer/src/chanmig/ChannelScore.cpp)
 target_include_directories(channel_survey_test PRIVATE ${SRC} ${SRC}/devourer/src)
-target_link_libraries(channel_survey_test GTest::gtest_main)
+target_link_libraries(channel_survey_test GTest::gtest_main pthread)
 gtest_discover_tests(channel_survey_test)

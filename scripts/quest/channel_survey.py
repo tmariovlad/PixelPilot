@@ -8,7 +8,8 @@ WfbngLink::run_survey when the survey_on_start pref is on; docs/xr/channel-surve
   survey.dwell    one per dwell: chan "5:<primary>/20", observe_ms, oth_air_us (other traffic), dvr_air_us (our own
                   link), nhm_busy (% of NHM samples above the lowest bucket), frames, rssi_max (raw), ...
   channel.ranking devourer RecommendEngine's scores, best first: c<i> = "<chan> q=<0|1> score= occ= rej="
-  survey.result   recommended (0 = none qualified), link, dwells, aborted
+  survey.result   recommended (0 = none qualified), link, dwells, outcome (completed / aborted /
+                  retune_back_failed: no uplink, the link restarts), aborted
 The score and the recommendation are computed on the Quest (one implementation); this script only reads and draws.
 Bar = foreign airtime %, the share of the dwell other transmitters used (our own link is shown apart, not counted).
 """
@@ -121,8 +122,8 @@ def main():
         raise SystemExit("no PPXR_SURVEY dwell lines in the capture (was the survey_on_start pref on?)")
     chans = per_channel(run["dwells"])
     res = run["result"] or {}
-    print(f"survey: {len(run['dwells'])} dwells, link {res.get('link')}, recommended {res.get('recommended') or 'none'}"
-          f"{' (ABORTED)' if res.get('aborted') else ''}")
+    print(f"survey: {len(run['dwells'])} dwells, link {res.get('link')}, recommended {res.get('recommended') or 'none'}, "
+          f"outcome {res.get('outcome', 'aborted' if res.get('aborted') else '?')}")
     print("bar = foreign airtime % (other transmitters; our own link shown apart)")
     for row in chart(chans, run):
         print(row)

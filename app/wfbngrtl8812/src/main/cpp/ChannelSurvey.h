@@ -217,11 +217,24 @@ inline std::string start_line(uint32_t plan, size_t channels, int link_channel) 
     return buf;
 }
 
-inline std::string result_line(int recommended, int link_channel, size_t dwells, bool aborted) {
-    char buf[128];
+// How a survey ended: Completed (the uplink may start), Aborted (stop / teardown: no uplink, no retune back),
+// RetuneBackFailed (the RTL could not return to the link channel after one retry: no uplink, the link restarts).
+enum class Outcome { Completed, Aborted, RetuneBackFailed };
+
+inline const char *outcome_name(Outcome o) {
+    switch (o) {
+    case Outcome::Completed: return "completed";
+    case Outcome::Aborted: return "aborted";
+    default: return "retune_back_failed";
+    }
+}
+
+inline std::string result_line(int recommended, int link_channel, size_t dwells, Outcome outcome) {
+    char buf[160];
     std::snprintf(buf, sizeof buf,
-                  "{\"ev\":\"survey.result\",\"recommended\":%d,\"link\":%d,\"dwells\":%zu,\"aborted\":%d}",
-                  recommended, link_channel, dwells, aborted ? 1 : 0);
+                  "{\"ev\":\"survey.result\",\"recommended\":%d,\"link\":%d,\"dwells\":%zu,\"outcome\":\"%s\","
+                  "\"aborted\":%d}",
+                  recommended, link_channel, dwells, outcome_name(outcome), outcome == Outcome::Aborted ? 1 : 0);
     return buf;
 }
 

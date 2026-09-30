@@ -18,7 +18,7 @@ extern "C" {
 #include "devourer/src/WiFiDriver.h"
 #include "wfb-ng/src/rx.hpp"
 #include "VideoTapAggregator.h"
-#include "ChannelSurvey.h"
+#include "SurveyRunner.h"
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -59,16 +59,12 @@ class WfbngLink {
     DecErrProbe video_decrypt_probe;   // guarded by agg_mutex, like the aggregator
     RxRateHistogram video_rx_rate;     // RX rate of the video packets per stats window (Stats page)
     FecBlockProbe video_fec_probe;     // PPXR_FECBLK per unrecoverable video FEC block; guarded by agg_mutex
-    // Pre-flight channel survey (docs/xr/channel-survey-design.md, phase 1; pref survey_on_start, one shot, off by
-    // default): survey_active routes every received frame to survey_frame() instead of the aggregators (no video).
-    bool survey_on_start = false;
-    std::atomic<bool> survey_active{false};
-    std::atomic<bool> survey_abort{false};
-    std::mutex survey_mutex;               // guards survey_dwell and survey_observing
-    survey::DwellBuilder survey_dwell;
-    bool survey_observing = false;
-    std::unique_ptr<std::thread> survey_thread{nullptr};
-    void run_survey(IRtlDevice *dev, int fd, SelectedChannel link);
+    // Pre-flight channel survey (docs/xr/channel-survey-design.md §7; pref survey_on_start, off by default, one shot per
+    // app launch). While survey.active() every received frame goes to survey_frame() instead of the aggregators (no
+    // video). release_link() joins it first (SurveyRunner::stopAndJoin: no device call after it).
+    std::atomic<bool> survey_on_start{false};
+    std::atomic<bool> tx_power_pending{false};   // a TX power set during a survey, applied when it completes
+    SurveyRunner survey;
     void survey_frame(const Packet &packet, uint8_t *video_id, uint8_t *mavlink_id, uint8_t *udp_id);
     void start_uplink(IRtlDevice *current_device, int fd);
     RtpHoleProbe video_rtp_probe;      // PPXR_RTPHOLE per hole in the delivered RTP sequence; guarded by agg_mutex
