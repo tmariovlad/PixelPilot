@@ -301,6 +301,16 @@ The PC is not a source: its card scans only 36–100 (BACKLOG).
       - a raw Stop() back in release_link;
       - a missing fd reported as success.
     - 20/20 repeats stable. Host 97/97; `assembleDebug` builds (APK md5 ebe1a623, not installed).
+    - 25's re-review: OK.
+      - Their own mutant, the exact F2 shape (look up under the lock, call after unlocking), is caught by the
+        overlap test (5/5 runs) but not by the after-Stop test, where the window is too small. The overlap test is
+        the one that pins the lock around the call.
+    - Open, not blockers (25):
+      - `attach()` silently replaces a device already registered for the same fd, as the old `rtl_devices[fd] =`
+        did. A reused fd whose old run still holds its raw pointer would lose its device underneath it. Log or
+        refuse on replace.
+      - Older and unchanged: a stop() that lands between the `stop_requested` check and `StartRxLoop` is lost,
+        because StartRxLoop clears the flag (see the comment at `WfbngLink::stop`).
 - **Not yet verified** [SPECULATION until a slot]:
   - `FastRetune` / `GetRxEnergy` from the survey thread while the RX loop runs on the RTL8812AU inside the app
     (devourer's own sweep does this on the host, `docs/rx-spectrum-sensing.md:151-157`);
