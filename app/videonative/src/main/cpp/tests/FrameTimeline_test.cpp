@@ -121,3 +121,35 @@ TEST(FirstArrival, TheFirstPacketOfAnRtpTimestampSetsItsTime)
     EXPECT_EQ(f.onPacket(0xABCD, 10500, 200), 200);  // the next frame
     EXPECT_EQ(f.onPacket(0x1234, 10500, 250), 250);  // a new stream with the same timestamp
 }
+
+// ArrivalBook: the first RAW arrival of each (ssrc, RTP timestamp), noted before the reorder queue, so a frame whose
+// first packet waited behind a lost one does not read as queueing delay (docs/xr/stats-backend.md §7.3).
+TEST(ArrivalBook, TheFirstSightingWinsAndUnknownIsZero)
+{
+    ArrivalBook b;
+    b.note(0xABCD, 9000, 100);
+    b.note(0xABCD, 9000, 150);   // a later packet of the same frame
+    b.note(0xABCD, 10500, 200);
+    EXPECT_EQ(b.lookup(0xABCD, 9000), 100);
+    EXPECT_EQ(b.lookup(0xABCD, 10500), 200);
+    EXPECT_EQ(b.lookup(0xABCD, 12000), 0);
+    EXPECT_EQ(b.lookup(0x1234, 9000), 0);   // the same timestamp in another stream
+}
+
+TEST(ArrivalBook, AReorderedEarlierFrameKeepsItsOwnTime)
+{
+    ArrivalBook b;
+    b.note(1, 9000, 100);
+    b.note(1, 10500, 200);   // the next frame's first packet overtakes the rest of frame 9000
+    b.note(1, 9000, 250);
+    EXPECT_EQ(b.lookup(1, 9000), 100);
+    EXPECT_EQ(b.lookup(1, 10500), 200);
+}
+
+TEST(ArrivalBook, OldFramesAreForgottenAfterTheCapacity)
+{
+    ArrivalBook b;
+    for (uint32_t i = 0; i < ArrivalBook::kCapacity + 10; i++) b.note(1, 1000 + i, 5000 + i);
+    EXPECT_EQ(b.lookup(1, 1000), 0);                                  // evicted
+    EXPECT_EQ(b.lookup(1, 1000 + ArrivalBook::kCapacity + 9), 5000 + ArrivalBook::kCapacity + 9);
+}

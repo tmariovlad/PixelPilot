@@ -372,7 +372,9 @@ void RTPDecoder::noteCurrentPacket(const RTP::RTPPacket& rtpPacket)
     m_current_packet_marker = rtpPacket.header.marker;
     m_current_ssrc          = rtpPacket.header.getSources();
     m_current_ts            = rtpPacket.header.getTimestamp();
-    m_current_first_ns      = m_first_arrival.onPacket(m_current_ssrc, m_current_ts, rtpTagNowNs());
+    const int64_t seen      = m_first_arrival.onPacket(m_current_ssrc, m_current_ts, rtpTagNowNs());
+    const int64_t raw       = m_arrival_book != nullptr ? m_arrival_book->lookup(m_current_ssrc, m_current_ts) : 0;
+    m_current_first_ns      = raw != 0 ? raw : seen;
 }
 
 void RTPDecoder::forwardNALU(const bool isH265)

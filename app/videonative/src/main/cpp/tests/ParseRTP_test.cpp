@@ -134,3 +134,24 @@ TEST_F(ParseRtpTest, ForwardedNaluCarriesItsRtpTag)
     EXPECT_EQ(1u, got[0].tag.ts);
     EXPECT_GE(got[0].tag.completeNs, static_cast<int64_t>(before.tv_sec) * 1000000000LL + before.tv_nsec);
 }
+
+// With an ArrivalBook (VideoPlayer notes every packet on raw arrival, before the reorder queue), the tag's firstNs is
+// that raw time, not the moment the parser saw the packet (docs/xr/stats-backend.md §7.3).
+TEST_F(ParseRtpTest, FirstNsIsTheBooksRawArrivalWhenABookIsSet)
+{
+    ArrivalBook book;
+    book.note(2, 1, 12345);   // ssrc 2, timestamp 1: what rtp() writes
+    dec.setArrivalBook(&book);
+    h264(true, {0x65, 0x88, 0x84, 0x00});
+    ASSERT_EQ(1u, got.size());
+    EXPECT_EQ(12345, got[0].tag.firstNs);
+}
+
+TEST_F(ParseRtpTest, WithoutABookFirstNsIsTheParsersFirstSighting)
+{
+    timespec before{};
+    clock_gettime(CLOCK_MONOTONIC, &before);
+    h264(true, {0x65, 0x88, 0x84, 0x00});
+    ASSERT_EQ(1u, got.size());
+    EXPECT_GE(got[0].tag.firstNs, static_cast<int64_t>(before.tv_sec) * 1000000000LL + before.tv_nsec);
+}

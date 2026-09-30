@@ -114,6 +114,7 @@ class VideoPlayer
     IdrRequester        mIdrRequester;
     FreezeUntilIdr      mFreezeUntilIdr;
     H26XParser          mParser;
+    ArrivalBook         mArrivalBook;   // raw RTP arrivals for RtpTag::firstNs (onNewRTPData; the parser reads it)
     // Video starts tight like LatencyExperiments' default and follows setTightReorder.
     BufferedPacketQueue mBufferedPacketQueueVideo{kTightReorderBounds};
     BufferedPacketQueue mBufferedPacketQueueAudio{kLegacyReorderBounds};

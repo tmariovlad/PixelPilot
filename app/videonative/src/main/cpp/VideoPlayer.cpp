@@ -60,6 +60,7 @@ VideoPlayer::VideoPlayer(JNIEnv* env, jobject context)
     env->GetJavaVM(&javaVm);
     mIdrRequester.setOnResult(traceIdrRequest);
     mIdrRequester.setStillNeeded([this] { return mAwaitingKey.load(); });
+    mParser.setArrivalBook(&mArrivalBook);
     mParser.setOnPacketLoss(
         [this](int)
         {
@@ -184,6 +185,8 @@ void VideoPlayer::onNewRTPData(const uint8_t* data, const std::size_t data_lengt
     const RTP::RTPPacket rtpPacket(data, data_length);
     uint16_t             idx = rtpPacket.header.getSequence();
     traceRtpArrival(rtpPacket.header.getSequence(), rtpPacket.header.getTimestamp(), rtpPacket.header.payload);
+    if (rtpPacket.header.payload != RTP_PAYLOAD_TYPE_AUDIO)   // raw arrival, before the reorder queue (RtpTag.h)
+        mArrivalBook.note(rtpPacket.header.getSources(), rtpPacket.header.getTimestamp(), rtpTagNowNs());
 
     // Define the callback based on payload type
     auto callback = [&](const uint8_t* packet_data, std::size_t packet_length)

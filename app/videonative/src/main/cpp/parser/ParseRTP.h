@@ -49,6 +49,8 @@ class RTPDecoder
     // Called on the parsing thread at every RTP sequence gap, with the number of packets lost (IdrRequester asks the
     // air for a key frame). Set before parsing starts.
     void setOnPacketLoss(std::function<void(int)> cb) { m_on_packet_loss = std::move(cb); }
+    // The raw arrivals to stamp RtpTag::firstNs from (must outlive the decoder); null = the parser's own sighting.
+    void setArrivalBook(const ArrivalBook* book) { m_arrival_book = book; }
 
     // check if a packet is missing by using the rtp sequence number and
     // if the payload is dynamic (h264 or h265)
@@ -100,6 +102,8 @@ class RTPDecoder
     // When the first packet of the current RTP timestamp reached the parser (RtpTag::firstNs).
     FirstArrival                     m_first_arrival;
     int64_t                          m_current_first_ns = 0;
+    // Raw arrivals noted before the reorder queue (VideoPlayer); null = use the parser's own first sighting.
+    const ArrivalBook*               m_arrival_book = nullptr;
     // Marker, SSRC, timestamp and first arrival of the packet being parsed.
     void noteCurrentPacket(const RTP::RTPPacket& rtpPacket);
 
