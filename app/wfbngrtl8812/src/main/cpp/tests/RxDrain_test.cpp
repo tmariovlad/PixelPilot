@@ -41,7 +41,9 @@ struct Stream
     std::string gsKey;
 };
 
-Stream makeStream(int payloads)
+// closeAfter: payload indices after which the block is closed with FEC-only fillers (wfb_tx -Z, the air's
+// close_fec_block: send_packet(NULL, 0, WFB_PACKET_FEC_ONLY) until the block is full).
+Stream makeStream(int payloads, const std::vector<int>& closeAfter = {})
 {
     EXPECT_EQ(sodium_init() >= 0, true);
     uint8_t txPub[crypto_box_PUBLICKEYBYTES], txSec[crypto_box_SECRETKEYBYTES];
@@ -64,6 +66,10 @@ Stream makeStream(int payloads)
     {
         const uint8_t p[2] = {'P', static_cast<uint8_t>(i)};
         tx.sendPacket(p, sizeof p, 0);
+        for (int c : closeAfter)
+            if (c == i)
+                while (tx.sendPacket(nullptr, 0, WFB_PACKET_FEC_ONLY)) {
+                }
     }
     Stream s;
     s.gsKey = gs;
@@ -88,10 +94,10 @@ std::vector<int> ids(const std::vector<std::vector<uint8_t>>& out)
 
 struct Harness
 {
-    Stream s = makeStream(3 * K);
-    RxReplay rx{s.gsKey, kChannel};
+    Stream s;
+    RxReplay rx;
     std::vector<int> all;
-    Harness() { rx.feed(s.session); }
+    explicit Harness(Stream st = makeStream(3 * K)) : s(std::move(st)), rx(s.gsKey, kChannel) { rx.feed(s.session); }
     std::vector<int> feed(uint64_t block, int fragment)
     {
         const std::vector<int> got = ids(rx.feed(s.frag.at({block, fragment})));
@@ -160,4 +166,46 @@ TEST(RxDrain, WaitingFragmentsAreReleasedAndTheBlockCarriesOnNormally)
     EXPECT_EQ(h.feed(1, 4), V{});               // its parity: already done, ignored
     EXPECT_EQ(h.feed(2, 0), V{8});              // block 2 is the front
     EXPECT_EQ(h.all, (V{0, 1, 2, 3, 4, 5, 6, 7, 8}));
+}
+
+// wfb_tx -Z closes a frame's block with FEC-only fillers. The Aggregator counts them towards k and uses them for
+// FEC but never forwards them (send_packet: WFB_PACKET_FEC_ONLY), and their flag is inside the FEC-coded bytes, so a
+// filler rebuilt by FEC is not forwarded either. The same code is in PixelPilot 0.21.0's wfb-ng 8f9b6a5
+// (docs/xr/fec-block-probe.md §7). Frame 1 = P0, P1 + 2 fillers (block 0, k=4); frame 2 = P2..P5 (block 1).
+namespace
+{
+Harness fillerHarness() { return Harness(makeStream(6, {1})); }
+}  // namespace
+
+TEST(RxFiller, FillersCloseTheBlockAndAreNeverForwarded)
+{
+    Harness h = fillerHarness();
+    ASSERT_EQ(h.s.frag.size(), 2u * N);        // block 0 = 2 data + 2 fillers + 4 parity, block 1 = 4 + 4
+    for (int f = 0; f < K; ++f) h.feed(0, f);
+    for (int f = 0; f < K; ++f) h.feed(1, f);
+    EXPECT_EQ(h.all, (V{0, 1, 2, 3, 4, 5}));   // no -1: nothing but the RTP-like payloads reaches the socket
+    EXPECT_EQ(h.rx.lost(), 0u);
+}
+
+TEST(RxFiller, ABlockClosedByFillersRecoversALostDataPacket)
+{
+    Harness h = fillerHarness();
+    EXPECT_EQ(h.feed(0, 0), V{0});
+    EXPECT_EQ(h.feed(0, 2), V{});              // P1 lost; fillers wait behind the gap
+    EXPECT_EQ(h.feed(0, 3), V{});
+    EXPECT_EQ(h.feed(0, 4), V{1});             // parity: P1 rebuilt, the fillers are not forwarded
+    EXPECT_EQ(h.rx.fecRecovered(), 1u);
+    EXPECT_EQ(h.rx.lost(), 0u);
+}
+
+TEST(RxFiller, ARebuiltFillerIsNotForwardedEither)
+{
+    Harness h = fillerHarness();
+    EXPECT_EQ(h.feed(0, 0), V{0});
+    EXPECT_EQ(h.feed(0, 3), V{});              // P1 and filler 2 lost
+    EXPECT_EQ(h.feed(0, 5), V{});
+    EXPECT_EQ(h.feed(0, 6), V{1});             // k reached: P1 and the filler rebuilt, only P1 forwarded
+    EXPECT_EQ(h.rx.fecRecovered(), 2u);
+    EXPECT_EQ(h.feed(1, 0), V{2});
+    EXPECT_EQ(h.rx.lost(), 0u);
 }

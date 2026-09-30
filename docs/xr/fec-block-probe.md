@@ -209,6 +209,32 @@ existing tools (`ab_segments.py` loss per step, `rtp_holes.py`).
   - logging single-payload calls failed 2 gtests;
   - marking every marker group as waited_next failed 3 Python tests.
 
+**-Z is compatible with the release PixelPilot 0.21.0: fillers are used for FEC and never forwarded** (checked
+2026-09-30 at the coordinator's request; openipc-40 had inferred it).
+- 0.21.0 = upstream tag `v0.21.0` = `0b9ca2d` (2025-06-09, `versionName "0.21.0"` in `app/build.gradle:14`), which
+  pins wfb-ng **`8f9b6a5`** (svpcom, 2025-04-22) [PROVEN: `git ls-tree v0.21.0`]. That the installed release APK was
+  built from this tag is [INFERRED: the version name matches; the APK itself was not compared].
+- **Not forwarded** [PROVEN: `src/rx.cpp:850 @ 8f9b6a5`]: `send_packet` hands a fragment to `send_to_socket` only
+  `if(!(flags & WFB_PACKET_FEC_ONLY))`. A filler still advances `seq`, so it is not counted as lost either
+  (`rx.cpp:835-843`).
+- **Used for FEC** [PROVEN: `src/rx.cpp:718-739, 765, 858-895 @ 8f9b6a5`]:
+  - a filler is an ordinary data fragment (index < k): it is stored and counts in `has_fragments`, towards the k that
+    completes or recovers a block;
+  - `apply_fec` treats it like any other fragment.
+- **A rebuilt filler is not forwarded either.** On the air, the flag and size 0 are written into `block[fragment_idx]`,
+  which RS encodes [PROVEN: wfb-ng o117-marker-flush `c8a5416` `src/tx.cpp:662-673`], so a filler rebuilt by FEC
+  carries its flag. `tx.cpp:657` never opens a block with a filler, and `close_fec_block` (`tx.cpp:728-736`) only
+  fills a partly used one.
+- **Same logic as our tested code** [PROVEN: `git diff 8f9b6a5 0da5279 -- src/rx.cpp`]: the only rx.cpp change up
+  to our base is the FEC library (fec → zfex SIMD decode, aligned buffers). The accept, release and `send_packet`
+  paths are identical, so our tests transfer.
+- **By execution** [PROVEN: `tests/RxDrain_test.cpp` RxFiller, 3 gtests, our Transmitter into the real Aggregator,
+  k=4/n=8, frame P0 P1 + 2 fillers; host suite 73/73]:
+  - fillers close the block and never reach the socket;
+  - a lost data packet in the filler-closed block is recovered from parity;
+  - a lost filler rebuilt together with a lost data packet is not forwarded, and `count_p_lost` stays 0.
+  - Mutation: forwarding FEC-only fragments fails all 3.
+
 **Headset check (to do).** Install a build with PPXR_RELEASE. In the -Z slot, record a Perfetto trace (as for
 big_frames) plus a detached capture (ab_detached.sh has the tag) and the air's step log and `/tmp/wfbtx.log`.
 
