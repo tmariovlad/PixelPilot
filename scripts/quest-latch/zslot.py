@@ -13,6 +13,10 @@ script that owns it:
 Usage:
   python3 zslot.py trace.pftrace steps.txt qtx_<label>.raw.txt --air-log ab_<label>.log --ref p2400 \\
       --quest-minus-air-s S [--guard-s 15] [--fps-min 0] [--wfbtx-log wfbtx.log --air-mono-minus-epoch-ms M]
+      [--also trace_b.pftrace qtx_<label>_b.raw.txt --quest-minus-air-s Sa Sb]
+--also adds a second (third ...) capture of the same run (the Quest caps one at 30 min): its PPXR_STATS go to ab_fit
+with their own offset (ab_fit.read_quests), its packets join the first trace's into one frame stream (same Quest boot,
+merge_traces), its PPXR_RELEASE lines join the flags.
 steps.txt = the air step log (ab_segments.read_steps); --air-log = ab_run.sh's log (SET/S/END, ab_fit.read_air_log)
 or its Quest-side stand-in (quest_airlog.py); S = Quest epoch minus air epoch, used for both (ab_segments'
 --air-offset-s is the same number).
@@ -41,6 +45,31 @@ def load_ab_fit(path=None):
     return importlib.import_module("ab_fit")
 
 
+SAME_BOOT_NS = 1e9   # two traces of one Quest boot: REALTIME - trace clock agree to well within this
+
+
+def merge_traces(loaded):
+    """[(pkts, ready, realtime_minus_trace)] of several traces of one run (the Quest caps a capture at 30 min) -> one
+    packet stream, so frames_from_packets groups and unwraps the RTP timestamps across the join. The traces must share
+    the trace clock (one Quest boot); the first trace's REALTIME offset is used."""
+    rt0 = loaded[0][2]
+    for _, _, rt in loaded[1:]:
+        if abs(rt - rt0) > SAME_BOOT_NS:
+            raise SystemExit(f"traces from different Quest boots (REALTIME - trace differs by {(rt - rt0) / 1e9:.1f} s)")
+    pkts = sorted(p for pk, _, _ in loaded for p in pk)
+    ready = sorted(r for _, rd, _ in loaded for r in rd)
+    return pkts, ready, rt0
+
+
+def offsets(values, n):
+    """--quest-minus-air-s: one value for every capture, or one per capture (as ab_fit's --quest)."""
+    if len(values) == 1:
+        return values * n
+    if len(values) != n:
+        raise SystemExit(f"--quest-minus-air-s: give 1 value or one per capture ({n}), got {len(values)}")
+    return list(values)
+
+
 def disagree(lin, quad):
     """(beta, se) of the linear and the quadratic fit: apart by more than the larger SE."""
     return abs(lin[0] - quad[0]) > max(lin[1], quad[1])
@@ -52,7 +81,7 @@ def fits(rows, steps, ref, ab_fit=None):
     lin = ab_fit.fit(rows, steps, ref, False)["effects"]
     try:
         quad = ab_fit.fit(rows, steps, ref, True)["effects"]
-    except (ValueError, ZeroDivisionError, ArithmeticError):
+    except (ValueError, ArithmeticError):
         quad = {}
     out = {}
     for arm, b in lin.items():
@@ -120,7 +149,10 @@ def main():
     ap.add_argument("capture")
     ap.add_argument("--air-log", required=True, help="ab_run.sh log (SET/S/END) or quest_airlog.py's stand-in")
     ap.add_argument("--ref", required=True)
-    ap.add_argument("--quest-minus-air-s", type=float, required=True)
+    ap.add_argument("--quest-minus-air-s", type=float, nargs="+", required=True,
+                    help="Quest epoch - air epoch: one value, or one per capture (the first, then each --also)")
+    ap.add_argument("--also", nargs=2, action="append", default=[], metavar=("TRACE", "CAPTURE"),
+                    help="another capture of the same run (trace + detached logcat)")
     ap.add_argument("--guard-s", type=float, default=15.0)
     ap.add_argument("--end-guard-s", type=float, default=2.0, help="ab_fit's end guard")
     ap.add_argument("--fps-min", type=float, default=0.0, help="ab_fit voids a block with an S sample below this")
@@ -130,26 +162,32 @@ def main():
     a = ap.parse_args()
     ab_fit = load_ab_fit(a.ab_fit_dir)
     guard = a.guard_s * 1e9
+    traces = [a.trace] + [t for t, _ in a.also]
+    captures = [a.capture] + [c for _, c in a.also]
+    offs = offsets(a.quest_minus_air_s, len(captures))
 
     # ab_fit on PPXR_STATS
     blocks = ab_fit.read_air_log(a.air_log, a.fps_min)
     fit_by_key, means_by_key = {}, {}
     for key in FIT_KEYS:
-        rows = ab_fit.assign(ab_fit.read_quest(a.capture, key, a.quest_minus_air_s), blocks, a.guard_s, a.end_guard_s)
+        rows = ab_fit.assign(ab_fit.read_quests(captures, key, offs, ap), blocks, a.guard_s, a.end_guard_s)
         fit_by_key[key] = fits(rows, blocks, a.ref, ab_fit)
         means_by_key[key] = arm_means(rows, blocks)
     arms = list(dict.fromkeys(b.label for b in blocks))
 
     # the trace: frames, one drift line (the ref's), ab_segments per state and zflush per state
-    pkts, ready, rt = ab_segments.load_trace(a.trace)
+    pkts, ready, rt = merge_traces([ab_segments.load_trace(t) for t in traces])
     frames, _ = ab_segments.frames_from_packets(pkts, ready)
-    steps, end = ab_segments.read_steps(a.steps, a.quest_minus_air_s, rt)
+    steps, end = ab_segments.read_steps(a.steps, offs[0], rt)
     end = min(pkts[-1][0], end) if end else pkts[-1][0]
     _, per_state, _ = ab_segments.analyze(frames, steps, end, guard, a.ref, pkts)
     seg = dict(per_state)
     slope, icpt = ab_segments.baseline_line(frames, steps, end, guard, a.ref)
-    with open(a.capture, encoding="utf-8", errors="replace") as fh:
-        flags = zflush.frame_flags(fh)
+    lines = []
+    for c in captures:
+        with open(c, encoding="utf-8", errors="replace") as fh:
+            lines += fh.readlines()
+    flags = zflush.frame_flags(lines)
     zrows = zflush.rows(frames, flags, steps, end, guard, lambda t: slope * t + icpt)
     flush = {}
     if a.wfbtx_log:
@@ -157,11 +195,11 @@ def main():
             raise SystemExit("--wfbtx-log needs --air-mono-minus-epoch-ms (air uptime ms - air epoch ms)")
         with open(a.wfbtx_log, encoding="utf-8", errors="replace") as fh:
             iv = parse_intervals(fh, "FRAME_FLUSH")
-        to_trace = lambda air_ms: ((air_ms - a.air_mono_minus_epoch_ms) / 1000 + a.quest_minus_air_s) * 1e9 - rt
+        to_trace = lambda air_ms: ((air_ms - a.air_mono_minus_epoch_ms) / 1000 + offs[0]) * 1e9 - rt
         flush = zflush.air_per_step(iv, to_trace, steps, end, guard)
 
-    print(f"# zslot: {a.trace} | steps {a.steps} | air log {a.air_log} | ref {a.ref} | Quest-air "
-          f"{a.quest_minus_air_s:+.4f} s | guard {a.guard_s:g} s | fps-min {a.fps_min:g}"
+    print(f"# zslot: {' + '.join(traces)} | captures {' + '.join(captures)} | steps {a.steps} | air log {a.air_log} | "
+          f"ref {a.ref} | Quest-air {' / '.join(f'{o:+.4f}' for o in offs)} s | guard {a.guard_s:g} s | fps-min {a.fps_min:g}"
           f"{' | wfbtx ' + a.wfbtx_log if a.wfbtx_log else ' | no wfbtx log: FRAME_FLUSH not read'}")
     print(f"ab_fit: {len(blocks)} blocks, {sum(b.void for b in blocks)} void")
     print("\nper arm, own values (PPXR_STATS mean of the used 2 s samples; frame times ms above the ref's drift line)")

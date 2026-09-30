@@ -75,6 +75,39 @@ class Flush(unittest.TestCase):
         self.assertIsNone(zslot.flush_rate(None))
 
 
+class TwoCaptures(unittest.TestCase):
+    # a slot longer than the Quest's 30 min capture cap comes in two traces of the same Quest boot
+    def test_traces_of_one_boot_merge_into_one_packet_stream(self):
+        a = ([(1_000, 1, 10), (2_000, 2, 20)], [1_500], 5_000_000)
+        b = ([(9_000, 3, 30), (10_000, 4, 40)], [9_500], 5_000_200)     # REALTIME - trace differs by jitter only
+        pkts, ready, rt = zslot.merge_traces([a, b])
+        self.assertEqual([p[1] for p in pkts], [1, 2, 3, 4])
+        self.assertEqual(ready, [1_500, 9_500])
+        self.assertEqual(rt, 5_000_000)
+
+    def test_traces_of_different_boots_are_refused(self):
+        a = ([(1_000, 1, 10)], [], 5_000_000)
+        b = ([(9_000, 3, 30)], [], 5_000_000 + 60 * 10**9)              # the trace clock restarted
+        with self.assertRaises(SystemExit):
+            zslot.merge_traces([a, b])
+
+    def test_one_frame_stream_across_the_join_even_over_an_rtp_wrap(self):
+        from ab_segments import frames_from_packets
+        top = (1 << 32) - 3000
+        a = ([(1_000_000, 1, top)], [], 0)
+        b = ([(12_000_000, 2, 0)], [], 0)                               # the 90 kHz clock wrapped between them
+        pkts, ready, _ = zslot.merge_traces([a, b])
+        frames, _ = frames_from_packets(pkts, ready)
+        self.assertEqual(len(frames), 2)
+        self.assertGreater(frames[1].capture, frames[0].capture)       # unwrapped, not 13 h back
+
+    def test_offsets_one_for_all_or_one_per_capture(self):
+        self.assertEqual(zslot.offsets([0.3], 2), [0.3, 0.3])
+        self.assertEqual(zslot.offsets([0.3, 0.35], 2), [0.3, 0.35])
+        with self.assertRaises(SystemExit):
+            zslot.offsets([0.3, 0.35, 0.4], 2)
+
+
 class Render(unittest.TestCase):
     def test_linear_before_quadratic_and_a_flag_on_disagreeing_rows(self):
         arms = ["p2400", "p3900"]
