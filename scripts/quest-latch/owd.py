@@ -17,6 +17,7 @@ Reports per state (steps inside their guarded windows):
       merged within 100 ms), against the same profile at shifted onsets (control).
 """
 import argparse
+import math
 from bisect import bisect_left
 from collections import deque
 
@@ -64,13 +65,18 @@ class LiveBase:
     intercept): a standing queue lifts minima above the line and must not be learnt as drift.
     A step of more than jump_ms between consecutive frames (the RTP base moved: a waybeam restart) clears
     everything, drift back to prior. t in ns, v and rel in ms. The app's port must match this on the vectors in
-    testdata/owd/."""
+    testdata/owd/.
+
+    Unbounded window (window_s = inf): no history is kept. min(v - d t) over any point set lies on its lower convex
+    hull for every d, so the base keeps only that hull (monotone chain, points arrive in time order) and the running
+    minimum; a drift update rescans the hull. Same outputs, bounded state (stored())."""
 
     def __init__(self, window_s=60.0, block_s=10.0, horizon_s=300.0, prior=0.07, min_blocks=6, jump_ms=1000.0,
                  accept_ms=2.0):
         self.win_ns, self.blk_ns = window_s * 1e9, block_s * 1e9
         self.block_s, self.horizon_s, self.prior = block_s, horizon_s, prior
         self.min_blocks, self.jump_ms, self.accept_ms = min_blocks, jump_ms, accept_ms
+        self.unbounded = math.isinf(window_s)
         self.reset()
 
     def reset(self):
@@ -78,7 +84,13 @@ class LiveBase:
         self.blocks = {}                 # block index -> minimum v in it
         self.raw = deque()               # (t, v) in the window, for a rebuild
         self.dq = deque()                # (t, v - d * t_s), increasing keys: the window minimum at the front
+        self.hull = []                   # unbounded: lower convex hull of (t, v)
+        self.min_key = math.inf          # unbounded: min of v - d * t_s over all points since the reset
         self.cur_block = self.cur_min = self.prev_v = None
+
+    def stored(self):
+        """Points held: the window (raw + deque), or the hull when unbounded."""
+        return len(self.hull) if self.unbounded else len(self.raw) + len(self.dq)
 
     def _key(self, t, v):
         return v - self.d * t / 1e9
@@ -108,6 +120,9 @@ class LiveBase:
         d = theil_sen([k * self.block_s for k in ks], [self.blocks[k] for k in ks])
         if d != self.d:
             self.d = d
+            if self.unbounded:
+                self.min_key = min(self._key(tt, vv) for tt, vv in self.hull)
+                return
             self.dq.clear()
             for tt, vv in self.raw:
                 self._append_key(tt, vv)
@@ -122,6 +137,8 @@ class LiveBase:
             self.cur_min = None
         self.cur_block = b
         self.cur_min = v if self.cur_min is None else min(self.cur_min, v)
+        if self.unbounded:
+            return self._push_unbounded(t, v)
         self.raw.append((t, v))
         while self.raw[0][0] <= t - self.win_ns:
             self.raw.popleft()
@@ -129,6 +146,16 @@ class LiveBase:
         while self.dq[0][0] <= t - self.win_ns:
             self.dq.popleft()
         return key - self.dq[0][1]
+
+
+    def _push_unbounded(self, t, v):
+        h = self.hull
+        while len(h) >= 2 and ((h[-1][0] - h[-2][0]) * (v - h[-2][1]) - (h[-1][1] - h[-2][1]) * (t - h[-2][0])) <= 0:
+            h.pop()                      # not a left turn: h[-1] is not on the lower hull any more
+        h.append((t, v))
+        key = self._key(t, v)
+        self.min_key = min(self.min_key, key)
+        return key - self.min_key
 
 
 def live_rel(times, values, **params):

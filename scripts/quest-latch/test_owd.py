@@ -117,6 +117,14 @@ class LiveBase(unittest.TestCase):
         self.assertAlmostEqual(min(during), 50.0, places=6)
         self.assertAlmostEqual(max(during), 50.0, places=6)
 
+    def test_the_unbounded_base_keeps_a_bounded_state(self):
+        # hours of frames since the last reset must not pile up: the unbounded base keeps only the lower convex hull
+        # of (t, v), on which min(v - d t) lies for every d, so a drift update needs no history
+        base = owd.LiveBase(window_s=float("inf"), prior=0.0)   # a wrong prior: keys trend upward until learnt
+        for i in range(100_000):
+            base.push(int(i * 1e7), 5.0 + 0.07 * i / 100 + ((i * 37) % 11) / 10.0)
+        self.assertLess(base.stored(), 200)
+
     def test_an_rtp_base_jump_resets_the_base(self):
         t, v = self.series(300)
         v = [x if i < 1500 else x + 5000.0 for i, x in enumerate(v)]   # waybeam restart: +5 s RTP base jump

@@ -203,6 +203,8 @@ first-packet + owd50/owd95 in PPXR_STATS) must match it on the vectors below.
 - **Reset:** a step of more than 1000 ms between consecutive frames (the RTP base moved: a waybeam restart) clears
   all state, drift back to the prior.
 
+**Unbounded window: keep the hull, not the history** (added after reviewing the app's port, 2026-09-30). With a plain window list, the unbounded instance would hold every frame since the reset (0.3–0.6 M per hour at 90–167 fps) and rescan them on each drift update. The minimum of `v − d·t` over any point set lies on its lower convex hull for every `d`, so `LiveBase` keeps only that hull (monotone chain; frames arrive in time order) and the running minimum. The outputs are identical: both vector files regenerate byte for byte. `test_the_unbounded_base_keeps_a_bounded_state` checks that 100k frames leave < 200 points.
+
 **Which window.** The value sent to the air should use the **unbounded** window (`window_s = inf`: the minimum
 since the last reset, drift-corrected). The air then applies its own minimum since the last rate decrease on top. A
 Quest-side window of 60 s would already have absorbed a queue standing longer than 60 s, and the air could not get
